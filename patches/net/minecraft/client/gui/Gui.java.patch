@@ -98,7 +98,6 @@
              profiler.push("screen");
  
              try {
--                this.screen.extractRenderStateWithTooltipAndSubtitles(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
 +                if (Config.isCustomEntityModels()) {
 +                    CustomEntityModels.onRenderScreen(this.minecraft.gui.screen);
 +                }
@@ -108,7 +107,7 @@
 +                        Reflector.ForgeHooksClient_drawScreen, this.minecraft.gui.screen, graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks()
 +                    );
 +                } else {
-+                    this.screen.extractRenderStateWithTooltipAndSubtitles(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
+                 this.screen.extractRenderStateWithTooltipAndSubtitles(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
 +                }
              } catch (Throwable t) {
                  CrashReport report = CrashReport.forThrowable(t, "Rendering screen");

@@ -96,16 +96,15 @@
          "options.framerateLimit",
          OptionInstance.noTooltip(),
 -        (caption, value) -> value == 260
--            ? genericValueLabel(caption, Component.translatable("options.framerateLimit.max"))
--            : genericValueLabel(caption, Component.translatable("options.framerate", value)),
--        new OptionInstance.IntRange(1, 26).xmap(value -> value * 10, value -> value / 10, true),
--        Codec.intRange(10, 260),
 +        (caption, value) -> {
 +            if (this.enableVsync().get()) {
 +                return genericValueLabel(caption, Component.translatable("of.options.framerateLimit.vsync"));
 +            } else {
 +                return value == 260
-+                    ? genericValueLabel(caption, Component.translatable("options.framerateLimit.max"))
+             ? genericValueLabel(caption, Component.translatable("options.framerateLimit.max"))
+-            : genericValueLabel(caption, Component.translatable("options.framerate", value)),
+-        new OptionInstance.IntRange(1, 26).xmap(value -> value * 10, value -> value / 10, true),
+-        Codec.intRange(10, 260),
 +                    : genericValueLabel(caption, Component.translatable("options.framerate", value));
 +            }
 +        },
@@ -877,10 +876,10 @@
 +                    } else {
 +                        Object keyModifierNone = Reflector.getFieldValue(Reflector.KeyModifier_NONE);
 +                        Reflector.call(keyMapping, Reflector.ForgeKeyBinding_setKeyModifierAndCode, keyModifierNone, InputConstants.getKey(newValue));
-+                    }
-+                }
              }
          }
++            }
++        }
 +    }
  
 +    private void processOptionsEnd(Options.FieldAccess access) {
@@ -1089,14 +1088,12 @@
      }
  
      public void broadcastOptions() {
--        if (this.minecraft.player != null) {
--            this.minecraft.player.connection.broadcastClientInformation(this.buildPlayerInformation());
 +        if (!Reflector.ClientModLoader_isLoading.exists() || !Reflector.callBoolean(Reflector.ClientModLoader_isLoading)) {
-+            if (this.minecraft.player != null) {
-+                this.minecraft.player.connection.broadcastClientInformation(this.buildPlayerInformation());
-+            }
+         if (this.minecraft.player != null) {
+             this.minecraft.player.connection.broadcastClientInformation(this.buildPlayerInformation());
          }
      }
++    }
  
 -    public void setModelPart(final PlayerModelPart part, final boolean visible) {
 +    public void setModelPart(PlayerModelPart part, boolean visible) {

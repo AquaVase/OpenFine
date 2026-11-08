@@ -63,8 +63,8 @@
 +
 +                        if (Config.isShaders()) {
 +                            Shaders.endLines();
-+                        }
                      }
++                    }
  
                      if (sectionVisibility && section.getSectionMesh().hasRenderableLayers()) {
 +                        if (Config.isShaders()) {
@@ -92,8 +92,8 @@
 +
 +            if (Config.isShaders()) {
 +                Shaders.popProgram();
-+            }
          }
++        }
  
          Frustum capturedFrustum = this.minecraft.gameRenderer.mainCamera().getCapturedFrustum();
          if (capturedFrustum != null) {
@@ -121,13 +121,13 @@
              this.addFrustumLine(offset, frustumPoints[3], frustumPoints[7]);
 +            if (Config.isShaders()) {
 +                Shaders.endLines();
-+            }
+         }
 +
 +            if (Config.isShaders()) {
 +                Shaders.popProgram();
-+            }
-         }
      }
++        }
++    }
  
 -    private void addFrustumLine(final Vec3 offset, final Vector4f a, final Vector4f b) {
 +    private void addFrustumLine(Vec3 offset, Vector4f a, Vector4f b) {

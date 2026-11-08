@@ -24,13 +24,12 @@
      public GpuBackend[] getBackendsToTry() {
          GlBackend gl = new GlBackend();
          VulkanBackend vulkan = new VulkanBackend();
--        return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
 +        if (Boolean.TRUE) {
 +            return new GpuBackend[]{gl};
 +        } else {
-+            return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
-+        }
+         return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
      }
 -}
 \ No newline at end of file
++    }
 +}

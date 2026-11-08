@@ -58,7 +58,7 @@
          this.progress = i;
      }
  
-@@ -59,20 +59,31 @@
+@@ -59,13 +59,14 @@
      }
  
      @Override
@@ -70,24 +70,17 @@
              }
          } else {
              super.extractRenderState(graphics, mouseX, mouseY, a);
--            if (this.header != null) {
--                graphics.centeredText(this.font, this.header, this.width / 2, 70, -1);
--            }
 +            if (this.progress > 0) {
-+                if (this.header != null) {
-+                    graphics.centeredText(this.font, this.header, this.width / 2, 70, -1);
-+                }
- 
--            if (this.stage != null && this.progress != 0) {
--                graphics.centeredText(this.font, Component.empty().append(this.stage).append(" " + this.progress + "%"), this.width / 2, 90, -1);
-+                if (this.stage != null && this.progress != 0) {
-+                    graphics.centeredText(this.font, Component.empty().append(this.stage).append(" " + this.progress + "%"), this.width / 2, 90, -1);
-+                }
+             if (this.header != null) {
+                 graphics.centeredText(this.font, this.header, this.width / 2, 70, -1);
+             }
+@@ -75,4 +76,14 @@
              }
          }
      }
 -}
 \ No newline at end of file
++    }
 +
 +    @Override
 +    public void extractBackground(GuiGraphicsExtractor graphicsIn, int mouseX, int mouseY, float partialTicks) {

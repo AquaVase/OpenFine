@@ -54,7 +54,6 @@
                          renderPass.drawMultipleIndexed(draws, defaultIndexBuffer, defaultIndexType, List.of("ChunkSection"), this.chunkSectionInfos);
 +                        if (shaders) {
 +                            ShadersRender.postRenderChunkLayer(layer);
-+                        }
                      }
                  }
              }
@@ -62,4 +61,5 @@
      }
 -}
 \ No newline at end of file
++    }
 +}

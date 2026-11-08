@@ -112,7 +112,7 @@
          this.current.addGlyph(glyphState);
      }
  
-@@ -166,25 +165,23 @@
+@@ -166,9 +165,8 @@
          return this.itemModelIdentities;
      }
  
@@ -120,25 +120,14 @@
 +    public void forEachElement(Consumer<GuiElementRenderState> consumer, GuiRenderState.TraverseRange range) {
          this.traverse(node -> {
 -            if (node.elementStates != null || node.glyphStates != null) {
--                if (node.elementStates != null) {
--                    for (GuiElementRenderState elementState : node.elementStates) {
--                        consumer.accept(elementState);
--                    }
-+            if (node.elementStates != null) {
-+                for (GuiElementRenderState elementState : node.elementStates) {
-+                    consumer.accept(elementState);
+                 if (node.elementStates != null) {
+                     for (GuiElementRenderState elementState : node.elementStates) {
+                         consumer.accept(elementState);
+@@ -180,11 +178,10 @@
+                         consumer.accept(glyphState);
+                     }
                  }
-+            }
- 
--                if (node.glyphStates != null) {
--                    for (GuiElementRenderState glyphState : node.glyphStates) {
--                        consumer.accept(glyphState);
--                    }
-+            if (node.glyphStates != null) {
-+                for (GuiElementRenderState glyphState : node.glyphStates) {
-+                    consumer.accept(glyphState);
-                 }
-             }
+-            }
          }, range);
      }
  
@@ -196,9 +185,9 @@
 +
 +            for (int ix = 0; ix < this.frameListeners.size(); ix++) {
 +                this.frameListeners.get(i).traverseStratumEnd(i);
-+            }
          }
      }
++    }
  
 -    private void traverse(final GuiRenderState.Node node, final Consumer<GuiRenderState.Node> consumer) {
 +    private void traverse(GuiRenderState.Node node, Consumer<GuiRenderState.Node> consumer) {
@@ -299,8 +288,9 @@
 +            StringBuilder sb = new StringBuilder();
 +            if (this.elementStates != null) {
 +                sb.append("elems: " + this.elementStates.size() + ", ");
-+            }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
 +            if (this.glyphStates != null) {
 +                sb.append("glyphs: " + this.glyphStates.size() + ", ");
 +            }
@@ -323,9 +313,8 @@
 +
 +            return StrUtils.removeSuffix(sb.toString(), ", ");
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
++    }
++
      public enum TraverseRange {
          ALL,
          BEFORE_BLUR,

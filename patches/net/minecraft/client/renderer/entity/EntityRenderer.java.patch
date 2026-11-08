@@ -76,12 +76,12 @@
 +        int packedLight = LightCoordsUtil.pack(this.getBlockLightLevel(entity, blockPos), this.getSkyLightLevel(entity, blockPos));
 +        if (Config.isDynamicLights()) {
 +            packedLight = DynamicLights.getCombinedLight(entity, packedLight);
-+        }
-+
-+        return packedLight;
      }
  
 -    protected int getSkyLightLevel(final T entity, final BlockPos blockPos) {
++        return packedLight;
++    }
++
 +    protected int getSkyLightLevel(T entity, BlockPos blockPos) {
          return entity.level().getBrightness(LightLayer.SKY, blockPos);
      }
@@ -160,8 +160,8 @@
 +            if (result != Result.DENY && (result == Result.ALLOW || state.nameTag != null)) {
 +                forgeSubmitFlag = true;
 +                forgeNameTag = (Component)Reflector.call(renderNameplateEvent, Reflector.RenderNameTagEvent_getContent);
-+            }
          }
++        }
  
 +        if (forgeSubmitFlag) {
 +            submitNodeCollector.submitNameTag(poseStack, state.nameTagAttachment, offset, forgeNameTag, !state.isDiscrete, state.lightCoords, camera);
@@ -249,7 +249,7 @@
              if (shouldShowName) {
                  state.nameTag = this.getNameTag(entity);
                  state.nameTagAttachment = entity.getAttachments().getNullable(EntityAttachment.NAME_TAG, 0, entity.getYRot(partialTicks));
-@@ -268,70 +320,70 @@
+@@ -268,14 +320,15 @@
          }
      }
  
@@ -263,65 +263,24 @@
 -    private void extractShadow(final S state, final Minecraft minecraft, final Level level) {
 +    private void extractShadow(S state, Minecraft minecraft, Level level) {
          state.shadowPieces.clear();
--        if (minecraft.options.entityShadows().get() && !state.isInvisible) {
--            float shadowRadius = Math.min(this.getShadowRadius(state), 32.0F);
--            state.shadowRadius = shadowRadius;
--            if (shadowRadius > 0.0F) {
--                double distSq = state.distanceToCameraSq;
--                float pow = (float)((1.0 - distSq / 256.0) * this.getShadowStrength(state));
--                if (pow > 0.0F) {
--                    int x0 = Mth.floor(state.x - shadowRadius);
--                    int x1 = Mth.floor(state.x + shadowRadius);
--                    int z0 = Mth.floor(state.z - shadowRadius);
--                    int z1 = Mth.floor(state.z + shadowRadius);
--                    float depth = Math.min(pow / 0.5F - 1.0F, shadowRadius);
--                    int y0 = Mth.floor(state.y - depth);
--                    int y1 = Mth.floor(state.y);
--                    BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 +        if (!Config.isShaders() || !Shaders.shouldSkipDefaultShadow) {
-+            if (minecraft.options.entityShadows().get() && !state.isInvisible) {
-+                float shadowRadius = Math.min(this.getShadowRadius(state), 32.0F);
-+                state.shadowRadius = shadowRadius;
-+                if (shadowRadius > 0.0F) {
-+                    double distSq = state.distanceToCameraSq;
-+                    float pow = (float)((1.0 - distSq / 256.0) * this.getShadowStrength(state));
-+                    if (pow > 0.0F) {
-+                        int x0 = Mth.floor(state.x - shadowRadius);
-+                        int x1 = Mth.floor(state.x + shadowRadius);
-+                        int z0 = Mth.floor(state.z - shadowRadius);
-+                        int z1 = Mth.floor(state.z + shadowRadius);
-+                        float depth = Math.min(pow / 0.5F - 1.0F, shadowRadius);
-+                        int y0 = Mth.floor(state.y - depth);
-+                        int y1 = Mth.floor(state.y);
+         if (minecraft.options.entityShadows().get() && !state.isInvisible) {
+             float shadowRadius = Math.min(this.getShadowRadius(state), 32.0F);
+             state.shadowRadius = shadowRadius;
+@@ -290,7 +343,7 @@
+                     float depth = Math.min(pow / 0.5F - 1.0F, shadowRadius);
+                     int y0 = Mth.floor(state.y - depth);
+                     int y1 = Mth.floor(state.y);
+-                    BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 +                        MutableBlockPos pos = new MutableBlockPos();
  
--                    for (int z = z0; z <= z1; z++) {
--                        for (int x = x0; x <= x1; x++) {
--                            pos.set(x, 0, z);
--                            ChunkAccess chunk = level.getChunk(pos);
-+                        for (int z = z0; z <= z1; z++) {
-+                            for (int x = x0; x <= x1; x++) {
-+                                pos.set(x, 0, z);
-+                                ChunkAccess chunk = level.getChunk(pos);
- 
--                            for (int y = y0; y <= y1; y++) {
--                                pos.setY(y);
--                                this.extractShadowPiece(state, level, pow, pos, chunk);
-+                                for (int y = y0; y <= y1; y++) {
-+                                    pos.setY(y);
-+                                    this.extractShadowPiece(state, level, pow, pos, chunk);
-+                                }
-                             }
-                         }
-                     }
-                 }
-+            } else {
-+                state.shadowRadius = 0.0F;
-             }
--        } else {
--            state.shadowRadius = 0.0F;
+                     for (int z = z0; z <= z1; z++) {
+                         for (int x = x0; x <= x1; x++) {
+@@ -309,15 +362,15 @@
+             state.shadowRadius = 0.0F;
          }
      }
++    }
  
 -    private void extractShadowPiece(final S state, final Level level, final float pow, final BlockPos.MutableBlockPos pos, final ChunkAccess chunk) {
 +    private void extractShadowPiece(S state, Level level, float pow, MutableBlockPos pos, ChunkAccess chunk) {
@@ -332,26 +291,15 @@
              int brightness = level.getMaxLocalRawBrightness(pos);
 -            if (brightness > 3) {
 -                if (belowState.isCollisionShapeFullBlock(chunk, belowPos)) {
--                    VoxelShape belowShape = belowState.getShape(chunk, belowPos);
--                    if (!belowShape.isEmpty()) {
--                        float alpha = Mth.clamp(powerAtDepth * 0.5F * Lightmap.getBrightness(level.dimensionType(), brightness), 0.0F, 1.0F);
--                        float relativeX = (float)(pos.getX() - state.x);
--                        float relativeY = (float)(pos.getY() - state.y);
--                        float relativeZ = (float)(pos.getZ() - state.z);
--                        state.shadowPieces.add(new EntityRenderState.ShadowPiece(relativeX, relativeY, relativeZ, belowShape, alpha));
--                    }
 +            if (brightness > 3 && belowState.isCollisionShapeFullBlock(chunk, belowPos)) {
-+                VoxelShape belowShape = belowState.getShape(chunk, belowPos);
-+                if (!belowShape.isEmpty()) {
-+                    float alpha = Mth.clamp(powerAtDepth * 0.5F * Lightmap.getBrightness(level.dimensionType(), brightness), 0.0F, 1.0F);
-+                    float relativeX = (float)(pos.getX() - state.x);
-+                    float relativeY = (float)(pos.getY() - state.y);
-+                    float relativeZ = (float)(pos.getZ() - state.z);
-+                    state.shadowPieces.add(new EntityRenderState.ShadowPiece(relativeX, relativeY, relativeZ, belowShape, alpha));
+                     VoxelShape belowShape = belowState.getShape(chunk, belowPos);
+                     if (!belowShape.isEmpty()) {
+                         float alpha = Mth.clamp(powerAtDepth * 0.5F * Lightmap.getBrightness(level.dimensionType(), brightness), 0.0F, 1.0F);
+@@ -329,9 +382,8 @@
                  }
              }
          }
-     }
+-    }
  
 -    private static @Nullable Entity getServerSideEntity(final Entity entity) {
 +    private static Entity getServerSideEntity(Entity entity) {

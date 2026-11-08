@@ -238,26 +238,20 @@
              LOGGER.info("Unpublishing integrated server (was on port {})", this.publishedPort);
          }
  
-@@ -370,21 +387,24 @@
+@@ -370,7 +387,8 @@
      }
  
      @Override
 -    public void halt(final boolean wait) {
--        this.executeBlocking(() -> {
--            for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
--                if (!player.getUUID().equals(this.uuid)) {
--                    this.getPlayerList().remove(player);
 +    public void halt(boolean wait) {
 +        if (!Reflector.MinecraftForge.exists() || this.isRunning()) {
-+            this.executeBlocking(() -> {
-+                for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
-+                    if (!player.getUUID().equals(this.uuid)) {
-+                        this.getPlayerList().remove(player);
-+                    }
+         this.executeBlocking(() -> {
+             for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
+                 if (!player.getUUID().equals(this.uuid)) {
+@@ -378,13 +396,15 @@
                  }
--            }
--        });
-+            });
+             }
+         });
 +        }
 +
          super.halt(wait);

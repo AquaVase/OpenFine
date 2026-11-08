@@ -44,6 +44,10 @@ public class ShadersCompatibility {
     public static HeaderLine UNDO_SHADOW_REV_Z01 = makeHeaderLine(makeUndoShadowRevZ(true));
     public static HeaderLine MAIN_REV_Z01 = makeFooterLine(makeMainRevZ(true));
     public static HeaderLine MAIN_SHADOW_REV_Z01 = makeFooterLine(makeMainShadowRevZ(true));
+    private static final HeaderLine EMIT_VERTEX = makeHeaderLine(makeEmitVertex(false, false));
+    private static final HeaderLine EMIT_VERTEX01 = makeHeaderLine(makeEmitVertex(false, true));
+    private static final HeaderLine EMIT_VERTEX_SHADOW = makeHeaderLine(makeEmitVertex(true, false));
+    private static final HeaderLine EMIT_VERTEX_SHADOW01 = makeHeaderLine(makeEmitVertex(true, true));
     public static HeaderLine FOG_DENSITY = makeHeaderLine("uniform float fogDensity;");
     public static HeaderLine FOG_START = makeHeaderLine("uniform float fogStart;");
     public static HeaderLine FOG_END = makeHeaderLine("uniform float fogEnd;");
@@ -77,9 +81,14 @@ public class ShadersCompatibility {
     private static final Pattern PATTERN_FRAG_DATA_SET = Pattern.compile("(\\s*)gl_FragData\\[(\\d+)\\](\\S*)\\s*=\\s*(.*)");
     private static final Pattern PATTERN_FRAG_DATA_GET = Pattern.compile("gl_FragData\\[(\\d+)\\]([^ ][^=])");
     private static final Pattern PATTERN_FRAG_DATA = Pattern.compile("gl_FragData\\[(\\d+)\\]");
+    private static final Pattern PATTERN_EMIT_VERTEX = Pattern.compile("\\bEmitVertex\\s*\\(\\s*\\)");
     public static final String COMMENT_COMPATIBILITY = "// Compatibility (auto-generated)";
 
     public static LineBuffer remap(Program program, ShaderType shaderType, LineBuffer lines) {
+        return remap(program, shaderType, lines, false);
+    }
+
+    public static LineBuffer remap(Program program, ShaderType shaderType, LineBuffer lines, boolean hasGeometryShader) {
         if (program == null) {
             return lines;
         }
@@ -155,7 +164,8 @@ public class ShadersCompatibility {
                 line = replace(line, "gl_ModelViewMatrixInverse", "modelViewMatrixInverse", headerLines, MODEL_VIEW_MATRIX_INVERSE);
                 line = replace(line, "gl_ModelViewProjectionMatrix", "(projectionMatrix * modelViewMatrix)", headerLines, PROJECTION_MATRIX, MODEL_VIEW_MATRIX);
                 line = replace(line, "gl_NormalMatrix", "normalMatrix", headerLines, NORMAL_MATRIX);
-                if (shaderType == ShaderType.VERTEX) {
+                // Keep legacy clip coordinates between stages; convert only before rasterization.
+                if (shaderType == ShaderType.VERTEX && !hasGeometryShader) {
                     if (program.getProgramStage().isAnyShadow()) {
                         line = replace(line, PATTERN_MAIN, "$1_orig_shadow$2", headerLines, Shaders.isZZeroOne ? MAIN_SHADOW_REV_Z01 : MAIN_SHADOW_REV_Z);
                     } else {
@@ -169,7 +179,12 @@ public class ShadersCompatibility {
                 }
 
                 if (shaderType == ShaderType.GEOMETRY) {
-                    line = replace(line, "EmitVertex()", "(gl_Position.z = 0.5f * (gl_Position.z + gl_Position.w), EmitVertex())", headerLines);
+                    line = replace(
+                        line, PATTERN_EMIT_VERTEX, "emitVertexCompat()", headerLines,
+                        program.getProgramStage().isAnyShadow()
+                            ? (Shaders.isZZeroOne ? EMIT_VERTEX_SHADOW01 : EMIT_VERTEX_SHADOW)
+                            : (Shaders.isZZeroOne ? EMIT_VERTEX01 : EMIT_VERTEX)
+                    );
                 }
 
                 if (!program.getProgramStage().isAnyComposite()) {
@@ -359,6 +374,15 @@ public class ShadersCompatibility {
         return zZeroOne
             ? "void main()\n{\n  main_orig_shadow();\n  gl_Position.z = 0.5f * (gl_Position.z + gl_Position.w);\n}\n"
             : "void main()\n{\n  main_orig_shadow();\n}\n";
+    }
+
+    private static String makeEmitVertex(boolean shadow, boolean zZeroOne) {
+        String conversion = shadow
+            ? (zZeroOne ? "  gl_Position.z = 0.5f * (position.z + position.w);\n" : "")
+            : (zZeroOne ? "  gl_Position.z = 0.5f * (position.w - position.z);\n" : "  gl_Position.z = -position.z;\n");
+        // EmitVertex invalidates outputs. Restore the full legacy position for subsequent emissions.
+        return "void emitVertexCompat()\n{\n  vec4 position = gl_Position;\n" + conversion
+            + "  EmitVertex();\n  gl_Position = position;\n}\n";
     }
 
     private static void addLine(StringBuilder buf, String line) {

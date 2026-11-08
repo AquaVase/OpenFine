@@ -55,8 +55,8 @@
          blockModel.submit(poseStack, submitNodeCollector, lightCoords, overlayCoords, outlineColor);
 +        if (Config.isShaders()) {
 +            Shaders.setEntityColor(0.0F, 0.0F, 0.0F, 0.0F);
-+        }
      }
++    }
  
      public MinecartTntRenderState createRenderState() {
          return new MinecartTntRenderState();

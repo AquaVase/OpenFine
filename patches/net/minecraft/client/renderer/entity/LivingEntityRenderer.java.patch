@@ -59,94 +59,48 @@
          AABB aabb = super.getBoundingBoxForCulling(entity);
          if (entity.getItemBySlot(EquipmentSlot.HEAD).is(Items.DRAGON_HEAD)) {
              float extraSize = 0.5F;
-@@ -72,76 +75,104 @@
+@@ -72,7 +75,13 @@
          }
      }
  
 -    public void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
--        poseStack.pushPose();
--        if (state.hasPose(Pose.SLEEPING)) {
--            Direction bedOrientation = state.bedOrientation;
--            if (bedOrientation != null) {
--                float headOffset = state.eyeHeight - 0.1F;
--                poseStack.translate(-bedOrientation.getStepX() * headOffset, 0.0F, -bedOrientation.getStepZ() * headOffset);
 +    public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
 +        if (!Reflector.ForgeEventFactoryClient_onRenderLivingPre.exists()
 +            || !Reflector.ForgeEventFactoryClient_onRenderLivingPre.callBoolean(state, this, poseStack, submitNodeCollector, camera)) {
 +            if (animateModelLiving) {
 +                state.walkAnimationSpeed = 1.5F;
-             }
--        }
- 
--        float scale = state.scale;
--        poseStack.scale(scale, scale, scale);
--        this.setupRotations(state, poseStack, state.bodyRot, scale);
--        poseStack.scale(-1.0F, -1.0F, 1.0F);
--        this.scale(state, poseStack);
--        poseStack.translate(0.0F, -1.501F, 0.0F);
--        boolean isBodyVisible = this.isBodyVisible(state);
--        boolean forceTransparent = !isBodyVisible && !state.isInvisibleToPlayer;
--        RenderType renderType = this.getRenderType(state, isBodyVisible, forceTransparent, state.appearsGlowing());
--        if (renderType != null) {
--            int overlayCoords = getOverlayCoords(state, this.getWhiteOverlayProgress(state));
--            int baseColor = forceTransparent ? 654311423 : -1;
--            int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
--            submitNodeCollector.submitModel(
--                this.model, state, poseStack, renderType, state.lightCoords, overlayCoords, tintedColor, null, state.outlineColor, null
--            );
--        }
-+            poseStack.pushPose();
-+            if (state.hasPose(Pose.SLEEPING)) {
-+                Direction bedOrientation = state.bedOrientation;
-+                if (bedOrientation != null) {
-+                    float headOffset = state.eyeHeight - 0.1F;
-+                    poseStack.translate(-bedOrientation.getStepX() * headOffset, 0.0F, -bedOrientation.getStepZ() * headOffset);
-+                }
 +            }
- 
--        if (this.shouldRenderLayers(state) && !this.layers.isEmpty()) {
--            this.model.setupAnim(state);
-+            float scale = state.scale;
-+            poseStack.scale(scale, scale, scale);
-+            this.setupRotations(state, poseStack, state.bodyRot, scale);
-+            poseStack.scale(-1.0F, -1.0F, 1.0F);
-+            this.scale(state, poseStack);
-+            poseStack.translate(0.0F, -1.501F, 0.0F);
-+            boolean isBodyVisible = this.isBodyVisible(state);
-+            boolean forceTransparent = !isBodyVisible && !state.isInvisibleToPlayer;
-+            RenderType renderType = this.getRenderType(state, isBodyVisible, forceTransparent, state.appearsGlowing());
-+            if (renderType != null) {
++
+         poseStack.pushPose();
+         if (state.hasPose(Pose.SLEEPING)) {
+             Direction bedOrientation = state.bedOrientation;
+@@ -92,7 +101,8 @@
+         boolean forceTransparent = !isBodyVisible && !state.isInvisibleToPlayer;
+         RenderType renderType = this.getRenderType(state, isBodyVisible, forceTransparent, state.appearsGlowing());
+         if (renderType != null) {
+-            int overlayCoords = getOverlayCoords(state, this.getWhiteOverlayProgress(state));
 +                state.overlayProgress = this.getWhiteOverlayProgress(state);
 +                int overlayCoords = getOverlayCoords(state, state.overlayProgress);
-+                int baseColor = forceTransparent ? 654311423 : -1;
-+                int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
-+                submitNodeCollector.submitModel(
-+                    this.model, state, poseStack, renderType, state.lightCoords, overlayCoords, tintedColor, null, state.outlineColor, null
-+                );
-+            }
+             int baseColor = forceTransparent ? 654311423 : -1;
+             int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
+             submitNodeCollector.submitModel(
+@@ -104,44 +114,65 @@
+             this.model.setupAnim(state);
  
--            for (RenderLayer<S, M> layer : this.layers) {
--                layer.submit(poseStack, submitNodeCollector, state.lightCoords, state, state.yRot, state.xRot);
-+            if (this.shouldRenderLayers(state) && !this.layers.isEmpty()) {
-+                this.model.setupAnim(state);
-+
-+                for (RenderLayer<S, M> layer : this.layers) {
+             for (RenderLayer<S, M> layer : this.layers) {
 +                    state.renderLayer = layer;
-+                    layer.submit(poseStack, submitNodeCollector, state.lightCoords, state, state.yRot, state.xRot);
+                 layer.submit(poseStack, submitNodeCollector, state.lightCoords, state, state.yRot, state.xRot);
 +                    state.renderLayer = null;
-+                }
              }
--        }
+         }
  
--        poseStack.popPose();
--        super.submit(state, poseStack, submitNodeCollector, camera);
-+            poseStack.popPose();
-+            super.submit(state, poseStack, submitNodeCollector, camera);
+         poseStack.popPose();
+         super.submit(state, poseStack, submitNodeCollector, camera);
 +            if (Reflector.ForgeEventFactoryClient_onRenderLivingPost.exists()) {
 +                Reflector.ForgeEventFactoryClient_onRenderLivingPost.callVoid(state, this, poseStack, submitNodeCollector, camera);
-+            }
-+        }
      }
++        }
++    }
  
 -    protected boolean shouldRenderLayers(final S state) {
 +    protected boolean shouldRenderLayers(S state) {
@@ -185,13 +139,13 @@
 +            Minecraft mc = Config.getMinecraft();
 +            if (!mc.levelExtractor.shouldShowEntityOutlines(mc.gameRenderer.mainCamera())) {
 +                return this.model.renderType(texture);
-+            }
-+        }
-+
-+        return appearGlowing ? RenderTypes.outline(texture) : null;
      }
++        }
  
 -    public static int getOverlayCoords(final LivingEntityRenderState state, final float whiteOverlayProgress) {
++        return appearGlowing ? RenderTypes.outline(texture) : null;
++    }
++
 +    public static int getOverlayCoords(LivingEntityRenderState state, float whiteOverlayProgress) {
          return OverlayTexture.pack(OverlayTexture.u(whiteOverlayProgress), OverlayTexture.v(state.hasRedOverlay));
      }

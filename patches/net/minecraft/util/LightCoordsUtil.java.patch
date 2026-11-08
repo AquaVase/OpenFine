@@ -85,7 +85,7 @@
          if (sky(center) > 2 || block(center) > 2) {
              if (neighbor1 == 0) {
                  neighbor1 = center;
-@@ -87,36 +92,43 @@
+@@ -87,38 +92,45 @@
          return neighbor1 + neighbor2 + neighbor3 + center >> 2 & 16711935;
      }
  
@@ -134,16 +134,18 @@
 +        int blockSelfEmission = state.getLightEmission(level, pos);
 +        if (block < blockSelfEmission) {
 +            packedBrightness = withBlock(packedBrightness, blockSelfEmission);
-+        }
-+
+     }
+ 
 +        if (Config.isDynamicLights() && (!ambientOcclusionIn || !state.isSolidRender())) {
 +            packedBrightness = DynamicLights.getCombinedLight(pos, packedBrightness);
 +        }
 +
 +        return packedBrightness;
-     }
- 
++    }
++
      @FunctionalInterface
+     public interface BrightnessGetter {
+         LightCoordsUtil.BrightnessGetter DEFAULT = (level, pos) -> {
 @@ -127,6 +139,6 @@
              return LightCoordsUtil.pack(block, sky);
          };

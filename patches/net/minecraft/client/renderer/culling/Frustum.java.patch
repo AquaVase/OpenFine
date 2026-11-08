@@ -57,9 +57,9 @@
 +        if (frustum.usePlanes) {
 +            for (int i = 0; i < this.planes.length; i++) {
 +                this.planes[i] = new Vector4f(frustum.planes[i]);
-+            }
-+        }
      }
++        }
++    }
  
 -    public Frustum offset(final float offset) {
 +    public Frustum offset(float offset) {
@@ -86,8 +86,8 @@
              this.camY = this.camY - this.viewVector.y() * 4.0F;
 +            if (count++ > 10) {
 +                break;
-+            }
          }
++        }
  
          return this;
      }
@@ -112,8 +112,8 @@
 +            this.setFrustumPlane(matrix4f, 0, 1, 0, 3);
 +            this.setFrustumPlane(matrix4f, 0, 0, -1, 4);
 +            this.setFrustumPlane(matrix4f, 0, 0, 1, 5);
-+        }
      }
++    }
  
 -    public boolean isVisible(final AABB bb) {
 +    public boolean isVisible(AABB bb) {

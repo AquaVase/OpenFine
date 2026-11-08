@@ -37,8 +37,9 @@
 +    public final RenderType renderType(Identifier texture) {
 +        if (this.locationTextureCustom != null) {
 +            texture = this.locationTextureCustom;
-+        }
-+
+     }
+ 
+-    public final void renderToBuffer(final PoseStack poseStack, final VertexConsumer buffer, final int lightCoords, final int overlayCoords, final int color) {
 +        RenderType type = this.renderType().apply(texture);
 +        if (EmissiveTextures.isRenderEmissive() && type.isEntitySolid()) {
 +            type = RenderTypes.entityCutout(texture, type.affectsOutline());
@@ -49,9 +50,8 @@
 +        }
 +
 +        return type;
-     }
- 
--    public final void renderToBuffer(final PoseStack poseStack, final VertexConsumer buffer, final int lightCoords, final int overlayCoords, final int color) {
++    }
++
 +    public final void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color) {
          this.root().render(poseStack, buffer, lightCoords, overlayCoords, color);
      }

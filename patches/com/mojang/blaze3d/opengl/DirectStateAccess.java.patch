@@ -167,8 +167,9 @@
 +        @Override
 +        void texParameter(int texId, int pname, int param) {
 +            ARBDirectStateAccess.glTextureParameteri(texId, pname, param);
-+        }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
 +        @Override
 +        void texParameter(int texId, int pname, float param) {
 +            ARBDirectStateAccess.glTextureParameterf(texId, pname, param);
@@ -178,9 +179,8 @@
 +        boolean isEmulated() {
 +            return false;
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
++    }
++
      private static class Emulated extends DirectStateAccess {
          @Override
          public int createBuffer() {
@@ -305,7 +305,9 @@
 +        void texParameter(int texId, int pname, int param) {
 +            GlStateManager._bindTexture(texId);
 +            GlStateManager.texParameter(3553, pname, param);
-+        }
+     }
+-}
+\ No newline at end of file
 +
 +        @Override
 +        void texParameter(int texId, int pname, float param) {
@@ -317,7 +319,5 @@
 +        boolean isEmulated() {
 +            return true;
 +        }
-     }
--}
-\ No newline at end of file
++    }
 +}

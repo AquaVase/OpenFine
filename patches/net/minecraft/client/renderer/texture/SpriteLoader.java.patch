@@ -18,7 +18,7 @@
  import net.minecraft.resources.Identifier;
  import net.minecraft.server.packs.metadata.MetadataSectionType;
  import net.minecraft.server.packs.resources.ResourceManager;
-@@ -26,50 +27,83 @@
+@@ -26,33 +27,59 @@
  import net.minecraft.util.Util;
  import net.minecraft.util.profiling.Profiler;
  import net.minecraft.util.profiling.Zone;
@@ -62,18 +62,6 @@
              int lowestOneBit = 1 << maxMipmapLevels;
  
              for (SpriteContents spriteInfo : sprites) {
--                minTexelSize = Math.min(minTexelSize, Math.min(spriteInfo.width(), spriteInfo.height()));
--                int lowestTextureBit = Math.min(Integer.lowestOneBit(spriteInfo.width()), Integer.lowestOneBit(spriteInfo.height()));
--                if (lowestTextureBit < lowestOneBit) {
--                    LOGGER.warn(
--                        "Texture {} with size {}x{} limits mip level from {} to {}",
--                        spriteInfo.name(),
--                        spriteInfo.width(),
--                        spriteInfo.height(),
--                        Mth.log2(lowestOneBit),
--                        Mth.log2(lowestTextureBit)
--                    );
--                    lowestOneBit = lowestTextureBit;
 +                int ws = spriteInfo.getSpriteWidth();
 +                int hs = spriteInfo.getSpriteHeight();
 +                if (ws >= 1 && hs >= 1) {
@@ -95,23 +83,17 @@
 +                        }
 +                    }
 +
-+                    minTexelSize = Math.min(minTexelSize, Math.min(spriteInfo.width(), spriteInfo.height()));
-+                    int lowestTextureBit = Math.min(Integer.lowestOneBit(spriteInfo.width()), Integer.lowestOneBit(spriteInfo.height()));
-+                    if (lowestTextureBit < lowestOneBit) {
-+                        LOGGER.warn(
-+                            "Texture {} with size {}x{} limits mip level from {} to {}",
-+                            spriteInfo.name(),
-+                            spriteInfo.width(),
-+                            spriteInfo.height(),
-+                            Mth.log2(lowestOneBit),
-+                            Mth.log2(lowestTextureBit)
-+                        );
-+                        lowestOneBit = lowestTextureBit;
-+                    }
+                 minTexelSize = Math.min(minTexelSize, Math.min(spriteInfo.width(), spriteInfo.height()));
+                 int lowestTextureBit = Math.min(Integer.lowestOneBit(spriteInfo.width()), Integer.lowestOneBit(spriteInfo.height()));
+                 if (lowestTextureBit < lowestOneBit) {
+@@ -66,10 +93,17 @@
+                     );
+                     lowestOneBit = lowestTextureBit;
+                 }
 +                } else {
 +                    Config.warn("Invalid sprite size: " + spriteInfo.getSpriteLocation());
-                 }
              }
++            }
  
              int minSize = Math.min(minTexelSize, lowestOneBit);
              int minPowerOfTwo = Mth.log2(minSize);

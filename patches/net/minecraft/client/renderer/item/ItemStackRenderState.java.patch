@@ -200,7 +200,9 @@
 +
 +        private BlockStateModelPart getCustomItemModel(BlockStateModelPart modelIn, boolean fullModelIn) {
 +            return modelIn == null ? null : modelIn;
-+        }
+     }
+-}
+\ No newline at end of file
 +
 +        public ItemStack getItemStack() {
 +            return this.itemStack;
@@ -209,7 +211,5 @@
 +        public void setItemStack(ItemStack itemStack) {
 +            this.itemStack = itemStack;
 +        }
-     }
--}
-\ No newline at end of file
++    }
 +}

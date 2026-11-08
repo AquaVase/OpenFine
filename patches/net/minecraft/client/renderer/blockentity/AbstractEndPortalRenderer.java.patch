@@ -43,7 +43,7 @@
          BlockEntityRenderer.super.extractRenderState(blockEntity, state, partialTicks, cameraPosition, breakProgress);
          state.facesToShow.clear();
  
-@@ -58,25 +53,31 @@
+@@ -58,10 +53,15 @@
          }
      }
  
@@ -52,10 +52,6 @@
 -    ) {
 +    protected static void submitCube(Collection<Direction> facesToShow, RenderType renderType, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
          if (!facesToShow.isEmpty()) {
--            submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
--                for (Direction direction : facesToShow) {
--                    for (Vector3fc faceVertex : FACES.get(direction)) {
--                        buffer.addVertex(pose, faceVertex);
 +            if (Config.isShaders()) {
 +                RenderType renderTypeShaders = RenderTypes.entitySolid(END_PORTAL_LOCATION);
 +                submitNodeCollector.submitCustomGeometry(poseStack, renderTypeShaders, (matrixIn, bufferIn) -> {
@@ -63,18 +59,14 @@
 +                    ShadersRender.renderEndPortal(facesToShow, offsetUp, matrixIn, bufferIn, Lightmap.MAX_BRIGHTNESS, OverlayTexture.NO_OVERLAY);
 +                });
 +            } else {
-+                submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
-+                    for (Direction direction : facesToShow) {
-+                        for (Vector3fc faceVertex : FACES.get(direction)) {
-+                            buffer.addVertex(pose, faceVertex);
-+                        }
-                     }
--                }
--            });
-+                });
-+            }
+             submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
+                 for (Direction direction : facesToShow) {
+                     for (Vector3fc faceVertex : FACES.get(direction)) {
+@@ -71,12 +71,13 @@
+             });
          }
      }
++    }
  
 -    public static void submitSpecial(final RenderType renderType, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector) {
 +    public static void submitSpecial(RenderType renderType, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {

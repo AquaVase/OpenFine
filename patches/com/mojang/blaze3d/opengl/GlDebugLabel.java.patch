@@ -134,8 +134,9 @@
 +        public void applyLabelBuffer(int id, String labelIn) {
 +            String label = "Buf: " + labelIn;
 +            KHRDebug.glObjectLabel(33504, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
-+        }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
 +        @Override
 +        public void applyLabelTexture(int id, String labelIn) {
 +            String label = "Tex: " + labelIn;
@@ -165,9 +166,8 @@
 +            String label = "FB: " + labelIn;
 +            KHRDebug.glObjectLabel(36160, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
++    }
++
      private static class Empty extends GlDebugLabel {
      }
  
@@ -224,7 +224,9 @@
 +        public void applyLabelBuffer(int id, String labelIn) {
 +            String label = "Buf: " + labelIn;
 +            EXTDebugLabel.glLabelObjectEXT(37201, id, StringUtil.truncateStringIfNecessary(label, 256, true));
-+        }
+     }
+-}
+\ No newline at end of file
 +
 +        @Override
 +        public void applyLabelTexture(int id, String labelIn) {
@@ -249,7 +251,5 @@
 +            String label = "FB: " + labelIn;
 +            EXTDebugLabel.glLabelObjectEXT(36160, id, StringUtil.truncateStringIfNecessary(label, 256, true));
 +        }
-     }
--}
-\ No newline at end of file
++    }
 +}

@@ -47,9 +47,8 @@
      ) {
          if (!item.isEmpty()) {
              poseStack.pushPose();
--            this.getParentModel().translateToHand(state, arm, poseStack);
 +            if (!this.applyAttachmentTransform(arm, poseStack)) {
-+                this.getParentModel().translateToHand(state, arm, poseStack);
+             this.getParentModel().translateToHand(state, arm, poseStack);
 +            }
 +
              poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));

@@ -171,21 +171,20 @@
              int mouseX = Mth.floor(this.minecraft.mouseHandler.getScaledXPos(window));
              int mouseY = Mth.floor(this.minecraft.mouseHandler.getScaledYPos(window));
              graphics.nextStratum();
--            this.chat.extractRenderState(graphics, this.getFont(), this.tickCount, mouseX, mouseY, ChatComponent.DisplayMode.BACKGROUND, false);
 +            if (Reflector.ForgeHooksClient_onCustomizeChatEvent.exists()) {
 +                Reflector.ForgeHooksClient_onCustomizeChatEvent.callVoid(graphics, this.chat, window, mouseX, mouseY, this.tickCount, this.getFont());
 +            } else {
-+                this.chat.extractRenderState(graphics, this.getFont(), this.tickCount, mouseX, mouseY, ChatComponent.DisplayMode.BACKGROUND, false);
-+            }
+             this.chat.extractRenderState(graphics, this.getFont(), this.tickCount, mouseX, mouseY, ChatComponent.DisplayMode.BACKGROUND, false);
          }
      }
++    }
  
 -    private void extractScoreboardSidebar(final GuiGraphicsExtractor graphics, final DeltaTracker deltaTracker) {
 +    private void extractScoreboardSidebar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
          Scoreboard scoreboard = this.minecraft.level.getScoreboard();
          Objective teamObjective = null;
          PlayerTeam playerTeam = scoreboard.getPlayersTeam(this.minecraft.player.getScoreboardName());
-@@ -426,61 +440,56 @@
+@@ -426,38 +440,35 @@
          }
      }
  
@@ -213,59 +212,34 @@
 -        if (options.getCameraType().isFirstPerson()) {
 -            if (this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR || this.canRenderCrosshairForSpectator(this.minecraft.hitResult)) {
 -                if (!this.minecraft.debugEntries.isCurrentlyEnabled(DebugScreenEntries.THREE_DIMENSIONAL_CROSSHAIR)) {
--                    graphics.nextStratum();
--                    int size = 15;
--                    graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_SPRITE, (graphics.guiWidth() - 15) / 2, (graphics.guiHeight() - 15) / 2, 15, 15);
--                    if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.CROSSHAIR) {
--                        float attackStrengthScale = this.minecraft.player.getAttackStrengthScale(0.0F);
--                        boolean renderMaxAttackIndicator = false;
--                        if (this.minecraft.crosshairPickEntity != null
--                            && this.minecraft.crosshairPickEntity instanceof LivingEntity
--                            && attackStrengthScale >= 1.0F) {
--                            renderMaxAttackIndicator = this.minecraft.player.getCurrentItemAttackStrengthDelay() > 5.0F;
--                            renderMaxAttackIndicator &= this.minecraft.crosshairPickEntity.isAlive();
--                            AttackRange attackRange = this.minecraft.player.getActiveItem().get(DataComponents.ATTACK_RANGE);
--                            renderMaxAttackIndicator &= attackRange == null
--                                || attackRange.isInRange(this.minecraft.player, this.minecraft.hitResult.getLocation());
--                        }
 +        if (options.getCameraType().isFirstPerson()
 +            && (this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR || this.canRenderCrosshairForSpectator(this.minecraft.hitResult))
 +            && !this.minecraft.debugEntries.isCurrentlyEnabled(DebugScreenEntries.THREE_DIMENSIONAL_CROSSHAIR)) {
-+            graphics.nextStratum();
-+            int size = 15;
-+            graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_SPRITE, (graphics.guiWidth() - 15) / 2, (graphics.guiHeight() - 15) / 2, 15, 15);
-+            if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.CROSSHAIR) {
-+                float attackStrengthScale = this.minecraft.player.getAttackStrengthScale(0.0F);
-+                boolean renderMaxAttackIndicator = false;
+                     graphics.nextStratum();
+                     int size = 15;
+                     graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_SPRITE, (graphics.guiWidth() - 15) / 2, (graphics.guiHeight() - 15) / 2, 15, 15);
+                     if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.CROSSHAIR) {
+                         float attackStrengthScale = this.minecraft.player.getAttackStrengthScale(0.0F);
+                         boolean renderMaxAttackIndicator = false;
+-                        if (this.minecraft.crosshairPickEntity != null
+-                            && this.minecraft.crosshairPickEntity instanceof LivingEntity
+-                            && attackStrengthScale >= 1.0F) {
 +                if (this.minecraft.crosshairPickEntity != null && this.minecraft.crosshairPickEntity instanceof LivingEntity && attackStrengthScale >= 1.0F) {
-+                    renderMaxAttackIndicator = this.minecraft.player.getCurrentItemAttackStrengthDelay() > 5.0F;
-+                    renderMaxAttackIndicator &= this.minecraft.crosshairPickEntity.isAlive();
-+                    AttackRange attackRange = this.minecraft.player.getActiveItem().get(DataComponents.ATTACK_RANGE);
+                             renderMaxAttackIndicator = this.minecraft.player.getCurrentItemAttackStrengthDelay() > 5.0F;
+                             renderMaxAttackIndicator &= this.minecraft.crosshairPickEntity.isAlive();
+                             AttackRange attackRange = this.minecraft.player.getActiveItem().get(DataComponents.ATTACK_RANGE);
+-                            renderMaxAttackIndicator &= attackRange == null
+-                                || attackRange.isInRange(this.minecraft.player, this.minecraft.hitResult.getLocation());
 +                    renderMaxAttackIndicator &= attackRange == null || attackRange.isInRange(this.minecraft.player, this.minecraft.hitResult.getLocation());
-+                }
+                         }
  
--                        int y = graphics.guiHeight() / 2 - 7 + 16;
--                        int x = graphics.guiWidth() / 2 - 8;
--                        if (renderMaxAttackIndicator) {
--                            graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_ATTACK_INDICATOR_FULL_SPRITE, x, y, 16, 16);
--                        } else if (attackStrengthScale < 1.0F) {
--                            int progress = (int)(attackStrengthScale * 17.0F);
--                            graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_ATTACK_INDICATOR_BACKGROUND_SPRITE, x, y, 16, 4);
--                            graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_ATTACK_INDICATOR_PROGRESS_SPRITE, 16, 4, 0, 0, x, y, progress, 4);
--                        }
--                    }
-+                int y = graphics.guiHeight() / 2 - 7 + 16;
-+                int x = graphics.guiWidth() / 2 - 8;
-+                if (renderMaxAttackIndicator) {
-+                    graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_ATTACK_INDICATOR_FULL_SPRITE, x, y, 16, 16);
-+                } else if (attackStrengthScale < 1.0F) {
-+                    int progress = (int)(attackStrengthScale * 17.0F);
-+                    graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_ATTACK_INDICATOR_BACKGROUND_SPRITE, x, y, 16, 4);
-+                    graphics.blitSprite(RenderPipelines.CROSSHAIR, CROSSHAIR_ATTACK_INDICATOR_PROGRESS_SPRITE, 16, 4, 0, 0, x, y, progress, 4);
+                         int y = graphics.guiHeight() / 2 - 7 + 16;
+@@ -472,15 +483,13 @@
+                     }
                  }
              }
-         }
-     }
+-        }
+-    }
  
 -    private boolean canRenderCrosshairForSpectator(final @Nullable HitResult hitResult) {
 +    private boolean canRenderCrosshairForSpectator(HitResult hitResult) {
@@ -302,14 +276,13 @@
                          }
                      }
  
--                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, getMobEffectSprite(effect), x + 3, y + 3, 18, 18, ARGB.white(alpha));
 +                    if (cmee == null || !cmee.extractGuiIcon(instance, this, graphics, x, y, 0.0F, alpha)) {
-+                        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, getMobEffectSprite(effect), x + 3, y + 3, 18, 18, ARGB.white(alpha));
-+                    }
+                     graphics.blitSprite(RenderPipelines.GUI_TEXTURED, getMobEffectSprite(effect), x + 3, y + 3, 18, 18, ARGB.white(alpha));
                  }
              }
          }
      }
++    }
  
 -    public static Identifier getMobEffectSprite(final Holder<MobEffect> effect) {
 +    public static Identifier getMobEffectSprite(Holder<MobEffect> effect) {
@@ -354,45 +327,29 @@
              }
  
              if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR) {
-@@ -628,32 +644,53 @@
+@@ -628,16 +644,36 @@
          }
      }
  
 -    private void extractSelectedItemName(final GuiGraphicsExtractor graphics) {
--        if (this.toolHighlightTimer > 0 && !this.lastToolHighlight.isEmpty()) {
--            MutableComponent str = Component.empty().append(this.lastToolHighlight.getHoverName()).withStyle(this.lastToolHighlight.getRarity().color());
--            if (this.lastToolHighlight.has(DataComponents.CUSTOM_NAME)) {
--                str.withStyle(ChatFormatting.ITALIC);
--            }
 +    private void extractSelectedItemName(GuiGraphicsExtractor graphics) {
 +        this.extractSelectedItemName(graphics, 0);
 +    }
- 
--            int strWidth = this.getFont().width(str);
--            int x = (graphics.guiWidth() - strWidth) / 2;
--            int y = graphics.guiHeight() - 59;
--            if (!this.minecraft.gameMode.canHurtPlayer()) {
--                y += 14;
--            }
++
 +    public void extractSelectedItemName(GuiGraphicsExtractor graphics, int yShift) {
 +        if (this.minecraft.options.ofHeldItemTooltips) {
-+            if (this.toolHighlightTimer > 0 && !this.lastToolHighlight.isEmpty()) {
-+                MutableComponent str = Component.empty().append(this.lastToolHighlight.getHoverName()).withStyle(this.lastToolHighlight.getRarity().color());
-+                if (this.lastToolHighlight.has(DataComponents.CUSTOM_NAME)) {
-+                    str.withStyle(ChatFormatting.ITALIC);
-+                }
+         if (this.toolHighlightTimer > 0 && !this.lastToolHighlight.isEmpty()) {
+             MutableComponent str = Component.empty().append(this.lastToolHighlight.getHoverName()).withStyle(this.lastToolHighlight.getRarity().color());
+             if (this.lastToolHighlight.has(DataComponents.CUSTOM_NAME)) {
+                 str.withStyle(ChatFormatting.ITALIC);
+             }
  
--            int alpha = (int)(this.toolHighlightTimer * 256.0F / 10.0F);
--            if (alpha > 255) {
--                alpha = 255;
--            }
+-            int strWidth = this.getFont().width(str);
 +                Component highlightTip = str;
 +                if (Reflector.IForgeItemStack_getHighlightTip.exists()) {
 +                    highlightTip = (Component)Reflector.call(this.lastToolHighlight, Reflector.IForgeItemStack_getHighlightTip, highlightTip);
 +                }
- 
--            if (alpha > 0) {
--                graphics.textWithBackdrop(this.getFont(), str, x, y, strWidth, ARGB.white(alpha));
++
 +                Font font = null;
 +                IClientItemExtensions cmee = IClientItemExtensions.of(this.lastToolHighlight);
 +                if (cmee != null) {
@@ -404,23 +361,22 @@
 +                }
 +
 +                int strWidth = font.width(highlightTip);
-+                int x = (graphics.guiWidth() - strWidth) / 2;
+             int x = (graphics.guiWidth() - strWidth) / 2;
+-            int y = graphics.guiHeight() - 59;
 +                int y = graphics.guiHeight() - Math.max(yShift, 59);
-+                if (!this.minecraft.gameMode.canHurtPlayer()) {
-+                    y += 14;
-+                }
-+
-+                int alpha = (int)(this.toolHighlightTimer * 256.0F / 10.0F);
-+                if (alpha > 255) {
-+                    alpha = 255;
-+                }
-+
-+                if (alpha > 0) {
+             if (!this.minecraft.gameMode.canHurtPlayer()) {
+                 y += 14;
+             }
+@@ -648,12 +684,13 @@
+             }
+ 
+             if (alpha > 0) {
+-                graphics.textWithBackdrop(this.getFont(), str, x, y, strWidth, ARGB.white(alpha));
 +                    graphics.textWithBackdrop(font, highlightTip, x, y, strWidth, ARGB.white(alpha));
-+                }
              }
          }
      }
++    }
  
 -    private void extractDemoOverlay(final GuiGraphicsExtractor graphics, final DeltaTracker deltaTracker) {
 +    private void extractDemoOverlay(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -621,7 +577,7 @@
          float srcWidth = Math.min(graphics.guiWidth(), graphics.guiHeight());
          float srcHeight = srcWidth;
          float ratio = Math.min(graphics.guiWidth() / srcWidth, graphics.guiHeight() / srcHeight) * scale;
-@@ -1066,54 +1080,59 @@
+@@ -1066,14 +1080,18 @@
          graphics.fill(RenderPipelines.GUI, right, top, graphics.guiWidth(), bottom, -16777216);
      }
  
@@ -634,84 +590,19 @@
      }
  
 -    private void extractVignette(final GuiGraphicsExtractor graphics, final @Nullable Entity camera) {
--        WorldBorder worldBorder = this.minecraft.level.getWorldBorder();
--        float borderWarningStrength = 0.0F;
--        if (camera != null) {
--            float distToBorder = (float)worldBorder.getDistanceToBorder(camera);
--            double movingBlocksThreshold = Math.min(
--                worldBorder.getLerpSpeed() * worldBorder.getWarningTime(), Math.abs(worldBorder.getLerpTarget() - worldBorder.getSize())
--            );
--            double warningDistance = Math.max(worldBorder.getWarningBlocks(), movingBlocksThreshold);
--            if (distToBorder < warningDistance) {
--                borderWarningStrength = 1.0F - (float)(distToBorder / warningDistance);
 +    private void extractVignette(GuiGraphicsExtractor graphics, Entity camera) {
 +        if (!Config.isVignetteEnabled()) {
 +            GlStateManager._enableDepthTest();
 +            GlStateManager._blendFuncSeparate(770, 771, 1, 0);
 +        } else {
-+            WorldBorder worldBorder = this.minecraft.level.getWorldBorder();
-+            float borderWarningStrength = 0.0F;
-+            if (camera != null) {
-+                float distToBorder = (float)worldBorder.getDistanceToBorder(camera);
-+                double movingBlocksThreshold = Math.min(
-+                    worldBorder.getLerpSpeed() * worldBorder.getWarningTime(), Math.abs(worldBorder.getLerpTarget() - worldBorder.getSize())
-+                );
-+                double warningDistance = Math.max(worldBorder.getWarningBlocks(), movingBlocksThreshold);
-+                if (distToBorder < warningDistance) {
-+                    borderWarningStrength = 1.0F - (float)(distToBorder / warningDistance);
-+                }
-             }
--        }
- 
--        float brightness = Mth.clamp(this.vignetteBrightness, 0.0F, 1.0F);
--        int color;
--        if (borderWarningStrength > 0.0F) {
--            borderWarningStrength = Mth.clamp(borderWarningStrength, 0.0F, 1.0F);
--            float red = brightness * (1.0F - borderWarningStrength);
--            float greenBlue = brightness + (1.0F - brightness) * borderWarningStrength;
--            color = ARGB.colorFromFloat(1.0F, red, greenBlue, greenBlue);
--        } else {
--            color = ARGB.colorFromFloat(1.0F, brightness, brightness, brightness);
--        }
-+            float brightness = Mth.clamp(this.vignetteBrightness, 0.0F, 1.0F);
-+            int color;
-+            if (borderWarningStrength > 0.0F) {
-+                borderWarningStrength = Mth.clamp(borderWarningStrength, 0.0F, 1.0F);
-+                float red = brightness * (1.0F - borderWarningStrength);
-+                float greenBlue = brightness + (1.0F - brightness) * borderWarningStrength;
-+                color = ARGB.colorFromFloat(1.0F, red, greenBlue, greenBlue);
-+            } else {
-+                color = ARGB.colorFromFloat(1.0F, brightness, brightness, brightness);
-+            }
- 
--        graphics.blit(
--            RenderPipelines.VIGNETTE,
--            VIGNETTE_LOCATION,
--            0,
--            0,
--            0.0F,
--            0.0F,
--            graphics.guiWidth(),
--            graphics.guiHeight(),
--            graphics.guiWidth(),
--            graphics.guiHeight(),
--            color
--        );
-+            graphics.blit(
-+                RenderPipelines.VIGNETTE,
-+                VIGNETTE_LOCATION,
-+                0,
-+                0,
-+                0.0F,
-+                0.0F,
-+                graphics.guiWidth(),
-+                graphics.guiHeight(),
-+                graphics.guiWidth(),
-+                graphics.guiHeight(),
-+                color
-+            );
-+        }
+         WorldBorder worldBorder = this.minecraft.level.getWorldBorder();
+         float borderWarningStrength = 0.0F;
+         if (camera != null) {
+@@ -1112,8 +1130,9 @@
+             color
+         );
      }
++    }
  
 -    private void extractPortalOverlay(final GuiGraphicsExtractor graphics, float alpha) {
 +    private void extractPortalOverlay(GuiGraphicsExtractor graphics, float alpha) {

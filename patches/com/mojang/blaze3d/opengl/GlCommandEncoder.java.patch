@@ -116,21 +116,15 @@
          }
  
 -        RenderPassDescriptor.Attachment<OptionalDouble> depthAttachment = descriptor.depthAttachment();
--        int fbo = this.device
--            .frameBufferCache()
--            .getFbo(
--                this.device.directStateAccess(), this.renderPassColorTextures, depthAttachment == null ? null : (GlTextureView)depthAttachment.textureView()
--            );
--        GlStateManager._glBindFramebuffer(36160, fbo);
 +        Attachment<OptionalDouble> depthAttachment = descriptor.depthAttachment();
 +        boolean bindFramebuffer = this.isBindFramebuffer(descriptor);
 +        if (bindFramebuffer) {
-+            int fbo = this.device
-+                .frameBufferCache()
-+                .getFbo(
-+                    this.device.directStateAccess(), this.renderPassColorTextures, depthAttachment == null ? null : (GlTextureView)depthAttachment.textureView()
-+                );
-+            GlStateManager._glBindFramebuffer(36160, fbo);
+         int fbo = this.device
+             .frameBufferCache()
+             .getFbo(
+                 this.device.directStateAccess(), this.renderPassColorTextures, depthAttachment == null ? null : (GlTextureView)depthAttachment.textureView()
+             );
+         GlStateManager._glBindFramebuffer(36160, fbo);
 +        }
 +
          assert descriptor.renderArea != null;
@@ -156,9 +150,8 @@
              height = depthAttachment.textureView().getHeight(0);
          }
  
--        GlStateManager._viewport(0, 0, width, height);
 +        if (!Shaders.isRenderingWorld && !Shaders.isShadowPass) {
-+            GlStateManager._viewport(0, 0, width, height);
+         GlStateManager._viewport(0, 0, width, height);
 +        }
 +
          this.lastPipeline = null;
@@ -172,19 +165,17 @@
  
      @Override
 -    public void clearColorTexture(final GpuTexture colorTexture, final Vector4fc clearColor) {
--        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)colorTexture).id, 0, 0, 36160);
 +    public void clearColorTexture(GpuTexture colorTexture, Vector4fc clearColor) {
 +        if (this.isBindFramebuffer(colorTexture, null)) {
-+            this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)colorTexture).id, 0, 0, 36160);
+         this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)colorTexture).id, 0, 0, 36160);
 +        }
 +
          GL33C.glClearColor(clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w());
          GlStateManager._disableScissorTest();
          GlStateManager._colorMask(15);
          GlStateManager._clear(16384);
--        GlStateManager._glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
 +        if (this.isBindFramebuffer(colorTexture, null)) {
-+            GlStateManager._glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
+         GlStateManager._glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
 +            if (colorTexture.isStencilEnabled()) {
 +                GlStateManager._glFramebufferTexture2D(36160, 36128, 3553, 0, 0);
 +            }
@@ -195,16 +186,12 @@
  
      @Override
 -    public void clearColorAndDepthTextures(final GpuTexture colorTexture, final Vector4fc clearColor, final GpuTexture depthTexture, final double clearDepth) {
--        int fbo = this.device
--            .frameBufferCache()
--            .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
--        GlStateManager._glBindFramebuffer(36160, fbo);
 +    public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth) {
 +        if (this.isBindFramebuffer(colorTexture, depthTexture)) {
-+            int fbo = this.device
-+                .frameBufferCache()
-+                .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
-+            GlStateManager._glBindFramebuffer(36160, fbo);
+         int fbo = this.device
+             .frameBufferCache()
+             .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
+         GlStateManager._glBindFramebuffer(36160, fbo);
 +        }
 +
          GlStateManager._disableScissorTest();
@@ -224,15 +211,11 @@
 -        final int regionHeight
 +        GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth, int regionX, int regionY, int regionWidth, int regionHeight
      ) {
--        int fbo = this.device
--            .frameBufferCache()
--            .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
--        GlStateManager._glBindFramebuffer(36160, fbo);
 +        if (this.isBindFramebuffer(colorTexture, depthTexture)) {
-+            int fbo = this.device
-+                .frameBufferCache()
-+                .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
-+            GlStateManager._glBindFramebuffer(36160, fbo);
+         int fbo = this.device
+             .frameBufferCache()
+             .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
+         GlStateManager._glBindFramebuffer(36160, fbo);
 +        }
 +
          GlStateManager._scissorBox(regionX, regionY, regionWidth, regionHeight);
@@ -243,23 +226,19 @@
  
      @Override
 -    public void clearDepthTexture(final GpuTexture depthTexture, final double clearDepth) {
--        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, 0, ((GlTexture)depthTexture).id, 0, 36160);
--        GL33C.glDrawBuffer(0);
 +    public void clearDepthTexture(GpuTexture depthTexture, double clearDepth) {
 +        if (this.isBindFramebuffer(null, depthTexture)) {
-+            this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, 0, ((GlTexture)depthTexture).id, 0, 36160);
-+            GL33C.glDrawBuffer(0);
+         this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, 0, ((GlTexture)depthTexture).id, 0, 36160);
+         GL33C.glDrawBuffer(0);
 +        }
 +
          GL33C.glClearDepth(clearDepth);
          GlStateManager._depthMask(true);
          GlStateManager._disableScissorTest();
          GlStateManager._clear(256);
--        GL33C.glDrawBuffer(36064);
--        GlStateManager._glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
 +        if (this.isBindFramebuffer(null, depthTexture)) {
-+            GL33C.glDrawBuffer(36064);
-+            GlStateManager._glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
+         GL33C.glDrawBuffer(36064);
+         GlStateManager._glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
 +        }
 +
          GlStateManager._glBindFramebuffer(36160, 0);
@@ -397,35 +376,24 @@
          int error = GlStateManager._getError();
          if (error != 0) {
              throw new IllegalStateException(
-@@ -411,16 +439,18 @@
+@@ -411,7 +439,8 @@
          }
      }
  
 -    public void presentTexture(final GpuTextureView textureView, final int swapchainWidth, final int swapchainHeight) {
--        int destY = Math.max(0, swapchainHeight - textureView.getHeight(0));
--        int copyWidth = Math.min(swapchainWidth, textureView.getWidth(0));
--        int copyHeight = Math.min(swapchainHeight, textureView.getHeight(0));
--        GlStateManager._disableScissorTest();
--        GlStateManager._viewport(0, 0, textureView.getWidth(0), textureView.getHeight(0));
--        GlStateManager._depthMask(true);
--        GlStateManager._colorMask(15);
--        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)textureView.texture()).glId(), 0, 0, 0);
--        this.device.directStateAccess().blitFrameBuffers(this.drawFbo, 0, 0, 0, copyWidth, copyHeight, 0, destY, copyWidth, copyHeight + destY, 16384, 9728);
 +    public void presentTexture(GpuTextureView textureView, int swapchainWidth, int swapchainHeight) {
 +        if (this.isBindFramebuffer(textureView, null)) {
-+            int destY = Math.max(0, swapchainHeight - textureView.getHeight(0));
-+            int copyWidth = Math.min(swapchainWidth, textureView.getWidth(0));
-+            int copyHeight = Math.min(swapchainHeight, textureView.getHeight(0));
-+            GlStateManager._disableScissorTest();
-+            GlStateManager._viewport(0, 0, textureView.getWidth(0), textureView.getHeight(0));
-+            GlStateManager._depthMask(true);
-+            GlStateManager._colorMask(15);
-+            this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)textureView.texture()).glId(), 0, 0, 0);
-+            this.device.directStateAccess().blitFrameBuffers(this.drawFbo, 0, 0, 0, copyWidth, copyHeight, 0, destY, copyWidth, copyHeight + destY, 16384, 9728);
-+        }
+         int destY = Math.max(0, swapchainHeight - textureView.getHeight(0));
+         int copyWidth = Math.min(swapchainWidth, textureView.getWidth(0));
+         int copyHeight = Math.min(swapchainHeight, textureView.getHeight(0));
+@@ -422,6 +451,7 @@
+         this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)textureView.texture()).glId(), 0, 0, 0);
+         this.device.directStateAccess().blitFrameBuffers(this.drawFbo, 0, 0, 0, copyWidth, copyHeight, 0, destY, copyWidth, copyHeight + destY, 16384, 9728);
      }
++    }
  
      @Override
+     public GpuFence createFence() {
 @@ -429,12 +459,12 @@
      }
  
@@ -445,61 +413,19 @@
      ) {
          if (this.trySetup(renderPass, dynamicUniforms)) {
              if (defaultIndexType == null) {
-@@ -443,40 +473,50 @@
+@@ -443,6 +473,7 @@
  
              for (RenderPass.Draw<T> draw : draws) {
                  IndexType indexType = draw.indexType() == null ? defaultIndexType : draw.indexType();
--                renderPass.setIndexBuffer(draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), indexType);
--                renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
--                if (GlRenderPass.VALIDATION) {
--                    if (renderPass.indexBuffer == null) {
--                        throw new IllegalStateException("Missing index buffer");
--                    }
 +                if (draw.regionRenderData() == null) {
-+                    renderPass.setIndexBuffer(draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), indexType);
-+                    renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
-+                    if (GlRenderPass.VALIDATION) {
-+                        if (renderPass.indexBuffer == null) {
-+                            throw new IllegalStateException("Missing index buffer");
-+                        }
- 
--                    ((GlBuffer)renderPass.indexBuffer).checkCanBeUsed();
--                    if (renderPass.indexBuffer.isClosed()) {
--                        throw new IllegalStateException("Index buffer has been closed!");
--                    }
-+                        ((GlBuffer)renderPass.indexBuffer).checkCanBeUsed();
-+                        if (renderPass.indexBuffer.isClosed()) {
-+                            throw new IllegalStateException("Index buffer has been closed!");
-+                        }
- 
--                    if (draw.slot() < 0 || draw.slot() >= 16) {
--                        throw new IllegalStateException("Vertex buffer slot must be between 0 and 16");
--                    }
-+                        if (draw.slot() < 0 || draw.slot() >= 16) {
-+                            throw new IllegalStateException("Vertex buffer slot must be between 0 and 16");
-+                        }
- 
--                    if (renderPass.vertexBuffers[draw.slot()] != null) {
--                        ((GlBuffer)renderPass.vertexBuffers[draw.slot()].buffer()).checkCanBeUsed();
--                    }
-+                        if (renderPass.vertexBuffers[draw.slot()] != null) {
-+                            ((GlBuffer)renderPass.vertexBuffers[draw.slot()].buffer()).checkCanBeUsed();
-+                        }
- 
--                    if (renderPass.vertexBuffers[draw.slot()] == null) {
--                        throw new IllegalStateException("Missing vertex buffer at slot " + draw.slot());
--                    }
-+                        if (renderPass.vertexBuffers[draw.slot()] == null) {
-+                            throw new IllegalStateException("Missing vertex buffer at slot " + draw.slot());
-+                        }
- 
--                    if (renderPass.vertexBuffers[draw.slot()].buffer().isClosed()) {
--                        throw new IllegalStateException("Vertex buffer at slot " + draw.slot() + " has been closed!");
-+                        if (renderPass.vertexBuffers[draw.slot()].buffer().isClosed()) {
-+                            throw new IllegalStateException("Vertex buffer at slot " + draw.slot() + " has been closed!");
-+                        }
+                 renderPass.setIndexBuffer(draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), indexType);
+                 renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
+                 if (GlRenderPass.VALIDATION) {
+@@ -471,12 +502,21 @@
+                         throw new IllegalStateException("Vertex buffer at slot " + draw.slot() + " has been closed!");
                      }
                  }
++                }
  
                  BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer = draw.uniformUploaderConsumer();
                  if (uniformUploaderConsumer != null) {
@@ -522,17 +448,16 @@
                      renderPass.vertexBufferDirty = false;
                  }
  
--                this.drawFromBuffers(renderPass, draw.baseVertex(), draw.firstIndex(), draw.indexCount(), indexType, renderPass.pipeline, 1, 0);
 +                if (draw.regionRenderData() != null) {
 +                    this.drawRegion(renderPass, draw.regionRenderData());
 +                } else if (draw.multiTextureData() != null) {
 +                    this.drawMultiTexture(renderPass, draw.baseVertex(), draw.firstIndex(), indexType, draw.multiTextureData());
 +                } else {
-+                    this.drawFromBuffers(renderPass, draw.baseVertex(), draw.firstIndex(), draw.indexCount(), indexType, renderPass.pipeline, 1, 0);
-+                }
+                 this.drawFromBuffers(renderPass, draw.baseVertex(), draw.firstIndex(), draw.indexCount(), indexType, renderPass.pipeline, 1, 0);
              }
          }
      }
++    }
  
 -    private void validateDraw(final GlRenderPass renderPass, final @Nullable IndexType indexType) {
 +    private void validateDraw(GlRenderPass renderPass, IndexType indexType) {
@@ -710,7 +635,6 @@
                          GL33C.glBindTexture(34067, texture.id);
                      } else {
                          target = 3553;
--                        GlStateManager._bindTexture(texture.id);
 +                        if (textureUnit == 1 && Shaders.activeProgramID > 0 && Shaders.isOverlayDisabled()) {
 +                            break;
 +                        }
@@ -719,9 +643,9 @@
 +                        if (Config.isShaders()) {
 +                            ShadersTex.bindTexture(texture);
 +                        } else {
-+                            GlStateManager._bindTexture(texture.id);
-+                        }
+                         GlStateManager._bindTexture(texture.id);
                      }
++                    }
  
 -                    GL33C.glBindSampler(samplerIndex, viewAndSampler.sampler().getId());
 +                    if (!texture2d || !Config.isShaders() && !Config.isMultiTexture()) {
@@ -738,9 +662,8 @@
              drawBuffers[i] = 36064 + i;
          }
  
--        GL33C.glDrawBuffers(drawBuffers);
 +        if (renderPass.bindFramebuffer && GlState.getFramebuffer() == null) {
-+            GL33C.glDrawBuffers(drawBuffers);
+         GL33C.glDrawBuffers(drawBuffers);
 +        }
 +
          if (renderPass.isScissorEnabled()) {

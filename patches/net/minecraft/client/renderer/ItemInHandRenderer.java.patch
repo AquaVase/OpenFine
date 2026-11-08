@@ -216,22 +216,10 @@
          float attackValue = player.getAttackAnim(frameInterp);
          InteractionHand attackHand = MoreObjects.firstNonNull(player.swingingArm, InteractionHand.MAIN_HAND);
          float xRot = player.getXRot(frameInterp);
-@@ -362,41 +374,69 @@
+@@ -362,6 +374,19 @@
              float mainHandAttack = attackHand == InteractionHand.MAIN_HAND ? attackValue : 0.0F;
              float mainhandInverseArmHeight = this.itemModelResolver.swapAnimationScale(this.mainHandItem)
                  * (1.0F - Mth.lerp(frameInterp, this.oMainHandHeight, this.mainHandHeight));
--            this.submitArmWithItem(
--                player,
--                frameInterp,
--                xRot,
--                InteractionHand.MAIN_HAND,
--                mainHandAttack,
--                this.mainHandItem,
--                mainhandInverseArmHeight,
--                poseStack,
--                submitNodeCollector,
--                lightCoords
--            );
 +            if (!Reflector.ForgeHooksClient_renderSpecificFirstPersonHand.exists()
 +                || !Reflector.callBoolean(
 +                    Reflector.ForgeHooksClient_renderSpecificFirstPersonHand,
@@ -245,37 +233,19 @@
 +                    mainhandInverseArmHeight,
 +                    this.mainHandItem
 +                )) {
-+                this.submitArmWithItem(
-+                    player,
-+                    frameInterp,
-+                    xRot,
-+                    InteractionHand.MAIN_HAND,
-+                    mainHandAttack,
-+                    this.mainHandItem,
-+                    mainhandInverseArmHeight,
-+                    poseStack,
-+                    submitNodeCollector,
-+                    lightCoords
-+                );
-+            }
+             this.submitArmWithItem(
+                 player,
+                 frameInterp,
+@@ -375,11 +400,25 @@
+                 lightCoords
+             );
          }
++        }
  
          if (handRenderSelection.renderOffHand) {
              float offHandAttack = attackHand == InteractionHand.OFF_HAND ? attackValue : 0.0F;
              float offhandInverseArmHeight = this.itemModelResolver.swapAnimationScale(this.offHandItem)
                  * (1.0F - Mth.lerp(frameInterp, this.oOffHandHeight, this.offHandHeight));
--            this.submitArmWithItem(
--                player,
--                frameInterp,
--                xRot,
--                InteractionHand.OFF_HAND,
--                offHandAttack,
--                this.offHandItem,
--                offhandInverseArmHeight,
--                poseStack,
--                submitNodeCollector,
--                lightCoords
--            );
 +            if (!Reflector.ForgeHooksClient_renderSpecificFirstPersonHand.exists()
 +                || !Reflector.callBoolean(
 +                    Reflector.ForgeHooksClient_renderSpecificFirstPersonHand,
@@ -289,21 +259,14 @@
 +                    offhandInverseArmHeight,
 +                    this.offHandItem
 +                )) {
-+                this.submitArmWithItem(
-+                    player,
-+                    frameInterp,
-+                    xRot,
-+                    InteractionHand.OFF_HAND,
-+                    offHandAttack,
-+                    this.offHandItem,
-+                    offhandInverseArmHeight,
-+                    poseStack,
-+                    submitNodeCollector,
-+                    lightCoords
-+                );
-+            }
+             this.submitArmWithItem(
+                 player,
+                 frameInterp,
+@@ -394,9 +433,10 @@
+             );
          }
      }
++    }
  
      @VisibleForTesting
 -    static ItemInHandRenderer.HandRenderSelection evaluateWhichHandsToRender(final LocalPlayer player) {
@@ -320,7 +283,7 @@
          ItemStack usedItemStack = player.getUseItem();
          InteractionHand usedHand = player.getUsedItemHand();
          if (!usedItemStack.is(Items.BOW) && !usedItemStack.is(Items.CROSSBOW)) {
-@@ -424,197 +464,202 @@
+@@ -424,22 +464,23 @@
          }
      }
  
@@ -351,339 +314,41 @@
 +        SubmitNodeCollector submitNodeCollector,
 +        int lightCoords
      ) {
--        if (!player.isScoping()) {
--            boolean isMainHand = hand == InteractionHand.MAIN_HAND;
--            HumanoidArm arm = isMainHand ? player.getMainArm() : player.getMainArm().getOpposite();
--            poseStack.pushPose();
--            if (itemStack.isEmpty()) {
--                if (isMainHand && !player.isInvisible()) {
--                    this.renderPlayerArm(poseStack, submitNodeCollector, lightCoords, inverseArmHeight, attack, arm);
--                }
--            } else if (itemStack.has(DataComponents.MAP_ID)) {
--                if (isMainHand && this.offHandItem.isEmpty()) {
--                    this.renderTwoHandedMap(poseStack, submitNodeCollector, lightCoords, xRot, inverseArmHeight, attack);
--                } else {
--                    this.renderOneHandedMap(poseStack, submitNodeCollector, lightCoords, inverseArmHeight, arm, attack, itemStack);
--                }
--            } else if (itemStack.is(Items.CROSSBOW)) {
--                this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
--                boolean charged = CrossbowItem.isCharged(itemStack);
--                boolean isRightArm = arm == HumanoidArm.RIGHT;
--                int invert = isRightArm ? 1 : -1;
--                if (player.isUsingItem() && player.getUseItemRemainingTicks() > 0 && player.getUsedItemHand() == hand && !charged) {
--                    poseStack.translate(invert * -0.4785682F, -0.094387F, 0.05731531F);
--                    poseStack.mulPose(Axis.XP.rotationDegrees(-11.935F));
--                    poseStack.mulPose(Axis.YP.rotationDegrees(invert * 65.3F));
--                    poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -9.785F));
--                    float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
--                    float power = timeHeld / CrossbowItem.getChargeDuration(itemStack, player);
--                    if (power > 1.0F) {
--                        power = 1.0F;
 +        if (!Config.isShaders() || !Shaders.isSkipRenderHand(hand)) {
-+            if (!player.isScoping()) {
-+                boolean isMainHand = hand == InteractionHand.MAIN_HAND;
-+                HumanoidArm arm = isMainHand ? player.getMainArm() : player.getMainArm().getOpposite();
-+                poseStack.pushPose();
-+                if (itemStack.isEmpty()) {
-+                    if (isMainHand && !player.isInvisible()) {
-+                        this.renderPlayerArm(poseStack, submitNodeCollector, lightCoords, inverseArmHeight, attack, arm);
-                     }
--
--                    if (power > 0.1F) {
--                        float shakeOffset = Mth.sin((timeHeld - 0.1F) * 1.3F);
--                        float shakeIntensity = power - 0.1F;
--                        float shake = shakeOffset * shakeIntensity;
--                        poseStack.translate(shake * 0.0F, shake * 0.004F, shake * 0.0F);
-+                } else if (itemStack.has(DataComponents.MAP_ID)) {
-+                    if (isMainHand && this.offHandItem.isEmpty()) {
-+                        this.renderTwoHandedMap(poseStack, submitNodeCollector, lightCoords, xRot, inverseArmHeight, attack);
-+                    } else {
-+                        this.renderOneHandedMap(poseStack, submitNodeCollector, lightCoords, inverseArmHeight, arm, attack, itemStack);
-                     }
+         if (!player.isScoping()) {
+             boolean isMainHand = hand == InteractionHand.MAIN_HAND;
+             HumanoidArm arm = isMainHand ? player.getMainArm() : player.getMainArm().getOpposite();
+@@ -454,7 +495,7 @@
+                 } else {
+                     this.renderOneHandedMap(poseStack, submitNodeCollector, lightCoords, inverseArmHeight, arm, attack, itemStack);
+                 }
+-            } else if (itemStack.is(Items.CROSSBOW)) {
 +                } else if (itemStack.getItem() instanceof CrossbowItem) {
-+                    this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
-+                    boolean charged = CrossbowItem.isCharged(itemStack);
-+                    boolean isRightArm = arm == HumanoidArm.RIGHT;
-+                    int invert = isRightArm ? 1 : -1;
-+                    if (player.isUsingItem() && player.getUseItemRemainingTicks() > 0 && player.getUsedItemHand() == hand && !charged) {
-+                        poseStack.translate(invert * -0.4785682F, -0.094387F, 0.05731531F);
-+                        poseStack.mulPose(Axis.XP.rotationDegrees(-11.935F));
-+                        poseStack.mulPose(Axis.YP.rotationDegrees(invert * 65.3F));
-+                        poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -9.785F));
-+                        float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
-+                        float power = timeHeld / CrossbowItem.getChargeDuration(itemStack, player);
-+                        if (power > 1.0F) {
-+                            power = 1.0F;
-+                        }
- 
--                    poseStack.translate(power * 0.0F, power * 0.0F, power * 0.04F);
--                    poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
--                    poseStack.mulPose(Axis.YN.rotationDegrees(invert * 45.0F));
--                } else {
--                    this.swingArm(attack, poseStack, invert, arm);
--                    if (charged && attack < 0.001F && isMainHand) {
--                        poseStack.translate(invert * -0.641864F, 0.0F, 0.0F);
--                        poseStack.mulPose(Axis.YP.rotationDegrees(invert * 10.0F));
--                    }
--                }
-+                        if (power > 0.1F) {
-+                            float shakeOffset = Mth.sin((timeHeld - 0.1F) * 1.3F);
-+                            float shakeIntensity = power - 0.1F;
-+                            float shake = shakeOffset * shakeIntensity;
-+                            poseStack.translate(shake * 0.0F, shake * 0.004F, shake * 0.0F);
-+                        }
- 
--                this.renderItem(
--                    player,
--                    itemStack,
--                    isRightArm ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
--                    poseStack,
--                    submitNodeCollector,
--                    lightCoords
--                );
--            } else {
--                boolean isRightArm = arm == HumanoidArm.RIGHT;
--                int invert = isRightArm ? 1 : -1;
--                if (player.isUsingItem() && player.getUseItemRemainingTicks() > 0 && player.getUsedItemHand() == hand) {
--                    ItemUseAnimation useAnimation = itemStack.getUseAnimation();
--                    if (!useAnimation.hasCustomArmTransform()) {
--                        this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
-+                        poseStack.translate(power * 0.0F, power * 0.0F, power * 0.04F);
-+                        poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
-+                        poseStack.mulPose(Axis.YN.rotationDegrees(invert * 45.0F));
-+                    } else {
-+                        this.swingArm(attack, poseStack, invert, arm);
-+                        if (charged && attack < 0.001F && isMainHand) {
-+                            poseStack.translate(invert * -0.641864F, 0.0F, 0.0F);
-+                            poseStack.mulPose(Axis.YP.rotationDegrees(invert * 10.0F));
-+                        }
-                     }
- 
--                    switch (useAnimation) {
--                        case NONE:
--                        default:
--                            break;
--                        case EAT:
--                        case DRINK:
--                            this.applyEatTransform(poseStack, frameInterp, arm, itemStack, player);
--                            this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
--                            break;
--                        case BLOCK:
--                            if (!(itemStack.getItem() instanceof ShieldItem)) {
--                                poseStack.translate(invert * -0.14142136F, 0.08F, 0.14142136F);
--                                poseStack.mulPose(Axis.XP.rotationDegrees(-102.25F));
--                                poseStack.mulPose(Axis.YP.rotationDegrees(invert * 13.365F));
--                                poseStack.mulPose(Axis.ZP.rotationDegrees(invert * 78.05F));
-+                    this.renderItem(
-+                        player,
-+                        itemStack,
-+                        isRightArm ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
-+                        poseStack,
-+                        submitNodeCollector,
-+                        lightCoords
-+                    );
-+                } else {
-+                    boolean isRightArm = arm == HumanoidArm.RIGHT;
-+                    int invert = isRightArm ? 1 : -1;
+                 this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
+                 boolean charged = CrossbowItem.isCharged(itemStack);
+                 boolean isRightArm = arm == HumanoidArm.RIGHT;
+@@ -499,6 +540,8 @@
+             } else {
+                 boolean isRightArm = arm == HumanoidArm.RIGHT;
+                 int invert = isRightArm ? 1 : -1;
 +                    if (!IClientItemExtensions.of(itemStack)
 +                        .applyForgeHandTransform(poseStack, this.minecraft.player, arm, itemStack, frameInterp, inverseArmHeight, attack)) {
-+                        if (player.isUsingItem() && player.getUseItemRemainingTicks() > 0 && player.getUsedItemHand() == hand) {
-+                            ItemUseAnimation useAnimation = itemStack.getUseAnimation();
-+                            if (!useAnimation.hasCustomArmTransform()) {
-+                                this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
-                             }
--                            break;
--                        case BOW: {
--                            poseStack.translate(invert * -0.2785682F, 0.18344387F, 0.15731531F);
--                            poseStack.mulPose(Axis.XP.rotationDegrees(-13.935F));
--                            poseStack.mulPose(Axis.YP.rotationDegrees(invert * 35.3F));
--                            poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -9.785F));
--                            float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
--                            float power = timeHeld / 20.0F;
--                            power = (power * power + power * 2.0F) / 3.0F;
--                            if (power > 1.0F) {
--                                power = 1.0F;
--                            }
- 
--                            if (power > 0.1F) {
--                                float shakeOffset = Mth.sin((timeHeld - 0.1F) * 1.3F);
--                                float shakeIntensity = power - 0.1F;
--                                float shake = shakeOffset * shakeIntensity;
--                                poseStack.translate(shake * 0.0F, shake * 0.004F, shake * 0.0F);
--                            }
-+                            switch (useAnimation) {
-+                                case NONE:
-+                                default:
-+                                    break;
-+                                case EAT:
-+                                case DRINK:
-+                                    this.applyEatTransform(poseStack, frameInterp, arm, itemStack, player);
-+                                    this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
-+                                    break;
-+                                case BLOCK:
-+                                    if (!(itemStack.getItem() instanceof ShieldItem)) {
-+                                        poseStack.translate(invert * -0.14142136F, 0.08F, 0.14142136F);
-+                                        poseStack.mulPose(Axis.XP.rotationDegrees(-102.25F));
-+                                        poseStack.mulPose(Axis.YP.rotationDegrees(invert * 13.365F));
-+                                        poseStack.mulPose(Axis.ZP.rotationDegrees(invert * 78.05F));
-+                                    }
-+                                    break;
-+                                case BOW: {
-+                                    poseStack.translate(invert * -0.2785682F, 0.18344387F, 0.15731531F);
-+                                    poseStack.mulPose(Axis.XP.rotationDegrees(-13.935F));
-+                                    poseStack.mulPose(Axis.YP.rotationDegrees(invert * 35.3F));
-+                                    poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -9.785F));
-+                                    float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
-+                                    float power = timeHeld / 20.0F;
-+                                    power = (power * power + power * 2.0F) / 3.0F;
-+                                    if (power > 1.0F) {
-+                                        power = 1.0F;
-+                                    }
- 
--                            poseStack.translate(power * 0.0F, power * 0.0F, power * 0.04F);
--                            poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
--                            poseStack.mulPose(Axis.YN.rotationDegrees(invert * 45.0F));
--                            break;
--                        }
--                        case TRIDENT: {
--                            poseStack.translate(invert * -0.5F, 0.7F, 0.1F);
--                            poseStack.mulPose(Axis.XP.rotationDegrees(-55.0F));
--                            poseStack.mulPose(Axis.YP.rotationDegrees(invert * 35.3F));
--                            poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -9.785F));
--                            float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
--                            float power = timeHeld / 10.0F;
--                            if (power > 1.0F) {
--                                power = 1.0F;
--                            }
-+                                    if (power > 0.1F) {
-+                                        float shakeOffset = Mth.sin((timeHeld - 0.1F) * 1.3F);
-+                                        float shakeIntensity = power - 0.1F;
-+                                        float shake = shakeOffset * shakeIntensity;
-+                                        poseStack.translate(shake * 0.0F, shake * 0.004F, shake * 0.0F);
-+                                    }
- 
--                            if (power > 0.1F) {
--                                float shakeOffset = Mth.sin((timeHeld - 0.1F) * 1.3F);
--                                float shakeIntensity = power - 0.1F;
--                                float shake = shakeOffset * shakeIntensity;
--                                poseStack.translate(shake * 0.0F, shake * 0.004F, shake * 0.0F);
--                            }
-+                                    poseStack.translate(power * 0.0F, power * 0.0F, power * 0.04F);
-+                                    poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
-+                                    poseStack.mulPose(Axis.YN.rotationDegrees(invert * 45.0F));
-+                                    break;
-+                                }
-+                                case TRIDENT: {
-+                                    poseStack.translate(invert * -0.5F, 0.7F, 0.1F);
-+                                    poseStack.mulPose(Axis.XP.rotationDegrees(-55.0F));
-+                                    poseStack.mulPose(Axis.YP.rotationDegrees(invert * 35.3F));
-+                                    poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -9.785F));
-+                                    float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
-+                                    float power = timeHeld / 10.0F;
-+                                    if (power > 1.0F) {
-+                                        power = 1.0F;
-+                                    }
- 
--                            poseStack.translate(0.0F, 0.0F, power * 0.2F);
--                            poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
--                            poseStack.mulPose(Axis.YN.rotationDegrees(invert * 45.0F));
--                            break;
-+                                    if (power > 0.1F) {
-+                                        float shakeOffset = Mth.sin((timeHeld - 0.1F) * 1.3F);
-+                                        float shakeIntensity = power - 0.1F;
-+                                        float shake = shakeOffset * shakeIntensity;
-+                                        poseStack.translate(shake * 0.0F, shake * 0.004F, shake * 0.0F);
-+                                    }
-+
-+                                    poseStack.translate(0.0F, 0.0F, power * 0.2F);
-+                                    poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
-+                                    poseStack.mulPose(Axis.YN.rotationDegrees(invert * 45.0F));
-+                                    break;
-+                                }
-+                                case BRUSH:
-+                                    this.applyBrushTransform(poseStack, frameInterp, arm, player);
-+                                    break;
-+                                case BUNDLE:
-+                                    this.swingArm(attack, poseStack, invert, arm);
-+                                    break;
-+                                case SPEAR: {
-+                                    poseStack.translate(invert * 0.56F, -0.52F, -0.72F);
-+                                    float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
-+                                    SpearAnimations.firstPersonUse(player.getTicksSinceLastKineticHitFeedback(frameInterp), poseStack, timeHeld, arm, itemStack);
-+                                }
-+                            }
-+                        } else if (player.isAutoSpinAttack()) {
-+                            this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
-+                            poseStack.translate(invert * -0.4F, 0.8F, 0.3F);
-+                            poseStack.mulPose(Axis.YP.rotationDegrees(invert * 65.0F));
-+                            poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -85.0F));
-+                        } else {
-+                            this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
-+                            switch (itemStack.getSwingAnimation().type()) {
-+                                case NONE:
-+                                default:
-+                                    break;
-+                                case WHACK:
-+                                    this.swingArm(attack, poseStack, invert, arm);
-+                                    break;
-+                                case STAB:
-+                                    SpearAnimations.firstPersonAttack(attack, poseStack, invert, arm);
-+                            }
-                         }
--                        case BRUSH:
--                            this.applyBrushTransform(poseStack, frameInterp, arm, player);
--                            break;
--                        case BUNDLE:
--                            this.swingArm(attack, poseStack, invert, arm);
--                            break;
--                        case SPEAR: {
--                            poseStack.translate(invert * 0.56F, -0.52F, -0.72F);
--                            float timeHeld = itemStack.getUseDuration(player) - (player.getUseItemRemainingTicks() - frameInterp + 1.0F);
--                            SpearAnimations.firstPersonUse(player.getTicksSinceLastKineticHitFeedback(frameInterp), poseStack, timeHeld, arm, itemStack);
--                        }
+                 if (player.isUsingItem() && player.getUseItemRemainingTicks() > 0 && player.getUsedItemHand() == hand) {
+                     ItemUseAnimation useAnimation = itemStack.getUseAnimation();
+                     if (!useAnimation.hasCustomArmTransform()) {
+@@ -599,6 +642,7 @@
+                             SpearAnimations.firstPersonAttack(attack, poseStack, invert, arm);
                      }
--                } else if (player.isAutoSpinAttack()) {
--                    this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
--                    poseStack.translate(invert * -0.4F, 0.8F, 0.3F);
--                    poseStack.mulPose(Axis.YP.rotationDegrees(invert * 65.0F));
--                    poseStack.mulPose(Axis.ZP.rotationDegrees(invert * -85.0F));
--                } else {
--                    this.applyItemArmTransform(poseStack, arm, inverseArmHeight);
--                    switch (itemStack.getSwingAnimation().type()) {
--                        case NONE:
--                        default:
--                            break;
--                        case WHACK:
--                            this.swingArm(attack, poseStack, invert, arm);
--                            break;
--                        case STAB:
--                            SpearAnimations.firstPersonAttack(attack, poseStack, invert, arm);
--                    }
-+
-+                    this.renderItem(
-+                        player,
-+                        itemStack,
-+                        isRightArm ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
-+                        poseStack,
-+                        submitNodeCollector,
-+                        lightCoords
-+                    );
                  }
++                    }
  
--                this.renderItem(
--                    player,
--                    itemStack,
--                    isRightArm ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
--                    poseStack,
--                    submitNodeCollector,
--                    lightCoords
--                );
-+                poseStack.popPose();
-             }
--
--            poseStack.popPose();
+                 this.renderItem(
+                     player,
+@@ -613,8 +657,9 @@
+             poseStack.popPose();
          }
      }
++    }
  
 -    private void swingArm(final float attack, final PoseStack poseStack, final int invert, final HumanoidArm arm) {
 +    private void swingArm(float attack, PoseStack poseStack, int invert, HumanoidArm arm) {
@@ -728,16 +393,16 @@
              this.mainHandItem = nextMainHand;
 +            if (Config.isShaders()) {
 +                Shaders.setItemToRenderMain(this.mainHandItem);
-+            }
          }
++        }
  
          if (this.offHandHeight < 0.1F) {
              this.offHandItem = nextOffHand;
 +            if (Config.isShaders()) {
 +                Shaders.setItemToRenderOff(this.offHandItem);
-+            }
          }
      }
++    }
  
 -    public void itemUsed(final InteractionHand hand) {
 +    public void itemUsed(InteractionHand hand) {

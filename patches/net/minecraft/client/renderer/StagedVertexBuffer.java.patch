@@ -163,8 +163,9 @@
 +
 +        public void setEntityRenderState(EntityRenderState entityRenderState) {
 +            this.entityRenderState = entityRenderState;
-+        }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
 +        public EntityRenderState getEntityRenderState() {
 +            return this.entityRenderState;
 +        }
@@ -184,9 +185,8 @@
 +        public BlockEntity getBlockEntity() {
 +            return this.blockEntityRenderState == null ? null : this.blockEntityRenderState.blockEntity;
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
++    }
++
      public record ExecuteInfo(GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int baseVertex, int firstIndex, int indexCount) {
      }
  

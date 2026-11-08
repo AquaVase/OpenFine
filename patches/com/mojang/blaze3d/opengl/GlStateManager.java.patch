@@ -131,86 +131,75 @@
 +
      public static void _disableScissorTest() {
          RenderSystem.assertOnRenderThread();
--        SCISSOR.mode.disable();
 +        if (scissorLock.isLocked()) {
 +            scissorLockState.setEnabled(false);
 +        } else {
-+            SCISSOR.mode.disable();
-+        }
+         SCISSOR.mode.disable();
      }
++    }
  
      public static void _enableScissorTest() {
          RenderSystem.assertOnRenderThread();
--        SCISSOR.mode.enable();
 +        if (scissorLock.isLocked()) {
 +            scissorLockState.setEnabled(true);
 +        } else {
-+            SCISSOR.mode.enable();
-+        }
+         SCISSOR.mode.enable();
      }
++    }
  
 -    public static void _scissorBox(final int x, final int y, final int width, final int height) {
 +    public static void _scissorBox(int x, int y, int width, int height) {
          RenderSystem.assertOnRenderThread();
--        GL33C.glScissor(x, y, width, height);
 +        if (scissorLock.isLocked()) {
 +            scissorLockState.setBox(x, y, width, height);
 +        } else {
-+            GL33C.glScissor(x, y, width, height);
-+        }
+         GL33C.glScissor(x, y, width, height);
      }
++    }
  
      public static void _disableDepthTest() {
          RenderSystem.assertOnRenderThread();
--        DEPTH.mode.disable();
 +        if (depthLock.isLocked()) {
 +            depthLockState.setEnabled(false);
 +        } else {
-+            DEPTH.mode.disable();
-+        }
+         DEPTH.mode.disable();
      }
++    }
  
      public static void _enableDepthTest() {
          RenderSystem.assertOnRenderThread();
--        DEPTH.mode.enable();
 +        if (depthLock.isLocked()) {
 +            depthLockState.setEnabled(true);
 +        } else {
-+            DEPTH.mode.enable();
-+        }
+         DEPTH.mode.enable();
      }
++    }
  
 -    public static void _depthFunc(final int func) {
 +    public static void _depthFunc(int func) {
          RenderSystem.assertOnRenderThread();
--        if (func != DEPTH.func) {
--            DEPTH.func = func;
--            GL33C.glDepthFunc(func);
 +        if (depthLock.isLocked()) {
 +            depthLockState.setFunc(func);
 +        } else {
-+            if (func != DEPTH.func) {
-+                DEPTH.func = func;
-+                GL33C.glDepthFunc(func);
-+            }
+         if (func != DEPTH.func) {
+             DEPTH.func = func;
+             GL33C.glDepthFunc(func);
          }
      }
++    }
  
 -    public static void _depthMask(final boolean mask) {
 +    public static void _depthMask(boolean mask) {
          RenderSystem.assertOnRenderThread();
--        if (mask != DEPTH.mask) {
--            DEPTH.mask = mask;
--            GL33C.glDepthMask(mask);
 +        if (depthLock.isLocked()) {
 +            depthLockState.setMask(mask);
 +        } else {
-+            if (mask != DEPTH.mask) {
-+                DEPTH.mask = mask;
-+                GL33C.glDepthMask(mask);
-+            }
+         if (mask != DEPTH.mask) {
+             DEPTH.mask = mask;
+             GL33C.glDepthMask(mask);
          }
      }
++    }
  
      public static void _disableBlend(int index) {
          RenderSystem.assertOnRenderThread();
@@ -219,8 +208,8 @@
 +            blendLockState.setDisabled();
 +        } else {
 +            BLEND[0].mode.disable();
-+        }
      }
++    }
  
      public static void _enableBlend(int index) {
          RenderSystem.assertOnRenderThread();
@@ -229,8 +218,8 @@
 +            blendLockState.setEnabled();
 +        } else {
 +            BLEND[0].mode.enable();
-+        }
      }
++    }
  
 -    public static void _blendFuncSeparate(final int srcRgb, final int dstRgb, final int srcAlpha, final int dstAlpha) {
 +    public static void _disableBlend() {
@@ -274,28 +263,22 @@
 +    public static void _blendFuncSeparate(int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
 +        RenderSystem.assertOnRenderThread();
          GlStateManager.BlendState firstBlend = BLEND[0];
--        if (srcRgb != firstBlend.srcRgb || dstRgb != firstBlend.dstRgb || srcAlpha != firstBlend.srcAlpha || dstAlpha != firstBlend.dstAlpha) {
--            firstBlend.srcRgb = srcRgb;
--            firstBlend.dstRgb = dstRgb;
--            firstBlend.srcAlpha = srcAlpha;
--            firstBlend.dstAlpha = dstAlpha;
--            glBlendFuncSeparate(srcRgb, dstRgb, srcAlpha, dstAlpha);
 +        if (blendLock.isLocked()) {
 +            blendLockState.setFactors(srcRgb, dstRgb, srcAlpha, dstAlpha);
 +        } else {
-+            if (srcRgb != firstBlend.srcRgb || dstRgb != firstBlend.dstRgb || srcAlpha != firstBlend.srcAlpha || dstAlpha != firstBlend.dstAlpha) {
-+                firstBlend.srcRgb = srcRgb;
-+                firstBlend.dstRgb = dstRgb;
-+                firstBlend.srcAlpha = srcAlpha;
-+                firstBlend.dstAlpha = dstAlpha;
+         if (srcRgb != firstBlend.srcRgb || dstRgb != firstBlend.dstRgb || srcAlpha != firstBlend.srcAlpha || dstAlpha != firstBlend.dstAlpha) {
+             firstBlend.srcRgb = srcRgb;
+             firstBlend.dstRgb = dstRgb;
+             firstBlend.srcAlpha = srcAlpha;
+             firstBlend.dstAlpha = dstAlpha;
 +                if (Config.isShaders()) {
 +                    Shaders.uniform_blendFunc.setValue(srcRgb, dstRgb, srcAlpha, dstAlpha);
 +                }
 +
-+                glBlendFuncSeparate(srcRgb, dstRgb, srcAlpha, dstAlpha);
-+            }
+             glBlendFuncSeparate(srcRgb, dstRgb, srcAlpha, dstAlpha);
          }
      }
++    }
  
 -    public static void _blendEquationSeparate(final int modeRgb, final int modeAlpha) {
 +    public static void _blendEquationSeparate(int modeRgb, int modeAlpha) {
@@ -360,7 +343,7 @@
          RenderSystem.assertOnRenderThread();
          byte[] encoded = source.getBytes(StandardCharsets.UTF_8);
          ByteBuffer buffer = MemoryUtil.memAlloc(encoded.length + 1);
-@@ -149,19 +342,22 @@
+@@ -149,47 +342,50 @@
          }
      }
  
@@ -379,15 +362,14 @@
 -    public static void _glUseProgram(final int program) {
 +    public static void _glUseProgram(int program) {
          RenderSystem.assertOnRenderThread();
--        GL33C.glUseProgram(program);
 +        if (glProgram != program) {
-+            GL33C.glUseProgram(program);
+         GL33C.glUseProgram(program);
 +            glProgram = program;
-+        }
      }
++    }
  
      public static int glCreateProgram() {
-@@ -169,27 +365,27 @@
+         RenderSystem.assertOnRenderThread();
          return GL33C.glCreateProgram();
      }
  
@@ -559,23 +541,21 @@
  
      public static void _enableCull() {
          RenderSystem.assertOnRenderThread();
--        CULL.enable.enable();
 +        if (cullLock.isLocked()) {
 +            cullLockState.setEnabled();
 +        } else {
-+            CULL.enable.enable();
-+        }
+         CULL.enable.enable();
      }
++    }
  
      public static void _disableCull() {
          RenderSystem.assertOnRenderThread();
--        CULL.enable.disable();
 +        if (cullLock.isLocked()) {
 +            cullLockState.setDisabled();
 +        } else {
-+            CULL.enable.disable();
-+        }
+         CULL.enable.disable();
      }
++    }
  
 -    public static void _polygonMode(final int face, final int mode) {
 +    public static void _polygonMode(int face, int mode) {
@@ -646,32 +626,26 @@
 -    public static void _deleteTexture(final int id) {
 +    public static void _deleteTexture(int id) {
          RenderSystem.assertOnRenderThread();
--        GL33C.glDeleteTextures(id);
 +        if (id != 0) {
 +            for (int i = 0; i < IMAGE_TEXTURES.length; i++) {
 +                if (IMAGE_TEXTURES[i] == id) {
 +                    IMAGE_TEXTURES[i] = 0;
 +                }
 +            }
- 
--        for (GlStateManager.TextureState state : TEXTURES) {
--            if (state.binding == id) {
--                state.binding = -1;
-+            GL33C.glDeleteTextures(id);
 +
-+            for (GlStateManager.TextureState state : TEXTURES) {
-+                if (state.binding == id) {
-+                    state.binding = 0;
-+                }
-             }
--        }
+         GL33C.glDeleteTextures(id);
  
--        numTextures--;
--        PLOT_TEXTURES.setValue(numTextures);
-+            numTextures--;
-+            PLOT_TEXTURES.setValue(numTextures);
-+        }
+         for (GlStateManager.TextureState state : TEXTURES) {
+             if (state.binding == id) {
+-                state.binding = -1;
++                    state.binding = 0;
+             }
+         }
+ 
+         numTextures--;
+         PLOT_TEXTURES.setValue(numTextures);
      }
++    }
  
 -    public static void _bindTexture(final int id) {
 +    public static void _bindTexture(int id) {
@@ -681,9 +655,9 @@
              GL33C.glBindTexture(3553, id);
 +            if (SmartAnimations.isActive()) {
 +                SmartAnimations.textureRendered(id);
-+            }
          }
      }
++    }
  
 -    public static void _texImage2D(
 -        final int target,
@@ -821,14 +795,14 @@
 +                for (int i = 1; i < countInstances; i++) {
 +                    Shaders.uniform_instanceId.setValue(i);
 +                    GL33C.glDrawElements(mode, count, type, indices);
-+                }
-+
-+                Shaders.uniform_instanceId.setValue(0);
-+            }
-+        }
      }
  
 -    public static void _drawArrays(final int mode, final int first, final int count) {
++                Shaders.uniform_instanceId.setValue(0);
++            }
++        }
++    }
++
 +    public static void _drawArrays(int mode, int first, int count) {
          RenderSystem.assertOnRenderThread();
          GL33C.glDrawArrays(mode, first, count);
@@ -838,14 +812,14 @@
 +                for (int i = 1; i < countInstances; i++) {
 +                    Shaders.uniform_instanceId.setValue(i);
 +                    GL33C.glDrawArrays(mode, first, count);
-+                }
-+
-+                Shaders.uniform_instanceId.setValue(0);
-+            }
-+        }
      }
  
 -    public static void _pixelStore(final int name, final int value) {
++                Shaders.uniform_instanceId.setValue(0);
++            }
++        }
++    }
++
 +    public static void _pixelStore(int name, int value) {
          RenderSystem.assertOnRenderThread();
          GL33C.glPixelStorei(name, value);

@@ -36,87 +36,32 @@
          if (state.frontText != null) {
              poseStack.pushPose();
              poseStack.mulPose(state.transformations.frontText());
-@@ -48,45 +49,51 @@
+@@ -48,7 +49,8 @@
          }
      }
  
 -    private void submitSignText(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final SignText signText) {
--        int darkColor = getDarkColor(signText);
--        int signMidpoint = 4 * state.textLineHeight / 2;
--        FormattedCharSequence[] formattedLines = signText.getRenderMessages(state.isTextFilteringEnabled, input -> {
--            List<FormattedCharSequence> components = this.font.split(input, state.maxTextLineWidth);
--            return components.isEmpty() ? FormattedCharSequence.EMPTY : components.get(0);
--        });
--        int textColor;
--        boolean drawOutline;
--        int lightVal;
--        if (signText.hasGlowingText()) {
--            textColor = signText.getColor().getTextColor();
--            drawOutline = textColor == DyeColor.BLACK.getTextColor() || state.drawOutline;
--            lightVal = 15728880;
--        } else {
--            textColor = darkColor;
--            drawOutline = false;
--            lightVal = state.lightCoords;
--        }
 +    private void submitSignText(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, SignText signText) {
 +        if (isRenderText(state.blockPos)) {
-+            int darkColor = getDarkColor(signText);
-+            int signMidpoint = 4 * state.textLineHeight / 2;
-+            FormattedCharSequence[] formattedLines = signText.getRenderMessages(state.isTextFilteringEnabled, input -> {
-+                List<FormattedCharSequence> components = this.font.split(input, state.maxTextLineWidth);
-+                return components.isEmpty() ? FormattedCharSequence.EMPTY : components.get(0);
-+            });
-+            int textColor;
-+            boolean drawOutline;
-+            int lightVal;
-+            if (signText.hasGlowingText()) {
-+                textColor = signText.getColor().getTextColor();
+         int darkColor = getDarkColor(signText);
+         int signMidpoint = 4 * state.textLineHeight / 2;
+         FormattedCharSequence[] formattedLines = signText.getRenderMessages(state.isTextFilteringEnabled, input -> {
+@@ -60,6 +62,10 @@
+         int lightVal;
+         if (signText.hasGlowingText()) {
+             textColor = signText.getColor().getTextColor();
 +                if (Config.isCustomColors()) {
 +                    textColor = CustomColors.getSignTextColor(textColor);
 +                }
- 
--        for (int i = 0; i < 4; i++) {
--            FormattedCharSequence actualLine = formattedLines[i];
--            float x1 = -this.font.width(actualLine) / 2;
--            submitNodeCollector.submitText(
--                poseStack,
--                x1,
--                i * state.textLineHeight - signMidpoint,
--                actualLine,
--                false,
--                Font.DisplayMode.POLYGON_OFFSET,
--                lightVal,
--                textColor,
--                0,
--                drawOutline ? darkColor : 0
--            );
-+                drawOutline = textColor == DyeColor.BLACK.getTextColor() || state.drawOutline;
-+                lightVal = 15728880;
-+            } else {
-+                textColor = darkColor;
-+                drawOutline = false;
-+                lightVal = state.lightCoords;
-+            }
 +
-+            for (int i = 0; i < 4; i++) {
-+                FormattedCharSequence actualLine = formattedLines[i];
-+                float x1 = -this.font.width(actualLine) / 2;
-+                submitNodeCollector.submitText(
-+                    poseStack,
-+                    x1,
-+                    i * state.textLineHeight - signMidpoint,
-+                    actualLine,
-+                    false,
-+                    Font.DisplayMode.POLYGON_OFFSET,
-+                    lightVal,
-+                    textColor,
-+                    0,
-+                    drawOutline ? darkColor : 0
-+                );
-+            }
+             drawOutline = textColor == DyeColor.BLACK.getTextColor() || state.drawOutline;
+             lightVal = 15728880;
+         } else {
+@@ -85,8 +91,9 @@
+             );
          }
      }
++    }
  
 -    private static boolean isOutlineVisible(final BlockPos pos) {
 +    private static boolean isOutlineVisible(BlockPos pos) {

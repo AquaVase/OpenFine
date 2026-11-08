@@ -51,12 +51,12 @@
 +        this.nameClear = gameProfile.name();
 +        if (this.nameClear != null && !this.nameClear.isEmpty()) {
 +            this.nameClear = StringUtil.stripColor(this.nameClear);
-+        }
-+
-+        CapeUtils.downloadCape(this);
-+        PlayerConfigurations.getPlayerConfiguration(this);
      }
  
++        CapeUtils.downloadCape(this);
++        PlayerConfigurations.getPlayerConfiguration(this);
++    }
++
      @Override
 -    public @Nullable GameType gameMode() {
 +    public GameType gameMode() {
@@ -76,8 +76,8 @@
 +        if (this.lastAttachedEntity != null) {
 +            RandomEntities.checkEntityShoulder(this.lastAttachedEntity, true);
 +            this.lastAttachedEntity = null;
-+        }
      }
++    }
  
 -    protected void addWalkedDistance(final float distance) {
 +    protected void addWalkedDistance(float distance) {

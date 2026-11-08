@@ -201,8 +201,8 @@
 +        @Override
 +        public String toString() {
 +            return this.pose.toString() + this.normal.toString();
-+        }
      }
 -}
 \ No newline at end of file
++    }
 +}

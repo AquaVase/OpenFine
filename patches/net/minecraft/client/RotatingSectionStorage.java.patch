@@ -47,12 +47,12 @@
 +                        SectionRenderDispatcher.RenderSection rs = this.nodes[index].getRenderSection();
 +                        if (rs != null) {
 +                            this.updateVboRegion(rs);
-+                        }
-+                    }
                  }
              }
          }
      }
++        }
++    }
  
 -    public boolean repositionCenter(final SectionPos newCenterSectionPos) {
 +    public boolean repositionCenter(SectionPos newCenterSectionPos) {
@@ -179,8 +179,8 @@
      private record Node<T>(T value) {
 +        public SectionRenderDispatcher.RenderSection getRenderSection() {
 +            return this.value instanceof SectionRenderDispatcher.RenderSection ? (SectionRenderDispatcher.RenderSection)this.value : null;
-+        }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      public interface Value {

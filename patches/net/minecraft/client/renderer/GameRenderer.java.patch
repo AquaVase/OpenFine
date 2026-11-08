@@ -163,33 +163,28 @@
 +                    Identifier rl = (Identifier)Reflector.EntitySpectatorShaderManager_get.call(cameraEntity.getType());
 +                    if (rl != null) {
 +                        this.setPostEffect(rl);
-+                    }
-+                }
          }
      }
++        }
++    }
  
 -    private void setPostEffect(final Identifier id) {
--        this.postEffectId = id;
--        this.effectActive = true;
 +    private void setPostEffect(Identifier id) {
 +        if (Config.isMainFramebufferEnabled()) {
-+            this.postEffectId = id;
-+            this.effectActive = true;
-+        }
+         this.postEffectId = id;
+         this.effectActive = true;
      }
++    }
  
      public void processBlurEffect() {
--        PostChain postChain = this.minecraft.getShaderManager().getPostChain(BLUR_POST_CHAIN_ID, LevelTargetBundle.MAIN_TARGETS);
--        if (postChain != null) {
--            postChain.process(this.mainRenderTarget, this.resourcePool);
 +        if (Config.isMainFramebufferEnabled()) {
 +            GlStateManager._disableDepthTest();
-+            PostChain postChain = this.minecraft.getShaderManager().getPostChain(BLUR_POST_CHAIN_ID, LevelTargetBundle.MAIN_TARGETS);
-+            if (postChain != null) {
-+                postChain.process(this.mainRenderTarget, this.resourcePool);
-+            }
+         PostChain postChain = this.minecraft.getShaderManager().getPostChain(BLUR_POST_CHAIN_ID, LevelTargetBundle.MAIN_TARGETS);
+         if (postChain != null) {
+             postChain.process(this.mainRenderTarget, this.resourcePool);
          }
      }
++    }
  
 -    public void preloadUiShader(final ResourceProvider resourceProvider) {
 +    public void preloadUiShader(ResourceProvider resourceProvider) {
@@ -226,45 +221,34 @@
          if (cameraState.entityRenderState.isPlayer) {
              float backwardsInterpolatedWalkDistance = cameraState.entityRenderState.backwardsInterpolatedWalkDistance;
              float bob = cameraState.entityRenderState.bob;
-@@ -333,22 +381,37 @@
+@@ -333,9 +381,13 @@
          }
      }
  
 -    private void renderItemInHand(final CameraRenderState cameraState, final float deltaPartialTick, final Matrix4fc modelViewMatrix) {
 -        if (!cameraState.isPanoramicMode) {
 -            if (this.gameRenderState.optionsRenderState.cameraType.isFirstPerson()
--                && !cameraState.entityRenderState.isSleeping
--                && !this.gameRenderState.guiRenderState.isHudHidden
--                && this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR) {
--                PoseStack poseStack = new PoseStack();
--                poseStack.pushPose();
--                poseStack.mulPose(modelViewMatrix.invert(new Matrix4f()));
--                Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
--                modelViewStack.pushMatrix().mul(modelViewMatrix);
--                this.bobHurt(cameraState, poseStack);
--                if (this.gameRenderState.optionsRenderState.bobView) {
--                    this.bobView(cameraState, poseStack);
--                }
 +    private void renderItemInHand(CameraRenderState cameraState, float deltaPartialTick, Matrix4fc modelViewMatrix) {
 +        this.renderItemInHand(cameraState, deltaPartialTick, modelViewMatrix, false);
 +    }
- 
++
 +    public void renderItemInHand(CameraRenderState cameraState, float deltaPartialTick, Matrix4fc modelViewMatrix, boolean renderTranslucent) {
 +        if (!cameraState.isPanoramicMode
 +            && this.gameRenderState.optionsRenderState.cameraType.isFirstPerson()
-+            && !cameraState.entityRenderState.isSleeping
-+            && !this.gameRenderState.guiRenderState.isHudHidden
-+            && this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR) {
-+            PoseStack poseStack = new PoseStack();
-+            poseStack.pushPose();
-+            poseStack.mulPose(modelViewMatrix.invert(new Matrix4f()));
-+            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+                 && !cameraState.entityRenderState.isSleeping
+                 && !this.gameRenderState.guiRenderState.isHudHidden
+                 && this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR) {
+@@ -343,12 +395,23 @@
+                 poseStack.pushPose();
+                 poseStack.mulPose(modelViewMatrix.invert(new Matrix4f()));
+                 Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+-                modelViewStack.pushMatrix().mul(modelViewMatrix);
 +            modelViewStack.pushMatrix().set(modelViewMatrix);
-+            this.bobHurt(cameraState, poseStack);
-+            if (this.gameRenderState.optionsRenderState.bobView) {
-+                this.bobView(cameraState, poseStack);
-+            }
-+
+                 this.bobHurt(cameraState, poseStack);
+                 if (this.gameRenderState.optionsRenderState.bobView) {
+                     this.bobView(cameraState, poseStack);
+                 }
+ 
 +            if (Config.isShaders()) {
 +                ShadersRender.renderItemFP(
 +                    this.itemInHandRenderer,
@@ -284,15 +268,14 @@
                          this.minecraft.getEntityRenderDispatcher().getPackedLightCoords(this.minecraft.player, deltaPartialTick)
                      );
 -                this.featureRenderDispatcher.renderAllFeatures(this.handAndScreenSubmitNodeStorage);
--                modelViewStack.popMatrix();
--                poseStack.popPose();
-             }
++            }
 +
 +            this.handFeatureRenderDispatcher.renderAllFeatures(this.handAndScreenSubmitNodeStorage);
-+            modelViewStack.popMatrix();
-+            poseStack.popPose();
+                 modelViewStack.popMatrix();
+                 poseStack.popPose();
+             }
          }
-     }
+-    }
  
 -    public static float nightVisionScale(final LivingEntity camera, final float a) {
 +    public static float nightVisionScale(LivingEntity camera, float a) {
@@ -384,18 +367,18 @@
                  BlockPos pos = ((BlockHitResult)hitResult).getBlockPos();
                  BlockState blockState = this.minecraft.level.getBlockState(pos);
                  if (this.minecraft.gameMode.getPlayerMode() == GameType.SPECTATOR) {
-@@ -515,6 +593,10 @@
+@@ -515,14 +593,23 @@
                      Registry<Block> blockRegistry = this.minecraft.level.registryAccess().lookupOrThrow(Registries.BLOCK);
                      renderOutline = !itemStack.isEmpty()
                          && (itemStack.canBreakBlockInAdventureMode(blockInWorld) || itemStack.canPlaceOnBlockInAdventureMode(blockInWorld));
 +                    if (Reflector.ForgeHooksClient.exists() && !renderOutline && blockState.hasBlockEntity()) {
 +                        BlockEntity blockEntity = this.minecraft.level.getBlockEntity(pos);
 +                        renderOutline = blockEntity != null && blockEntity.hasCustomOutlineRendering();
-+                    }
                  }
              }
          }
-@@ -522,7 +604,12 @@
++        }
+ 
          return renderOutline;
      }
  
@@ -464,18 +447,15 @@
          boolean isSleeping = cameraState.entityRenderState.isSleeping;
          this.hudProjection
              .setupPerspective(0.05F, 100.0F, cameraState.hudFov, this.gameRenderState.windowRenderState.width, this.gameRenderState.windowRenderState.height);
--        RenderSystem.setProjectionMatrix(this.hud3dProjectionMatrixBuffer.getBuffer(this.hudProjection), ProjectionType.PERSPECTIVE);
--        RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(this.mainRenderTarget.getDepthTexture(), 0.0);
--        this.renderItemInHand(cameraState, cameraEntityPartialTicks, modelViewMatrix);
 +        if (isShaders) {
 +            Shaders.beginRenderHand(true);
-+            RenderSystem.setProjectionMatrix(this.hud3dProjectionMatrixBuffer.getBuffer(this.hudProjection), ProjectionType.PERSPECTIVE);
+         RenderSystem.setProjectionMatrix(this.hud3dProjectionMatrixBuffer.getBuffer(this.hudProjection), ProjectionType.PERSPECTIVE);
 +            ShadersRender.renderHandTranslucent(this, cameraState, modelViewMatrix, worldPartialTicks);
 +            Shaders.endRenderHand();
 +        } else {
 +            RenderSystem.setProjectionMatrix(this.hud3dProjectionMatrixBuffer.getBuffer(this.hudProjection), ProjectionType.PERSPECTIVE);
-+            RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(this.mainRenderTarget.getDepthTexture(), 0.0);
-+            this.renderItemInHand(cameraState, cameraEntityPartialTicks, modelViewMatrix);
+         RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(this.mainRenderTarget.getDepthTexture(), 0.0);
+         this.renderItemInHand(cameraState, cameraEntityPartialTicks, modelViewMatrix);
 +        }
 +
 +        if (isShaders) {

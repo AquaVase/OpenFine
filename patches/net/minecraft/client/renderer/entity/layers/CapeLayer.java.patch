@@ -58,12 +58,16 @@
              PlayerSkin skin = state.skin;
 -            if (skin.cape() != null) {
 -                if (!this.hasLayer(state.chestEquipment, EquipmentClientInfo.LayerType.WINGS)) {
--                    poseStack.pushPose();
++            AbstractClientPlayer player = state.entity instanceof AbstractClientPlayer ? (AbstractClientPlayer)state.entity : null;
++            Identifier capeTexture = player != null ? player.getLocationCape() : PlayerUtils.getTexturePath(skin.cape());
++            if (capeTexture != null && !this.hasLayer(state.chestEquipment, LayerType.WINGS)) {
+                     poseStack.pushPose();
 -                    if (this.hasLayer(state.chestEquipment, EquipmentClientInfo.LayerType.HUMANOID)) {
--                        poseStack.translate(0.0F, -0.053125F, 0.06875F);
--                    }
--
--                    submitNodeCollector.submitModel(
++                if (this.hasLayer(state.chestEquipment, LayerType.HUMANOID)) {
+                         poseStack.translate(0.0F, -0.053125F, 0.06875F);
+                     }
+ 
+                     submitNodeCollector.submitModel(
 -                        this.model,
 -                        state,
 -                        poseStack,
@@ -72,23 +76,12 @@
 -                        OverlayTexture.NO_OVERLAY,
 -                        state.outlineColor,
 -                        null
--                    );
--                    poseStack.popPose();
-+            AbstractClientPlayer player = state.entity instanceof AbstractClientPlayer ? (AbstractClientPlayer)state.entity : null;
-+            Identifier capeTexture = player != null ? player.getLocationCape() : PlayerUtils.getTexturePath(skin.cape());
-+            if (capeTexture != null && !this.hasLayer(state.chestEquipment, LayerType.WINGS)) {
-+                poseStack.pushPose();
-+                if (this.hasLayer(state.chestEquipment, LayerType.HUMANOID)) {
-+                    poseStack.translate(0.0F, -0.053125F, 0.06875F);
-                 }
-+
-+                submitNodeCollector.submitModel(
 +                    this.model, state, poseStack, RenderTypes.entitySolid(capeTexture), lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, null
-+                );
-+                poseStack.popPose();
+                     );
+                     poseStack.popPose();
+                 }
              }
          }
      }
 -}
 \ No newline at end of file
-+}

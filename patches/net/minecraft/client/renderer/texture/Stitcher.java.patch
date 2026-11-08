@@ -57,7 +57,7 @@
 +                    sb.append(" - Maybe try a lower resolution resourcepack?\n");
 +                    holders.forEach(h -> sb.append("\t").append(h).append("\n"));
 +                    LOGGER.info(sb.toString());
-+                }
+             }
 +
 +                throw new StitcherException(
 +                    holder.entry,
@@ -67,9 +67,9 @@
 +                    this.maxWidth,
 +                    this.maxHeight
 +                );
-             }
          }
      }
++    }
  
 -    public void gatherSprites(final Stitcher.SpriteLoader<T> loader) {
 +    public void gatherSprites(Stitcher.SpriteLoader<T> loader) {

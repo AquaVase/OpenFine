@@ -17,20 +17,17 @@
  
      @Override
 -    protected void buildGroup(final FeatureFrameContext context, final List<ShadowFeatureRenderer.Submit> submits) {
--        VertexConsumer builder = this.getVertexBuilder(SHADOW_RENDER_TYPE);
 +    protected void buildGroup(FeatureFrameContext context, List<ShadowFeatureRenderer.Submit> submits) {
 +        if (!Shaders.isShadowPass) {
 +            if (!submits.isEmpty()) {
-+                VertexConsumer builder = this.getVertexBuilder(SHADOW_RENDER_TYPE);
+         VertexConsumer builder = this.getVertexBuilder(SHADOW_RENDER_TYPE);
  
--        for (ShadowFeatureRenderer.Submit submit : submits) {
--            this.prepare(submit, builder);
-+                for (ShadowFeatureRenderer.Submit submit : submits) {
-+                    this.prepare(submit, builder);
-+                }
-+            }
+         for (ShadowFeatureRenderer.Submit submit : submits) {
+             this.prepare(submit, builder);
          }
      }
++        }
++    }
  
 -    private void prepare(final ShadowFeatureRenderer.Submit submit, final VertexConsumer builder) {
 +    private void prepare(ShadowFeatureRenderer.Submit submit, VertexConsumer builder) {

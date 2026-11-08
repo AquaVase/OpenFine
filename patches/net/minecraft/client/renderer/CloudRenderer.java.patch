@@ -131,9 +131,9 @@
 +
 +            if (Config.isShaders()) {
 +                Shaders.endClouds();
-+            }
          }
      }
++    }
  
      private void buildMesh(
 -        final CloudRenderer.RelativeCameraPos relativePos,

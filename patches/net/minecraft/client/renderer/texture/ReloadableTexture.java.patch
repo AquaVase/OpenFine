@@ -46,17 +46,17 @@
 +        this.texture.setParentTexture(this);
 +        if (Config.isShaders()) {
 +            ShadersTex.loadSimpleTextureNS(this.getGlTextureId(), image, this.sampler, this.resourceManager, this.resourceId, this.getMultiTexID());
-+        }
-+
-+        if (EmissiveTextures.isActive()) {
-+            EmissiveTextures.loadTexture(this.resourceId, this);
-+        }
-+
-+        this.size = image.getSize();
      }
  
 -    public abstract TextureContents loadContents(ResourceManager resourceManager) throws IOException;
 -}
 \ No newline at end of file
++        if (EmissiveTextures.isActive()) {
++            EmissiveTextures.loadTexture(this.resourceId, this);
++        }
++
++        this.size = image.getSize();
++    }
++
 +    public abstract TextureContents loadContents(ResourceManager var1) throws IOException;
 +}

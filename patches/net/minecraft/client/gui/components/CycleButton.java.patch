@@ -73,11 +73,11 @@
 +        if (name != null && name.getContents() instanceof TranslatableContents) {
 +            TranslatableContents nameTrans = (TranslatableContents)name.getContents();
 +            this.option = OptionInstance.OPTIONS_BY_KEY.get(nameTrans.getKey());
-+        }
-+
-+        this.updateValue(value);
      }
  
++        this.updateValue(value);
++    }
++
      @Override
 -    protected void extractContents(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
 +    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {

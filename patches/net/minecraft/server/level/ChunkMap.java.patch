@@ -230,16 +230,17 @@
          CompletableFuture<?> saveSyncFuture = chunkHolder.getSaveSyncFuture();
          saveSyncFuture.thenRunAsync(() -> {
              CompletableFuture<?> currentFuture = chunkHolder.getSaveSyncFuture();
-@@ -522,6 +527,9 @@
+@@ -522,7 +527,10 @@
                  if (this.pendingUnloads.remove(pos, chunkHolder) && chunk != null) {
                      if (chunk instanceof LevelChunk levelChunk) {
                          levelChunk.setLoaded(false);
 +                        if (Reflector.ForgeEventFactory_onChunkUnload.exists()) {
 +                            Reflector.ForgeEventFactory_onChunkUnload.call(chunk);
-+                        }
                      }
++                    }
  
                      this.save(chunk);
+                     if (chunk instanceof LevelChunk levelChunk) {
 @@ -551,7 +559,7 @@
          return true;
      }
@@ -821,18 +822,14 @@
          private int getEffectiveRange() {
              int effectiveRange = this.range;
 -
--            for (Entity passenger : this.entity.getIndirectPassengers()) {
--                int passengerRange = passenger.getType().clientTrackingRange() * 16;
--                if (passengerRange > effectiveRange) {
--                    effectiveRange = passengerRange;
 +            if (!this.entity.getPassengers().isEmpty()) {
-+                for (Entity passenger : this.entity.getIndirectPassengers()) {
-+                    int passengerRange = passenger.getType().clientTrackingRange() * 16;
-+                    if (passengerRange > effectiveRange) {
-+                        effectiveRange = passengerRange;
-+                    }
+             for (Entity passenger : this.entity.getIndirectPassengers()) {
+                 int passengerRange = passenger.getType().clientTrackingRange() * 16;
+                 if (passengerRange > effectiveRange) {
+                     effectiveRange = passengerRange;
                  }
              }
++            }
  
              return this.scaledRange(effectiveRange);
          }

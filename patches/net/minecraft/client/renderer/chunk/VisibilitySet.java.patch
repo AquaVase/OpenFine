@@ -40,8 +40,8 @@
 +            this.bits = -1L;
 +        } else {
 +            this.bits = 0L;
-+        }
      }
++    }
  
 -    public boolean visibilityBetween(final Direction direction1, final Direction direction2) {
 -        return this.data.get(direction1.ordinal() + direction2.ordinal() * FACINGS);

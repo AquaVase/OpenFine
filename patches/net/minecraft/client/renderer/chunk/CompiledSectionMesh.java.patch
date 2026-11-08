@@ -73,18 +73,18 @@
 +                (layer, mesh) -> {
 +                    SectionMesh.SectionDraw sectionDraw = new SectionMesh.SectionDraw(
 +                        mesh.drawState().indexCount(), mesh.drawState().indexType(), mesh.indexBuffer() != null
-+                    );
+             );
 +                    if (vboRegions != null) {
 +                        sectionDraw.setVboRegion(vboRegions[layer.ordinal()]);
-+                    }
-+
-+                    sectionDraw.setMeshData(mesh);
-+                    this.draws.put(layer, sectionDraw);
-+                }
-             );
      }
  
 -    public void setTranslucencyPointOfView(final TranslucencyPointOfView translucencyPointOfView) {
++                    sectionDraw.setMeshData(mesh);
++                    this.draws.put(layer, sectionDraw);
++                }
++            );
++    }
++
 +    public void setTranslucencyPointOfView(TranslucencyPointOfView translucencyPointOfView) {
          this.translucencyPointOfView = translucencyPointOfView;
      }
@@ -104,7 +104,7 @@
          return !this.draws.containsKey(layer);
      }
  
-@@ -71,29 +95,37 @@
+@@ -71,37 +95,45 @@
      }
  
      @Override
@@ -135,8 +135,8 @@
 +        SectionMesh.SectionDraw draw = this.getSectionDraw(layer);
 +        if (draw != null) {
 +            draw.uploadVertexData();
-+        }
      }
++    }
  
 -    public void setIndexBufferUploaded(final ChunkSectionLayer layer) {
 +    public void setIndexBufferUploaded(ChunkSectionLayer layer) {
@@ -144,11 +144,11 @@
 +        SectionMesh.SectionDraw draw = this.getSectionDraw(layer);
 +        if (draw != null) {
 +            draw.uploadIndexData();
-+        }
      }
++    }
  
      @Override
-@@ -101,7 +133,7 @@
+     public boolean hasTranslucentGeometry() {
          return this.draws.containsKey(ChunkSectionLayer.TRANSLUCENT);
      }
  

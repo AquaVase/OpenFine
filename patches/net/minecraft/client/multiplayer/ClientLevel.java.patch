@@ -211,16 +211,16 @@
          this.updateSkyBrightness();
 +        if (Reflector.CapabilityProvider_gatherCapabilities.exists() && Reflector.CapabilityProvider.getTargetClass().isAssignableFrom(this.getClass())) {
 +            Reflector.call(this, Reflector.CapabilityProvider_gatherCapabilities);
-+        }
-+
+     }
+ 
+-    private EnvironmentAttributeSystem.Builder addEnvironmentAttributeLayers(final EnvironmentAttributeSystem.Builder environmentAttributes) {
 +        Reflector.ForgeEventFactory_onLevelLoad.call(this);
 +        if (this.minecraft.gameMode != null && this.minecraft.gameMode.getClass() == MultiPlayerGameMode.class) {
 +            this.minecraft.gameMode = new PlayerControllerOF(this.minecraft, connection);
 +            CustomGuis.setPlayerControllerOF((PlayerControllerOF)this.minecraft.gameMode);
 +        }
-     }
- 
--    private EnvironmentAttributeSystem.Builder addEnvironmentAttributeLayers(final EnvironmentAttributeSystem.Builder environmentAttributes) {
++    }
++
 +    private Builder addEnvironmentAttributeLayers(Builder environmentAttributes) {
          environmentAttributes.addDefaultLayers(this);
          int flashColor = ARGB.color(204, 204, 255);
@@ -346,9 +346,8 @@
          entity.setOldPosAndRot();
          entity.tickCount++;
          Profiler.get().push(entity.typeHolder()::getRegisteredName);
--        entity.tick();
 +        if (ReflectorForge.canUpdate(entity)) {
-+            entity.tick();
+         entity.tick();
 +        }
 +
 +        if (entity.isRemoved()) {
@@ -358,7 +357,7 @@
          Profiler.get().pop();
  
          for (Entity passenger : entity.getPassengers()) {
-@@ -479,17 +525,19 @@
+@@ -479,10 +525,9 @@
          }
      }
  
@@ -366,27 +365,23 @@
 -        if (entity.isRemoved() || entity.getVehicle() != vehicle) {
 -            entity.stopRiding();
 -        } else if (entity instanceof Player || this.tickingEntities.contains(entity)) {
--            entity.setOldPosAndRot();
--            entity.tickCount++;
--            entity.rideTick();
 +    private void tickPassenger(Entity vehicle, Entity entity) {
 +        if (!entity.isRemoved() && entity.getVehicle() == vehicle) {
 +            if (entity instanceof Player || this.tickingEntities.contains(entity)) {
-+                entity.setOldPosAndRot();
-+                entity.tickCount++;
-+                entity.rideTick();
- 
--            for (Entity passenger : entity.getPassengers()) {
--                this.tickPassenger(entity, passenger);
-+                for (Entity passenger : entity.getPassengers()) {
-+                    this.tickPassenger(entity, passenger);
-+                }
+             entity.setOldPosAndRot();
+             entity.tickCount++;
+             entity.rideTick();
+@@ -491,7 +536,10 @@
+                 this.tickPassenger(entity, passenger);
              }
+         }
 +        } else {
 +            entity.stopRiding();
-         }
      }
++    }
  
+     public void update() {
+         ProfilerFiller profiler = Profiler.get();
 @@ -502,13 +550,13 @@
          profiler.pop();
      }
@@ -418,20 +413,19 @@
  
 -    public void addEntity(final Entity entity) {
 -        this.removeEntity(entity.getId(), Entity.RemovalReason.DISCARDED);
--        this.entityStorage.addEntity(entity);
 +    public void addEntity(Entity entity) {
 +        if (!Reflector.ForgeEventFactory_onEntityJoinLevel.exists() || !Reflector.ForgeEventFactory_onEntityJoinLevel.callBoolean(entity, this)) {
 +            this.removeEntity(entity.getId(), RemovalReason.DISCARDED);
-+            this.entityStorage.addEntity(entity);
+         this.entityStorage.addEntity(entity);
 +            if (Reflector.IForgeEntity_onAddedToWorld.exists()) {
 +                Reflector.call(entity, Reflector.IForgeEntity_onAddedToWorld);
-+            }
-+
-+            this.onEntityAdded(entity);
-+        }
      }
  
 -    public void removeEntity(final int id, final Entity.RemovalReason reason) {
++            this.onEntityAdded(entity);
++        }
++    }
++
 +    public void removeEntity(int id, RemovalReason reason) {
          Entity entity = this.getEntities().get(id);
          if (entity != null) {
@@ -750,7 +744,7 @@
          try {
              this.levelEventHandler.levelEvent(type, pos, data);
          } catch (Throwable t) {
-@@ -894,66 +954,44 @@
+@@ -894,65 +954,43 @@
      }
  
      @Override
@@ -813,27 +807,25 @@
          try {
              Camera camera = this.minecraft.gameRenderer.mainCamera();
              ParticleStatus particleLevel = this.calculateParticleLevel(alwaysShowParticles);
--            if (overrideLimiter) {
--                this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
--            } else if (!(camera.position().distanceToSqr(x, y, z) > 1024.0)) {
--                if (particleLevel != ParticleStatus.MINIMAL) {
--                    this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
 +            if (CustomParticles.isAddParticle(particle)) {
 +                double maxDistSq = 1024.0;
 +                if (particle == ParticleTypes.CRIT) {
 +                    maxDistSq = 38416.0;
-                 }
++                }
 +
-+                if (overrideLimiter) {
+             if (overrideLimiter) {
+-                this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
+-            } else if (!(camera.position().distanceToSqr(x, y, z) > 1024.0)) {
+-                if (particleLevel != ParticleStatus.MINIMAL) {
+-                    this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
 +                    Particle particleInst = this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
 +                    CustomParticles.modifyParticle(particle, particleInst, this, x, y, z, this.renderEnv);
 +                } else if (!(camera.position().distanceToSqr(x, y, z) > maxDistSq) && particleLevel != ParticleStatus.MINIMAL) {
 +                    Particle particleInst = this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
 +                    CustomParticles.modifyParticle(particle, particleInst, this, x, y, z, this.renderEnv);
-+                }
+                 }
              }
          } catch (Throwable t) {
-             CrashReport report = CrashReport.forThrowable(t, "Exception while adding particle");
 @@ -967,7 +1005,7 @@
          }
      }
@@ -948,7 +940,7 @@
              VoxelShape shape = blockState.getShape(this, pos);
              double density = 0.25;
              shape.forAllBoxes(
-@@ -1102,13 +1146,14 @@
+@@ -1102,22 +1146,30 @@
                                  double x = relX * widthX + x1;
                                  double y = relY * widthY + y1;
                                  double z = relZ * widthZ + z1;
@@ -956,21 +948,20 @@
 -                                    .particleEngine
 -                                    .add(
 -                                        new TerrainParticle(
--                                            this, pos.getX() + x, pos.getY() + y, pos.getZ() + z, relX - 0.5, relY - 0.5, relZ - 0.5, blockState, pos
--                                        )
--                                    );
 +                                TerrainParticle terrainParticle = new TerrainParticle(
-+                                    this, pos.getX() + x, pos.getY() + y, pos.getZ() + z, relX - 0.5, relY - 0.5, relZ - 0.5, blockState, pos
-+                                );
+                                             this, pos.getX() + x, pos.getY() + y, pos.getZ() + z, relX - 0.5, relY - 0.5, relZ - 0.5, blockState, pos
+-                                        )
+                                     );
 +                                if (Reflector.TerrainParticle_updateSprite.exists()) {
 +                                    terrainParticle = (TerrainParticle)Reflector.call(terrainParticle, Reflector.TerrainParticle_updateSprite, blockState, pos);
-+                                }
+                             }
 +
 +                                this.minecraft.particleEngine.add(terrainParticle);
-                             }
                          }
                      }
-@@ -1117,7 +1162,14 @@
+                 }
++                }
+             );
          }
      }
  
@@ -994,11 +985,11 @@
 +            TerrainParticle terrainParticle = new TerrainParticle(this, xp, yp, zp, 0.0, 0.0, 0.0, blockState, pos);
 +            if (Reflector.TerrainParticle_updateSprite.exists()) {
 +                terrainParticle = (TerrainParticle)Reflector.call(terrainParticle, Reflector.TerrainParticle_updateSprite, blockState, pos);
-+            }
+         }
 +
 +            this.minecraft.particleEngine.add(terrainParticle.setPower(0.2F).scale(0.6F));
-         }
      }
++    }
  
 -    public void setServerSimulationDistance(final int serverSimulationDistance) {
 +    public void setServerSimulationDistance(int serverSimulationDistance) {
@@ -1177,10 +1168,10 @@
 +
 +                    for (PartEntity part : parts) {
 +                        ClientLevel.this.partEntities.put(part.getId(), part);
-+                    }
+         }
 +                }
 +            }
-         }
++        }
  
 -        public void onTrackingEnd(final Entity entity) {
 +        public void onTrackingEnd(Entity entity) {
@@ -1194,11 +1185,12 @@
 +
 +            if (Reflector.IForgeEntity_onRemovedFromWorld.exists()) {
 +                Reflector.call(entity, Reflector.IForgeEntity_onRemovedFromWorld);
-+            }
-+
+         }
+ 
+-        public void onSectionChange(final Entity entity) {
 +            if (Reflector.ForgeEventFactory_onEntityLeaveLevel.exists()) {
 +                Reflector.ForgeEventFactory_onEntityLeaveLevel.callVoid(entity, ClientLevel.this);
-+            }
+         }
 +
 +            if (Reflector.IForgeEntity_isMultipartEntity.exists() && Reflector.IForgeEntity_getParts.exists()) {
 +                boolean multipartEntity = Reflector.callBoolean(entity, Reflector.IForgeEntity_isMultipartEntity);
@@ -1207,17 +1199,16 @@
 +
 +                    for (PartEntity part : parts) {
 +                        ClientLevel.this.partEntities.remove(part.getId(), part);
-+                    }
+     }
+-}
+\ No newline at end of file
 +                }
 +            }
 +
 +            ClientLevel.this.onEntityRemoved(entity);
-         }
- 
--        public void onSectionChange(final Entity entity) {
++        }
++
 +        public void onSectionChange(Entity entity) {
-         }
-     }
--}
-\ No newline at end of file
++        }
++    }
 +}

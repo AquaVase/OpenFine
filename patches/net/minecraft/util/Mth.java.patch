@@ -662,8 +662,8 @@
 +
 +        for (int s = 0; s < SIN_TABLE_FAST.length; s++) {
 +            SIN_TABLE_FAST[s] = MathUtils.roundToFloat(Math.sin(s * Math.PI * 2.0 / 4096.0));
-+        }
      }
 -}
 \ No newline at end of file
++    }
 +}

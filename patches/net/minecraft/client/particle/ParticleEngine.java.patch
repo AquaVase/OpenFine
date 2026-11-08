@@ -67,7 +67,7 @@
          Particle particle = this.makeParticle(options, x, y, z, xa, ya, za);
          if (particle != null) {
              this.add(particle);
-@@ -61,22 +67,28 @@
+@@ -61,14 +67,18 @@
          }
      }
  
@@ -84,29 +84,21 @@
      }
  
 -    public void add(final Particle p) {
--        Optional<ParticleLimit> limit = p.getParticleLimit();
--        if (limit.isPresent()) {
--            if (this.hasSpaceInParticleLimit(limit.get())) {
--                this.particlesToAdd.add(p);
--                this.updateCount(limit.get(), 1);
 +    public void add(Particle p) {
 +        if (p != null) {
 +            if (Config.isFireworkParticles() || !p.getClass().getName().endsWith("FireworkParticles$SparkParticle")) {
-+                Optional<ParticleLimit> limit = p.getParticleLimit();
-+                if (limit.isPresent()) {
-+                    if (this.hasSpaceInParticleLimit(limit.get())) {
-+                        this.particlesToAdd.add(p);
-+                        this.updateCount(limit.get(), 1);
-+                    }
-+                } else {
-+                    this.particlesToAdd.add(p);
-+                }
-             }
--        } else {
--            this.particlesToAdd.add(p);
+         Optional<ParticleLimit> limit = p.getParticleLimit();
+         if (limit.isPresent()) {
+             if (this.hasSpaceInParticleLimit(limit.get())) {
+@@ -79,6 +89,8 @@
+             this.particlesToAdd.add(p);
          }
      }
++        }
++    }
  
+     public void tick() {
+         this.particles.forEach((type, group) -> {
 @@ -109,22 +121,24 @@
          }
      }

@@ -167,7 +167,6 @@
      }
  
 -    public void setTarget(final @Nullable LivingEntity target) {
--        this.target = this.asValidTarget(target);
 +    public void setTarget(LivingEntity target) {
 +        if (Reflector.ForgeEventFactory_onLivingChangeTargetMob.exists()) {
 +            LivingChangeTargetEvent changeTargetEvent = (LivingChangeTargetEvent)Reflector.ForgeEventFactory_onLivingChangeTargetMob.call(this, target);
@@ -175,9 +174,9 @@
 +                this.target = changeTargetEvent.getNewTarget();
 +            }
 +        } else {
-+            this.target = this.asValidTarget(target);
-+        }
+         this.target = this.asValidTarget(target);
      }
++    }
  
      @Override
 -    public boolean canAttack(final LivingEntity target) {
@@ -230,18 +229,15 @@
  
      @Override
      public void tick() {
--        super.tick();
--        if (!this.level().isClientSide() && this.tickCount % 5 == 0) {
--            this.updateControlFlags();
 +        if (Config.isSmoothWorld() && this.canSkipUpdate()) {
 +            this.onUpdateMinimal();
 +        } else {
-+            super.tick();
-+            if (!this.level().isClientSide() && this.tickCount % 5 == 0) {
-+                this.updateControlFlags();
-+            }
+         super.tick();
+         if (!this.level().isClientSide() && this.tickCount % 5 == 0) {
+             this.updateControlFlags();
          }
      }
++    }
  
      protected void updateControlFlags() {
          boolean noController = !(this.getControllingPassenger() instanceof Mob);
@@ -278,8 +274,8 @@
 +
 +        if (this.spawnReason != null) {
 +            output.putString("forge:spawn_type", this.spawnReason.name());
-+        }
      }
++    }
  
      @Override
 -    protected void readAdditionalSaveData(final ValueInput input) {
@@ -295,9 +291,9 @@
 +            try {
 +                this.spawnReason = EntitySpawnReason.valueOf(type);
 +            } catch (Exception var3) {
-+            }
-+        });
      }
++        });
++    }
  
      @Override
 -    protected void dropFromLootTable(final ServerLevel level, final DamageSource source, final boolean playerKilled) {
@@ -982,19 +978,17 @@
 -        registration.register(
 -            DebugSubscriptions.GOAL_SELECTORS,
 -            () -> {
--                Set<WrappedGoal> availableGoals = this.goalSelector.getAvailableGoals();
++        registration.register(DebugSubscriptions.GOAL_SELECTORS, () -> {
+                 Set<WrappedGoal> availableGoals = this.goalSelector.getAvailableGoals();
 -                List<DebugGoalInfo.DebugGoal> goalInfo = new ArrayList<>(availableGoals.size());
 -                availableGoals.forEach(
 -                    goal -> goalInfo.add(new DebugGoalInfo.DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().getClass().getSimpleName()))
 -                );
--                return new DebugGoalInfo(goalInfo);
--            }
--        );
-+        registration.register(DebugSubscriptions.GOAL_SELECTORS, () -> {
-+            Set<WrappedGoal> availableGoals = this.goalSelector.getAvailableGoals();
 +            List<DebugGoal> goalInfo = new ArrayList<>(availableGoals.size());
 +            availableGoals.forEach(goal -> goalInfo.add(new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().getClass().getSimpleName())));
-+            return new DebugGoalInfo(goalInfo);
+                 return new DebugGoalInfo(goalInfo);
+-            }
+-        );
 +        });
          if (!this.brain.isBrainDead()) {
              registration.register(DebugSubscriptions.BRAINS, () -> DebugBrainDump.takeBrainDump(level, this));

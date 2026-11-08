@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/texture/DynamicTexture.java
 +++ b/net/minecraft/client/renderer/texture/DynamicTexture.java
-@@ -10,43 +10,52 @@
+@@ -10,44 +10,53 @@
  import java.nio.file.Path;
  import java.util.function.Supplier;
  import net.minecraft.resources.Identifier;
@@ -45,8 +45,8 @@
 +        this.texture.setParentTexture(this);
 +        if (Config.isShaders()) {
 +            ShadersTex.initDynamicTextureNS(this);
-+        }
      }
++    }
  
 -    private void createTexture(final String label) {
 +    private void createTexture(String label) {
@@ -58,10 +58,11 @@
 +        this.texture.setParentTexture(this);
 +        if (Config.isShaders()) {
 +            ShadersTex.initDynamicTextureNS(this);
-+        }
      }
++    }
  
      public void upload() {
+         if (this.texture != null) {
 @@ -61,7 +70,7 @@
          return this.pixels;
      }

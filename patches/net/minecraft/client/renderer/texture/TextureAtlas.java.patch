@@ -108,14 +108,14 @@
 +        this.items = location.equals(LOCATION_ITEMS);
 +        if (this.terrain) {
 +            Config.setTextureMapBlocks(this);
-+        }
-+
-+        if (this.items) {
-+            Config.setTextureMapItems(this);
-+        }
      }
  
 -    private void createTexture(final int newWidth, final int newHeight, final int newMipLevel) {
++        if (this.items) {
++            Config.setTextureMapItems(this);
++        }
++    }
++
 +    private void createTexture(int newWidth, int newHeight, int newMipLevel) {
          LOGGER.info("Created: {}x{}x{} {}-atlas", newWidth, newHeight, newMipLevel, this.location);
          GpuDevice device = RenderSystem.getDevice();
@@ -139,18 +139,18 @@
 +            if (Config.isShaders()) {
 +                if (Shaders.configNormalMap) {
 +                    this.mipViewsNormal[level] = device.createTextureView(this.getMultiTexID().normTex, level, 1);
-+                }
+         }
 +
 +                if (Shaders.configSpecularMap) {
 +                    this.mipViewsSpecular[level] = device.createTextureView(this.getMultiTexID().specTex, level, 1);
-+                }
-+            }
-         }
-+
-+        this.texture.setParentTexture(this);
      }
++            }
++        }
  
 -    public void upload(final SpriteLoader.Preparations preparations) {
++        this.texture.setParentTexture(this);
++    }
++
 +    public void upload(SpriteLoader.Preparations preparations) {
          this.createTexture(preparations.width(), preparations.height(), preparations.mipLevel());
 +        this.atlasWidth = preparations.width();
@@ -201,8 +201,8 @@
 +                            if (animState != null) {
 +                                spriteNormal.setTicker(animState);
 +                                spriteNormal.setAnimationIndex(animationStates.size());
-+                            }
-+                        }
+                     }
+                 }
 +
 +                        TextureAtlasSprite spriteSpecular = sprite.spriteSpecular;
 +                        if (spriteSpecular != null) {
@@ -210,11 +210,11 @@
 +                            if (animState != null) {
 +                                spriteSpecular.setTicker(animState);
 +                                spriteSpecular.setAnimationIndex(animationStates.size());
-+                            }
-+                        }
-                     }
-                 }
              }
++                        }
++                    }
++                }
++            }
  
              this.spriteUbos = spriteUbos;
 -            this.animatedTexturesStates = animationStates.build();
@@ -400,7 +400,7 @@
                      )
                  );
              }
-@@ -247,21 +434,132 @@
+@@ -247,29 +434,140 @@
      }
  
      private void uploadAnimationFrames() {
@@ -439,17 +439,17 @@
 +                        if (sprite != null) {
 +                            if (sprite.spriteNormal != null) {
 +                                hasNormal = true;
-+                            }
+                     }
 +
 +                            if (sprite.spriteSpecular != null) {
 +                                hasSpecular = true;
-+                            }
-+                        }
-                     }
                  }
              }
          }
-+
+     }
++            }
++        }
+ 
 +        if (Config.isShaders()) {
 +            if (hasNormal) {
 +                for (int i = 0; i <= this.maxMipLevel; i++) {
@@ -533,10 +533,10 @@
 +                SmartAnimations.resetSpritesRendered(this);
 +            }
 +        }
-     }
- 
++    }
++
      @Override
-@@ -269,7 +567,7 @@
+     public void tick() {
          this.cycleAnimationFrames();
      }
  
@@ -545,21 +545,23 @@
          TextureAtlasSprite result = this.texturesByName.getOrDefault(location, this.missingSprite);
          if (result == null) {
              throw new IllegalStateException("Tried to lookup sprite, but atlas is not initialized");
-@@ -302,6 +600,14 @@
+@@ -302,8 +600,16 @@
          for (GpuTextureView view : this.mipViews) {
              view.close();
          }
 +
 +        for (GpuTextureView textureNormal : this.mipViewsNormal) {
 +            textureNormal.close();
-+        }
-+
+     }
+ 
 +        for (GpuTextureView textureSpecular : this.mipViewsSpecular) {
 +            textureSpecular.close();
 +        }
-     }
- 
++    }
++
      @Override
+     public void close() {
+         this.clearTextureData();
 @@ -318,11 +624,373 @@
          return this.maxSupportedTextureSize;
      }

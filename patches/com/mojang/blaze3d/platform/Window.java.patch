@@ -65,16 +65,10 @@
      ) throws BackendCreationException {
          this.monitorManager = monitorManager;
          this.exclusiveFullscreen = exclusiveFullscreen;
-@@ -101,20 +107,50 @@
+@@ -101,8 +107,37 @@
          Monitor initialMonitor = monitorManager.getMonitor(GLFW.glfwGetPrimaryMonitor());
          this.windowedWidth = this.width = allowedWindowMinSize(displayData.width());
          this.windowedHeight = this.height = allowedWindowMinSize(displayData.height());
--        this.handle = this.createWindow(backend, this.width, this.height, title, this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L);
--        this.backend = backend;
--        if (initialMonitor != null) {
--            VideoMode mode = initialMonitor.getPreferredVidMode(this.fullscreen ? this.preferredFullscreenVideoMode : Optional.empty());
--            this.windowedX = this.x = initialMonitor.x() + mode.getWidth() / 2 - this.width / 2;
--            this.windowedY = this.y = initialMonitor.y() + mode.getHeight() / 2 - this.height / 2;
 +        long handleForge = 0L;
 +        if (Reflector.ImmediateWindowHandler_setupMinecraftWindow.exists()) {
 +            handleForge = Reflector.ImmediateWindowHandler_setupMinecraftWindow
@@ -92,16 +86,11 @@
 +
 +        if (handleForge != 0L) {
 +            this.handle = handleForge;
-         } else {
--            int[] actualX = new int[1];
--            int[] actualY = new int[1];
--            GLFW.glfwGetWindowPos(this.handle, actualX, actualY);
--            this.windowedX = this.x = actualX[0];
--            this.windowedY = this.y = actualY[0];
-+            this.handle = this.createWindow(backend, this.width, this.height, title, this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L);
-         }
- 
-+        this.backend = backend;
++        } else {
+         this.handle = this.createWindow(backend, this.width, this.height, title, this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L);
++        }
++
+         this.backend = backend;
 +        if (handleForge == 0L
 +            || !Reflector.ImmediateWindowHandler_positionWindow
 +                .callBoolean(
@@ -111,22 +100,17 @@
 +                    (IntConsumer)x -> this.x = this.windowedX = x,
 +                    (IntConsumer)y -> this.y = this.windowedY = y
 +                )) {
-+            if (initialMonitor != null) {
-+                VideoMode mode = initialMonitor.getPreferredVidMode(this.fullscreen ? this.preferredFullscreenVideoMode : Optional.empty());
-+                this.windowedX = this.x = initialMonitor.x() + mode.getWidth() / 2 - this.width / 2;
-+                this.windowedY = this.y = initialMonitor.y() + mode.getHeight() / 2 - this.height / 2;
-+            } else {
-+                int[] actualX = new int[1];
-+                int[] actualY = new int[1];
-+                GLFW.glfwGetWindowPos(this.handle, actualX, actualY);
-+                this.windowedX = this.x = actualX[0];
-+                this.windowedY = this.y = actualY[0];
-+            }
+         if (initialMonitor != null) {
+             VideoMode mode = initialMonitor.getPreferredVidMode(this.fullscreen ? this.preferredFullscreenVideoMode : Optional.empty());
+             this.windowedX = this.x = initialMonitor.x() + mode.getWidth() / 2 - this.width / 2;
+@@ -114,6 +149,7 @@
+             this.windowedX = this.x = actualX[0];
+             this.windowedY = this.y = actualY[0];
+         }
 +        }
-+
+ 
          this.setMode();
          this.refreshFramebufferSize();
-         GLFW.glfwSetFramebufferSizeCallback(this.handle, this::onFramebufferResize);
 @@ -125,7 +161,7 @@
          GLFW.glfwSetWindowIconifyCallback(this.handle, this::onIconify);
      }
@@ -180,13 +164,13 @@
          this.errorSection = string;
 +        if (string.equals("Startup")) {
 +            TextureUtils.registerTickableTextures();
-+        }
-+
+     }
+ 
 +        if (string.equals("Render")) {
 +            GpuFrameTimer.startRender();
 +        }
-     }
- 
++    }
++
      private void setBootErrorCallback() {
          GLFW.glfwSetErrorCallback(Window::bootCrash);
      }
@@ -241,8 +225,8 @@
          this.framebufferHeight = outHeight[0] > 0 ? outHeight[0] : 1;
 +        if (this.framebufferHeight == 0 || this.framebufferWidth == 0) {
 +            Reflector.ImmediateWindowHandler_updateFBSize.call((IntConsumer)w -> this.framebufferWidth = w, (IntConsumer)h -> this.framebufferHeight = h);
-+        }
      }
++    }
  
 -    private void onResize(final long handle, final int newWidth, final int newHeight) {
 +    private void onResize(long handle, int newWidth, int newHeight) {

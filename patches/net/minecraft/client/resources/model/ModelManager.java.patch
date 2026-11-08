@@ -200,11 +200,11 @@
 +            ModelManager.ResolvedModels rms = new ModelManager.ResolvedModels(result.missingModel(), result.resolve());
 +            if (Config.isCustomItems()) {
 +                CustomItems.collectModelSprites(rms.models);
-+            }
+         }
 +
 +            return rms;
-         }
      }
++    }
  
      private static CompletableFuture<ModelManager.ReloadState> loadModels(
 -        final SpriteLoader.Preparations blockAtlas,
@@ -393,21 +393,20 @@
          Map<BlockState, BlockStateModel> blockStateModels,
          Map<BlockState, BlockModel> blockModels,
          Map<Fluid, FluidModel> fluidModels,
--        EntityModelSet entityModelSet
 +        EntityModelSet entityModelSet,
 +        ModelBakery modelBakery
-     ) {
++    ) {
 +        public ReloadState(
 +            ModelBakery.BakingResult bakedModels,
 +            Object2IntMap<BlockState> modelGroups,
 +            Map<BlockState, BlockStateModel> blockStateModels,
 +            Map<BlockState, BlockModel> blockModels,
 +            Map<Fluid, FluidModel> fluidModels,
-+            EntityModelSet entityModelSet
-+        ) {
+         EntityModelSet entityModelSet
+     ) {
 +            this(bakedModels, modelGroups, blockStateModels, blockModels, fluidModels, entityModelSet, null);
-+        }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      private record ResolvedModels(ResolvedModel missing, Map<Identifier, ResolvedModel> models) {

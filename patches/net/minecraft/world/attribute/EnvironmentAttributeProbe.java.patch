@@ -71,8 +71,8 @@
 +        @Override
 +        public String toString() {
 +            return "last: " + this.lastValue + ", new: " + this.newValue;
-+        }
      }
 -}
 \ No newline at end of file
++    }
 +}

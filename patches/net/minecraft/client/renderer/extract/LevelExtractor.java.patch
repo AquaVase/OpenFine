@@ -78,7 +78,7 @@
          if (this.minecraft.options.getEffectiveRenderDistance() != this.lastViewDistance) {
              this.allChanged();
          }
-@@ -113,24 +126,32 @@
+@@ -113,25 +126,33 @@
          this.levelRenderState.shouldResetChunkLayerSampler = this.shouldResetChunkLayerSampler;
          this.shouldResetChunkLayerSampler = false;
          this.levelRenderState.shouldResetSkyRenderer = this.shouldResetSkyRenderer;
@@ -108,10 +108,11 @@
 +            if (this.level.getSectionStorage().resetUpdated() || frustumChanged) {
 +                this.applyFrustumEntities(cullFrustum, -1);
 +                ShadersRender.frustumEntitiesShadowChanged = true;
-+            }
          }
++        }
  
          if (this.sectionUpdateTracker != null && this.level != null) {
+             ClientChunkCache chunkCache = this.level.getChunkSource();
 @@ -164,11 +185,13 @@
                                  section.getSectionNode(), dirtyState.isDirtyFromPlayer(), cache.createRegion(this.level, section.getSectionNode())
                              )
@@ -233,7 +234,7 @@
          Vec3 cameraPos = camera.position();
          double camX = cameraPos.x();
          double camY = cameraPos.y();
-@@ -333,28 +380,43 @@
+@@ -333,10 +380,26 @@
          }
      }
  
@@ -246,24 +247,6 @@
          levelRenderState.blockOutlineRenderState = null;
 -        if (this.minecraft.hitResult instanceof BlockHitResult blockHitResult) {
 -            if (blockHitResult.getType() != HitResult.Type.MISS) {
--                BlockPos pos = blockHitResult.getBlockPos();
--                BlockState state = this.level.getBlockState(pos);
--                if (!state.isAir() && this.level.getWorldBorder().isWithinBounds(pos)) {
--                    BlockStateModel blockStateModel = this.minecraft.getModelManager().getBlockStateModelSet().get(state);
--                    boolean isBlockTranslucent = blockStateModel.hasMaterialFlag(1);
--                    boolean highContrast = this.minecraft.options.highContrastBlockOutline().get();
--                    CollisionContext context = CollisionContext.of(camera.entity());
--                    VoxelShape shape = state.getShape(this.level, pos, context);
--                    if (SharedConstants.DEBUG_SHAPES) {
--                        VoxelShape collisionShape = state.getCollisionShape(this.level, pos, context);
--                        VoxelShape occlusionShape = state.getOcclusionShape();
--                        VoxelShape interactionShape = state.getInteractionShape(this.level, pos);
--                        levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(
--                            pos, isBlockTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape
--                        );
--                    } else {
--                        levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(pos, isBlockTranslucent, highContrast, shape);
--                    }
 +        if (Reflector.ForgeHooksClient_onExtractBlockOutline.exists()) {
 +            RenderHighlightEvent.Callback custom = (RenderHighlightEvent.Callback)Reflector.ForgeHooksClient_onExtractBlockOutline
 +                .call(this, camera, levelRenderState, this.minecraft.hitResult);
@@ -278,26 +261,23 @@
 +        }
 +
 +        if (this.minecraft.hitResult instanceof BlockHitResult blockHitResult && blockHitResult.getType() != Type.MISS) {
-+            BlockPos pos = blockHitResult.getBlockPos();
-+            BlockState state = this.level.getBlockState(pos);
-+            if (!state.isAir() && this.level.getWorldBorder().isWithinBounds(pos)) {
-+                BlockStateModel blockStateModel = this.minecraft.getModelManager().getBlockStateModelSet().get(state);
-+                boolean isBlockTranslucent = blockStateModel.hasMaterialFlag(1);
-+                boolean highContrast = this.minecraft.options.highContrastBlockOutline().get();
-+                CollisionContext context = CollisionContext.of(camera.entity());
-+                VoxelShape shape = state.getShape(this.level, pos, context);
-+                if (SharedConstants.DEBUG_SHAPES) {
-+                    VoxelShape collisionShape = state.getCollisionShape(this.level, pos, context);
-+                    VoxelShape occlusionShape = state.getOcclusionShape();
-+                    VoxelShape interactionShape = state.getInteractionShape(this.level, pos);
-+                    levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(
-+                        pos, isBlockTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape
-+                    );
-+                } else {
+                 BlockPos pos = blockHitResult.getBlockPos();
+                 BlockState state = this.level.getBlockState(pos);
+                 if (!state.isAir() && this.level.getWorldBorder().isWithinBounds(pos)) {
+@@ -353,12 +416,11 @@
+                             pos, isBlockTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape
+                         );
+                     } else {
+-                        levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(pos, isBlockTranslucent, highContrast, shape);
 +                    levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(pos, isBlockTranslucent, highContrast, shape, state);
+                     }
                  }
              }
          }
+-    }
+ 
+     private void extractGizmos() {
+         this.mainThreadGizmos.addTemporaryGizmos(Minecraft.getInstance().getPerTickGizmos());
 @@ -370,27 +432,35 @@
          this.levelRenderer.addMainThreadGizmos(this.mainThreadGizmos.drainGizmos());
      }
@@ -312,9 +292,8 @@
              throw new IllegalStateException("applyFrustum called from wrong thread: " + Thread.currentThread().getName());
          }
  
--        this.levelRenderer.clearVisibleSections();
 +        if (updateRenderInfos) {
-+            this.levelRenderer.clearVisibleSections();
+         this.levelRenderer.clearVisibleSections();
 +        }
 +
 +        this.levelRenderer.clearRenderInfosTerrain();
@@ -430,13 +409,13 @@
 -        for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.visibleSections()) {
 -            if (section.getSectionMesh().hasRenderableLayers()) {
 -                rendered++;
--            }
--        }
--
--        return rendered;
 +        return this.levelRenderer.getRenderInfosTerrain().size();
-     }
+             }
+-        }
  
+-        return rendered;
+-    }
+-
      @VisibleForDebug
 -    public @Nullable String sectionStatistics() {
 +    public String sectionStatistics() {

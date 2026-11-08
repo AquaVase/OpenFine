@@ -76,7 +76,7 @@
          Vec3 cameraPos = camera.pos;
          double camX = Math.floor(cameraPos.x / 8.0);
          double camY = Math.floor(cameraPos.y / 8.0);
-@@ -112,18 +116,55 @@
+@@ -112,19 +116,56 @@
      }
  
      public void addSectionsInFrustum(
@@ -105,7 +105,6 @@
          this.currentGraph.get().storage().sectionTree.visitNodes((node, fullyVisible, depth, isClose) -> {
              SectionRenderDispatcher.RenderSection renderSection = node.getSection();
              if (renderSection != null) {
--                visibleSections.add(renderSection);
 +                if (maxChunkDistance > 0) {
 +                    BlockPos posChunk = renderSection.getPosition();
 +                    int dx = cameraChunkX - posChunk.getX();
@@ -118,7 +117,7 @@
 +                }
 +
 +                if (updateSections) {
-+                    visibleSections.add(renderSection);
+                 visibleSections.add(renderSection);
 +                }
 +
                  if (isClose) {
@@ -128,14 +127,15 @@
 +                SectionMesh compiledChunk = renderSection.getSectionMesh();
 +                if (!compiledChunk.isEmpty()) {
 +                    renderInfosTerrain.add(renderSection);
-+                }
+             }
 +
 +                if (!compiledChunk.getRenderableBlockEntities().isEmpty()) {
 +                    renderInfosTileEntities.add(renderSection);
 +                }
-             }
++            }
          }, offsetFrustum, 32);
      }
+ 
 @@ -132,7 +173,7 @@
          return this.needsFrustumUpdate.compareAndSet(true, false);
      }
@@ -152,8 +152,8 @@
 +
 +        if (section.getSectionMesh().hasTerrainBlockEntities()) {
 +            this.needsFrustumUpdate.set(true);
-+        }
      }
++    }
  
 -    public void update(final CameraRenderState camera, final int fov, final ChunkLoadingRenderState chunkLoadingRenderState) {
 +    public void update(CameraRenderState camera, int fov, ChunkLoadingRenderState chunkLoadingRenderState) {
@@ -193,13 +193,13 @@
 +                        SectionMesh compiledChunk = section.sectionMesh.get();
 +                        if (!compiledChunk.isEmpty()) {
 +                            renderInfosTerrain.add(section);
-+                        }
+                 }
 +
 +                        if (!compiledChunk.getRenderableBlockEntities().isEmpty()) {
 +                            renderInfosTileEntities.add(section);
 +                        }
 +                    }
-                 }
++                }
              };
              this.runUpdates(state.storage, camera.pos, queue, camera.smartCull, onSectionAdded, this.emptySections, this.loadedChunks);
          }
@@ -303,13 +303,12 @@
      ) {
          long relative = renderSection.getNeighborSectionNode(direction);
 -        if (!this.isInViewDistance(cameraSectionNode, relative)) {
--            return null;
 +        int yIn = SectionPos.sectionToBlockCoord(SectionPos.y(cameraSectionNode));
 +        int yN = SectionPos.sectionToBlockCoord(SectionPos.y(relative));
 +        ClientLevel world = this.levelRenderer.getWorld();
 +        if (yN >= world.getMinY() && yN < world.getMaxY()) {
 +            if (Mth.abs(yIn - yN) > this.levelExtractor.renderDistance) {
-+                return null;
+             return null;
 +            }
 +
 +            int xIn = SectionPos.sectionToBlockCoord(SectionPos.x(cameraSectionNode));
@@ -388,8 +387,8 @@
 +        @Override
 +        public String toString() {
 +            return "sectionToNode: " + this.sectionToNodeMap + ", sectionTree: " + this.sectionTree + ", sectionsWaiting: " + this.sectionsWaitingForChunkLoads;
-+        }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      @VisibleForDebug
@@ -487,7 +486,9 @@
 +                if (node != null) {
 +                    if (!sb.isEmpty()) {
 +                        sb.append(", ");
-+                    }
+     }
+-}
+\ No newline at end of file
 +
 +                    sb.append(i + ":" + node);
 +                    if (count++ > 100) {
@@ -499,7 +500,5 @@
 +
 +            return "[" + sb.toString() + "]";
 +        }
-     }
--}
-\ No newline at end of file
++    }
 +}

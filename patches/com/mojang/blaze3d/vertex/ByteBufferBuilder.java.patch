@@ -170,8 +170,8 @@
 +        @Override
 +        public String toString() {
 +            return "offset: " + this.offset + ", size: " + this.size + ", generation: " + this.generation + ", closed: " + this.closed;
-+        }
      }
 -}
 \ No newline at end of file
++    }
 +}

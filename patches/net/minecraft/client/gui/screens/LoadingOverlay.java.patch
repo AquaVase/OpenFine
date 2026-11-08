@@ -75,7 +75,7 @@
              logoAlpha = 1.0F - Mth.clamp(fadeOutAnim - 1.0F, 0.0F, 1.0F);
          } else if (this.fadeIn) {
              if (this.minecraft.gui.screen() != null && fadeInAnim < 1.0F) {
-@@ -96,57 +105,70 @@
+@@ -96,13 +105,14 @@
  
              int alpha = Mth.ceil(Mth.clamp(fadeInAnim, 0.15, 1.0) * 255.0);
              graphics.nextStratum();
@@ -88,58 +88,14 @@
              logoAlpha = 1.0F;
          }
  
--        int contentX = (int)(graphics.guiWidth() * 0.5);
--        int logoY = (int)(graphics.guiHeight() * 0.5);
--        double logoHeight = Math.min(graphics.guiWidth() * 0.75, graphics.guiHeight()) * 0.25;
--        int logoHeightHalf = (int)(logoHeight * 0.5);
--        double contentWidth = logoHeight * 4.0;
--        int logoWidthHalf = (int)(contentWidth * 0.5);
--        int color = ARGB.white(logoAlpha);
--        graphics.blit(
--            RenderPipelines.MOJANG_LOGO,
--            MOJANG_STUDIOS_LOGO_LOCATION,
--            contentX - logoWidthHalf,
--            logoY - logoHeightHalf,
--            -0.0625F,
--            0.0F,
--            logoWidthHalf,
--            (int)logoHeight,
--            120,
--            60,
--            120,
--            120,
--            color
--        );
--        graphics.blit(
--            RenderPipelines.MOJANG_LOGO,
--            MOJANG_STUDIOS_LOGO_LOCATION,
--            contentX,
--            logoY - logoHeightHalf,
--            0.0625F,
--            60.0F,
--            logoWidthHalf,
--            (int)logoHeight,
--            120,
--            60,
--            120,
--            120,
--            color
--        );
--        int barY = (int)(graphics.guiHeight() * 0.8325);
--        float actualProgress = this.reload.getActualProgress();
--        this.currentProgress = Mth.clamp(this.currentProgress * 0.95F + actualProgress * 0.050000012F, 0.0F, 1.0F);
--        if (fadeOutAnim < 1.0F) {
--            this.extractProgressBar(
--                graphics, width / 2 - logoWidthHalf, barY - 5, width / 2 + logoWidthHalf, barY + 5, 1.0F - Mth.clamp(fadeOutAnim, 0.0F, 1.0F)
--            );
 +        if (this.renderContents(graphics, logoAlpha)) {
-+            int contentX = (int)(graphics.guiWidth() * 0.5);
-+            int logoY = (int)(graphics.guiHeight() * 0.5);
-+            double logoHeight = Math.min(graphics.guiWidth() * 0.75, graphics.guiHeight()) * 0.25;
-+            int logoHeightHalf = (int)(logoHeight * 0.5);
-+            double contentWidth = logoHeight * 4.0;
-+            int logoWidthHalf = (int)(contentWidth * 0.5);
-+            int color = ARGB.white(logoAlpha);
+         int contentX = (int)(graphics.guiWidth() * 0.5);
+         int logoY = (int)(graphics.guiHeight() * 0.5);
+         double logoHeight = Math.min(graphics.guiWidth() * 0.75, graphics.guiHeight()) * 0.25;
+@@ -110,6 +120,15 @@
+         double contentWidth = logoHeight * 4.0;
+         int logoWidthHalf = (int)(contentWidth * 0.5);
+         int color = ARGB.white(logoAlpha);
 +            boolean renderLogo = true;
 +            if (this.blendState != null) {
 +                this.blendState.apply();
@@ -149,49 +105,26 @@
 +            }
 +
 +            if (renderLogo) {
-+                graphics.blit(
-+                    RenderPipelines.MOJANG_LOGO,
-+                    MOJANG_STUDIOS_LOGO_LOCATION,
-+                    contentX - logoWidthHalf,
-+                    logoY - logoHeightHalf,
-+                    -0.0625F,
-+                    0.0F,
-+                    logoWidthHalf,
-+                    (int)logoHeight,
-+                    120,
-+                    60,
-+                    120,
-+                    120,
-+                    color
-+                );
-+                graphics.blit(
-+                    RenderPipelines.MOJANG_LOGO,
-+                    MOJANG_STUDIOS_LOGO_LOCATION,
-+                    contentX,
-+                    logoY - logoHeightHalf,
-+                    0.0625F,
-+                    60.0F,
-+                    logoWidthHalf,
-+                    (int)logoHeight,
-+                    120,
-+                    60,
-+                    120,
-+                    120,
-+                    color
-+                );
+         graphics.blit(
+             RenderPipelines.MOJANG_LOGO,
+             MOJANG_STUDIOS_LOGO_LOCATION,
+@@ -140,6 +159,8 @@
+             120,
+             color
+         );
 +            }
 +
-+            int barY = (int)(graphics.guiHeight() * 0.8325);
-+            float actualProgress = this.reload.getActualProgress();
-+            this.currentProgress = Mth.clamp(this.currentProgress * 0.95F + actualProgress * 0.050000012F, 0.0F, 1.0F);
-+            if (fadeOutAnim < 1.0F) {
-+                this.extractProgressBar(
-+                    graphics, width / 2 - logoWidthHalf, barY - 5, width / 2 + logoWidthHalf, barY + 5, 1.0F - Mth.clamp(fadeOutAnim, 0.0F, 1.0F)
-+                );
-+            }
+         int barY = (int)(graphics.guiHeight() * 0.8325);
+         float actualProgress = this.reload.getActualProgress();
+         this.currentProgress = Mth.clamp(this.currentProgress * 0.95F + actualProgress * 0.050000012F, 0.0F, 1.0F);
+@@ -148,6 +169,7 @@
+                 graphics, width / 2 - logoWidthHalf, barY - 5, width / 2 + logoWidthHalf, barY + 5, 1.0F - Mth.clamp(fadeOutAnim, 0.0F, 1.0F)
+             );
          }
++        }
  
          if (fadeOutAnim >= 2.0F) {
+             this.minecraft.gui.setOverlay(null);
 @@ -157,6 +179,8 @@
      @Override
      public void tick() {
@@ -334,8 +267,8 @@
 +            return resourceManager.getResource(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION).isPresent()
 +                ? resourceManager.open(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION)
 +                : resourceProvider.open(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION);
-+        }
      }
 -}
 \ No newline at end of file
++    }
 +}

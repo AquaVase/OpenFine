@@ -145,8 +145,8 @@
 +        @Override
 +        public String toString() {
 +            return this.boundingBox + "";
-+        }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      private final class Leaf implements Octree.Node {
@@ -185,8 +185,8 @@
 +        @Override
 +        public String toString() {
 +            return this.section + "";
-+        }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      public interface Node {

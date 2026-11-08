@@ -90,21 +90,11 @@
          return switch (severity) {
              case 33387 -> "NOTIFICATION";
              case 37190 -> "HIGH";
-@@ -68,21 +98,59 @@
+@@ -68,11 +98,46 @@
          };
      }
  
 -    private void printDebugLog(final int source, final int type, final int id, final int severity, final int length, final long message, final long userParam) {
--        String msg = GLDebugMessageCallback.getMessage(length, message);
--        GlDebug.LogEntry entry;
--        synchronized (this.MESSAGE_BUFFER) {
--            entry = this.lastEntry;
--            if (entry != null && entry.isSame(source, type, id, severity, msg)) {
--                entry.count++;
--            } else {
--                entry = new GlDebug.LogEntry(source, type, id, severity, msg);
--                this.MESSAGE_BUFFER.add(entry);
--                this.lastEntry = entry;
 +    private void printDebugLog(int source, int type, int id, int severity, int length, long message, long userParam) {
 +        if (type != 33385 && type != 33386) {
 +            if (!ArrayUtils.contains(ignoredErrors, id)) {
@@ -142,27 +132,29 @@
 +                                mc.schedule(() -> mc.gui.hud.getChat().addClientSystemMessage(Component.literal(messageChat)));
 +                            }
 +
-+                            String msg = GLDebugMessageCallback.getMessage(length, message);
-+                            synchronized (this.MESSAGE_BUFFER) {
+         String msg = GLDebugMessageCallback.getMessage(length, message);
+-        GlDebug.LogEntry entry;
+         synchronized (this.MESSAGE_BUFFER) {
+-            entry = this.lastEntry;
 +                                GlDebug.LogEntry entry = this.lastEntry;
-+                                if (entry != null && entry.isSame(source, type, id, severity, msg)) {
-+                                    entry.count++;
-+                                } else {
-+                                    entry = new GlDebug.LogEntry(source, type, id, severity, msg);
-+                                    this.MESSAGE_BUFFER.add(entry);
-+                                    this.lastEntry = entry;
-+                                }
-+                            }
-+                        }
-+                    }
-+                }
+             if (entry != null && entry.isSame(source, type, id, severity, msg)) {
+                 entry.count++;
+             } else {
+@@ -81,9 +146,12 @@
+                 this.lastEntry = entry;
              }
          }
 -
 -        LOGGER.info("OpenGL debug message: {}", entry);
      }
++                    }
++                }
++            }
++        }
++    }
  
      public List<String> getLastOpenGlDebugMessages() {
+         synchronized (this.MESSAGE_BUFFER) {
 @@ -97,7 +165,7 @@
          }
      }

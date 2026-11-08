@@ -76,7 +76,7 @@
          textureManager.registerForNextReload(LogoRenderer.MINECRAFT_LOGO);
          textureManager.registerForNextReload(LogoRenderer.MINECRAFT_EDITION);
          textureManager.registerForNextReload(Panorama.PANORAMA_OVERLAY);
-@@ -108,16 +113,32 @@
+@@ -108,17 +113,33 @@
      protected void init() {
          if (this.splash == null) {
              this.splash = this.minecraft.gui.splashManager().getSplash();
@@ -86,13 +86,13 @@
 +            int month = calendar.get(2) + 1;
 +            if (day == 8 && month == 4) {
 +                this.splash = new SplashRenderer(Component.literal("Happy birthday, OptiFine!"));
-+            }
-+
+         }
+ 
 +            if (day == 14 && month == 8) {
 +                this.splash = new SplashRenderer(Component.literal("Happy birthday, sp614x!"));
 +            }
-         }
- 
++        }
++
          int copyrightWidth = this.font.width(COPYRIGHT_TEXT);
          int copyrightX = this.width - copyrightWidth - 2;
          int spacing = 24;
@@ -105,10 +105,11 @@
 +            if (Reflector.ModListScreen_Constructor.exists()) {
 +                modButton = ReflectorForge.makeButtonMods(this, topPos, 24);
 +                this.addRenderableWidget(modButton);
-+            }
          }
++        }
  
          int numberOfButtons = 3;
+         int currentButton = 0;
 @@ -141,7 +162,7 @@
              CommonButtons.accessibility(20, var1x -> this.minecraft.gui.setScreen(new AccessibilityOptionsScreen(this, this.minecraft.options)), true)
          );
@@ -125,8 +126,8 @@
 +
 +        if (Reflector.TitleScreenModUpdateIndicator_init.exists()) {
 +            this.modUpdateNotification = (Screen)Reflector.call(Reflector.TitleScreenModUpdateIndicator_init, this, modButton);
-+        }
      }
++    }
  
 -    private int getHorizontalPosition(final int currentButton, final int numberOfButtons, final int buttonWidth) {
 +    private int getHorizontalPosition(int currentButton, int numberOfButtons, int buttonWidth) {
@@ -219,7 +220,6 @@
              versionString = versionString + I18n.get("menu.modded");
          }
  
--        graphics.text(this.font, versionString, 2, this.height - 10, ARGB.white(widgetFade));
 +        if (Reflector.BrandingControl.exists()) {
 +            float widgetFadeF = widgetFade;
 +            if (Reflector.BrandingControl_forEachLine.exists()) {
@@ -236,7 +236,7 @@
 +                Reflector.call(Reflector.BrandingControl_forEachAboveCopyrightLine, lineConsumer);
 +            }
 +        } else {
-+            graphics.text(this.font, versionString, 2, this.height - 10, ARGB.white(widgetFade));
+         graphics.text(this.font, versionString, 2, this.height - 10, ARGB.white(widgetFade));
 +        }
 +
          if (this.realmsNotificationsEnabled() && widgetFade >= 1.0F) {
@@ -245,8 +245,8 @@
 +
 +        if (this.modUpdateNotification != null && widgetFade >= 1.0F) {
 +            this.modUpdateNotification.extractRenderState(graphics, mouseX, mouseY, a);
-+        }
      }
++    }
  
      @Override
 -    public void extractBackground(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {

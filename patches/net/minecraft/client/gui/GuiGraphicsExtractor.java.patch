@@ -582,7 +582,7 @@
      ) {
          if (width > 0 && height > 0) {
              if (nineSlice.stretchInner()) {
-@@ -748,84 +700,74 @@
+@@ -748,30 +700,31 @@
                      color
                  );
              } else {
@@ -624,48 +624,25 @@
      ) {
          if (width > 0 && height > 0) {
 -            if (tileWidth > 0 && tileHeight > 0) {
--                AbstractTexture spriteTexture = this.minecraft.getTextureManager().getTexture(sprite.atlasLocation());
--                GpuTextureView texture = spriteTexture.getTextureView();
--                this.innerTiledBlit(
--                    renderPipeline,
--                    texture,
--                    spriteTexture.getSampler(),
--                    tileWidth,
--                    tileHeight,
--                    x,
--                    y,
--                    x + width,
--                    y + height,
--                    sprite.getU((float)textureX / spriteWidth),
--                    sprite.getU((float)(textureX + tileWidth) / spriteWidth),
--                    sprite.getV((float)textureY / spriteHeight),
--                    sprite.getV((float)(textureY + tileHeight) / spriteHeight),
--                    color
--                );
--            } else {
 +            if (tileWidth <= 0 || tileHeight <= 0) {
-                 throw new IllegalArgumentException("Tile size must be positive, got " + tileWidth + "x" + tileHeight);
-             }
++                throw new IllegalArgumentException("Tile size must be positive, got " + tileWidth + "x" + tileHeight);
++            }
 +
-+            AbstractTexture spriteTexture = this.minecraft.getTextureManager().getTexture(sprite.atlasLocation());
-+            GpuTextureView texture = spriteTexture.getTextureView();
-+            this.innerTiledBlit(
-+                renderPipeline,
-+                texture,
-+                spriteTexture.getSampler(),
-+                tileWidth,
-+                tileHeight,
-+                x,
-+                y,
-+                x + width,
-+                y + height,
-+                sprite.getU((float)textureX / spriteWidth),
-+                sprite.getU((float)(textureX + tileWidth) / spriteWidth),
-+                sprite.getV((float)textureY / spriteHeight),
-+                sprite.getV((float)(textureY + tileHeight) / spriteHeight),
-+                color
-+            );
+                 AbstractTexture spriteTexture = this.minecraft.getTextureManager().getTexture(sprite.atlasLocation());
+                 GpuTextureView texture = spriteTexture.getTextureView();
+                 this.innerTiledBlit(
+@@ -790,42 +743,31 @@
+                     sprite.getV((float)(textureY + tileHeight) / spriteHeight),
+                     color
+                 );
+-            } else {
+-                throw new IllegalArgumentException("Tile size must be positive, got " + tileWidth + "x" + tileHeight);
+             }
          }
++
++    private void innerBlit(RenderPipeline renderPipeline, Identifier location, int x0, int x1, int y0, int y1, float u0, float u1, float v0, float v1, int color) {
++        if (Config.isCustomGuis()) {
++            location = CustomGuis.getTextureLocation(location);
      }
  
 -    private void innerBlit(
@@ -681,11 +658,6 @@
 -        final float v1,
 -        final int color
 -    ) {
-+    private void innerBlit(RenderPipeline renderPipeline, Identifier location, int x0, int x1, int y0, int y1, float u0, float u1, float v0, float v1, int color) {
-+        if (Config.isCustomGuis()) {
-+            location = CustomGuis.getTextureLocation(location);
-+        }
-+
          AbstractTexture texture = this.minecraft.getTextureManager().getTexture(location);
          this.innerBlit(renderPipeline, texture.getTextureView(), texture.getSampler(), x0, y0, x1, y1, u0, u1, v0, v1, color);
      }
@@ -812,9 +784,9 @@
 +            if (Reflector.ItemDecoratorHandler_render.exists()) {
 +                Object idh = Reflector.call(Reflector.ItemDecoratorHandler_of, itemStack);
 +                Reflector.call(idh, Reflector.ItemDecoratorHandler_render, this, font, itemStack, x, y);
-+            }
          }
      }
++    }
  
 -    private void itemBar(final ItemStack itemStack, final int x, final int y) {
 +    private void itemBar(ItemStack itemStack, int x, int y) {
@@ -829,11 +801,11 @@
 +                float maxDmg = itemStack.getMaxDamage();
 +                float durability = Math.max(0.0F, (maxDmg - dmg) / maxDmg);
 +                barColor = CustomColors.getDurabilityColor(durability, barColor);
-+            }
+         }
 +
 +            this.fill(RenderPipelines.GUI, left, top, left + itemStack.getBarWidth(), top + 1, ARGB.opaque(barColor));
-         }
      }
++    }
  
 -    private void itemCount(final Font font, final ItemStack itemStack, final int x, final int y, final @Nullable String countText) {
 +    private void itemCount(Font font, ItemStack itemStack, int x, int y, String countText) {
@@ -1053,8 +1025,8 @@
 +            this.setTooltipForNextFrameInternal(font, components, xo, yo, DefaultTooltipPositioner.INSTANCE, null, false);
 +        } else {
 +            this.setComponentTooltipForNextFrame(font, lines, xo, yo, (Identifier)null);
-+        }
      }
++    }
  
 -    public void setComponentTooltipForNextFrame(final Font font, final List<Component> lines, final int xo, final int yo, final @Nullable Identifier style) {
 +    public void renderComponentTooltip(Font font, List<? extends FormattedText> tooltips, int mouseX, int mouseY, ItemStack stack) {

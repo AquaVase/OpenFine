@@ -56,10 +56,10 @@
 -                PigVariant.ModelType.COLD,
 -                new AdultAndBabyModelPair<>(
 -                    new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY))
--                )
 +                ModelType.COLD,
 +                new AdultAndBabyModelPair<>(new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY)))
-             )
+                 )
+-            )
          );
      }
  

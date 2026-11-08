@@ -167,33 +167,26 @@
          return this.value;
      }
  
-@@ -150,16 +163,17 @@
+@@ -150,15 +163,16 @@
          return this.caption.getString();
      }
  
 -    public void set(final T value) {
--        T newValue = this.values.validateValue(value).orElseGet(() -> {
--            LOGGER.error("Illegal option value {} for {}", value, this.caption.getString());
--            return this.initialValue;
--        });
--        if (!Minecraft.getInstance().isRunning()) {
--            this.value = newValue;
--        } else {
--            if (!Objects.equals(this.value, newValue)) {
 +    public void set(T value) {
 +        Options options = Config.getGameSettings();
 +        if (options == null || options.checkOptionValue(this, value)) {
-+            T newValue = this.values.validateValue(value).orElseGet(() -> {
-+                LOGGER.error("Illegal option value {} for {}", value, this.caption.getString());
-+                return this.initialValue;
-+            });
-+            if (!Minecraft.getInstance().isRunning()) {
-                 this.value = newValue;
+         T newValue = this.values.validateValue(value).orElseGet(() -> {
+             LOGGER.error("Illegal option value {} for {}", value, this.caption.getString());
+             return this.initialValue;
+         });
+         if (!Minecraft.getInstance().isRunning()) {
+             this.value = newValue;
+-        } else {
+-            if (!Objects.equals(this.value, newValue)) {
 +            } else if (!Objects.equals(this.value, newValue)) {
-+                this.value = newValue;
+                 this.value = newValue;
                  this.onValueUpdate.valueChanged(newValue);
              }
-         }
 @@ -169,7 +183,44 @@
          return this.values;
      }
@@ -461,7 +454,7 @@
          ) {
              super(options, x, y, width, height, values.toSliderValue(instance.get()));
              this.instance = instance;
-@@ -405,20 +455,48 @@
+@@ -405,22 +455,50 @@
              this.onValueChanged = onValueChanged;
              this.applyValueImmediately = applyValueImmediately;
              this.updateMessage();
@@ -471,8 +464,6 @@
  
          @Override
          protected void updateMessage() {
--            this.setMessage(this.instance.toString.apply(this.values.fromSliderValue(this.value)));
--            this.setTooltip(this.tooltipSupplier.apply(this.values.fromSliderValue(this.value)));
 +            if (this.adjusting) {
 +                double denormValue = ((Number)this.values.fromSliderValue(this.value)).doubleValue();
 +                Component text = FloatOptions.getTextComponent(this.instance, denormValue);
@@ -486,19 +477,15 @@
 +                        this.setMessage(comp);
 +                    }
 +                } else {
-+                    this.setMessage(this.instance.toString.apply(this.values.fromSliderValue(this.value)));
+             this.setMessage(this.instance.toString.apply(this.values.fromSliderValue(this.value)));
 +                }
 +
-+                this.setTooltip(this.tooltipSupplier.apply(this.values.fromSliderValue(this.value)));
-+            }
+             this.setTooltip(this.tooltipSupplier.apply(this.values.fromSliderValue(this.value)));
          }
++        }
  
          @Override
          protected void applyValue() {
--            if (this.applyValueImmediately) {
--                this.applyUnsavedValue();
--            } else {
--                this.delayedApplyAt = Util.getMillis() + 600L;
 +            if (!this.adjusting) {
 +                N valOld = this.instance.get();
 +                N valNew = this.values.fromSliderValue(this.value);
@@ -507,15 +494,17 @@
 +                        spo.setOptionValue(((Number)valNew).doubleValue());
 +                    }
 +
-+                    if (this.applyValueImmediately) {
-+                        this.applyUnsavedValue();
-+                    } else {
-+                        this.delayedApplyAt = Util.getMillis() + 600L;
-+                    }
-+                }
+             if (this.applyValueImmediately) {
+                 this.applyUnsavedValue();
+             } else {
+                 this.delayedApplyAt = Util.getMillis() + 600L;
              }
          }
++            }
++        }
  
+         public void applyUnsavedValue() {
+             N sliderValue = this.values.fromSliderValue(this.value);
 @@ -440,7 +518,7 @@
          }
  
@@ -558,8 +547,9 @@
 +        public void onClick(MouseButtonEvent eventIn, boolean doubleIn) {
 +            if (this.supportAdjusting) {
 +                this.adjusting = true;
-+            }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
 +            super.onClick(eventIn, doubleIn);
 +        }
 +
@@ -576,9 +566,8 @@
 +        public OptionInstance getControlOption() {
 +            return this.instance;
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
++    }
++
      public record SliderableEnum<T>(List<T> values, Codec<T> codec) implements OptionInstance.SliderableValueSet<T> {
          @Override
 -        public double toSliderValue(final T value) {

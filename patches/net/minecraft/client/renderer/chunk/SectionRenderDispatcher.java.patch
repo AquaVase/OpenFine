@@ -217,7 +217,7 @@
              this.reset();
              this.sectionNode = sectionNode;
              int x = SectionPos.sectionToBlockCoord(SectionPos.x(sectionNode));
-@@ -249,6 +301,19 @@
+@@ -249,8 +301,21 @@
              int z = SectionPos.sectionToBlockCoord(SectionPos.z(sectionNode));
              this.renderOrigin.set(x, y, z);
              this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
@@ -229,14 +229,16 @@
 +                this.regionDX = x - this.regionX;
 +                this.regionDY = y;
 +                this.regionDZ = z - this.regionZ;
-+            }
-+
+         }
+ 
 +            this.renderChunksOffset16Updated = false;
 +            this.chunk = null;
 +            this.boundingBoxParent = null;
-         }
- 
++        }
++
          public SectionMesh getSectionMesh() {
+             return this.sectionMesh.get();
+         }
 @@ -274,12 +339,16 @@
              return this.renderOrigin;
          }
@@ -350,7 +352,7 @@
                          success &= sectionBuffers.indexBuffer.addAllocation(key, callback, indexBuffer);
                      } else {
                          key.setIndexBufferUploaded(layer);
-@@ -416,79 +483,185 @@
+@@ -416,17 +483,108 @@
              return success;
          }
  
@@ -457,38 +459,18 @@
  
              @Override
 -            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(final SectionBufferBuilderPack buffers) {
--                if (this.isCancelled.get()) {
--                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
--                }
 +            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
 +                try {
-+                    if (this.isCancelled.get()) {
-+                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
-+                    }
+                 if (this.isCancelled.get()) {
+                     return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
+                 }
+@@ -441,12 +599,22 @@
  
--                long sectionNode = RenderSection.this.sectionNode;
--                SectionPos sectionPos = SectionPos.of(sectionNode);
--                if (this.isCancelled.get()) {
--                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
--                }
-+                    long sectionNode = RenderSection.this.sectionNode;
-+                    SectionPos sectionPos = SectionPos.of(sectionNode);
-+                    if (this.isCancelled.get()) {
-+                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
-+                    }
- 
--                Vec3 cameraPos = SectionRenderDispatcher.this.cameraPosition.get();
-+                    Vec3 cameraPos = SectionRenderDispatcher.this.cameraPosition.get();
- 
--                SectionCompiler.Results results;
--                try (Zone ignored = Profiler.get().zone("Compile Section")) {
--                    results = SectionRenderDispatcher.this.sectionCompiler
--                        .compile(sectionPos, this.region, RenderSection.this.createVertexSorting(sectionPos, cameraPos), buffers);
--                }
-+                    SectionCompiler.Results results;
-+                    try (Zone ignored = Profiler.get().zone("Compile Section")) {
+                 SectionCompiler.Results results;
+                 try (Zone ignored = Profiler.get().zone("Compile Section")) {
 +                        ChunkCacheOF chunkCacheOF = this.region.makeChunkCacheOF();
-+                        results = SectionRenderDispatcher.this.sectionCompiler
+                     results = SectionRenderDispatcher.this.sectionCompiler
+-                        .compile(sectionPos, this.region, RenderSection.this.createVertexSorting(sectionPos, cameraPos), buffers);
 +                            .compile(
 +                                sectionPos,
 +                                chunkCacheOF,
@@ -498,94 +480,28 @@
 +                                RenderSection.this.regionDY,
 +                                RenderSection.this.regionDZ
 +                            );
-+                    }
+                 }
  
--                TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
+                 TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
 -                CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results);
--                if (results.renderedLayers.isEmpty()) {
--                    SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
--                    SectionRenderDispatcher.this.copyLock.lock();
-+                    TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
 +                    CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results, RenderSection.this.vboRegions);
 +                    compiledSectionMesh.setAnimatedSprites(results.animatedSprites);
-+                    if (results.renderedLayers.isEmpty()) {
-+                        SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
-+                        SectionRenderDispatcher.this.copyLock.lock();
+                 if (results.renderedLayers.isEmpty()) {
+                     SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
+                     SectionRenderDispatcher.this.copyLock.lock();
+@@ -490,7 +658,12 @@
  
--                    try {
--                        RenderSection.this.releaseSectionMesh(oldMesh);
--                    } finally {
--                        SectionRenderDispatcher.this.copyLock.unlock();
--                    }
-+                        try {
-+                            RenderSection.this.releaseSectionMesh(oldMesh);
-+                        } finally {
-+                            SectionRenderDispatcher.this.copyLock.unlock();
-+                        }
- 
--                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
--                } else {
--                    for (Entry<ChunkSectionLayer, MeshData> entry : results.renderedLayers.entrySet()) {
--                        MeshData meshData = entry.getValue();
--                        boolean success = false;
-+                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
-+                    } else {
-+                        for (Entry<ChunkSectionLayer, MeshData> entry : results.renderedLayers.entrySet()) {
-+                            MeshData meshData = entry.getValue();
-+                            boolean success = false;
- 
--                        while (!success) {
--                            if (this.isCancelled.get()) {
--                                results.release();
--                                SectionRenderDispatcher.this.copyLock.lock();
-+                            while (!success) {
-+                                if (this.isCancelled.get()) {
-+                                    results.release();
-+                                    SectionRenderDispatcher.this.copyLock.lock();
- 
--                                try {
--                                    RenderSection.this.releaseSectionMesh(compiledSectionMesh);
--                                } finally {
--                                    SectionRenderDispatcher.this.copyLock.unlock();
-+                                    try {
-+                                        RenderSection.this.releaseSectionMesh(compiledSectionMesh);
-+                                    } finally {
-+                                        SectionRenderDispatcher.this.copyLock.unlock();
-+                                    }
-+
-+                                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
-                                 }
- 
--                                return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
-+                                success = RenderSection.this.addSectionBuffersToUberBuffer(
-+                                    entry.getKey(), compiledSectionMesh, meshData.vertexBuffer(), meshData.indexBuffer()
-+                                );
-+                                if (!success && !RenderSystem.isOnRenderThread()) {
-+                                    Thread.onSpinWait();
-+                                }
-                             }
- 
--                            success = RenderSection.this.addSectionBuffersToUberBuffer(
--                                entry.getKey(), compiledSectionMesh, meshData.vertexBuffer(), meshData.indexBuffer()
--                            );
--                            if (!success && !RenderSystem.isOnRenderThread()) {
--                                Thread.onSpinWait();
--                            }
-+                            meshData.close();
-                         }
- 
--                        meshData.close();
-+                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
-                     }
--
--                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
+                     return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
+                 }
 +                } finally {
 +                    if (this.renderRegionCache != null) {
 +                        this.renderRegionCache.compileFinished();
-+                    }
-                 }
              }
++                }
++            }
  
+             @Override
+             public void cancel() {
 @@ -498,17 +671,16 @@
              }
          }

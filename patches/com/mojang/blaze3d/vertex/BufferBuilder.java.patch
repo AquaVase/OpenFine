@@ -94,8 +94,9 @@
 +        this.midBlock = this.cache.getMidBlock();
 +        if (Config.isShaders()) {
 +            SVertexBuilder.endSetVertexFormat(this);
-+        }
-+
+     }
+ 
+-    public @Nullable MeshData build() {
 +        if (Config.isMultiTexture()) {
 +            this.initQuadSprites();
 +        }
@@ -106,9 +107,8 @@
 +        }
 +
 +        this.checkCapacity();
-     }
- 
--    public @Nullable MeshData build() {
++    }
++
 +    public MeshData build() {
          this.ensureBuilding();
          this.endLastVertex();
@@ -146,13 +146,13 @@
 +        int indexCount = this.vertices;
 +        if (Config.isRenderRegions() && RegionLayerRenderer.canRenderLayer(this.blockLayer)) {
 +            indexCount = Math.max(indexCount, 65536);
-+        }
-+
+     }
+ 
 +        IndexType indexType = IndexType.least(indexCount);
 +        MultiTextureData mtd = this.multiTextureBuilder.build(this.vertices, this.blockLayer, this.quadSprites, null);
 +        return new MeshData(vertexBuffer, new MeshData.DrawState(this.format, this.vertices, indices, this.primitiveTopology, indexType), mtd);
-     }
- 
++    }
++
      private long beginVertex() {
 +        return this.beginVertex(1);
 +    }

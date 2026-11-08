@@ -206,8 +206,8 @@
              featureRenderer.executeGroup(context, this.featureGroupIndex, this.sliceUnchecked(submits), this.strictlyOrdered);
 +            if (Config.isShaders()) {
 +                Shaders.postExecuteGroup(this.featureType);
-+            }
          }
++        }
  
 -        private List<Submit> sliceUnchecked(final List<SubmitNode> submits) {
 +        private List<Submit> sliceUnchecked(List<SubmitNode> submits) {

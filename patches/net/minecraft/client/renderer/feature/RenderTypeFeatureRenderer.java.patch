@@ -93,14 +93,14 @@
                  renderType.drawFromBuffer(info);
 +                if (isShaders && renderType.renderType() != null) {
 +                    ShadersRender.postRender(renderType.renderType());
-+                }
+             }
 +
 +                if (isShaders) {
 +                    Shaders.setEntityColor(0.0F, 0.0F, 0.0F, 0.0F);
-+                }
-             }
          }
      }
++        }
++    }
  
      @Override
 -    public void finishExecute(final FeatureFrameContext context) {
@@ -168,7 +168,9 @@
 +            Identifier lastTexture = this.lastRenderType.getTextureLocation();
 +            if (textureIn.equals(lastTexture)) {
 +                return this.lastVertexBuilder;
-+            }
+     }
+-}
+\ No newline at end of file
 +
 +            RenderType renderType2 = this.lastRenderType.getTextured(textureIn);
 +            return this.getVertexBuilder(renderType2);
@@ -191,7 +193,5 @@
 +        public StagedVertexBuffer.Draw getLastDraw() {
 +            return this.lastDraw;
 +        }
-     }
--}
-\ No newline at end of file
++    }
 +}

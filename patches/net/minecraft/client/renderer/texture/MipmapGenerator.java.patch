@@ -66,7 +66,7 @@
              } else if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
                  TextureUtil.fillEmptyAreasWithDarkColor(currentMips[0]);
              }
-@@ -128,31 +134,48 @@
+@@ -128,18 +134,34 @@
                  result[level] = currentMips[level];
              } else {
                  NativeImage lastData = result[level - 1];
@@ -79,13 +79,6 @@
  
                  for (int x = 0; x < width; x++) {
                      for (int y = 0; y < height; y++) {
--                        int color1 = lastData.getPixel(x * 2 + 0, y * 2 + 0);
--                        int color2 = lastData.getPixel(x * 2 + 1, y * 2 + 0);
--                        int color3 = lastData.getPixel(x * 2 + 0, y * 2 + 1);
--                        int color4 = lastData.getPixel(x * 2 + 1, y * 2 + 1);
--                        int color;
--                        if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
--                            color = darkenedAlphaBlend(color1, color2, color3, color4);
 +                        if (colorBlender != null) {
 +                            data.setPixelABGR(
 +                                x,
@@ -97,27 +90,24 @@
 +                                    lastData.getPixelABGR(x * 2 + 1, y * 2 + 1)
 +                                )
 +                            );
-                         } else {
--                            color = ARGB.meanLinear(color1, color2, color3, color4);
--                        }
-+                            int color1 = lastData.getPixel(x * 2 + 0, y * 2 + 0);
-+                            int color2 = lastData.getPixel(x * 2 + 1, y * 2 + 0);
-+                            int color3 = lastData.getPixel(x * 2 + 0, y * 2 + 1);
-+                            int color4 = lastData.getPixel(x * 2 + 1, y * 2 + 1);
-+                            int color;
++                        } else {
+                         int color1 = lastData.getPixel(x * 2 + 0, y * 2 + 0);
+                         int color2 = lastData.getPixel(x * 2 + 1, y * 2 + 0);
+                         int color3 = lastData.getPixel(x * 2 + 0, y * 2 + 1);
+                         int color4 = lastData.getPixel(x * 2 + 1, y * 2 + 1);
+                         int color;
+-                        if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
 +                            if (Boolean.TRUE) {
 +                                color = Mipmaps.alphaBlend(color1, color2, color3, color4);
 +                            } else if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
-+                                color = darkenedAlphaBlend(color1, color2, color3, color4);
-+                            } else {
-+                                color = ARGB.meanLinear(color1, color2, color3, color4);
-+                            }
- 
--                        data.setPixel(x, y, color);
-+                            data.setPixel(x, y, color);
-+                        }
+                             color = darkenedAlphaBlend(color1, color2, color3, color4);
+                         } else {
+                             color = ARGB.meanLinear(color1, color2, color3, color4);
+@@ -148,11 +170,12 @@
+                         data.setPixel(x, y, color);
                      }
                  }
++                }
  
                  result[level] = data;
              }

@@ -35,8 +35,8 @@
          MetricsRegistry.INSTANCE.add(this);
 +        if (this instanceof Minecraft mc) {
 +            Config.initMinecraft(mc);
-+        }
      }
++    }
  
 -    protected abstract boolean shouldRun(final R task);
 +    protected abstract boolean shouldRun(R var1);
@@ -100,7 +100,7 @@
          this.execute(command);
      }
  
-@@ -113,7 +122,15 @@
+@@ -113,9 +122,17 @@
      }
  
      protected void runAllTasks() {
@@ -112,10 +112,12 @@
          while (this.pollTask()) {
 +            if (--count <= 0) {
 +                break;
-+            }
          }
      }
++    }
  
+     protected boolean shouldRunAllTasks() {
+         return this.blockingCount > 0;
 @@ -136,7 +153,7 @@
          return true;
      }

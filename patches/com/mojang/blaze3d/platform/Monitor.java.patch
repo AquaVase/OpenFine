@@ -51,14 +51,13 @@
                  modes.position(i);
                  VideoMode mode = new VideoMode(modes);
                  if (mode.getRedBits() >= 8 && mode.getGreenBits() >= 8 && mode.getBlueBits() >= 8) {
--                    videoModes.add(mode);
 +                    if (mode.getRefreshRate() < currentVideoMode.getRefreshRate()) {
 +                        removedModes.add(mode);
 +                    } else {
-+                        videoModes.add(mode);
-+                    }
+                     videoModes.add(mode);
                  }
              }
++            }
  
 +            removedModes.sort(new VideoModeComparator().reversed());
 +

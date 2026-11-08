@@ -437,6 +437,13 @@ public class ShaderPackParser {
     public static LineBuffer loadShader(
         Program program, ShaderType shaderType, InputStream is, String filePath, IShaderPack shaderPack, List<String> listFiles, ShaderOption[] activeOptions
     ) throws IOException {
+        return loadShader(program, shaderType, is, filePath, shaderPack, listFiles, activeOptions, false);
+    }
+
+    public static LineBuffer loadShader(
+        Program program, ShaderType shaderType, InputStream is, String filePath, IShaderPack shaderPack, List<String> listFiles,
+        ShaderOption[] activeOptions, boolean hasGeometryShader
+    ) throws IOException {
         LineBuffer reader = LineBuffer.readAll(new InputStreamReader(is));
         reader = resolveIncludes(reader, filePath, shaderPack, 0, listFiles, 0);
         reader = addMacros(reader, 0);
@@ -448,7 +455,7 @@ public class ShaderPackParser {
             writer.add(line);
         }
 
-        return ShadersCompatibility.remap(program, shaderType, writer);
+        return ShadersCompatibility.remap(program, shaderType, writer, hasGeometryShader);
     }
 
     private static String applyOptions(String line, ShaderOption[] ops) {

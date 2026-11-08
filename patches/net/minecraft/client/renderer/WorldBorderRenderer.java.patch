@@ -92,7 +92,7 @@
                      if (distancePerDirection.distance() < renderDistance) {
                          int sideIndex = distancePerDirection.direction().get2DDataValue();
                          draws.add(new RenderPass.Draw<>(0, this.worldBorderBuffer, indexBuffer, this.indices.type(), 6 * sideIndex, 6, 0));
-@@ -190,6 +191,12 @@
+@@ -190,18 +191,24 @@
  
                  renderPass.drawMultipleIndexed(draws, null, null, Collections.emptyList(), this);
              }
@@ -101,11 +101,11 @@
 +            if (Config.isShaders()) {
 +                Shaders.popProgram();
 +                Shaders.setRenderStage(RenderStage.NONE);
-+            }
          }
      }
++    }
  
-@@ -197,11 +204,11 @@
+     public void invalidate() {
          this.needsRebuild = true;
      }
  

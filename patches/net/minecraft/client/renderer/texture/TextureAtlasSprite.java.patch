@@ -198,11 +198,11 @@
 +        SpriteContents.AnimationState state = this.contents.createAnimationState(uboSlice, spriteUboSize);
 +        if (state != null) {
 +            state.setSprite(this);
-+        }
-+
-+        return state;
      }
  
++        return state;
++    }
++
      public Transparency transparency() {
          return this.contents.transparency();
      }

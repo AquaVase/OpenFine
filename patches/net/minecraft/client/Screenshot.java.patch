@@ -107,12 +107,11 @@
 +                                Component component = Component.literal(targetFile.getName())
                                      .withStyle(ChatFormatting.UNDERLINE)
 -                                    .withStyle(s -> s.withClickEvent(new ClickEvent.OpenFile(file.getAbsoluteFile())));
--                                callback.accept(Component.translatable("screenshot.success", component));
 +                                    .withStyle(s -> s.withClickEvent(new OpenFile(targetFile.getAbsoluteFile())));
 +                                if (eventF != null && Reflector.call(eventF, Reflector.ScreenshotEvent_getResultMessage) != null) {
 +                                    callback.accept((Component)Reflector.call(eventF, Reflector.ScreenshotEvent_getResultMessage));
 +                                } else {
-+                                    callback.accept(Component.translatable("screenshot.success", component));
+                                 callback.accept(Component.translatable("screenshot.success", component));
 +                                }
                              } catch (Exception e) {
                                  LOGGER.warn("Couldn't save screenshot", e);
@@ -124,8 +123,8 @@
 +        if (resize) {
 +            Config.getGameSettings().guiScale().set(guiScaleOld);
 +            mainWindow.resizeFramebuffer(fbWidth, fbHeight);
-+        }
      }
++    }
  
 -    public static void takeScreenshot(final RenderTarget target, final Consumer<NativeImage> callback) {
 +    public static void takeScreenshot(RenderTarget target, Consumer<NativeImage> callback) {

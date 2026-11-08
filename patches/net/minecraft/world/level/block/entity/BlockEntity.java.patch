@@ -102,8 +102,8 @@
 +    protected void loadAdditional(ValueInput input) {
 +        if (this.getCapabilities() != null) {
 +            input.read("ForgeCaps", CompoundTag.CODEC).ifPresent(caps -> this.deserializeCaps(input.lookup(), caps));
-+        }
      }
++    }
  
 -    public final void loadWithComponents(final ValueInput input) {
 +    public final void loadWithComponents(ValueInput input) {
@@ -120,8 +120,8 @@
 +    protected void saveAdditional(ValueOutput output) {
 +        if (this.getCapabilities() != null && this.level != null) {
 +            output.storeNullable("ForgeCaps", CompoundTag.CODEC, this.serializeCaps(output));
-+        }
      }
++    }
  
 -    public final CompoundTag saveWithFullMetadata(final HolderLookup.Provider registries) {
 -        try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(this.problemPath(), LOGGER)) {

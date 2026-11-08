@@ -35,12 +35,11 @@
 -                .useLightmap()
 -                .sortOnUpload()
 -                .createRenderSetup();
--            return RenderType.create("banner_pattern", state);
--        }
--    );
 +    private static final Function<Identifier, RenderType> BANNER_PATTERN = Util.memoize(texture -> {
 +        RenderSetup state = RenderSetup.builder(RenderPipelines.BANNER_PATTERN).withTexture("Sampler0", texture).useLightmap().sortOnUpload().createRenderSetup();
-+        return RenderType.create("banner_pattern", state);
+             return RenderType.create("banner_pattern", state);
+-        }
+-    );
 +    });
      private static final Function<Identifier, RenderType> ENTITY_SHADOW = Util.memoize(
          texture -> {

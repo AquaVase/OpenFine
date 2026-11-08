@@ -419,15 +419,15 @@
 +        public void setGlPackAlignment() {
 +            RenderSystem.assertOnRenderThread();
 +            GlStateManager._pixelStore(3333, this.components());
-+        }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
 +        public void setGlUnpackAlignment() {
 +            RenderSystem.assertOnRenderThread();
 +            GlStateManager._pixelStore(3317, this.components());
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
++    }
++
      private static class WriteCallback extends STBIWriteCallback {
          private final WritableByteChannel output;
 -        private @Nullable IOException exception;

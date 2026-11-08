@@ -90,10 +90,10 @@
 -                            rightLines.add(line);
 -                        } else {
 -                            leftLines.add(line);
--                        }
 +                    public void addPriorityLine(String line) {
 +                        this.addLine(line);
-                     }
+                         }
+-                    }
  
                      @Override
 -                    public void addLine(final String line) {
@@ -105,15 +105,15 @@
 +                                lineFps = lineFps + " " + line;
 +                                linesLeft.set(this.indexFps, lineFps);
 +                                return;
-+                            }
-+
+                     }
+ 
 +                            this.indexFps = linesLeft.size();
 +                        }
 +
 +                        List<String> lines = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
 +                        lines.add(line);
-                     }
- 
++                    }
++
                      @Override
 -                    public void addToGroup(final Identifier group, final Collection<String> lines) {
 -                        groups.computeIfAbsent(group, k -> new ArrayList<>()).addAll(lines);
@@ -121,11 +121,11 @@
 +                        List<String> lines2 = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
 +                        if (DebugScreenEntries.isNewLine(debugLocation.get())) {
 +                            lines2.add("");
-+                        }
-+
-+                        lines2.addAll(lines);
                      }
  
++                        lines2.addAll(lines);
++                    }
++
                      @Override
 -                    public void addToGroup(final Identifier group, final String lines) {
 -                        groups.computeIfAbsent(group, k -> new ArrayList<>()).add(lines);
@@ -133,10 +133,10 @@
 +                        List<String> lines2 = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
 +                        if (DebugScreenEntries.isNewLine(debugLocation.get())) {
 +                            lines2.add("");
-+                        }
+                     }
 +
 +                        lines2.add(lines);
-                     }
++                    }
                  };
                  Level level = this.getLevel();
  
@@ -197,11 +197,10 @@
                  if (this.showFpsCharts()) {
                      int scaledWidth = graphics.guiWidth();
                      int maxWidth = scaledWidth / 2;
--                    this.fpsChart.extractRenderState(graphics, 0, this.fpsChart.getWidth(maxWidth));
 +                    if (Boolean.TRUE) {
 +                        Lagometer.renderLagometer(graphics, this.minecraft.getWindow().getGuiScale());
 +                    } else {
-+                        this.fpsChart.extractRenderState(graphics, 0, this.fpsChart.getWidth(maxWidth));
+                     this.fpsChart.extractRenderState(graphics, 0, this.fpsChart.getWidth(maxWidth));
 +                    }
 +
                      if (this.tickTimeLogger.size() > 0) {
@@ -215,9 +214,9 @@
 +            if (!debugLinesRendered && this.minecraft.options.ofQuickInfo) {
 +                graphics.nextStratum();
 +                QuickInfo.render(graphics);
-+            }
          }
      }
++    }
  
 -    private static String formatChart(final KeyMapping keyDebugModifier, final KeyMapping keybind, final String name, final boolean status) {
 +    private static String formatChart(KeyMapping keyDebugModifier, KeyMapping keybind, String name, boolean status) {

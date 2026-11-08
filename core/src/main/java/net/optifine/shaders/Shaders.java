@@ -2400,8 +2400,8 @@ public class Shaders {
         progUseTangentAttrib = false;
         progUseVelocityAttrib = false;
         progUseMidBlockAttrib = false;
-        int vShader = createVertShader(program, vShaderPath);
         int gShader = createGeomShader(program, gShaderPath);
+        int vShader = createVertShader(program, vShaderPath, gShader != 0);
         int fShader = createFragShader(program, fShaderPath);
         if (vShader != 0 || gShader != 0 || fShader != 0) {
             Config.sleep(1L);
@@ -2712,7 +2712,7 @@ public class Shaders {
         return compShader;
     }
 
-    private static int createVertShader(Program program, String filename) {
+    private static int createVertShader(Program program, String filename, boolean hasGeometryShader) {
         InputStream is = shaderPack.getResourceAsStream(filename);
         if (is == null) {
             is = DefaultShaders.getResourceAsStream(filename);
@@ -2733,7 +2733,7 @@ public class Shaders {
         LineBuffer lines = new LineBuffer();
         if (is != null) {
             try {
-                lines = ShaderPackParser.loadShader(program, ShaderType.VERTEX, is, filename, shaderPack, listFiles, activeOptions);
+                lines = ShaderPackParser.loadShader(program, ShaderType.VERTEX, is, filename, shaderPack, listFiles, activeOptions, hasGeometryShader);
                 MacroState macroState = new MacroState();
 
                 for (String line : lines) {

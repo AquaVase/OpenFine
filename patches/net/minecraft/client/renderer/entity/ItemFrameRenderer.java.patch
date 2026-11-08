@@ -58,39 +58,31 @@
          super.submit(state, poseStack, submitNodeCollector, camera);
          poseStack.pushPose();
          Direction direction = state.direction;
-@@ -82,38 +85,45 @@
+@@ -82,6 +85,7 @@
          if (state.mapId != null) {
              int rotation = state.rotation % 4 * 2;
              poseStack.mulPose(Axis.ZP.rotationDegrees(rotation * 360.0F / 8.0F));
--            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
--            float s = 0.0078125F;
--            poseStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
--            poseStack.translate(-64.0F, -64.0F, 0.0F);
--            poseStack.translate(0.0F, 0.0F, -1.0F);
--            int lightCoords = this.getLightCoords(state.isGlowFrame, 15728850, state.lightCoords);
--            this.mapRenderer.render(state.mapRenderState, poseStack, submitNodeCollector, true, lightCoords);
 +            if (!Reflector.ForgeEventFactoryClient_onRenderItemInFrame.callBoolean(state, this, poseStack, submitNodeCollector, state.lightCoords)) {
-+                poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
-+                float s = 0.0078125F;
-+                poseStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
-+                poseStack.translate(-64.0F, -64.0F, 0.0F);
-+                poseStack.translate(0.0F, 0.0F, -1.0F);
-+                int lightCoords = this.getLightCoords(state.isGlowFrame, 15728850, state.lightCoords);
-+                this.mapRenderer.render(state.mapRenderState, poseStack, submitNodeCollector, true, lightCoords);
+             poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+             float s = 0.0078125F;
+             poseStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
+@@ -89,31 +93,37 @@
+             poseStack.translate(0.0F, 0.0F, -1.0F);
+             int lightCoords = this.getLightCoords(state.isGlowFrame, 15728850, state.lightCoords);
+             this.mapRenderer.render(state.mapRenderState, poseStack, submitNodeCollector, true, lightCoords);
 +            }
          } else if (!state.item.isEmpty()) {
              poseStack.mulPose(Axis.ZP.rotationDegrees(state.rotation * 360.0F / 8.0F));
              int lightVal = this.getLightCoords(state.isGlowFrame, 15728880, state.lightCoords);
              poseStack.scale(0.5F, 0.5F, 0.5F);
--            state.item.submit(poseStack, submitNodeCollector, lightVal, OverlayTexture.NO_OVERLAY, state.outlineColor);
 +            renderItemFrame = true;
 +            if (this.isRenderItem(state.entity)) {
-+                state.item.submit(poseStack, submitNodeCollector, lightVal, OverlayTexture.NO_OVERLAY, state.outlineColor);
-+            }
-+
-+            renderItemFrame = false;
+             state.item.submit(poseStack, submitNodeCollector, lightVal, OverlayTexture.NO_OVERLAY, state.outlineColor);
          }
  
++            renderItemFrame = false;
++        }
++
          poseStack.popPose();
      }
  

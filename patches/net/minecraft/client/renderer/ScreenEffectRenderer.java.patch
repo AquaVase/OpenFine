@@ -80,16 +80,15 @@
  
              if (!this.minecraft.player.isSpectator()) {
                  if (this.minecraft.player.isEyeInFluid(FluidTags.WATER)) {
--                    submitWater(this.minecraft, poseStack, submitNodeCollector);
 +                    if (!Reflector.ForgeHooksClient_renderWaterOverlay.callBoolean(player, poseStack)) {
-+                        submitWater(this.minecraft, poseStack, submitNodeCollector);
-+                    }
+                     submitWater(this.minecraft, poseStack, submitNodeCollector);
+                 }
 +                } else if (Reflector.IForgeEntity_getEyeInFluidType.exists()) {
 +                    FluidType eyeFluidType = (FluidType)Reflector.call(player, Reflector.IForgeEntity_getEyeInFluidType);
 +                    if (!eyeFluidType.isAir()) {
 +                        IClientFluidTypeExtensions.of(eyeFluidType).renderOverlay(this.minecraft, poseStack, submitNodeCollector);
 +                    }
-                 }
++                }
  
 -                if (this.minecraft.player.isOnFire()) {
 +                if (this.minecraft.player.isOnFire() && !Reflector.ForgeHooksClient_renderFireOverlay.callBoolean(player, poseStack)) {
@@ -170,40 +169,31 @@
      }
  
 -    private static void submitWater(final Minecraft minecraft, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector) {
--        LocalPlayer player = minecraft.player;
--        BlockPos pos = BlockPos.containing(player.getEyePosition());
--        float brightness = Lightmap.getBrightness(player.level().dimensionType(), player.level().getMaxLocalRawBrightness(pos));
--        int color = ARGB.colorFromFloat(0.1F, brightness, brightness, brightness);
--        float u0 = -player.getYRot() / 64.0F;
--        float v0 = player.getXRot() / 64.0F;
--        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.blockScreenEffect(UNDERWATER_LOCATION), (pose, builder) -> {
--            float uvSize = 4.0F;
--            buildQuad(builder, pose.pose(), -1.0F, -1.0F, 1.0F, 1.0F, -0.5F, u0 + 4.0F, v0 + 4.0F, u0, v0, color);
--        });
 +    private static void submitWater(Minecraft minecraft, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
 +        renderFluid(minecraft, poseStack, submitNodeCollector, UNDERWATER_LOCATION);
-     }
- 
--    private static void submitFire(final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final TextureAtlasSprite sprite) {
++    }
++
 +    public static void renderFluid(Minecraft minecraft, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Identifier textureIn) {
 +        if (!Config.isShaders() || Shaders.isUnderwaterOverlay()) {
 +            if (SmartAnimations.isActive()) {
 +                SmartAnimations.textureRendered(minecraft.getTextureManager().getTexture(textureIn).getGlTextureId());
 +            }
 +
-+            LocalPlayer player = minecraft.player;
-+            BlockPos pos = BlockPos.containing(player.getEyePosition());
-+            float brightness = Lightmap.getBrightness(player.level().dimensionType(), player.level().getMaxLocalRawBrightness(pos));
-+            int color = ARGB.colorFromFloat(0.1F, brightness, brightness, brightness);
-+            float u0 = -player.getYRot() / 64.0F;
-+            float v0 = player.getXRot() / 64.0F;
+         LocalPlayer player = minecraft.player;
+         BlockPos pos = BlockPos.containing(player.getEyePosition());
+         float brightness = Lightmap.getBrightness(player.level().dimensionType(), player.level().getMaxLocalRawBrightness(pos));
+         int color = ARGB.colorFromFloat(0.1F, brightness, brightness, brightness);
+         float u0 = -player.getYRot() / 64.0F;
+         float v0 = player.getXRot() / 64.0F;
+-        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.blockScreenEffect(UNDERWATER_LOCATION), (pose, builder) -> {
 +            submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.blockScreenEffect(textureIn), (pose, builder) -> {
-+                float uvSize = 4.0F;
-+                buildQuad(builder, pose.pose(), -1.0F, -1.0F, 1.0F, 1.0F, -0.5F, u0 + 4.0F, v0 + 4.0F, u0, v0, color);
-+            });
-+        }
+             float uvSize = 4.0F;
+             buildQuad(builder, pose.pose(), -1.0F, -1.0F, 1.0F, 1.0F, -0.5F, u0 + 4.0F, v0 + 4.0F, u0, v0, color);
+         });
+     }
 +    }
-+
+ 
+-    private static void submitFire(final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final TextureAtlasSprite sprite) {
 +    private static void submitFire(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, TextureAtlasSprite sprite) {
 +        if (SmartAnimations.isActive()) {
 +            SmartAnimations.spriteRendered(sprite);

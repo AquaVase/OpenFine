@@ -164,7 +164,7 @@
              if (renderState.displayFireAnimation) {
                  submitNodeCollector.submitFlame(poseStack, renderState, Mth.rotationAroundAxis(Mth.Y_AXIS, camera.orientation, new Quaternionf()));
              }
-@@ -172,7 +178,23 @@
+@@ -172,8 +178,24 @@
              }
  
              if (!renderState.shadowPieces.isEmpty()) {
@@ -184,10 +184,11 @@
                  submitNodeCollector.submitShadow(poseStack, renderState.shadowRadius, renderState.shadowPieces);
 +                if (shadowOffset) {
 +                    poseStack.popPose();
-+                }
              }
++            }
  
              if (!(renderState instanceof AvatarRenderState)) {
+                 poseStack.translate(-pos.x(), -pos.y(), -pos.z());
 @@ -189,7 +211,7 @@
          }
      }
@@ -228,8 +229,8 @@
 +        registerPlayerItems(this.playerRenderers);
 +        if (Reflector.ForgeEventFactoryClient_onGatherLayers.exists()) {
 +            Reflector.ForgeEventFactoryClient_onGatherLayers.call(this.renderers, this.playerRenderers, this.mannequinRenderers, context);
-+        }
      }
+ }
 +
 +    private static void registerPlayerItems(Map<PlayerModelType, AvatarRenderer<AbstractClientPlayer>> renderPlayerMap) {
 +        boolean registered = false;
@@ -264,4 +265,4 @@
 +    public Map<PlayerModelType, AvatarRenderer<ClientMannequin>> getMannequinRenderers() {
 +        return Collections.unmodifiableMap(this.mannequinRenderers);
 +    }
- }
++}

@@ -161,7 +161,6 @@
              debugAction = true;
          }
  
--        return debugAction;
 +        switch (event.key()) {
 +            case 75:
 +                Minecraft mc = Config.getMinecraft();
@@ -185,9 +184,9 @@
 +
 +                return true;
 +            default:
-+                return debugAction;
-+        }
+         return debugAction;
      }
++    }
  
 -    private void copyRecreateCommand(final boolean addNbt, final boolean pullFromServer) {
 +    private void copyRecreateCommand(boolean addNbt, boolean pullFromServer) {
@@ -321,11 +320,10 @@
              Screen screen = this.minecraft.gui.screen();
              if (screen != null && this.minecraft.gui.overlay() == null) {
                  try {
--                    screen.charTyped(event);
 +                    if (Reflector.ForgeHooksClient_onScreenCharTyped.exists()) {
 +                        Reflector.ForgeHooksClient_onScreenCharTyped.call(screen, event);
 +                    } else {
-+                        screen.charTyped(event);
+                     screen.charTyped(event);
 +                    }
                  } catch (Throwable t) {
                      CrashReport report = CrashReport.forThrowable(t, "charTyped event handler");

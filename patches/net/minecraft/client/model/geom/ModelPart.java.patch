@@ -54,7 +54,7 @@
  public final class ModelPart {
      public static final float DEFAULT_SCALE = 1.0F;
      public float x;
-@@ -38,13 +58,51 @@
+@@ -38,14 +58,52 @@
      public float zScale = 1.0F;
      public boolean visible = true;
      public boolean skipDraw;
@@ -105,10 +105,11 @@
 +
 +        for (ModelPart child : this.childModelsList) {
 +            child.setParent(this);
-+        }
      }
++    }
  
      public PartPose storePose() {
+         return PartPose.offsetAndRotation(this.x, this.y, this.z, this.xRot, this.yRot, this.zRot);
 @@ -55,7 +113,7 @@
          return this.initialPose;
      }
@@ -118,33 +119,21 @@
          this.initialPose = initialPose;
      }
  
-@@ -63,23 +121,25 @@
+@@ -63,7 +121,8 @@
          this.loadPose(this.initialPose);
      }
  
 -    public void loadPose(final PartPose pose) {
--        this.x = pose.x();
--        this.y = pose.y();
--        this.z = pose.z();
--        this.xRot = pose.xRot();
--        this.yRot = pose.yRot();
--        this.zRot = pose.zRot();
--        this.xScale = pose.xScale();
--        this.yScale = pose.yScale();
--        this.zScale = pose.zScale();
 +    public void loadPose(PartPose pose) {
 +        if (!this.custom) {
-+            this.x = pose.x();
-+            this.y = pose.y();
-+            this.z = pose.z();
-+            this.xRot = pose.xRot();
-+            this.yRot = pose.yRot();
-+            this.zRot = pose.zRot();
-+            this.xScale = pose.xScale();
-+            this.yScale = pose.yScale();
-+            this.zScale = pose.zScale();
-+        }
+         this.x = pose.x();
+         this.y = pose.y();
+         this.z = pose.z();
+@@ -74,12 +133,13 @@
+         this.yScale = pose.yScale();
+         this.zScale = pose.zScale();
      }
++    }
  
 -    public boolean hasChild(final String name) {
 +    public boolean hasChild(String name) {
@@ -182,17 +171,10 @@
 -    public void render(final PoseStack poseStack, final VertexConsumer buffer, final int lightCoords, final int overlayCoords, final int color) {
 -        if (this.visible) {
 -            if (!this.cubes.isEmpty() || !this.children.isEmpty()) {
--                poseStack.pushPose();
--                this.translateAndRotate(poseStack);
--                if (!this.skipDraw) {
--                    this.compile(poseStack.last(), buffer, lightCoords, overlayCoords, color);
--                }
 +    public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color) {
 +        this.render(poseStack, buffer, lightCoords, overlayCoords, color, true);
 +    }
- 
--                for (ModelPart child : this.children.values()) {
--                    child.render(poseStack, buffer, lightCoords, overlayCoords, color);
++
 +    public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color, boolean updateModel) {
 +        if (this.visible && (!this.cubes.isEmpty() || !this.children.isEmpty() || !this.spriteList.isEmpty())) {
 +            RenderTypeFeatureRenderer renderTypeBuffer = null;
@@ -201,27 +183,29 @@
 +                if (renderTypeBuffer != null) {
 +                    renderTypeBuffer.saveRenderState();
 +                    buffer = renderTypeBuffer.getSubVertexBuilder(this.textureLocation);
-                 }
++                }
 +            }
- 
--                poseStack.popPose();
++
 +            if (updateModel && CustomEntityModels.isActive()) {
 +                this.updateModel();
-             }
-+
-+            poseStack.pushPose();
-+            this.translateAndRotate(poseStack);
-+            if (!this.skipDraw && this.cubes.size() > 0) {
-+                this.compile(poseStack.last(), buffer, lightCoords, overlayCoords, color);
 +            }
 +
+                 poseStack.pushPose();
+                 this.translateAndRotate(poseStack);
+-                if (!this.skipDraw) {
++            if (!this.skipDraw && this.cubes.size() > 0) {
+                     this.compile(poseStack.last(), buffer, lightCoords, overlayCoords, color);
+                 }
+ 
+-                for (ModelPart child : this.children.values()) {
+-                    child.render(poseStack, buffer, lightCoords, overlayCoords, color);
 +            int childModelsSize = this.childModelsList.size();
 +
 +            for (int ix = 0; ix < childModelsSize; ix++) {
 +                ModelPart child = this.childModelsList.get(ix);
 +                child.render(poseStack, buffer, lightCoords, overlayCoords, color, false);
-+            }
-+
+                 }
+ 
 +            int spriteListSize = this.spriteList.size();
 +
 +            for (int ix = 0; ix < spriteListSize; ix++) {
@@ -229,10 +213,10 @@
 +                sprite.render(poseStack, buffer, lightCoords, overlayCoords, color);
 +            }
 +
-+            poseStack.popPose();
+                 poseStack.popPose();
 +            if (renderTypeBuffer != null) {
 +                renderTypeBuffer.restoreRenderState();
-+            }
+             }
          }
      }
  
@@ -290,14 +274,14 @@
 +                IRandomEntity entity = RandomEntities.getRandomEntityRendered();
 +                if (entity != null) {
 +                    boxPos = cube.getBoxVertexPositions(entity.getId());
-+                }
-+            }
-+
-+            cube.compile(pose, builder, lightCoords, overlayCoords, color, boxPos);
          }
      }
  
 -    public ModelPart.Cube getRandomCube(final RandomSource random) {
++            cube.compile(pose, builder, lightCoords, overlayCoords, color, boxPos);
++        }
++    }
++
 +    public ModelPart.Cube getRandomCube(RandomSource random) {
          return Util.getRandom(this.cubes, random);
      }
@@ -847,20 +831,10 @@
 +            Vector3f scratchVector = builder.getTempVec3f();
  
 -            for (ModelPart.Polygon polygon : this.polygons) {
--                Vector3f normal = pose.transformNormal(polygon.normal, scratchVector);
--                float nx = normal.x();
--                float ny = normal.y();
--                float nz = normal.z();
 +            for (RenderPositions rp : this.renderPositions) {
 +                MathUtils.transform(matrix, rp.getPositionDiv16(), rp.getPositionRender());
 +            }
- 
--                for (ModelPart.Vertex vertex : polygon.vertices) {
--                    float x = vertex.worldX();
--                    float y = vertex.worldY();
--                    float z = vertex.worldZ();
--                    Vector3f pos = matrix.transformPosition(x, y, z, scratchVector);
--                    builder.addVertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, overlayCoords, lightCoords, nx, ny, nz);
++
 +            boolean fastRender = builder.canAddVertexFast();
 +            int quadsSize = this.polygons.length;
 +
@@ -871,16 +845,16 @@
 +                        builder.setQuadVertexPositions(boxPos[iq]);
 +                    }
 +
-+                    Vector3f normal = pose.transformNormal(polygon.normal, scratchVector);
-+                    float nx = normal.x();
-+                    float ny = normal.y();
-+                    float nz = normal.z();
+                 Vector3f normal = pose.transformNormal(polygon.normal, scratchVector);
+                 float nx = normal.x();
+                 float ny = normal.y();
+                 float nz = normal.z();
 +                    if (fastRender) {
 +                        byte nxb = BufferBuilder.normalIntValue(nx);
 +                        byte nyb = BufferBuilder.normalIntValue(ny);
 +                        byte nzb = BufferBuilder.normalIntValue(nz);
 +                        int normals = (nzb & 255) << 16 | (nyb & 255) << 8 | nxb & 255;
-+
+ 
 +                        for (ModelPart.Vertex modelpart$vertex : polygon.vertices) {
 +                            Vector3f posRender = modelpart$vertex.renderPositions.get().getPositionRender();
 +                            builder.addVertexFast(
@@ -888,15 +862,20 @@
 +                            );
 +                        }
 +                    } else {
-+                        for (ModelPart.Vertex vertex : polygon.vertices) {
+                 for (ModelPart.Vertex vertex : polygon.vertices) {
+-                    float x = vertex.worldX();
+-                    float y = vertex.worldY();
+-                    float z = vertex.worldZ();
+-                    Vector3f pos = matrix.transformPosition(x, y, z, scratchVector);
+-                    builder.addVertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, overlayCoords, lightCoords, nx, ny, nz);
 +                            Vector3f posRender = vertex.renderPositions.get().getPositionRender();
 +                            builder.addVertex(posRender.x, posRender.y, posRender.z, color, vertex.u, vertex.v, overlayCoords, lightCoords, nx, ny, nz);
-+                        }
-+                    }
                  }
              }
          }
      }
++        }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      public record Polygon(ModelPart.Vertex[] vertices, Vector3fc normal) {

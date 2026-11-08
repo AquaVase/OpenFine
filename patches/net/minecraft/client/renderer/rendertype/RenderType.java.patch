@@ -41,8 +41,8 @@
 +        RenderSetup.TextureBinding texBind = state.textures.get(SAMPLER0);
 +        if (texBind != null) {
 +            this.textureLocation = texBind.location();
-+        }
      }
++    }
  
 -    static RenderType create(final String name, final RenderSetup state) {
 +    static RenderType create(String name, RenderSetup state) {

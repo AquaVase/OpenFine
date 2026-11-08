@@ -55,10 +55,10 @@
 +        int col = -8323296;
 +        if (Config.isCustomColors()) {
 +            col = CustomColors.getExpBarTextColor(col);
-+        }
-+
-+        graphics.text(font, str, x, y, col, false);
      }
 -}
 \ No newline at end of file
++
++        graphics.text(font, str, x, y, col, false);
++    }
 +}

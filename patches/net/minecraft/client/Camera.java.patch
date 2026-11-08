@@ -144,8 +144,8 @@
 +            ShadersRender.frustumTerrainShadowChanged = true;
 +            ShadersRender.frustumEntitiesShadowChanged = true;
 +            ShadersRender.applyFrustumShadow(Config.getWorldRenderer(), this.cullFrustum);
-+        }
      }
++    }
  
 -    public @Nullable Frustum getCapturedFrustum() {
 +    public Frustum getCapturedFrustum() {
@@ -167,16 +167,19 @@
 +        boolean zoomActive = false;
 +        if (this.minecraft.gui.screen() == null) {
 +            zoomActive = this.minecraft.options.ofKeyBindZoom.isDown();
-+        }
-+
+     }
+ 
+-    private float calculateHudFov(final float partialTicks) {
+-        return this.modifyFovBasedOnDeathOrFluid(partialTicks, 70.0F);
 +        if (zoomActive) {
 +            if (!Config.zoomMode) {
 +                Config.zoomMode = true;
 +                Config.zoomSmoothCamera = this.minecraft.options.smoothCamera;
 +                this.minecraft.options.smoothCamera = true;
 +                this.minecraft.levelRenderer.sectionOcclusionGraph().invalidate();
-+            }
-+
+     }
+ 
+-    private float modifyFovBasedOnDeathOrFluid(final float partialTicks, float fov) {
 +            if (Config.zoomMode) {
 +                fov /= 4.0F;
 +            }
@@ -196,10 +199,8 @@
 +        }
 +
 +        return ret;
-     }
- 
--    private float calculateHudFov(final float partialTicks) {
--        return this.modifyFovBasedOnDeathOrFluid(partialTicks, 70.0F);
++    }
++
 +    private float calculateHudFov(float partialTicks) {
 +        float ret = this.modifyFovBasedOnDeathOrFluid(partialTicks, 70.0F);
 +        if (Reflector.ForgeEventFactoryClient_fireComputeFov.exists()) {
@@ -211,9 +212,8 @@
 +        }
 +
 +        return ret;
-     }
- 
--    private float modifyFovBasedOnDeathOrFluid(final float partialTicks, float fov) {
++    }
++
 +    private float modifyFovBasedOnDeathOrFluid(float partialTicks, float fov) {
          if (this.entity instanceof LivingEntity cameraEntity && cameraEntity.isDeadOrDying()) {
              float duration = Math.min(cameraEntity.deathTime + partialTicks, 20.0F);

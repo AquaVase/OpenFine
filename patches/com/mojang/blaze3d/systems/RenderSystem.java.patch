@@ -86,8 +86,8 @@
          shaderFog = fog;
 +        if (Config.isShaders()) {
 +            FogRenderer.setShadersFog(fog);
-+        }
      }
++    }
  
 -    public static @Nullable GpuBufferSlice getShaderFog() {
 +    public static GpuBufferSlice getShaderFog() {
@@ -140,7 +140,7 @@
          GLX._setGlfwErrorCallback(onFullscreenError);
      }
  
-@@ -177,10 +187,16 @@
+@@ -177,11 +187,17 @@
          modelViewStack.clear();
      }
  
@@ -153,11 +153,12 @@
 +            Matrix4f mat = getProjectionMatrix();
 +            if (mat != null) {
 +                Shaders.setSystemProjectionMatrix(mat);
-+            }
-+        }
      }
++        }
++    }
  
      public static void backupProjectionMatrix() {
+         assertOnRenderThread();
 @@ -193,9 +209,15 @@
          assertOnRenderThread();
          projectionMatrixBuffer = savedProjectionMatrixBuffer;
@@ -166,9 +167,9 @@
 +            Matrix4f mat = getProjectionMatrix();
 +            if (mat != null) {
 +                Shaders.setSystemProjectionMatrix(mat);
-+            }
-+        }
      }
++        }
++    }
  
 -    public static @Nullable GpuBufferSlice getProjectionMatrixBuffer() {
 +    public static GpuBufferSlice getProjectionMatrixBuffer() {

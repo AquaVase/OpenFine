@@ -56,20 +56,20 @@
 +                this.uvElements[1] = element;
 +            } else if (element.name().equals("UV2")) {
 +                this.uvElements[2] = element;
-+            }
          }
++        }
  
          this.elementValues = elements;
 +        ImmutableMap.Builder<String, VertexFormatElement> elementMappingBuilder = ImmutableMap.builder();
 +
 +        for (VertexFormatElement element : elements) {
 +            elementMappingBuilder.put(element.name(), element);
-+        }
-+
-+        this.elementMapping = elementMappingBuilder.buildOrThrow();
      }
  
 -    public static VertexFormat.Builder builder(final int stepRate) {
++        this.elementMapping = elementMappingBuilder.buildOrThrow();
++    }
++
 +    public static VertexFormat.Builder builder(int stepRate) {
          return new VertexFormat.Builder(stepRate);
      }
@@ -257,7 +257,9 @@
 +        public VertexFormat.Builder addAll(VertexFormat vf) {
 +            for (VertexFormatElement vfe : vf.getElements()) {
 +                this.addAttribute(vfe.name(), vfe.format());
-+            }
+     }
+-}
+\ No newline at end of file
 +
 +            while (this.offset < vf.getVertexSize()) {
 +                this.addAttribute("Padding" + this.offset, GpuFormat.R8_SINT);
@@ -265,7 +267,5 @@
 +
 +            return this;
 +        }
-     }
--}
-\ No newline at end of file
++    }
 +}

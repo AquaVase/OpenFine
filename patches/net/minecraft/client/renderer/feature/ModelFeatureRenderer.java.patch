@@ -50,7 +50,7 @@
 +                if (EmissiveTextures.hasEmissive()) {
 +                    if (renderType.isEntitySolid()) {
 +                        renderType = RenderTypes.entityCutout(renderType.getTextureLocation());
-+                    }
+         }
 +
 +                    EmissiveTextures.beginRenderEmissive();
 +                    Identifier textureLoc = renderType.getTextureLocation();
@@ -58,9 +58,10 @@
 +                        Identifier textureLocEmissive = EmissiveTextures.getEmissiveTexture(textureLoc);
 +                        if (textureLocEmissive != textureLoc) {
 +                            renderType = renderType.getTextured(textureLocEmissive);
-+                        }
+     }
 +                    }
-+
+ 
+-    private <S> void prepareModel(final ModelFeatureRenderer.Submit<S> submit) {
 +                    VertexConsumer bufferEmissive = this.getVertexBuilder(renderType);
 +                    this.prepareModel(submit);
 +                    EmissiveTextures.endRenderEmissive();
@@ -68,10 +69,9 @@
 +
 +                EmissiveTextures.endRender();
 +            }
-         }
-     }
- 
--    private <S> void prepareModel(final ModelFeatureRenderer.Submit<S> submit) {
++        }
++    }
++
 +    private <S> void prepareModel(ModelFeatureRenderer.Submit<S> submit) {
          this.poseStack.last().set(submit.pose());
          VertexConsumer buffer = this.getVertexBuilder(submit.renderType());
@@ -101,13 +101,12 @@
  
          Model<? super S> model = submit.model();
          model.setupAnim(submit.state());
--        model.renderToBuffer(this.poseStack, buffer, submit.lightCoords(), submit.overlayCoords(), submit.tintedColor());
 +        if (EmissiveTextures.isRenderEmissive()) {
 +            model.renderToBuffer(this.poseStack, buffer, Lightmap.MAX_BRIGHTNESS, submit.overlayCoords(), submit.tintedColor());
 +        } else {
-+            model.renderToBuffer(this.poseStack, buffer, submit.lightCoords(), submit.overlayCoords(), submit.tintedColor());
-+        }
+         model.renderToBuffer(this.poseStack, buffer, submit.lightCoords(), submit.overlayCoords(), submit.tintedColor());
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
 +    private boolean isRenderOverlayEyes(EntityRenderState ers, RenderType renderTypeIn) {

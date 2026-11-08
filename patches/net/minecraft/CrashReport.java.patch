@@ -37,33 +37,26 @@
          if (this.uncategorizedStackTrace.length <= 0 && !this.details.isEmpty()) {
              this.uncategorizedStackTrace = ArrayUtils.subarray(this.details.get(0).getStacktrace(), 0, 1);
          }
-@@ -58,14 +60,20 @@
+@@ -58,6 +60,11 @@
          if (this.uncategorizedStackTrace.length > 0) {
              builder.append("-- Head --\n");
              builder.append("Thread: ").append(Thread.currentThread().getName()).append("\n");
--            builder.append("Stacktrace:\n");
 +            if (Reflector.CrashReportExtender_generateEnhancedStackTraceSTE.exists()) {
 +                builder.append(Reflector.CrashReportAnalyser_appendSuspectedMods.callString(this.exception, this.uncategorizedStackTrace));
 +                builder.append("Stacktrace:");
 +                builder.append(Reflector.CrashReportExtender_generateEnhancedStackTraceSTE.callString1(this.uncategorizedStackTrace));
 +            } else {
-+                builder.append("Stacktrace:\n");
+             builder.append("Stacktrace:\n");
  
--            for (StackTraceElement element : this.uncategorizedStackTrace) {
--                builder.append("\t").append("at ").append(element);
-+                for (StackTraceElement element : this.uncategorizedStackTrace) {
-+                    builder.append("\t").append("at ").append(element);
-+                    builder.append("\n");
-+                }
-+
-                 builder.append("\n");
-             }
--
--            builder.append("\n");
+             for (StackTraceElement element : this.uncategorizedStackTrace) {
+@@ -67,12 +74,14 @@
+ 
+             builder.append("\n");
          }
++        }
  
          for (CrashReportCategory entry : this.details) {
-@@ -73,6 +81,7 @@
+             entry.getDetails(builder);
              builder.append("\n\n");
          }
  
@@ -146,7 +139,7 @@
          return this.saveToFile(file, reportType, List.of());
      }
  
-@@ -183,43 +205,48 @@
+@@ -183,12 +205,14 @@
          return this.systemReport;
      }
  
@@ -158,56 +151,18 @@
 -    public CrashReportCategory addCategory(final String name, final int nestedOffset) {
 +    public CrashReportCategory addCategory(String name, int nestedOffset) {
          CrashReportCategory category = new CrashReportCategory(name);
--        if (this.trackingStackTrace) {
--            int size = category.fillInStackTrace(nestedOffset);
--            StackTraceElement[] fullTrace = this.exception.getStackTrace();
--            StackTraceElement source = null;
--            StackTraceElement next = null;
--            int traceIndex = fullTrace.length - size;
--            if (traceIndex < 0) {
--                LOGGER.error("Negative index in crash report handler ({}/{})", fullTrace.length, size);
--            }
- 
--            if (0 <= traceIndex && traceIndex < fullTrace.length) {
--                source = fullTrace[traceIndex];
--                if (fullTrace.length + 1 - size < fullTrace.length) {
--                    next = fullTrace[fullTrace.length + 1 - size];
-+        try {
-+            if (this.trackingStackTrace) {
-+                int size = category.fillInStackTrace(nestedOffset);
-+                StackTraceElement[] fullTrace = this.exception.getStackTrace();
-+                StackTraceElement source = null;
-+                StackTraceElement next = null;
-+                int traceIndex = fullTrace.length - size;
-+                if (traceIndex < 0) {
-+                    LOGGER.error("Negative index in crash report handler ({}/{})", fullTrace.length, size);
-                 }
--            }
- 
--            this.trackingStackTrace = category.validateStackTrace(source, next);
--            if (fullTrace.length >= size && 0 <= traceIndex && traceIndex < fullTrace.length) {
--                this.uncategorizedStackTrace = new StackTraceElement[traceIndex];
--                System.arraycopy(fullTrace, 0, this.uncategorizedStackTrace, 0, this.uncategorizedStackTrace.length);
--            } else {
--                this.trackingStackTrace = false;
-+                if (0 <= traceIndex && traceIndex < fullTrace.length) {
-+                    source = fullTrace[traceIndex];
-+                    if (fullTrace.length + 1 - size < fullTrace.length) {
-+                        next = fullTrace[fullTrace.length + 1 - size];
-+                    }
-+                }
 +
-+                this.trackingStackTrace = category.validateStackTrace(source, next);
-+                if (fullTrace.length >= size && 0 <= traceIndex && traceIndex < fullTrace.length) {
-+                    this.uncategorizedStackTrace = new StackTraceElement[traceIndex];
-+                    System.arraycopy(fullTrace, 0, this.uncategorizedStackTrace, 0, this.uncategorizedStackTrace.length);
-+                } else {
-+                    this.trackingStackTrace = false;
-+                }
++        try {
+         if (this.trackingStackTrace) {
+             int size = category.fillInStackTrace(nestedOffset);
+             StackTraceElement[] fullTrace = this.exception.getStackTrace();
+@@ -214,12 +238,15 @@
+                 this.trackingStackTrace = false;
              }
+         }
 +        } catch (Throwable e) {
 +            e.printStackTrace();
-         }
++        }
  
          this.details.add(category);
          return category;

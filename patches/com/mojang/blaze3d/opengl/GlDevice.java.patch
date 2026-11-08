@@ -122,29 +122,29 @@
          GlStateManager.clearGlErrors();
          int id = GlStateManager._genTexture();
          if (label == null) {
-@@ -193,12 +194,20 @@
+@@ -193,14 +194,22 @@
              if (isCubemap) {
                  for (int cubeTarget : GlConst.CUBEMAP_TARGETS) {
                      for (int i = 0; i < mipLevels; i++) {
--                        GlStateManager._texImage2D(cubeTarget, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
 +                        if (stencil) {
 +                            GlStateManager._texImage2D(cubeTarget, i, 36013, width >> i, height >> i, 0, 34041, 36269, null);
 +                        } else {
-+                            GlStateManager._texImage2D(cubeTarget, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
-+                        }
+                         GlStateManager._texImage2D(cubeTarget, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
                      }
                  }
++                }
              } else {
                  for (int i = 0; i < mipLevels; i++) {
--                    GlStateManager._texImage2D(target, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
 +                    if (stencil) {
 +                        GlStateManager._texImage2D(target, i, 36013, width >> i, height >> i, 0, 34041, 36269, null);
 +                    } else {
-+                        GlStateManager._texImage2D(target, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
-+                    }
+                     GlStateManager._texImage2D(target, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
                  }
              }
++            }
  
+             int error = GlStateManager._getError();
+             if (error == 1285) {
 @@ -211,7 +220,7 @@
                  throw new IllegalStateException("OpenGL error " + error);
              }
@@ -188,7 +188,7 @@
          int error = GlStateManager._getError();
          if (error == 1285) {
              throw new GpuOutOfMemoryException("Could not allocate buffer of " + size + " for " + label);
-@@ -312,46 +322,51 @@
+@@ -312,29 +322,35 @@
      }
  
      public DirectStateAccess directStateAccess() {
@@ -219,6 +219,7 @@
          if (source == null) {
              LOGGER.error("Couldn't find source for {} shader ({})", key.type, key.id);
              return GlShaderModule.INVALID_SHADER;
+-        } else {
 +        }
 +
 +        if (key.type == ShaderType.VERTEX) {
@@ -226,33 +227,14 @@
 +            source = source.replace("minecraft_sample_lightmap(Sampler2, UV2)", "texture(Sampler2, (UV2 / 256.0) + (0.5 / 16.0))");
 +        }
 +
-+        String sourceWithDefines = GlslPreprocessor.injectDefines(source, key.defines);
-+        int shaderId = GlStateManager.glCreateShader(GlConst.toGl(key.type));
-+        GlStateManager.glShaderSource(shaderId, sourceWithDefines);
-+        GlStateManager.glCompileShader(shaderId);
-+        if (GlStateManager.glGetShaderi(shaderId, 35713) == 0) {
-+            String logInfo = StringUtils.trim(GlStateManager.glGetShaderInfoLog(shaderId, 32768));
-+            LOGGER.error("Couldn't compile {} shader ({}): {}", key.type.getName(), key.id, logInfo);
-+            return GlShaderModule.INVALID_SHADER;
-         } else {
--            String sourceWithDefines = GlslPreprocessor.injectDefines(source, key.defines);
--            int shaderId = GlStateManager.glCreateShader(GlConst.toGl(key.type));
--            GlStateManager.glShaderSource(shaderId, sourceWithDefines);
--            GlStateManager.glCompileShader(shaderId);
--            if (GlStateManager.glGetShaderi(shaderId, 35713) == 0) {
--                String logInfo = StringUtils.trim(GlStateManager.glGetShaderInfoLog(shaderId, 32768));
--                LOGGER.error("Couldn't compile {} shader ({}): {}", key.type.getName(), key.id, logInfo);
--                return GlShaderModule.INVALID_SHADER;
--            } else {
--                GlShaderModule module = new GlShaderModule(shaderId, key.id, key.type);
--                this.debugLabels.applyLabel(module);
--                return module;
--            }
-+            GlShaderModule module = new GlShaderModule(shaderId, key.id, key.type);
-+            this.debugLabels.applyLabel(module);
-+            return module;
+             String sourceWithDefines = GlslPreprocessor.injectDefines(source, key.defines);
+             int shaderId = GlStateManager.glCreateShader(GlConst.toGl(key.type));
+             GlStateManager.glShaderSource(shaderId, sourceWithDefines);
+@@ -349,9 +365,8 @@
+                 return module;
+             }
          }
-     }
+-    }
  
 -    private GlProgram compileProgram(final RenderPipeline pipeline, final ShaderSource shaderSource) {
 +    private GlProgram compileProgram(RenderPipeline pipeline, ShaderSource shaderSource) {

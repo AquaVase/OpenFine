@@ -42,14 +42,6 @@
  
              for (LerpingBossEvent event : this.events.values()) {
                  int xLeft = screenWidth / 2 - 91;
--                int yo = yOffset;
--                this.extractBar(graphics, xLeft, yo, event);
--                Component msg = event.getName();
--                int width = this.minecraft.font.width(msg);
--                int x = screenWidth / 2 - width / 2;
--                int y = yo - 9;
--                graphics.text(this.minecraft.font, msg, x, y, -1);
--                yOffset += 10 + 9;
 +                boolean render = true;
 +                int increment = 19;
 +                if (Reflector.ForgeHooksClient_onCustomizeBossEventProgress.exists()) {
@@ -60,18 +52,19 @@
 +                }
 +
 +                if (render) {
-+                    int yo = yOffset;
-+                    this.extractBar(graphics, xLeft, yo, event);
-+                    Component msg = event.getName();
-+                    int width = this.minecraft.font.width(msg);
-+                    int x = screenWidth / 2 - width / 2;
-+                    int y = yo - 9;
+                 int yo = yOffset;
+                 this.extractBar(graphics, xLeft, yo, event);
+                 Component msg = event.getName();
+                 int width = this.minecraft.font.width(msg);
+                 int x = screenWidth / 2 - width / 2;
+                 int y = yo - 9;
 +                    int col = -1;
 +                    if (Config.isCustomColors()) {
 +                        col = CustomColors.getBossTextColor(col);
 +                    }
 +
-+                    graphics.text(this.minecraft.font, msg, x, y, -1);
+                 graphics.text(this.minecraft.font, msg, x, y, -1);
+-                yOffset += 10 + 9;
 +                }
 +
 +                yOffset += increment;

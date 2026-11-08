@@ -127,9 +127,8 @@
  
          layer.setExtents(this.extents);
          layer.setLocalTransform(this.transformation);
--        this.properties.applyToLayer(layer, displayContext);
 +        if (this.properties != null) {
-+            this.properties.applyToLayer(layer, displayContext);
+         this.properties.applyToLayer(layer, displayContext);
 +        } else {
 +            this.properties.applyToLayer(layer, displayContext);
 +        }

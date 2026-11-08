@@ -175,38 +175,23 @@
          output.add(NarratedElementType.TITLE, this.getTitle());
          if (this.displayMode.showRestrictedPrompt) {
              output.add(NarratedElementType.USAGE, CommonComponents.joinForNarration(USAGE_TEXT, RESTRICTED_NARRATION_TEXT));
-@@ -311,35 +311,58 @@
+@@ -311,7 +311,10 @@
          }
      }
  
 -    public void handleChatInput(String msg, final boolean addToRecent) {
--        msg = this.normalizeChatMessage(msg);
--        if (!msg.isEmpty()) {
--            if (addToRecent) {
--                this.minecraft.gui.hud.getChat().addRecentChat(msg);
--            }
 +    public void handleChatInput(String msg, boolean addToRecent) {
 +        if (this.checkCustomCommand(msg)) {
 +            this.minecraft.gui.hud.getChat().addRecentChat(msg);
 +        } else {
-+            msg = this.normalizeChatMessage(msg);
-+            if (!msg.isEmpty()) {
-+                if (addToRecent) {
-+                    this.minecraft.gui.hud.getChat().addRecentChat(msg);
-+                }
- 
--            if (msg.startsWith("/")) {
--                this.minecraft.player.connection.sendCommand(msg.substring(1));
--            } else {
--                this.minecraft.player.connection.sendChat(msg);
-+                if (msg.startsWith("/")) {
-+                    this.minecraft.player.connection.sendCommand(msg.substring(1));
-+                } else {
-+                    this.minecraft.player.connection.sendChat(msg);
-+                }
+         msg = this.normalizeChatMessage(msg);
+         if (!msg.isEmpty()) {
+             if (addToRecent) {
+@@ -325,21 +328,41 @@
              }
          }
      }
++    }
  
 -    public String normalizeChatMessage(final String message) {
 +    public String normalizeChatMessage(String message) {

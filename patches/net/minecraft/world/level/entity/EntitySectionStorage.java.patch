@@ -68,18 +68,17 @@
      }
  
 -    public EntitySection<T> getOrCreateSection(final long key) {
--        return this.sections.computeIfAbsent(key, this::createSection);
 +    public EntitySection<T> getOrCreateSection(long key) {
 +        int sizePre = this.sections.size();
 +
 +        try {
-+            return this.sections.computeIfAbsent(key, this::createSection);
+         return this.sections.computeIfAbsent(key, this::createSection);
 +        } finally {
 +            if (this.sections.size() != sizePre) {
 +                this.updated = true;
-+            }
-+        }
      }
++        }
++    }
  
 -    public @Nullable EntitySection<T> getSection(final long key) {
 +    public EntitySection<T> getSection(long key) {
@@ -117,8 +116,8 @@
          this.sectionIds.remove(sectionKey);
 +        if (this.sections.size() != sizePre) {
 +            this.updated = true;
-+        }
      }
++    }
  
      @VisibleForDebug
      public int count() {
@@ -127,7 +126,7 @@
 +
 +    public boolean isUpdated() {
 +        return this.updated;
-+    }
+ }
 +
 +    public boolean resetUpdated() {
 +        boolean ret = this.updated;
@@ -138,4 +137,4 @@
 +    public LongSet getSectionKeys() {
 +        return this.sections.keySet();
 +    }
- }
++}

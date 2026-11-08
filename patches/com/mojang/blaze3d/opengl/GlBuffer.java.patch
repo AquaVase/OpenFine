@@ -30,18 +30,16 @@
      protected void checkCanBeUsed() {
 -        if (!this.canPersistentMap) {
 -            if (this.mappingRefCount != 0) {
--                throw new IllegalStateException("Attempt to use buffer while mapped without persistent mapping capability");
--            }
 +        if (!this.canPersistentMap && this.mappingRefCount != 0) {
-+            throw new IllegalStateException("Attempt to use buffer while mapped without persistent mapping capability");
+                 throw new IllegalStateException("Attempt to use buffer while mapped without persistent mapping capability");
+             }
          }
++
++    public int getHandle() {
++        return this.handle;
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+    public int getHandle() {
-+        return this.handle;
-+    }
-+
 +    public static String usageToString(int usageIn) {
 +        StringBuilder sb = new StringBuilder();
 +        if ((usageIn & 1) != 0) {

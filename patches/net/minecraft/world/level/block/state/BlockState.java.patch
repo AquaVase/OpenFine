@@ -97,8 +97,8 @@
 +                Blocks.AIR.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
 +            );
 +            this.hasEmissive = emissiveOwner != emissiveAir;
-+        }
      }
++    }
  
      @Override
      protected BlockState asState() {

@@ -68,16 +68,13 @@
  
      @Override
      public void close() {
--        this.vertexBuffer.close();
--        if (this.indexBuffer != null) {
--            this.indexBuffer.close();
 +        if (!this.persistent) {
-+            this.vertexBuffer.close();
-+            if (this.indexBuffer != null) {
-+                this.indexBuffer.close();
-+            }
+         this.vertexBuffer.close();
+         if (this.indexBuffer != null) {
+             this.indexBuffer.close();
          }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
 +    public MultiTextureData getMultiTextureData() {
@@ -104,8 +101,8 @@
      public record DrawState(VertexFormat format, int vertexCount, int indexCount, PrimitiveTopology primitiveTopology, IndexType indexType) {
 +        public int getVertexBufferSize() {
 +            return this.vertexCount * this.format.getVertexSize();
-+        }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record SortState(CompactVectorArray centroids, IndexType indexType) {

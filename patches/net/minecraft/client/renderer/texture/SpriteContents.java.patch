@@ -257,18 +257,18 @@
              GpuDevice device = RenderSystem.getDevice();
              Int2ObjectMap<GpuTextureView> frameTexturesByIndex = new Int2ObjectOpenHashMap<>();
              GpuBufferSlice[] spriteUbosByMip = new GpuBufferSlice[SpriteContents.this.byMipLevel.length];
-@@ -324,7 +408,9 @@
+@@ -324,8 +408,10 @@
              }
  
              for (int level = 0; level < SpriteContents.this.byMipLevel.length; level++) {
--                spriteUbosByMip[level] = uboSlice.slice(level * spriteUboSize, spriteUboSize);
 +                if (uboSlice != null) {
-+                    spriteUbosByMip[level] = uboSlice.slice(level * spriteUboSize, spriteUboSize);
-+                }
+                 spriteUbosByMip[level] = uboSlice.slice(level * spriteUboSize, spriteUboSize);
              }
++            }
  
              return SpriteContents.this.new AnimationState(this, frameTexturesByIndex, spriteUbosByMip);
-@@ -335,41 +421,59 @@
+         }
+@@ -335,26 +421,29 @@
          }
      }
  
@@ -297,40 +297,26 @@
          }
  
          public void tick() {
--            this.subFrame++;
--            this.isDirty = false;
--            SpriteContents.FrameInfo currentFrame = this.animationInfo.frames.get(this.frame);
--            if (this.subFrame >= currentFrame.time) {
--                int oldFrame = currentFrame.index;
--                this.frame = (this.frame + 1) % this.animationInfo.frames.size();
--                this.subFrame = 0;
--                int newFrame = this.animationInfo.frames.get(this.frame).index;
--                if (oldFrame != newFrame) {
--                    this.isDirty = true;
 +            if (this.sprite != null && this.sprite.parentSprite != null && this.sprite.usesParentAnimationTime) {
 +                SpriteContents.AnimationState parentAnim = this.sprite.parentSprite.getSpriteContentsTicker();
 +                this.frame = parentAnim.frame;
 +                this.subFrame = parentAnim.subFrame;
 +                this.isDirty = parentAnim.isDirty;
 +            } else {
-+                this.subFrame++;
-+                this.isDirty = false;
-+                SpriteContents.FrameInfo currentFrame = this.animationInfo.frames.get(this.frame);
-+                if (this.subFrame >= currentFrame.time) {
-+                    int oldFrame = currentFrame.index;
-+                    this.frame = (this.frame + 1) % this.animationInfo.frames.size();
-+                    this.subFrame = 0;
-+                    int newFrame = this.animationInfo.frames.get(this.frame).index;
-+                    if (oldFrame != newFrame) {
-+                        this.isDirty = true;
-+                    }
+             this.subFrame++;
+             this.isDirty = false;
+             SpriteContents.FrameInfo currentFrame = this.animationInfo.frames.get(this.frame);
+@@ -367,9 +456,24 @@
+                     this.isDirty = true;
                  }
+             }
 +
 +                if (this.sprite != null) {
 +                    if (this.sprite.spriteSingle != null && this.sprite.spriteSingle.getSpriteContentsTicker() != null) {
 +                        this.sprite.spriteSingle.getSpriteContentsTicker().tick();
-+                    }
-+
+         }
+ 
+-        public GpuBufferSlice getDrawUbo(final int level) {
 +                    if (this.sprite.spriteNormal != null && this.sprite.spriteNormal.getSpriteContentsTicker() != null) {
 +                        this.sprite.spriteNormal.getSpriteContentsTicker().tick();
 +                    }
@@ -339,10 +325,9 @@
 +                        this.sprite.spriteSpecular.getSpriteContentsTicker().tick();
 +                    }
 +                }
-             }
-         }
- 
--        public GpuBufferSlice getDrawUbo(final int level) {
++            }
++        }
++
 +        public GpuBufferSlice getDrawUbo(int level) {
              return this.spriteUbosByMip[level];
          }
@@ -363,11 +348,15 @@
 +
 +        public TextureAtlasSprite getSprite() {
 +            return this.sprite;
-+        }
-+
+     }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    private record FrameInfo(int index, int time) {
 +        public void setSprite(TextureAtlasSprite sprite) {
 +            this.sprite = sprite;
-+        }
+     }
+-}
+\ No newline at end of file
 +
 +        public void setSpriteUbosByMip(GpuBufferSlice[] ubosByMip) {
 +            for (int i = 0; i < this.spriteUbosByMip.length; i++) {
@@ -379,12 +368,8 @@
 +        public String toString() {
 +            return "animation:" + SpriteContents.this.toString();
 +        }
-     }
- 
--    @OnlyIn(Dist.CLIENT)
--    private record FrameInfo(int index, int time) {
++    }
++
 +    public record FrameInfo(int index, int time) {
-     }
--}
-\ No newline at end of file
++    }
 +}
