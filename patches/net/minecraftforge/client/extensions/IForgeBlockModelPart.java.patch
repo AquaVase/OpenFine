@@ -1,0 +1,16 @@
+--- /dev/null
++++ b/net/minecraftforge/client/extensions/IForgeBlockModelPart.java
+@@ -0,0 +1,13 @@
++package net.minecraftforge.client.extensions;
++
++import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
++
++public interface IForgeBlockModelPart {
++   default ChunkSectionLayer layer() {
++      return null;
++   }
++
++   default ChunkSectionLayer layerFast() {
++      return null;
++   }
++}

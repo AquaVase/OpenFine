@@ -1,0 +1,59 @@
+--- a/net/minecraft/client/resources/model/ModelBaker.java
++++ b/net/minecraft/client/resources/model/ModelBaker.java
+@@ -4,32 +4,36 @@
+ import net.minecraft.client.resources.model.geometry.BakedQuad;
+ import net.minecraft.client.resources.model.sprite.MaterialBaker;
+ import net.minecraft.resources.Identifier;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.minecraftforge.client.RenderTypeGroup;
+ import org.joml.Vector3fc;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public interface ModelBaker {
+-    ResolvedModel getModel(Identifier location);
++   ResolvedModel getModel(Identifier var1);
+ 
+-    BlockStateModelPart missingBlockModelPart();
++   BlockStateModelPart missingBlockModelPart();
+ 
+-    MaterialBaker materials();
++   MaterialBaker materials();
+ 
+-    ModelBaker.Interner interner();
++   ModelBaker.Interner interner();
+ 
+-    <T> T compute(ModelBaker.SharedOperationKey<T> key);
++   <T> T compute(ModelBaker.SharedOperationKey<T> var1);
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    interface Interner {
+-        Vector3fc vector(Vector3fc vector);
++   default RenderTypeGroup renderType() {
++      return null;
++   }
+ 
+-        BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo material);
+-    }
++   default RenderTypeGroup renderTypeFast() {
++      return null;
++   }
+ 
+-    @FunctionalInterface
+-    @OnlyIn(Dist.CLIENT)
+-    interface SharedOperationKey<T> {
+-        T compute(ModelBaker modelBakery);
+-    }
+-}
+\ No newline at end of file
++   interface Interner {
++      Vector3fc vector(Vector3fc var1);
++
++      BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo var1);
++   }
++
++   @FunctionalInterface
++   interface SharedOperationKey<T> {
++      T compute(ModelBaker var1);
++   }
++}

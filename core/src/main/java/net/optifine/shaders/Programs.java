@@ -1,0 +1,131 @@
+package net.optifine.shaders;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Programs {
+   private List<Program> programs = new ArrayList<>();
+   private Program programNone = this.make("", ProgramStage.NONE, true);
+
+   public Program make(String name, ProgramStage programStage, Program backupProgram) {
+      int index = this.programs.size();
+      Program prog = new Program(index, name, programStage, backupProgram);
+      this.programs.add(prog);
+      return prog;
+   }
+
+   private Program make(String name, ProgramStage programStage, boolean ownBackup) {
+      int index = this.programs.size();
+      Program prog = new Program(index, name, programStage, ownBackup);
+      this.programs.add(prog);
+      return prog;
+   }
+
+   public Program makeGbuffers(String name, Program backupProgram) {
+      return this.make(name, ProgramStage.GBUFFERS, backupProgram);
+   }
+
+   public Program makeComposite(String name) {
+      return this.make(name, ProgramStage.COMPOSITE, this.programNone);
+   }
+
+   public Program makeDeferred(String name) {
+      return this.make(name, ProgramStage.DEFERRED, this.programNone);
+   }
+
+   public Program makeShadow(String name, Program backupProgram) {
+      return this.make(name, ProgramStage.SHADOW, backupProgram);
+   }
+
+   public Program makeVirtual(String name) {
+      return this.make(name, ProgramStage.NONE, true);
+   }
+
+   public Program[] makePrograms(String prefix, int count, ProgramStage stage, Program backupProgram) {
+      Program[] ps = new Program[count];
+
+      for (int i = 0; i < count; i++) {
+         String name = i == 0 ? prefix : prefix + i;
+         ps[i] = this.make(name, stage, this.programNone);
+      }
+
+      return ps;
+   }
+
+   public Program[] makeComposites(String prefix, int count) {
+      return this.makePrograms(prefix, count, ProgramStage.COMPOSITE, this.programNone);
+   }
+
+   public Program[] makeShadowcomps(String prefix, int count) {
+      return this.makePrograms(prefix, count, ProgramStage.SHADOWCOMP, this.programNone);
+   }
+
+   public Program[] makePrepares(String prefix, int count) {
+      return this.makePrograms(prefix, count, ProgramStage.PREPARE, this.programNone);
+   }
+
+   public Program[] makeDeferreds(String prefix, int count) {
+      return this.makePrograms(prefix, count, ProgramStage.DEFERRED, this.programNone);
+   }
+
+   public Program getProgramNone() {
+      return this.programNone;
+   }
+
+   public int getCount() {
+      return this.programs.size();
+   }
+
+   public Program getProgram(String name) {
+      if (name == null) {
+         return null;
+      }
+
+      for (int i = 0; i < this.programs.size(); i++) {
+         Program p = this.programs.get(i);
+         String progName = p.getName();
+         if (progName.equals(name)) {
+            return p;
+         }
+      }
+
+      return null;
+   }
+
+   public String[] getProgramNames() {
+      String[] names = new String[this.programs.size()];
+
+      for (int i = 0; i < names.length; i++) {
+         names[i] = this.programs.get(i).getName();
+      }
+
+      return names;
+   }
+
+   public Program[] getPrograms() {
+      return this.programs.toArray(new Program[this.programs.size()]);
+   }
+
+   public Program[] getPrograms(Program programFrom, Program programTo) {
+      int iFrom = programFrom.getIndex();
+      int iTo = programTo.getIndex();
+      if (iFrom > iTo) {
+         int i = iFrom;
+         iFrom = iTo;
+         iTo = i;
+      }
+
+      Program[] progs = new Program[iTo - iFrom + 1];
+
+      for (int i = 0; i < progs.length; i++) {
+         progs[i] = this.programs.get(iFrom + i);
+      }
+
+      return progs;
+   }
+
+   @Override
+   public String toString() {
+      return this.programs.toString();
+   }
+}

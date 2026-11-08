@@ -1,0 +1,33 @@
+--- /dev/null
++++ b/net/minecraftforge/client/ForgeRenderTypes.java
+@@ -0,0 +1,30 @@
++package net.minecraftforge.client;
++
++import net.minecraft.client.renderer.rendertype.RenderType;
++import net.minecraft.resources.Identifier;
++
++public class ForgeRenderTypes {
++   public static RenderType getText(Identifier locationIn) {
++      throw new UnsupportedOperationException();
++   }
++
++   public static RenderType getTextIntensity(Identifier locationIn) {
++      throw new UnsupportedOperationException();
++   }
++
++   public static RenderType getTextPolygonOffset(Identifier locationIn) {
++      throw new UnsupportedOperationException();
++   }
++
++   public static RenderType getTextIntensityPolygonOffset(Identifier locationIn) {
++      throw new UnsupportedOperationException();
++   }
++
++   public static RenderType getTextSeeThrough(Identifier locationIn) {
++      throw new UnsupportedOperationException();
++   }
++
++   public static RenderType getTextIntensitySeeThrough(Identifier locationIn) {
++      throw new UnsupportedOperationException();
++   }
++}

@@ -1,0 +1,267 @@
+--- a/net/minecraft/client/renderer/chunk/CompiledSectionMesh.java
++++ b/net/minecraft/client/renderer/chunk/CompiledSectionMesh.java
+@@ -1,114 +1,176 @@
+ package net.minecraft.client.renderer.chunk;
+ 
+ import com.mojang.blaze3d.vertex.MeshData;
++import java.util.BitSet;
+ import java.util.EnumMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.Set;
+ import java.util.concurrent.atomic.AtomicBoolean;
+ import net.minecraft.core.Direction;
+ import net.minecraft.util.Util;
+ import net.minecraft.world.level.block.entity.BlockEntity;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.render.VboRegion;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class CompiledSectionMesh implements SectionMesh {
+-    public static final SectionMesh UNCOMPILED = new SectionMesh() {
+-        @Override
+-        public boolean facesCanSeeEachother(final Direction direction1, final Direction direction2) {
+-            return false;
+-        }
+-    };
+-    public static final SectionMesh EMPTY = new SectionMesh() {
+-        @Override
+-        public boolean facesCanSeeEachother(final Direction direction1, final Direction direction2) {
+-            return true;
+-        }
+-    };
+-    private final List<BlockEntity> renderableBlockEntities;
+-    private final VisibilitySet visibilitySet;
+-    private final MeshData.@Nullable SortState transparencyState;
+-    private @Nullable TranslucencyPointOfView translucencyPointOfView;
+-    private final Map<ChunkSectionLayer, SectionMesh.SectionDraw> draws = new EnumMap<>(ChunkSectionLayer.class);
+-    private final Map<ChunkSectionLayer, AtomicBoolean> vertexBufferUploaded = Util.makeEnumMap(ChunkSectionLayer.class, layer -> new AtomicBoolean());
+-    private final Map<ChunkSectionLayer, AtomicBoolean> indexBufferUploaded = Util.makeEnumMap(ChunkSectionLayer.class, layer -> new AtomicBoolean());
++   public static final SectionMesh UNCOMPILED = new SectionMesh() {
++      @Override
++      public boolean facesCanSeeEachother(Direction direction1, Direction direction2) {
++         return false;
++      }
+ 
+-    public CompiledSectionMesh(final TranslucencyPointOfView translucencyPointOfView, final SectionCompiler.Results results) {
+-        this.translucencyPointOfView = translucencyPointOfView;
+-        this.visibilitySet = results.visibilitySet;
+-        this.renderableBlockEntities = results.blockEntities;
+-        this.transparencyState = results.transparencyState;
+-        results.renderedLayers
+-            .forEach(
+-                (layer, mesh) -> this.draws
+-                    .put(layer, new SectionMesh.SectionDraw(mesh.drawState().indexCount(), mesh.drawState().indexType(), mesh.indexBuffer() != null))
+-            );
+-    }
++      @Override
++      public void setAnimatedSprites(BitSet[] animatedSprites) {
++         throw new UnsupportedOperationException();
++      }
++   };
++   public static final SectionMesh EMPTY = new SectionMesh() {
++      @Override
++      public boolean facesCanSeeEachother(Direction direction1, Direction direction2) {
++         return true;
++      }
+ 
+-    public void setTranslucencyPointOfView(final TranslucencyPointOfView translucencyPointOfView) {
+-        this.translucencyPointOfView = translucencyPointOfView;
+-    }
++      @Override
++      public void setAnimatedSprites(BitSet[] animatedSprites) {
++         throw new UnsupportedOperationException();
++      }
++   };
++   private final List<BlockEntity> renderableBlockEntities;
++   private final VisibilitySet visibilitySet;
++   private final MeshData.SortState transparencyState;
++   private TranslucencyPointOfView translucencyPointOfView;
++   private final Map<ChunkSectionLayer, SectionMesh.SectionDraw> draws = new EnumMap<>(ChunkSectionLayer.class);
++   private final Map<ChunkSectionLayer, AtomicBoolean> vertexBufferUploaded = Util.makeEnumMap(ChunkSectionLayer.class, layer -> new AtomicBoolean());
++   private final Map<ChunkSectionLayer, AtomicBoolean> indexBufferUploaded = Util.makeEnumMap(ChunkSectionLayer.class, layer -> new AtomicBoolean());
++   private BitSet[] animatedSprites = new BitSet[ChunkSectionLayer.VALUES.length];
++   private final Set<ChunkSectionLayer> layersUsed = this.draws.keySet();
+ 
+-    @Override
+-    public boolean isDifferentPointOfView(final TranslucencyPointOfView pointOfView) {
+-        return !pointOfView.equals(this.translucencyPointOfView);
+-    }
++   public CompiledSectionMesh(TranslucencyPointOfView translucencyPointOfView, SectionCompiler.Results results) {
++      this(translucencyPointOfView, results, null);
++   }
+ 
+-    @Override
+-    public boolean hasRenderableLayers() {
+-        return !this.draws.isEmpty();
+-    }
++   public CompiledSectionMesh(TranslucencyPointOfView translucencyPointOfView, SectionCompiler.Results results, VboRegion[] vboRegions) {
++      this.translucencyPointOfView = translucencyPointOfView;
++      this.visibilitySet = results.visibilitySet;
++      this.renderableBlockEntities = results.blockEntities;
++      this.transparencyState = results.transparencyState;
++      results.renderedLayers
++         .forEach(
++            (layer, mesh) -> {
++               SectionMesh.SectionDraw sectionDraw = new SectionMesh.SectionDraw(
++                  mesh.drawState().indexCount(), mesh.drawState().indexType(), mesh.indexBuffer() != null
++               );
++               if (vboRegions != null) {
++                  sectionDraw.setVboRegion(vboRegions[layer.ordinal()]);
++               }
+ 
+-    @Override
+-    public boolean isEmpty(final ChunkSectionLayer layer) {
+-        return !this.draws.containsKey(layer);
+-    }
++               sectionDraw.setMeshData(mesh);
++               this.draws.put(layer, sectionDraw);
++            }
++         );
++   }
+ 
+-    @Override
+-    public List<BlockEntity> getRenderableBlockEntities() {
+-        return this.renderableBlockEntities;
+-    }
++   public void setTranslucencyPointOfView(TranslucencyPointOfView translucencyPointOfView) {
++      this.translucencyPointOfView = translucencyPointOfView;
++   }
+ 
+-    @Override
+-    public boolean facesCanSeeEachother(final Direction direction1, final Direction direction2) {
+-        return this.visibilitySet.visibilityBetween(direction1, direction2);
+-    }
++   @Override
++   public boolean isDifferentPointOfView(TranslucencyPointOfView pointOfView) {
++      return !pointOfView.equals(this.translucencyPointOfView);
++   }
+ 
+-    @Override
+-    public SectionMesh.@Nullable SectionDraw getSectionDraw(final ChunkSectionLayer layer) {
+-        return this.draws.get(layer);
+-    }
++   @Override
++   public boolean hasRenderableLayers() {
++      return !this.draws.isEmpty();
++   }
+ 
+-    public boolean isVertexBufferUploaded(final ChunkSectionLayer layer) {
+-        return this.vertexBufferUploaded.get(layer).get();
+-    }
++   @Override
++   public boolean isEmpty(ChunkSectionLayer layer) {
++      return !this.draws.containsKey(layer);
++   }
+ 
+-    public boolean isIndexBufferUploaded(final ChunkSectionLayer layer) {
+-        return this.indexBufferUploaded.get(layer).get();
+-    }
++   @Override
++   public List<BlockEntity> getRenderableBlockEntities() {
++      return this.renderableBlockEntities;
++   }
+ 
+-    public void setVertexBufferUploaded(final ChunkSectionLayer layer) {
+-        this.vertexBufferUploaded.get(layer).set(true);
+-    }
++   @Override
++   public boolean facesCanSeeEachother(Direction direction1, Direction direction2) {
++      return this.visibilitySet.visibilityBetween(direction1, direction2);
++   }
+ 
+-    public void setIndexBufferUploaded(final ChunkSectionLayer layer) {
+-        this.indexBufferUploaded.get(layer).set(true);
+-    }
++   @Override
++   public SectionMesh.SectionDraw getSectionDraw(ChunkSectionLayer layer) {
++      return this.draws.get(layer);
++   }
+ 
+-    @Override
+-    public boolean hasTranslucentGeometry() {
+-        return this.draws.containsKey(ChunkSectionLayer.TRANSLUCENT);
+-    }
++   public boolean isVertexBufferUploaded(ChunkSectionLayer layer) {
++      return this.vertexBufferUploaded.get(layer).get();
++   }
+ 
+-    public MeshData.@Nullable SortState getTransparencyState() {
+-        return this.transparencyState;
+-    }
++   public boolean isIndexBufferUploaded(ChunkSectionLayer layer) {
++      return this.indexBufferUploaded.get(layer).get();
++   }
+ 
+-    @Override
+-    public void close() {
+-        this.draws.clear();
+-        this.vertexBufferUploaded.clear();
+-        this.indexBufferUploaded.clear();
+-    }
+-}
+\ No newline at end of file
++   public void setVertexBufferUploaded(ChunkSectionLayer layer) {
++      this.vertexBufferUploaded.get(layer).set(true);
++      SectionMesh.SectionDraw draw = this.getSectionDraw(layer);
++      if (draw != null) {
++         draw.uploadVertexData();
++      }
++   }
++
++   public void setIndexBufferUploaded(ChunkSectionLayer layer) {
++      this.indexBufferUploaded.get(layer).set(true);
++      SectionMesh.SectionDraw draw = this.getSectionDraw(layer);
++      if (draw != null) {
++         draw.uploadIndexData();
++      }
++   }
++
++   @Override
++   public boolean hasTranslucentGeometry() {
++      return this.draws.containsKey(ChunkSectionLayer.TRANSLUCENT);
++   }
++
++   public MeshData.SortState getTransparencyState() {
++      return this.transparencyState;
++   }
++
++   @Override
++   public void close() {
++      this.draws.clear();
++      this.vertexBufferUploaded.clear();
++      this.indexBufferUploaded.clear();
++   }
++
++   @Override
++   public BitSet getAnimatedSprites(ChunkSectionLayer layerIn) {
++      return this.animatedSprites[layerIn.ordinal()];
++   }
++
++   @Override
++   public void setAnimatedSprites(BitSet[] animatedSprites) {
++      this.animatedSprites = animatedSprites;
++   }
++
++   @Override
++   public boolean isLayerUsed(ChunkSectionLayer layerIn) {
++      return this.layersUsed.contains(layerIn);
++   }
++
++   @Override
++   public boolean hasTerrainBlockEntities() {
++      return !this.isEmpty() || !this.getRenderableBlockEntities().isEmpty();
++   }
++
++   @Override
++   public boolean isEmpty() {
++      return this.layersUsed.isEmpty();
++   }
++
++   @Override
++   public Set<ChunkSectionLayer> getLayersUsed() {
++      return this.layersUsed;
++   }
++}

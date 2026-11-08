@@ -1,0 +1,389 @@
+--- a/net/minecraft/client/renderer/texture/TextureManager.java
++++ b/net/minecraft/client/renderer/texture/TextureManager.java
+@@ -1,6 +1,7 @@
+ package net.minecraft.client.renderer.texture;
+ 
+ import com.mojang.blaze3d.platform.NativeImage;
++import com.mojang.blaze3d.systems.RenderSystem;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.realmsclient.gui.screens.AddRealmPopupScreen;
+ import java.io.FileNotFoundException;
+@@ -9,8 +10,10 @@
+ import java.nio.file.Files;
+ import java.nio.file.Path;
+ import java.util.ArrayList;
++import java.util.Collection;
+ import java.util.HashMap;
+ import java.util.HashSet;
++import java.util.Iterator;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Set;
+@@ -19,177 +22,224 @@
+ import net.minecraft.CrashReport;
+ import net.minecraft.CrashReportCategory;
+ import net.minecraft.ReportedException;
++import net.minecraft.client.gui.screens.LoadingOverlay;
+ import net.minecraft.resources.Identifier;
+ import net.minecraft.server.packs.resources.PreparableReloadListener;
+ import net.minecraft.server.packs.resources.ResourceManager;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.minecraft.server.packs.resources.PreparableReloadListener.PreparationBarrier;
++import net.minecraft.server.packs.resources.PreparableReloadListener.SharedState;
++import net.optifine.Config;
++import net.optifine.EmissiveTextures;
++import net.optifine.RandomEntities;
++import net.optifine.reflect.Reflector;
++import net.optifine.shaders.ShadersTex;
+ import org.slf4j.Logger;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class TextureManager implements PreparableReloadListener, AutoCloseable {
+-    private static final Logger LOGGER = LogUtils.getLogger();
+-    public static final Identifier INTENTIONAL_MISSING_TEXTURE = Identifier.withDefaultNamespace("");
+-    private final Map<Identifier, AbstractTexture> byPath = new HashMap<>();
+-    private final Set<TickableTexture> tickableTextures = new HashSet<>();
+-    private final ResourceManager resourceManager;
++   private static final Logger LOGGER = LogUtils.getLogger();
++   public static final Identifier INTENTIONAL_MISSING_TEXTURE = Identifier.withDefaultNamespace("");
++   private final Map<Identifier, AbstractTexture> byPath = new HashMap<>();
++   private final Set<TickableTexture> tickableTextures = new HashSet<>();
++   private final ResourceManager resourceManager;
++   private AbstractTexture mojangLogoTexture;
+ 
+-    public TextureManager(final ResourceManager resourceManager) {
+-        this.resourceManager = resourceManager;
+-        NativeImage checkerboard = MissingTextureAtlasSprite.generateMissingImage();
+-        this.register(MissingTextureAtlasSprite.getLocation(), new DynamicTexture(() -> "(intentionally-)Missing Texture", checkerboard));
+-    }
++   public TextureManager(ResourceManager resourceManager) {
++      this.resourceManager = resourceManager;
++      NativeImage checkerboard = MissingTextureAtlasSprite.generateMissingImage();
++      this.register(MissingTextureAtlasSprite.getLocation(), new DynamicTexture(() -> "(intentionally-)Missing Texture", checkerboard));
++   }
+ 
+-    public void registerAndLoad(final Identifier textureId, final ReloadableTexture texture) {
+-        try {
+-            texture.apply(this.loadContentsSafe(textureId, texture));
+-        } catch (Throwable t) {
+-            CrashReport report = CrashReport.forThrowable(t, "Uploading texture");
+-            CrashReportCategory category = report.addCategory("Uploaded texture");
+-            category.setDetail("Resource location", texture.resourceId());
+-            category.setDetail("Texture id", textureId);
+-            throw new ReportedException(report);
+-        }
++   public void registerAndLoad(Identifier textureId, ReloadableTexture texture) {
++      try {
++         texture.apply(this.loadContentsSafe(textureId, texture));
++      } catch (Throwable t) {
++         CrashReport report = CrashReport.forThrowable(t, "Uploading texture");
++         CrashReportCategory category = report.addCategory("Uploaded texture");
++         category.setDetail("Resource location", texture.resourceId());
++         category.setDetail("Texture id", textureId);
++         throw new ReportedException(report);
++      }
+ 
+-        this.register(textureId, texture);
+-    }
++      this.register(textureId, texture);
++   }
+ 
+-    private TextureContents loadContentsSafe(final Identifier textureId, final ReloadableTexture texture) {
+-        try {
+-            return loadContents(this.resourceManager, textureId, texture);
+-        } catch (Exception e) {
+-            LOGGER.error("Failed to load texture {} into slot {}", texture.resourceId(), textureId, e);
+-            return TextureContents.createMissing();
+-        }
+-    }
++   private TextureContents loadContentsSafe(Identifier textureId, ReloadableTexture texture) {
++      try {
++         return loadContents(this.resourceManager, textureId, texture);
++      } catch (Exception e) {
++         LOGGER.error("Failed to load texture {} into slot {}", texture.resourceId(), textureId, e);
++         return TextureContents.createMissing();
++      }
++   }
+ 
+-    public void registerForNextReload(final Identifier location) {
+-        this.register(location, new SimpleTexture(location));
+-    }
++   public void registerForNextReload(Identifier location) {
++      this.register(location, new SimpleTexture(location));
++   }
+ 
+-    public void register(final Identifier location, final AbstractTexture texture) {
+-        AbstractTexture prev = this.byPath.put(location, texture);
+-        if (prev != texture) {
+-            if (prev != null) {
+-                this.safeClose(location, prev);
+-            }
++   public void register(Identifier location, AbstractTexture texture) {
++      if (Reflector.MinecraftForge.exists() && this.mojangLogoTexture == null && location.equals(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION)) {
++         LOGGER.info("Keep logo texture for ForgeLoadingOverlay: " + texture);
++         this.mojangLogoTexture = texture;
++      }
+ 
+-            if (texture instanceof TickableTexture tickableTexture) {
+-                this.tickableTextures.add(tickableTexture);
+-            }
+-        }
+-    }
++      AbstractTexture prev = this.byPath.put(location, texture);
++      if (prev != texture) {
++         if (prev != null && texture != this.mojangLogoTexture) {
++            this.safeClose(location, prev);
++         }
+ 
+-    private void safeClose(final Identifier id, final AbstractTexture texture) {
+-        this.tickableTextures.remove(texture);
++         if (texture instanceof TickableTexture tickableTexture) {
++            this.tickableTextures.add(tickableTexture);
++         }
++      }
++   }
+ 
+-        try {
+-            texture.close();
+-        } catch (Exception e) {
+-            LOGGER.warn("Failed to close texture {}", id, e);
+-        }
+-    }
++   private void safeClose(Identifier id, AbstractTexture texture) {
++      this.tickableTextures.remove(texture);
+ 
+-    public AbstractTexture getTexture(final Identifier location) {
+-        AbstractTexture textureObject = this.byPath.get(location);
+-        if (textureObject != null) {
+-            return textureObject;
+-        }
++      try {
++         texture.close();
++      } catch (Exception e) {
++         LOGGER.warn("Failed to close texture {}", id, e);
++      }
++   }
+ 
+-        SimpleTexture texture = new SimpleTexture(location);
+-        this.registerAndLoad(location, texture);
+-        return texture;
+-    }
++   public AbstractTexture getTexture(Identifier location) {
++      AbstractTexture textureObject = this.byPath.get(location);
++      if (textureObject != null) {
++         return textureObject;
++      }
+ 
+-    public void tick() {
+-        for (TickableTexture tickableTexture : this.tickableTextures) {
+-            tickableTexture.tick();
+-        }
+-    }
++      SimpleTexture texture = new SimpleTexture(location);
++      this.registerAndLoad(location, texture);
++      return texture;
++   }
+ 
+-    public void release(final Identifier location) {
+-        AbstractTexture texture = this.byPath.remove(location);
+-        if (texture != null) {
+-            this.safeClose(location, texture);
+-        }
+-    }
++   public void tick() {
++      RenderSystem.getGlDevice().debugLabels().pushDebugGroup(() -> "Animations");
+ 
+-    @Override
+-    public void close() {
+-        this.byPath.forEach(this::safeClose);
+-        this.byPath.clear();
+-        this.tickableTextures.clear();
+-    }
++      for (TickableTexture tickableTexture : this.tickableTextures) {
++         tickableTexture.tick();
++      }
+ 
+-    @Override
+-    public CompletableFuture<Void> reload(
+-        final PreparableReloadListener.SharedState currentReload,
+-        final Executor taskExecutor,
+-        final PreparableReloadListener.PreparationBarrier preparationBarrier,
+-        final Executor reloadExecutor
+-    ) {
+-        ResourceManager manager = currentReload.resourceManager();
+-        List<TextureManager.PendingReload> reloads = new ArrayList<>();
+-        this.byPath.forEach((id, texture) -> {
+-            if (texture instanceof ReloadableTexture reloadableTexture) {
+-                reloads.add(scheduleLoad(manager, id, reloadableTexture, taskExecutor));
+-            }
+-        });
+-        return CompletableFuture.allOf(reloads.stream().map(TextureManager.PendingReload::newContents).toArray(CompletableFuture[]::new))
+-            .thenCompose(preparationBarrier::wait)
+-            .thenAcceptAsync(unused -> {
+-                AddRealmPopupScreen.updateCarouselImages(this.resourceManager);
++      RenderSystem.getGlDevice().debugLabels().popDebugGroup();
++   }
+ 
+-                for (TextureManager.PendingReload reload : reloads) {
+-                    reload.texture.apply(reload.newContents.join());
+-                }
+-            }, reloadExecutor);
+-    }
++   public void release(Identifier location) {
++      AbstractTexture texture = this.byPath.remove(location);
++      if (texture != null) {
++         this.safeClose(location, texture);
++      }
++   }
+ 
+-    public void dumpAllSheets(final Path targetDir) {
+-        try {
+-            Files.createDirectories(targetDir);
+-        } catch (IOException e) {
+-            LOGGER.error("Failed to create directory {}", targetDir, e);
+-            return;
+-        }
++   @Override
++   public void close() {
++      this.byPath.forEach(this::safeClose);
++      this.byPath.clear();
++      this.tickableTextures.clear();
++   }
+ 
+-        this.byPath.forEach((location, texture) -> {
+-            if (texture instanceof Dumpable dumpable) {
+-                try {
+-                    dumpable.dumpContents(location, targetDir);
+-                } catch (Exception e) {
+-                    LOGGER.error("Failed to dump texture {}", location, e);
+-                }
++   @Override
++   public CompletableFuture<Void> reload(SharedState currentReload, Executor taskExecutor, PreparationBarrier preparationBarrier, Executor reloadExecutor) {
++      Config.dbg("*** Reloading textures ***");
++      Iterator it = this.byPath.keySet().iterator();
++
++      while (it.hasNext()) {
++         Identifier loc = (Identifier)it.next();
++         String path = loc.getPath();
++         if (path.startsWith("optifine/") || EmissiveTextures.isEmissive(loc)) {
++            AbstractTexture tex = this.byPath.get(loc);
++            if (tex instanceof AbstractTexture at) {
++               at.deleteGlTexture();
+             }
+-        });
+-    }
+ 
+-    private static TextureContents loadContents(final ResourceManager manager, final Identifier location, final ReloadableTexture texture) throws IOException {
+-        try {
+-            return texture.loadContents(manager);
+-        } catch (FileNotFoundException e) {
+-            if (location != INTENTIONAL_MISSING_TEXTURE) {
+-                LOGGER.warn("Missing resource {} referenced from {}", texture.resourceId(), location);
++            it.remove();
++         }
++      }
++
++      RandomEntities.update();
++      EmissiveTextures.update();
++      ResourceManager manager = currentReload.resourceManager();
++      List<TextureManager.PendingReload> reloads = new ArrayList<>();
++      Map<Identifier, AbstractTexture> mapTexturesCopy = new HashMap<>(this.byPath);
++      mapTexturesCopy.forEach((id, texture) -> {
++         if (Config.isShaders() && texture instanceof DynamicTexture dynTex && texture.hasGlTexture()) {
++            ShadersTex.initDynamicTextureNS(dynTex);
++         }
++
++         if (texture instanceof ReloadableTexture reloadableTexture) {
++            reloads.add(scheduleLoad(manager, id, reloadableTexture, taskExecutor));
++         }
++      });
++      return CompletableFuture.allOf(reloads.stream().map(TextureManager.PendingReload::newContents).toArray(CompletableFuture[]::new))
++         .thenCompose(preparationBarrier::wait)
++         .thenAcceptAsync(unused -> {
++            AddRealmPopupScreen.updateCarouselImages(this.resourceManager);
++
++            for (TextureManager.PendingReload reload : reloads) {
++               reload.texture.apply(reload.newContents.join());
+             }
++         }, reloadExecutor);
++   }
+ 
+-            return TextureContents.createMissing();
+-        }
+-    }
++   public void dumpAllSheets(Path targetDir) {
++      try {
++         Files.createDirectories(targetDir);
++      } catch (IOException e) {
++         LOGGER.error("Failed to create directory {}", targetDir, e);
++         return;
++      }
+ 
+-    private static TextureManager.PendingReload scheduleLoad(
+-        final ResourceManager manager, final Identifier location, final ReloadableTexture texture, final Executor executor
+-    ) {
+-        return new TextureManager.PendingReload(texture, CompletableFuture.supplyAsync(() -> {
++      this.byPath.forEach((location, texture) -> {
++         if (texture instanceof Dumpable dumpable) {
+             try {
+-                return loadContents(manager, location, texture);
+-            } catch (IOException e) {
+-                throw new UncheckedIOException(e);
++               dumpable.dumpContents(location, targetDir);
++            } catch (Exception e) {
++               LOGGER.error("Failed to dump texture {}", location, e);
+             }
+-        }, executor));
+-    }
++         }
++      });
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    private record PendingReload(ReloadableTexture texture, CompletableFuture<TextureContents> newContents) {
+-    }
+-}
+\ No newline at end of file
++   private static TextureContents loadContents(ResourceManager manager, Identifier location, ReloadableTexture texture) throws IOException {
++      try {
++         return texture.loadContents(manager);
++      } catch (FileNotFoundException e) {
++         if (location != INTENTIONAL_MISSING_TEXTURE) {
++            LOGGER.warn("Missing resource {} referenced from {}", texture.resourceId(), location);
++         }
++
++         return TextureContents.createMissing();
++      }
++   }
++
++   private static TextureManager.PendingReload scheduleLoad(ResourceManager manager, Identifier location, ReloadableTexture texture, Executor executor) {
++      return new TextureManager.PendingReload(texture, CompletableFuture.supplyAsync(() -> {
++         try {
++            return loadContents(manager, location, texture);
++         } catch (IOException e) {
++            throw new UncheckedIOException(e);
++         }
++      }, executor));
++   }
++
++   public boolean hasTexture(Identifier loc) {
++      return this.byPath.containsKey(loc);
++   }
++
++   public Collection<AbstractTexture> getTextures() {
++      return this.byPath.values();
++   }
++
++   public Collection<Identifier> getTextureLocations() {
++      return this.byPath.keySet();
++   }
++
++   public void bindTexture(Identifier resource) {
++      AbstractTexture abstracttexture = this.getTexture(resource);
++      abstracttexture.bindTexture();
++   }
++
++   private record PendingReload(ReloadableTexture texture, CompletableFuture<TextureContents> newContents) {
++   }
++}

@@ -1,0 +1,13 @@
+--- /dev/null
++++ b/net/minecraftforge/client/IWeatherRenderHandler.java
+@@ -0,0 +1,10 @@
++package net.minecraftforge.client;
++
++import net.minecraft.client.Minecraft;
++import net.minecraft.client.multiplayer.ClientLevel;
++import net.minecraft.client.renderer.Lightmap;
++
++@FunctionalInterface
++public interface IWeatherRenderHandler {
++   void render(int var1, float var2, ClientLevel var3, Minecraft var4, Lightmap var5, double var6, double var8, double var10);
++}

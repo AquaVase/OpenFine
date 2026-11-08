@@ -1,0 +1,10 @@
+--- /dev/null
++++ b/net/minecraftforge/common/util/HasResult.java
+@@ -0,0 +1,7 @@
++package net.minecraftforge.common.util;
++
++public interface HasResult {
++   Result getResult();
++
++   void setResult(Result var1);
++}

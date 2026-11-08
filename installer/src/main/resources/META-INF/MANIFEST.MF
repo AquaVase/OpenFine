@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: optifine
+Main-Class: optifine.InstallerFrame
+TweakClass: optifine.OptiFineForgeTweaker
+TweakOrder: -1000
+FMLModType: LIBRARY
+

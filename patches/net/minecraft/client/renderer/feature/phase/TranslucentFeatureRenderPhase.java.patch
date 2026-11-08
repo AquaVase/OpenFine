@@ -1,0 +1,85 @@
+--- a/net/minecraft/client/renderer/feature/phase/TranslucentFeatureRenderPhase.java
++++ b/net/minecraft/client/renderer/feature/phase/TranslucentFeatureRenderPhase.java
+@@ -6,46 +6,48 @@
+ import it.unimi.dsi.fastutil.ints.IntArrays;
+ import java.util.ArrayList;
+ import java.util.List;
++import net.minecraft.client.renderer.feature.phase.FeatureRenderPhase.Output;
+ import net.minecraft.client.renderer.feature.submit.TranslucentSubmit;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class TranslucentFeatureRenderPhase implements FeatureRenderPhase<TranslucentSubmit> {
+-    private final List<TranslucentSubmit> submits = new ArrayList<>();
+-    private final FloatList distances = new FloatArrayList();
++   private final List<TranslucentSubmit> submits = new ArrayList<>();
++   private final FloatList distances = new FloatArrayList();
+ 
+-    public void submit(final TranslucentSubmit submit) {
+-        this.submits.add(submit);
+-        this.distances.add(submit.distanceToCameraSq());
+-    }
++   public void submit(TranslucentSubmit submit) {
++      this.submits.add(submit);
++      this.distances.add(submit.distanceToCameraSq());
++   }
+ 
+-    @Override
+-    public void sortInto(final FeatureRenderPhase.Output output) {
+-        if (!this.submits.isEmpty()) {
+-            for (int index : this.sortIndices()) {
+-                output.accept(this.submits.get(index), true);
+-            }
++   @Override
++   public void sortInto(Output output) {
++      if (!this.submits.isEmpty()) {
++         for (int index : this.sortIndices()) {
++            output.accept(this.submits.get(index), true);
++         }
+ 
+-            this.submits.clear();
+-            this.distances.clear();
+-        }
+-    }
++         this.submits.clear();
++         this.distances.clear();
++      }
++   }
+ 
+-    private int[] sortIndices() {
+-        int[] indices = new int[this.submits.size()];
+-        int i = 0;
++   private int[] sortIndices() {
++      int[] indices = new int[this.submits.size()];
++      int i = 0;
+ 
+-        while (i < this.submits.size()) {
+-            indices[i] = i++;
+-        }
++      while (i < this.submits.size()) {
++         indices[i] = i++;
++      }
+ 
+-        IntArrays.unstableSort(indices, (i1, i2) -> Floats.compare(this.distances.getFloat(i2), this.distances.getFloat(i1)));
+-        return indices;
+-    }
++      IntArrays.unstableSort(indices, (i1, i2) -> Floats.compare(this.distances.getFloat(i2), this.distances.getFloat(i1)));
++      return indices;
++   }
+ 
+-    @Override
+-    public boolean isEmpty() {
+-        return this.submits.isEmpty();
+-    }
+-}
+\ No newline at end of file
++   @Override
++   public boolean isEmpty() {
++      return this.submits.isEmpty();
++   }
++
++   public int size() {
++      return this.submits.size();
++   }
++}

@@ -1,0 +1,16 @@
+--- /dev/null
++++ b/net/minecraftforge/client/extensions/IForgeGpuTexture.java
+@@ -0,0 +1,13 @@
++package net.minecraftforge.client.extensions;
++
++import com.mojang.blaze3d.textures.GpuTexture;
++
++public interface IForgeGpuTexture {
++   private GpuTexture self() {
++      return (GpuTexture)this;
++   }
++
++   default boolean isStencilEnabled() {
++      return false;
++   }
++}

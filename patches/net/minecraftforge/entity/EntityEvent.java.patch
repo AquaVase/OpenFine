@@ -1,0 +1,9 @@
+--- /dev/null
++++ b/net/minecraftforge/entity/EntityEvent.java
+@@ -0,0 +1,6 @@
++package net.minecraftforge.entity;
++
++import net.minecraftforge.eventbus.api.event.MutableEvent;
++
++public class EntityEvent extends MutableEvent {
++}

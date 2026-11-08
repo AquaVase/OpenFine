@@ -1,0 +1,105 @@
+plugins { id 'patchgen' }
+
+group = 'com.github.openfine'
+version = "HD_U_${build_version}"
+
+patchgen {
+    minecraftVersion = mc_version
+    mcpConfig = '26.2-20260616.103818'
+    javaVersion = 25
+    patchRoot = 'patch/'
+    notchPrefix = 'notch/'
+    srgPrefix = 'srg/'
+    unprefixedPackages = ['optifine/']
+    outputArchive = layout.projectDirectory.file("build/${preview_version ? 'preview_' : ''}${artifact_id}_${mc_version}_${version}.jar")
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.creeperhost.net' }
+}
+
+configurations {
+    coreArchive {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+    installerArchive {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+}
+
+dependencies {
+    implementation 'net.minecraftforge:forgespi:8.0.0'
+    implementation project(':core')
+    coreArchive project(':core')
+    runtimeOnly project(':installer')
+    runtimeOnly files('installer/src/main/resources/launchwrapper-of-2.3.jar')
+    installerArchive project(':installer')
+}
+
+tasks.withType(JavaCompile).configureEach { options.compilerArgs += ['-proc:none'] }
+
+// OptiFine sources use members added by the patched Minecraft sources.
+def jointCompile = tasks.named('compileJava', JavaCompile) {
+    source providers.provider { project(':core').sourceSets.main.java }
+    // core is a real compile dependency for IDE import. Its sources are already
+    // part of this javac invocation; resolving its output here would form a cycle.
+    classpath = configurations.compileClasspath.incoming.artifactView {
+        componentFilter { component ->
+            !(component instanceof org.gradle.api.artifacts.component.ProjectComponentIdentifier &&
+                    component.projectPath == ':core')
+        }
+    }.files
+    destinationDirectory = layout.buildDirectory.dir('classes/java/joint')
+}
+
+apply from: 'gradle/joint-class-outputs.gradle'
+
+registerJointClassOutput(project)
+tasks.named('compileGame') { dependsOn ':core:classes' }
+
+def modArchive = tasks.register('modArchive', Jar) {
+    dependsOn tasks.named('classes'), configurations.coreArchive, configurations.installerArchive
+    archiveClassifier = 'development'
+    from(sourceSets.main.output.classesDirs)
+    from(sourceSets.main.output.resourcesDir) { exclude 'META-INF/MANIFEST.MF' }
+    from({ zipTree(configurations.coreArchive.singleFile) }) {
+        include '**/*.class'
+    }
+
+    from({ zipTree(configurations.coreArchive.singleFile) }) {
+        exclude '**/*.class', 'META-INF/MANIFEST.MF'
+    }
+    from({ zipTree(configurations.installerArchive.singleFile) }) {
+        exclude 'META-INF/MANIFEST.MF'
+    }
+
+    includeEmptyDirs = false
+
+    manifest { from 'installer/src/main/resources/META-INF/MANIFEST.MF' }
+}
+patchgen.modifiedJar = modArchive.flatMap { it.archiveFile }
+
+def srgTargetJar = tasks.register('srgTargetJar', Jar) {
+    dependsOn modArchive
+    archiveClassifier = 'srg-target'
+
+    from({
+        zipTree(modArchive.get().archiveFile.get().asFile)
+    }) {
+        exclude 'net/minecraftforge/**'
+    }
+}
+patchgen.srgModifiedJar = srgTargetJar.flatMap { it.archiveFile }
+
+tasks.named('restoreArchive') {
+    dependsOn tasks.named('generatePatches')
+    inputArchive = patchgen.outputArchive
+}
+
+// Maintain recovered sources directly instead of extracting vanilla sources over them.
+tasks.named('extractMapped') { enabled = false }

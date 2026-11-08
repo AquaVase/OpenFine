@@ -1,0 +1,204 @@
+--- a/net/minecraft/client/renderer/entity/layers/ParrotOnShoulderLayer.java
++++ b/net/minecraft/client/renderer/entity/layers/ParrotOnShoulderLayer.java
+@@ -1,77 +1,142 @@
+ package net.minecraft.client.renderer.entity.layers;
+ 
+ import com.mojang.blaze3d.vertex.PoseStack;
++import java.util.Optional;
+ import net.minecraft.client.model.animal.parrot.ParrotModel;
++import net.minecraft.client.model.animal.parrot.ParrotModel.Pose;
+ import net.minecraft.client.model.geom.EntityModelSet;
+ import net.minecraft.client.model.geom.ModelLayers;
+ import net.minecraft.client.model.player.PlayerModel;
++import net.minecraft.client.player.AbstractClientPlayer;
+ import net.minecraft.client.renderer.SubmitNodeCollector;
+ import net.minecraft.client.renderer.entity.ParrotRenderer;
+ import net.minecraft.client.renderer.entity.RenderLayerParent;
+ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
++import net.minecraft.client.renderer.entity.state.EntityRenderState;
+ import net.minecraft.client.renderer.entity.state.ParrotRenderState;
+ import net.minecraft.client.renderer.texture.OverlayTexture;
+-import net.minecraft.world.entity.animal.parrot.Parrot;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.network.syncher.SynchedEntityData;
++import net.minecraft.util.ProblemReporter;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.EntitySpawnReason;
++import net.minecraft.world.entity.EntityType;
++import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.animal.parrot.ShoulderRidingEntity;
++import net.minecraft.world.entity.animal.parrot.Parrot.Variant;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.level.storage.TagValueInput;
++import net.minecraft.world.level.storage.ValueInput;
++import net.optifine.entity.model.CustomStaticModels;
++import net.optifine.render.RenderState;
++import net.optifine.util.ArrayUtils;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class ParrotOnShoulderLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
+-    private final ParrotModel model;
++   private ParrotModel model;
++   private ParrotModel parrotModelOriginal;
+ 
+-    public ParrotOnShoulderLayer(final RenderLayerParent<AvatarRenderState, PlayerModel> renderer, final EntityModelSet modelSet) {
+-        super(renderer);
+-        this.model = new ParrotModel(modelSet.bakeLayer(ModelLayers.PARROT));
+-    }
++   public ParrotOnShoulderLayer(RenderLayerParent<AvatarRenderState, PlayerModel> renderer, EntityModelSet modelSet) {
++      super(renderer);
++      this.model = new ParrotModel(modelSet.bakeLayer(ModelLayers.PARROT));
++      this.parrotModelOriginal = this.model;
++   }
+ 
+-    public void submit(
+-        final PoseStack poseStack,
+-        final SubmitNodeCollector submitNodeCollector,
+-        final int lightCoords,
+-        final AvatarRenderState state,
+-        final float yRot,
+-        final float xRot
+-    ) {
+-        Parrot.Variant parrotOnLeftShoulder = state.parrotOnLeftShoulder;
+-        if (parrotOnLeftShoulder != null) {
+-            this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnLeftShoulder, yRot, xRot, true);
+-        }
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, AvatarRenderState state, float yRot, float xRot) {
++      Variant parrotOnLeftShoulder = state.parrotOnLeftShoulder;
++      if (parrotOnLeftShoulder != null) {
++         this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnLeftShoulder, yRot, xRot, true);
++      }
+ 
+-        Parrot.Variant parrotOnRightShoulder = state.parrotOnRightShoulder;
+-        if (parrotOnRightShoulder != null) {
+-            this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnRightShoulder, yRot, xRot, false);
+-        }
+-    }
++      Variant parrotOnRightShoulder = state.parrotOnRightShoulder;
++      if (parrotOnRightShoulder != null) {
++         this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnRightShoulder, yRot, xRot, false);
++      }
++   }
+ 
+-    private void submitOnShoulder(
+-        final PoseStack poseStack,
+-        final SubmitNodeCollector submitNodeCollector,
+-        final int lightCoords,
+-        final AvatarRenderState playerState,
+-        final Parrot.Variant parrotVariant,
+-        final float yRot,
+-        final float xRot,
+-        final boolean isLeft
+-    ) {
+-        poseStack.pushPose();
+-        poseStack.translate(isLeft ? 0.4F : -0.4F, playerState.isCrouching ? -1.3F : -1.5F, 0.0F);
+-        ParrotRenderState parrotState = new ParrotRenderState();
+-        parrotState.pose = ParrotModel.Pose.ON_SHOULDER;
+-        parrotState.ageInTicks = playerState.ageInTicks;
+-        parrotState.walkAnimationPos = playerState.walkAnimationPos;
+-        parrotState.walkAnimationSpeed = playerState.walkAnimationSpeed;
+-        parrotState.yRot = yRot;
+-        parrotState.xRot = xRot;
+-        submitNodeCollector.submitModel(
+-            this.model,
+-            parrotState,
+-            poseStack,
+-            ParrotRenderer.getVariantTexture(parrotVariant),
+-            lightCoords,
+-            OverlayTexture.NO_OVERLAY,
+-            playerState.outlineColor,
+-            null
+-        );
+-        poseStack.popPose();
+-    }
+-}
+\ No newline at end of file
++   private void submitOnShoulder(
++      PoseStack poseStack,
++      SubmitNodeCollector submitNodeCollector,
++      int lightCoords,
++      AvatarRenderState playerState,
++      Variant parrotVariant,
++      float yRot,
++      float xRot,
++      boolean isLeft
++   ) {
++      Entity entitylivingbaseIn = playerState.entity;
++      Entity renderedEntityOld = RenderState.getEntity();
++      Entity entityShoulder = null;
++      if (entitylivingbaseIn instanceof AbstractClientPlayer acp) {
++         entityShoulder = isLeft ? acp.entityShoulderLeft : acp.entityShoulderRight;
++         if (entityShoulder == null && entityShoulder instanceof ShoulderRidingEntity) {
++            if (isLeft) {
++               acp.entityShoulderLeft = (ShoulderRidingEntity)entityShoulder;
++            } else {
++               acp.entityShoulderRight = (ShoulderRidingEntity)entityShoulder;
++            }
++         }
++
++         if (entityShoulder != null) {
++            entityShoulder.xo = renderedEntityOld.xo;
++            entityShoulder.yo = renderedEntityOld.yo;
++            entityShoulder.zo = renderedEntityOld.zo;
++            entityShoulder.setPosRaw(renderedEntityOld.getX(), renderedEntityOld.getY(), renderedEntityOld.getZ());
++            entityShoulder.xRotO = renderedEntityOld.xRotO;
++            entityShoulder.yRotO = renderedEntityOld.yRotO;
++            entityShoulder.setXRot(renderedEntityOld.getXRot());
++            entityShoulder.setYRot(renderedEntityOld.getYRot());
++            if (entityShoulder instanceof LivingEntity && renderedEntityOld instanceof LivingEntity) {
++               ((LivingEntity)entityShoulder).yBodyRotO = ((LivingEntity)renderedEntityOld).yBodyRotO;
++               ((LivingEntity)entityShoulder).yBodyRot = ((LivingEntity)renderedEntityOld).yBodyRot;
++            }
++         }
++      }
++
++      this.model = ArrayUtils.firstNonNull(CustomStaticModels.getParrotModel(), this.parrotModelOriginal);
++      poseStack.pushPose();
++      poseStack.translate(isLeft ? 0.4F : -0.4F, playerState.isCrouching ? -1.3F : -1.5F, 0.0F);
++      ParrotRenderState parrotState = new ParrotRenderState();
++      parrotState.pose = Pose.ON_SHOULDER;
++      parrotState.ageInTicks = playerState.ageInTicks;
++      parrotState.walkAnimationPos = playerState.walkAnimationPos;
++      parrotState.walkAnimationSpeed = playerState.walkAnimationSpeed;
++      parrotState.yRot = yRot;
++      parrotState.xRot = xRot;
++      parrotState.entity = entityShoulder;
++      EntityRenderState statePrev = RenderState.setEntityRenderState(parrotState);
++      submitNodeCollector.submitModel(
++         this.model,
++         parrotState,
++         poseStack,
++         ParrotRenderer.getVariantTexture(parrotVariant),
++         lightCoords,
++         OverlayTexture.NO_OVERLAY,
++         playerState.outlineColor,
++         null
++      );
++      RenderState.setEntityRenderState(statePrev);
++      poseStack.popPose();
++   }
++
++   private Entity makeEntity(CompoundTag compoundtag, Player player) {
++      ValueInput tvi = TagValueInput.create(ProblemReporter.DISCARDING, player.registryAccess(), compoundtag);
++      Optional<EntityType<?>> type = EntityType.by(tvi);
++      if (!type.isPresent()) {
++         return null;
++      }
++
++      Entity entity = type.get().create(player.level(), EntitySpawnReason.JOCKEY);
++      if (entity == null) {
++         return null;
++      }
++
++      entity.load(tvi);
++      SynchedEntityData edm = entity.getEntityData();
++      if (edm != null) {
++         edm.spawnPosition = player.blockPosition();
++         edm.spawnBiome = player.level().getBiome(edm.spawnPosition).value();
++      }
++
++      return entity;
++   }
++}

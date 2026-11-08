@@ -1,0 +1,42 @@
+--- /dev/null
++++ b/net/minecraftforge/client/extensions/common/IClientMobEffectExtensions.java
+@@ -0,0 +1,39 @@
++package net.minecraftforge.client.extensions.common;
++
++import net.minecraft.client.gui.GuiGraphicsExtractor;
++import net.minecraft.client.gui.Hud;
++import net.minecraft.client.gui.screens.inventory.EffectsInInventory;
++import net.minecraft.world.effect.MobEffect;
++import net.minecraft.world.effect.MobEffectInstance;
++
++public interface IClientMobEffectExtensions {
++   IClientMobEffectExtensions DUMMY = new IClientMobEffectExtensions() {};
++
++   static IClientMobEffectExtensions of(MobEffectInstance mobeffectinstance) {
++      return DUMMY;
++   }
++
++   static IClientMobEffectExtensions of(MobEffect effect) {
++      return DUMMY;
++   }
++
++   default boolean isVisibleInInventory(MobEffectInstance instance) {
++      return true;
++   }
++
++   default boolean isVisibleInGui(MobEffectInstance instance) {
++      return true;
++   }
++
++   default boolean renderInventoryIcon(MobEffectInstance instance, EffectsInInventory screen, GuiGraphicsExtractor guiGraphics, int x, int y, int blitOffset) {
++      return false;
++   }
++
++   default boolean renderInventoryText(MobEffectInstance instance, EffectsInInventory screen, GuiGraphicsExtractor guiGraphics, int x, int y, int blitOffset) {
++      return false;
++   }
++
++   default boolean extractGuiIcon(MobEffectInstance instance, Hud hud, GuiGraphicsExtractor guiGraphics, int x, int y, float z, float alpha) {
++      return false;
++   }
++}

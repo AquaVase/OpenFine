@@ -1,0 +1,7 @@
+--- /dev/null
++++ b/net/minecraftforge/common/extensions/IForgePacketBuffer.java
+@@ -0,0 +1,4 @@
++package net.minecraftforge.common.extensions;
++
++public interface IForgePacketBuffer {
++}

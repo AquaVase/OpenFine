@@ -1,0 +1,7 @@
+--- /dev/null
++++ b/net/minecraftforge/common/capabilities/CapabilityDispatcher.java
+@@ -0,0 +1,4 @@
++package net.minecraftforge.common.capabilities;
++
++public class CapabilityDispatcher {
++}

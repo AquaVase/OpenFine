@@ -1,0 +1,386 @@
+--- a/net/minecraft/util/profiling/ActiveProfiler.java
++++ b/net/minecraft/util/profiling/ActiveProfiler.java
+@@ -18,188 +18,225 @@
+ import java.util.function.IntSupplier;
+ import java.util.function.LongSupplier;
+ import java.util.function.Supplier;
++import net.minecraft.client.Minecraft;
+ import net.minecraft.util.Util;
+ import net.minecraft.util.profiling.metrics.MetricCategory;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.Config;
++import net.optifine.Lagometer;
++import net.optifine.reflect.Reflector;
++import net.optifine.reflect.ReflectorClass;
++import net.optifine.reflect.ReflectorField;
+ import org.slf4j.Logger;
+ 
+ public class ActiveProfiler implements ProfileCollector {
+-    private static final long WARNING_TIME_NANOS = Duration.ofMillis(100L).toNanos();
+-    private static final Logger LOGGER = LogUtils.getLogger();
+-    private final List<String> paths = Lists.newArrayList();
+-    private final LongList startTimes = new LongArrayList();
+-    private final Map<String, ActiveProfiler.PathEntry> entries = Maps.newHashMap();
+-    private final IntSupplier getTickTime;
+-    private final LongSupplier getRealTime;
+-    private final long startTimeNano;
+-    private final int startTimeTicks;
+-    private String path = "";
+-    private boolean started;
+-    private ActiveProfiler.@Nullable PathEntry currentEntry;
+-    private final BooleanSupplier suppressWarnings;
+-    private final Set<Pair<String, MetricCategory>> chartedPaths = new ObjectArraySet<>();
++   private static final long WARNING_TIME_NANOS = Duration.ofMillis(100L).toNanos();
++   private static final Logger LOGGER = LogUtils.getLogger();
++   private final List<String> paths = Lists.newArrayList();
++   private final LongList startTimes = new LongArrayList();
++   private final Map<String, ActiveProfiler.PathEntry> entries = Maps.newHashMap();
++   private final IntSupplier getTickTime;
++   private final LongSupplier getRealTime;
++   private final long startTimeNano;
++   private final int startTimeTicks;
++   private String path = "";
++   private boolean started;
++   private ActiveProfiler.PathEntry currentEntry;
++   private final BooleanSupplier suppressWarnings;
++   private final Set<Pair<String, MetricCategory>> chartedPaths = new ObjectArraySet<>();
++   private boolean clientProfiler = false;
++   private boolean lagometerActive = false;
++   private static final String SCHEDULED_EXECUTABLES = "scheduledExecutables";
++   private static final String TICK = "tick";
++   private static final String SOUND = "sound";
++   private static final int HASH_SCHEDULED_EXECUTABLES = "scheduledExecutables".hashCode();
++   private static final int HASH_TICK = "tick".hashCode();
++   private static final int HASH_SOUND = "sound".hashCode();
++   private static final ReflectorClass MINECRAFT = new ReflectorClass(Minecraft.class);
++   private static final ReflectorField Minecraft_timeTracker = new ReflectorField(MINECRAFT, ContinuousProfiler.class);
+ 
+-    public ActiveProfiler(final LongSupplier getRealTime, final IntSupplier getTickTime, final BooleanSupplier suppressWarnings) {
+-        this.startTimeNano = getRealTime.getAsLong();
+-        this.getRealTime = getRealTime;
+-        this.startTimeTicks = getTickTime.getAsInt();
+-        this.getTickTime = getTickTime;
+-        this.suppressWarnings = suppressWarnings;
+-    }
++   public ActiveProfiler(LongSupplier getRealTime, IntSupplier getTickTime, BooleanSupplier suppressWarnings) {
++      this.startTimeNano = getRealTime.getAsLong();
++      this.getRealTime = getRealTime;
++      this.startTimeTicks = getTickTime.getAsInt();
++      this.getTickTime = getTickTime;
++      this.suppressWarnings = suppressWarnings;
++   }
+ 
+-    @Override
+-    public void startTick() {
+-        if (this.started) {
+-            LOGGER.error("Profiler tick already started - missing endTick()?");
+-        } else {
+-            this.started = true;
+-            this.path = "";
+-            this.paths.clear();
+-            this.push("root");
+-        }
+-    }
++   @Override
++   public void startTick() {
++      ContinuousProfiler timeTracker = (ContinuousProfiler)Reflector.getFieldValue(Minecraft.getInstance(), Minecraft_timeTracker);
++      this.clientProfiler = timeTracker != null && timeTracker.getFiller() == this;
++      this.lagometerActive = this.clientProfiler && Lagometer.isActive();
++      if (this.started) {
++         LOGGER.error("Profiler tick already started - missing endTick()?");
++      } else {
++         this.started = true;
++         this.path = "";
++         this.paths.clear();
++         this.push("root");
++      }
++   }
+ 
+-    @Override
+-    public void endTick() {
+-        if (!this.started) {
+-            LOGGER.error("Profiler tick already ended - missing startTick()?");
+-        } else {
+-            this.pop();
+-            this.started = false;
+-            if (!this.path.isEmpty()) {
+-                LOGGER.error(
+-                    "Profiler tick ended before path was fully popped (remainder: '{}'). Mismatched push/pop?",
+-                    LogUtils.defer(() -> ProfileResults.demanglePath(this.path))
+-                );
+-            }
+-        }
+-    }
++   @Override
++   public void endTick() {
++      if (!this.started) {
++         LOGGER.error("Profiler tick already ended - missing startTick()?");
++      } else {
++         this.pop();
++         this.started = false;
++         if (!this.path.isEmpty()) {
++            LOGGER.error(
++               "Profiler tick ended before path was fully popped (remainder: '{}'). Mismatched push/pop?",
++               LogUtils.defer(() -> ProfileResults.demanglePath(this.path))
++            );
++         }
++      }
++   }
+ 
+-    @Override
+-    public void push(final String name) {
+-        if (!this.started) {
+-            LOGGER.error("Cannot push '{}' to profiler if profiler tick hasn't started - missing startTick()?", name);
+-        } else {
+-            if (!this.path.isEmpty()) {
+-                this.path = this.path + "\u001e";
+-            }
++   @Override
++   public void push(String name) {
++      if (this.lagometerActive) {
++         int hashName = name.hashCode();
++         if (hashName == HASH_SCHEDULED_EXECUTABLES && name.equals("scheduledExecutables")) {
++            Lagometer.timerScheduledExecutables.start();
++         } else if (hashName == HASH_TICK && name.equals("tick") && Config.isMinecraftThread()) {
++            Lagometer.timerScheduledExecutables.end();
++            Lagometer.timerTick.start();
++         }
++      }
+ 
+-            this.path = this.path + name;
+-            this.paths.add(this.path);
+-            this.startTimes.add(Util.getNanos());
+-            this.currentEntry = null;
+-        }
+-    }
++      if (!this.started) {
++         LOGGER.error("Cannot push '{}' to profiler if profiler tick hasn't started - missing startTick()?", name);
++      } else {
++         if (!this.path.isEmpty()) {
++            this.path = this.path + "\u001e";
++         }
+ 
+-    @Override
+-    public void push(final Supplier<String> name) {
+-        this.push(name.get());
+-    }
++         this.path = this.path + name;
++         this.paths.add(this.path);
++         this.startTimes.add(Util.getNanos());
++         this.currentEntry = null;
++      }
++   }
+ 
+-    @Override
+-    public void markForCharting(final MetricCategory category) {
+-        this.chartedPaths.add(Pair.of(this.path, category));
+-    }
++   @Override
++   public void push(Supplier<String> name) {
++      this.push(name.get());
++   }
+ 
+-    @Override
+-    public void pop() {
+-        if (!this.started) {
+-            LOGGER.error("Cannot pop from profiler if profiler tick hasn't started - missing startTick()?");
+-        } else if (this.startTimes.isEmpty()) {
+-            LOGGER.error("Tried to pop one too many times! Mismatched push() and pop()?");
+-        } else {
+-            long endTime = Util.getNanos();
+-            long startTime = this.startTimes.removeLong(this.startTimes.size() - 1);
+-            this.paths.removeLast();
+-            long time = endTime - startTime;
+-            ActiveProfiler.PathEntry currentEntry = this.getCurrentEntry();
+-            currentEntry.accumulatedDuration += time;
+-            currentEntry.count++;
+-            currentEntry.maxDuration = Math.max(currentEntry.maxDuration, time);
+-            currentEntry.minDuration = Math.min(currentEntry.minDuration, time);
+-            if (time > WARNING_TIME_NANOS && !this.suppressWarnings.getAsBoolean()) {
+-                LOGGER.warn(
+-                    "Something's taking too long! '{}' took aprox {} ms",
+-                    LogUtils.defer(() -> ProfileResults.demanglePath(this.path)),
+-                    LogUtils.defer(() -> time / 1000000.0)
+-                );
+-            }
++   @Override
++   public void markForCharting(MetricCategory category) {
++      this.chartedPaths.add(Pair.of(this.path, category));
++   }
+ 
+-            this.path = this.paths.isEmpty() ? "" : this.paths.getLast();
+-            this.currentEntry = null;
+-        }
+-    }
++   @Override
++   public void pop() {
++      if (!this.started) {
++         LOGGER.error("Cannot pop from profiler if profiler tick hasn't started - missing startTick()?");
++      } else if (this.startTimes.isEmpty()) {
++         LOGGER.error("Tried to pop one too many times! Mismatched push() and pop()?");
++      } else {
++         long endTime = Util.getNanos();
++         long startTime = this.startTimes.removeLong(this.startTimes.size() - 1);
++         this.paths.removeLast();
++         long time = endTime - startTime;
++         ActiveProfiler.PathEntry currentEntry = this.getCurrentEntry();
++         currentEntry.accumulatedDuration = (currentEntry.accumulatedDuration * 49L + time) / 50L;
++         currentEntry.count = 1L;
++         currentEntry.accumulatedDuration += time;
++         currentEntry.count++;
++         currentEntry.maxDuration = Math.max(currentEntry.maxDuration, time);
++         currentEntry.minDuration = Math.min(currentEntry.minDuration, time);
++         if (time > WARNING_TIME_NANOS && !this.suppressWarnings.getAsBoolean()) {
++            LOGGER.warn(
++               "Something's taking too long! '{}' took aprox {} ms",
++               LogUtils.defer(() -> ProfileResults.demanglePath(this.path)),
++               LogUtils.defer(() -> time / 1000000.0)
++            );
++         }
+ 
+-    @Override
+-    public void popPush(final String name) {
+-        this.pop();
+-        this.push(name);
+-    }
++         this.path = this.paths.isEmpty() ? "" : this.paths.getLast();
++         this.currentEntry = null;
++      }
++   }
+ 
+-    @Override
+-    public void popPush(final Supplier<String> name) {
+-        this.pop();
+-        this.push(name);
+-    }
++   @Override
++   public void popPush(String name) {
++      if (this.lagometerActive) {
++         int hashName = name.hashCode();
++         if (hashName == HASH_SOUND && name.equals("sound")) {
++            Lagometer.timerTick.end();
++         }
++      }
+ 
+-    private ActiveProfiler.PathEntry getCurrentEntry() {
+-        if (this.currentEntry == null) {
+-            this.currentEntry = this.entries.computeIfAbsent(this.path, key -> new ActiveProfiler.PathEntry());
+-        }
++      this.pop();
++      this.push(name);
++   }
+ 
+-        return this.currentEntry;
+-    }
++   @Override
++   public void popPush(Supplier<String> name) {
++      this.pop();
++      this.push(name);
++   }
+ 
+-    @Override
+-    public void incrementCounter(final String name, final int amount) {
+-        this.getCurrentEntry().counters.addTo(name, amount);
+-    }
++   private ActiveProfiler.PathEntry getCurrentEntry() {
++      if (this.currentEntry == null) {
++         this.currentEntry = this.entries.computeIfAbsent(this.path, key -> new ActiveProfiler.PathEntry());
++      }
+ 
+-    @Override
+-    public void incrementCounter(final Supplier<String> name, final int amount) {
+-        this.getCurrentEntry().counters.addTo(name.get(), amount);
+-    }
++      return this.currentEntry;
++   }
+ 
+-    @Override
+-    public ProfileResults getResults() {
+-        return new FilledProfileResults(this.entries, this.startTimeNano, this.startTimeTicks, this.getRealTime.getAsLong(), this.getTickTime.getAsInt());
+-    }
++   @Override
++   public void incrementCounter(String name, int amount) {
++      this.getCurrentEntry().counters.addTo(name, amount);
++   }
+ 
+-    @Override
+-    public ActiveProfiler.@Nullable PathEntry getEntry(final String path) {
+-        return this.entries.get(path);
+-    }
++   @Override
++   public void incrementCounter(Supplier<String> name, int amount) {
++      this.getCurrentEntry().counters.addTo(name.get(), amount);
++   }
+ 
+-    @Override
+-    public Set<Pair<String, MetricCategory>> getChartedPaths() {
+-        return this.chartedPaths;
+-    }
++   @Override
++   public ProfileResults getResults() {
++      return new FilledProfileResults(this.entries, this.startTimeNano, this.startTimeTicks, this.getRealTime.getAsLong(), this.getTickTime.getAsInt());
++   }
+ 
+-    public static class PathEntry implements ProfilerPathEntry {
+-        private long maxDuration = Long.MIN_VALUE;
+-        private long minDuration = Long.MAX_VALUE;
+-        private long accumulatedDuration;
+-        private long count;
+-        private final Object2LongOpenHashMap<String> counters = new Object2LongOpenHashMap<>();
++   @Override
++   public ActiveProfiler.PathEntry getEntry(String path) {
++      return this.entries.get(path);
++   }
+ 
+-        @Override
+-        public long getDuration() {
+-            return this.accumulatedDuration;
+-        }
++   @Override
++   public Set<Pair<String, MetricCategory>> getChartedPaths() {
++      return this.chartedPaths;
++   }
+ 
+-        @Override
+-        public long getMaxDuration() {
+-            return this.maxDuration;
+-        }
++   public static class PathEntry implements ProfilerPathEntry {
++      private long maxDuration = Long.MIN_VALUE;
++      private long minDuration = Long.MAX_VALUE;
++      private long accumulatedDuration;
++      private long count;
++      private final Object2LongOpenHashMap<String> counters = new Object2LongOpenHashMap<>();
+ 
+-        @Override
+-        public long getCount() {
+-            return this.count;
+-        }
++      @Override
++      public long getDuration() {
++         return this.accumulatedDuration;
++      }
+ 
+-        @Override
+-        public Object2LongMap<String> getCounters() {
+-            return Object2LongMaps.unmodifiable(this.counters);
+-        }
+-    }
+-}
+\ No newline at end of file
++      @Override
++      public long getMaxDuration() {
++         return this.maxDuration;
++      }
++
++      @Override
++      public long getCount() {
++         return this.count;
++      }
++
++      @Override
++      public Object2LongMap<String> getCounters() {
++         return Object2LongMaps.unmodifiable(this.counters);
++      }
++   }
++}

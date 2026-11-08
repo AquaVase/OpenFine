@@ -1,0 +1,319 @@
+--- a/net/minecraft/client/renderer/item/CuboidItemModelWrapper.java
++++ b/net/minecraft/client/renderer/item/CuboidItemModelWrapper.java
+@@ -15,10 +15,11 @@
+ import net.minecraft.client.color.item.ItemTintSources;
+ import net.minecraft.client.multiplayer.ClientLevel;
+ import net.minecraft.client.renderer.block.dispatch.BlockModelRotation;
++import net.minecraft.client.renderer.item.ItemModel.BakingContext;
+ import net.minecraft.client.renderer.texture.TextureAtlas;
+ import net.minecraft.client.resources.model.ModelBaker;
+-import net.minecraft.client.resources.model.ResolvableModel;
+ import net.minecraft.client.resources.model.ResolvedModel;
++import net.minecraft.client.resources.model.ResolvableModel.Resolver;
+ import net.minecraft.client.resources.model.geometry.BakedQuad;
+ import net.minecraft.client.resources.model.geometry.QuadCollection;
+ import net.minecraft.client.resources.model.sprite.TextureSlots;
+@@ -28,136 +29,191 @@
+ import net.minecraft.world.item.ItemDisplayContext;
+ import net.minecraft.world.item.ItemStack;
+ import net.minecraft.world.item.Items;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.optifine.Config;
++import net.optifine.CustomColors;
++import net.optifine.CustomItems;
+ import org.joml.Matrix4fc;
+ import org.joml.Vector3fc;
+-import org.jspecify.annotations.Nullable;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class CuboidItemModelWrapper implements ItemModel {
+-    private final List<ItemTintSource> tints;
+-    private final QuadCollection quads;
+-    private final Supplier<Vector3fc[]> extents;
+-    private final ModelRenderProperties properties;
+-    private final Matrix4fc transformation;
++   private final List<ItemTintSource> tints;
++   private final QuadCollection quads;
++   private final Supplier<Vector3fc[]> extents;
++   private final ModelRenderProperties properties;
++   private final Matrix4fc transformation;
++   private Identifier modelLocation;
++   private boolean builtinGenerated;
+ 
+-    private CuboidItemModelWrapper(
+-        final List<ItemTintSource> tints, final QuadCollection quads, final ModelRenderProperties properties, final Matrix4fc transformation
+-    ) {
+-        this.tints = tints;
+-        this.quads = quads;
+-        this.properties = properties;
+-        this.transformation = transformation;
+-        this.extents = Suppliers.memoize(() -> computeExtents(quads.getAll()));
+-    }
++   private CuboidItemModelWrapper(List<ItemTintSource> tints, QuadCollection quads, ModelRenderProperties properties, Matrix4fc transformation) {
++      this(tints, quads, properties, transformation, null, false);
++   }
+ 
+-    public static Vector3fc[] computeExtents(final List<BakedQuad> quads) {
+-        Set<Vector3fc> result = new HashSet<>();
++   public CuboidItemModelWrapper(
++      List<ItemTintSource> tints,
++      QuadCollection quads,
++      ModelRenderProperties properties,
++      Matrix4fc transformation,
++      Identifier modelLocation,
++      boolean builtinGenerated
++   ) {
++      this.tints = tints;
++      this.quads = quads;
++      this.properties = properties;
++      this.transformation = transformation;
++      this.extents = Suppliers.memoize(() -> computeExtents(quads.getAll()));
++      this.modelLocation = modelLocation;
++      this.builtinGenerated = builtinGenerated;
++   }
+ 
+-        for (BakedQuad quad : quads) {
+-            for (int vertex = 0; vertex < 4; vertex++) {
+-                result.add(quad.position(vertex));
+-            }
+-        }
++   public static Vector3fc[] computeExtents(List<BakedQuad> quads) {
++      Set<Vector3fc> result = new HashSet<>();
+ 
+-        return result.toArray(Vector3fc[]::new);
+-    }
++      for (BakedQuad quad : quads) {
++         for (int vertex = 0; vertex < 4; vertex++) {
++            result.add(quad.position(vertex));
++         }
++      }
+ 
+-    @Override
+-    public void update(
+-        final ItemStackRenderState output,
+-        final ItemStack item,
+-        final ItemModelResolver resolver,
+-        final ItemDisplayContext displayContext,
+-        final @Nullable ClientLevel level,
+-        final @Nullable ItemOwner owner,
+-        final int seed
+-    ) {
+-        output.appendModelIdentityElement(this);
+-        ItemStackRenderState.LayerRenderState layer = output.newLayer();
+-        if (item.hasFoil()) {
+-            ItemStackRenderState.FoilType foilType = hasSpecialAnimatedTexture(item)
+-                ? ItemStackRenderState.FoilType.SPECIAL
+-                : ItemStackRenderState.FoilType.STANDARD;
+-            layer.setFoilType(foilType);
+-            output.setAnimated();
+-            output.appendModelIdentityElement(foilType);
+-        }
++      return result.toArray(Vector3fc[]::new);
++   }
+ 
+-        if (!this.tints.isEmpty()) {
+-            IntList tintLayers = layer.tintLayers();
++   @Override
++   public void update(
++      ItemStackRenderState output, ItemStack item, ItemModelResolver resolver, ItemDisplayContext displayContext, ClientLevel level, ItemOwner owner, int seed
++   ) {
++      this.update(output, item, resolver, displayContext, level, owner, seed, false, null);
++   }
+ 
+-            for (ItemTintSource tintSource : this.tints) {
+-                int tint = tintSource.calculate(item, level, owner == null ? null : owner.asLivingEntity());
+-                tintLayers.add(tint);
+-                output.appendModelIdentityElement(tint);
+-            }
+-        }
++   public void update(
++      ItemStackRenderState output,
++      ItemStack item,
++      ItemModelResolver resolver,
++      ItemDisplayContext displayContext,
++      ClientLevel level,
++      ItemOwner owner,
++      int seed,
++      boolean customIn,
++      ModelRenderProperties propertiesIn
++   ) {
++      if (Config.isCustomItems() && !customIn) {
++         CuboidItemModelWrapper fullWrapper = CustomItems.getCustomItemModel(item, this, this.modelLocation, true) instanceof CuboidItemModelWrapper bmw
++            ? bmw
++            : this;
++         ItemModel renderModel = CustomItems.getCustomItemModel(item, fullWrapper, this.modelLocation, false);
++         if (renderModel != this && renderModel instanceof CuboidItemModelWrapper renderWrapper) {
++            renderWrapper.update(output, item, resolver, displayContext, level, owner, seed, true, fullWrapper.properties);
++            return;
++         }
++      }
+ 
+-        layer.setExtents(this.extents);
+-        layer.setLocalTransform(this.transformation);
+-        this.properties.applyToLayer(layer, displayContext);
+-        layer.prepareQuadList().addAll(this.quads.getAll());
+-        if (this.quads.hasMaterialFlag(2)) {
+-            output.setAnimated();
+-        }
+-    }
++      output.appendModelIdentityElement(this);
++      ItemStackRenderState.LayerRenderState layer = output.newLayer();
++      layer.setItemStack(item);
++      if (item.hasFoil()) {
++         ItemStackRenderState.FoilType foilType = hasSpecialAnimatedTexture(item)
++            ? ItemStackRenderState.FoilType.SPECIAL
++            : ItemStackRenderState.FoilType.STANDARD;
++         layer.setFoilType(foilType);
++         output.setAnimated();
++         output.appendModelIdentityElement(foilType);
++      }
+ 
+-    private static void validateAtlasUsage(final List<BakedQuad> quads) {
+-        Iterator<BakedQuad> quadIterator = quads.iterator();
+-        if (quadIterator.hasNext()) {
+-            Identifier expectedAtlas = quadIterator.next().materialInfo().sprite().atlasLocation();
++      if (!this.tints.isEmpty()) {
++         IntList tintLayers = layer.tintLayers();
+ 
+-            while (quadIterator.hasNext()) {
+-                BakedQuad quad = quadIterator.next();
+-                Identifier quadAtlas = quad.materialInfo().sprite().atlasLocation();
+-                if (!quadAtlas.equals(expectedAtlas)) {
+-                    throw new IllegalStateException("Multiple atlases used in model, expected " + expectedAtlas + ", but also got " + quadAtlas);
+-                }
++         for (int ix = 0; ix < this.tints.size(); ix++) {
++            ItemTintSource tintSource = this.tints.get(ix);
++            int tint = tintSource.calculate(item, level, owner == null ? null : owner.asLivingEntity());
++            if (Config.isCustomColors()) {
++               tint = CustomColors.getFullColorFromItemStack(item, ix, tint);
+             }
+ 
+-            if (!expectedAtlas.equals(TextureAtlas.LOCATION_ITEMS) && !expectedAtlas.equals(TextureAtlas.LOCATION_BLOCKS)) {
+-                throw new IllegalArgumentException("Atlas " + expectedAtlas + " can't be usef for item models");
++            tintLayers.add(tint);
++            output.appendModelIdentityElement(tint);
++         }
++      }
++
++      layer.setExtents(this.extents);
++      layer.setLocalTransform(this.transformation);
++      if (this.properties != null) {
++         this.properties.applyToLayer(layer, displayContext);
++      } else {
++         this.properties.applyToLayer(layer, displayContext);
++      }
++
++      layer.prepareQuadList().addAll(this.quads.getAll());
++      if (this.quads.hasMaterialFlag(2)) {
++         output.setAnimated();
++      }
++   }
++
++   public static void validateAtlasUsage(List<BakedQuad> quads) {
++      Iterator<BakedQuad> quadIterator = quads.iterator();
++      if (quadIterator.hasNext()) {
++         Identifier expectedAtlas = quadIterator.next().materialInfo().sprite().atlasLocation();
++
++         while (quadIterator.hasNext()) {
++            BakedQuad quad = quadIterator.next();
++            Identifier quadAtlas = quad.materialInfo().sprite().atlasLocation();
++            if (!quadAtlas.equals(expectedAtlas)) {
++               Identifier spriteLoc = quads.get(0).sprite().getName();
++               Identifier spriteLoc2 = quad.sprite().getName();
++               throw new IllegalStateException(
++                  "Multiple atlases used in model, expected " + expectedAtlas + " (" + spriteLoc + "), but also got " + quadAtlas + " (" + spriteLoc2 + ")"
++               );
+             }
+-        }
+-    }
++         }
+ 
+-    private static boolean hasSpecialAnimatedTexture(final ItemStack itemStack) {
+-        return itemStack.is(ItemTags.COMPASSES) || itemStack.is(Items.CLOCK);
+-    }
++         if (!expectedAtlas.equals(TextureAtlas.LOCATION_ITEMS) && !expectedAtlas.equals(TextureAtlas.LOCATION_BLOCKS)) {
++            throw new IllegalArgumentException("Atlas " + expectedAtlas + " can't be usef for item models");
++         }
++      }
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record Unbaked(Identifier model, Optional<Transformation> transformation, List<ItemTintSource> tints) implements ItemModel.Unbaked {
+-        public static final MapCodec<CuboidItemModelWrapper.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
+-            i -> i.group(
+-                    Identifier.CODEC.fieldOf("model").forGetter(CuboidItemModelWrapper.Unbaked::model),
+-                    Transformation.EXTENDED_CODEC.optionalFieldOf("transformation").forGetter(CuboidItemModelWrapper.Unbaked::transformation),
+-                    ItemTintSources.CODEC.listOf().optionalFieldOf("tints", List.of()).forGetter(CuboidItemModelWrapper.Unbaked::tints)
+-                )
+-                .apply(i, CuboidItemModelWrapper.Unbaked::new)
+-        );
++   private static boolean hasSpecialAnimatedTexture(ItemStack itemStack) {
++      return itemStack.is(ItemTags.COMPASSES) || itemStack.is(Items.CLOCK);
++   }
+ 
+-        @Override
+-        public void resolveDependencies(final ResolvableModel.Resolver resolver) {
+-            resolver.markDependency(this.model);
+-        }
++   public boolean isBuiltinGenerated() {
++      return this.builtinGenerated;
++   }
+ 
+-        @Override
+-        public ItemModel bake(final ItemModel.BakingContext context, final Matrix4fc transformation) {
+-            ModelBaker baker = context.blockModelBaker();
+-            ResolvedModel resolvedModel = baker.getModel(this.model);
+-            TextureSlots textureSlots = resolvedModel.getTopTextureSlots();
+-            QuadCollection quads = resolvedModel.bakeTopGeometry(textureSlots, baker, BlockModelRotation.IDENTITY);
+-            ModelRenderProperties properties = ModelRenderProperties.fromResolvedModel(baker, resolvedModel, textureSlots);
+-            CuboidItemModelWrapper.validateAtlasUsage(quads.getAll());
+-            Matrix4fc modelTransform = Transformation.compose(transformation, this.transformation);
+-            return new CuboidItemModelWrapper(this.tints, quads, properties, modelTransform);
+-        }
++   @Override
++   public String toString() {
++      return this.modelLocation + "";
++   }
+ 
+-        @Override
+-        public MapCodec<CuboidItemModelWrapper.Unbaked> type() {
+-            return MAP_CODEC;
+-        }
+-    }
+-}
+\ No newline at end of file
++   public record Unbaked(Identifier model, Optional<Transformation> transformation, List<ItemTintSource> tints)
++      implements net.minecraft.client.renderer.item.ItemModel.Unbaked {
++      public static final MapCodec<CuboidItemModelWrapper.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
++         i -> i.group(
++               Identifier.CODEC.fieldOf("model").forGetter(CuboidItemModelWrapper.Unbaked::model),
++               Transformation.EXTENDED_CODEC.optionalFieldOf("transformation").forGetter(CuboidItemModelWrapper.Unbaked::transformation),
++               ItemTintSources.CODEC.listOf().optionalFieldOf("tints", List.of()).forGetter(CuboidItemModelWrapper.Unbaked::tints)
++            )
++            .apply(i, CuboidItemModelWrapper.Unbaked::new)
++      );
++
++      @Override
++      public void resolveDependencies(Resolver resolver) {
++         resolver.markDependency(this.model);
++      }
++
++      @Override
++      public ItemModel bake(BakingContext context, Matrix4fc transformation) {
++         ModelBaker baker = context.blockModelBaker();
++         ResolvedModel resolvedModel = baker.getModel(this.model);
++         TextureSlots textureSlots = resolvedModel.getTopTextureSlots();
++         QuadCollection quads = resolvedModel.bakeTopGeometry(textureSlots, baker, BlockModelRotation.IDENTITY);
++         ModelRenderProperties properties = ModelRenderProperties.fromResolvedModel(baker, resolvedModel, textureSlots);
++         CuboidItemModelWrapper.validateAtlasUsage(quads.getAll());
++         Matrix4fc modelTransform = Transformation.compose(transformation, this.transformation);
++         return new CuboidItemModelWrapper(this.tints, quads, properties, modelTransform, this.model, quads.isBuiltinGenerated());
++      }
++
++      @Override
++      public MapCodec<CuboidItemModelWrapper.Unbaked> type() {
++         return MAP_CODEC;
++      }
++   }
++}

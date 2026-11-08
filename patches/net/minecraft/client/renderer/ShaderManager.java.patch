@@ -1,0 +1,465 @@
+--- a/net/minecraft/client/renderer/ShaderManager.java
++++ b/net/minecraft/client/renderer/ShaderManager.java
+@@ -36,242 +36,262 @@
+ import net.minecraft.util.FileUtil;
+ import net.minecraft.util.StrictJsonParser;
+ import net.minecraft.util.profiling.ProfilerFiller;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.optifine.Config;
+ import org.apache.commons.io.IOUtils;
+-import org.jspecify.annotations.Nullable;
+ import org.slf4j.Logger;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class ShaderManager extends SimplePreparableReloadListener<ShaderManager.Configs> implements AutoCloseable {
+-    private static final Logger LOGGER = LogUtils.getLogger();
+-    public static final int MAX_LOG_LENGTH = 32768;
+-    public static final String SHADER_PATH = "shaders";
+-    private static final String SHADER_INCLUDE_PATH = "shaders/include/";
+-    private static final FileToIdConverter POST_CHAIN_ID_CONVERTER = FileToIdConverter.json("post_effect");
+-    private final TextureManager textureManager;
+-    private final Consumer<Exception> recoveryHandler;
+-    private ShaderManager.CompilationCache compilationCache = new ShaderManager.CompilationCache(ShaderManager.Configs.EMPTY);
+-    private final Projection postChainProjection = new Projection();
+-    private final ProjectionMatrixBuffer postChainProjectionMatrixBuffer = new ProjectionMatrixBuffer("post");
++   private static final Logger LOGGER = LogUtils.getLogger();
++   public static final int MAX_LOG_LENGTH = 32768;
++   public static final String SHADER_PATH = "shaders";
++   private static final String SHADER_INCLUDE_PATH = "shaders/include/";
++   private static final FileToIdConverter POST_CHAIN_ID_CONVERTER = FileToIdConverter.json("post_effect");
++   private final TextureManager textureManager;
++   private final Consumer<Exception> recoveryHandler;
++   private ShaderManager.CompilationCache compilationCache = new ShaderManager.CompilationCache(ShaderManager.Configs.EMPTY);
++   private final Projection postChainProjection = new Projection();
++   private final ProjectionMatrixBuffer postChainProjectionMatrixBuffer = new ProjectionMatrixBuffer("post");
+ 
+-    public ShaderManager(final TextureManager textureManager, final Consumer<Exception> recoveryHandler) {
+-        this.textureManager = textureManager;
+-        this.recoveryHandler = recoveryHandler;
+-        this.postChainProjection.setupOrtho(0.1F, 1000.0F, 1.0F, 1.0F, false);
+-    }
++   public ShaderManager(TextureManager textureManager, Consumer<Exception> recoveryHandler) {
++      this.textureManager = textureManager;
++      this.recoveryHandler = recoveryHandler;
++      this.postChainProjection.setupOrtho(0.1F, 1000.0F, 1.0F, 1.0F, false);
++   }
+ 
+-    protected ShaderManager.Configs prepare(final ResourceManager manager, final ProfilerFiller profiler) {
+-        Builder<ShaderManager.ShaderSourceKey, String> shaderSources = ImmutableMap.builder();
+-        Map<Identifier, Resource> files = manager.listResources("shaders", ShaderManager::isShader);
++   protected ShaderManager.Configs prepare(ResourceManager manager, ProfilerFiller profiler) {
++      Builder<ShaderManager.ShaderSourceKey, String> shaderSources = ImmutableMap.builder();
++      Map<Identifier, Resource> files = manager.listResources("shaders", ShaderManager::isShader);
++      String[] postShadersOF = new String[]{"fxaa_of_2x", "fxaa_of_4x"};
++      String[] postTypes = new String[]{".json", ".vsh", ".fsh"};
+ 
+-        for (Entry<Identifier, Resource> entry : files.entrySet()) {
+-            Identifier location = entry.getKey();
+-            ShaderType shaderType = ShaderType.byLocation(location);
+-            if (shaderType != null) {
+-                loadShader(location, entry.getValue(), shaderType, files, shaderSources);
++      for (int i = 0; i < postShadersOF.length; i++) {
++         String name = postShadersOF[i];
++
++         for (int t = 0; t < postTypes.length; t++) {
++            String type = postTypes[t];
++            String path = "shaders/post/" + name + type;
++            Identifier loc = Identifier.withDefaultNamespace(path);
++            Optional<Resource> res = Config.getResourceSafe(loc);
++            if (res.isEmpty()) {
++               Config.warn("Resource not found: " + loc);
++            } else {
++               files.put(loc, res.get());
+             }
+-        }
++         }
++      }
+ 
+-        Builder<Identifier, PostChainConfig> postChains = ImmutableMap.builder();
++      for (Entry<Identifier, Resource> entry : files.entrySet()) {
++         Identifier location = entry.getKey();
++         ShaderType shaderType = ShaderType.byLocation(location);
++         if (shaderType != null) {
++            loadShader(location, entry.getValue(), shaderType, files, shaderSources);
++         }
++      }
+ 
+-        for (Entry<Identifier, Resource> entry : POST_CHAIN_ID_CONVERTER.listMatchingResources(manager).entrySet()) {
+-            loadPostChain(entry.getKey(), entry.getValue(), postChains);
+-        }
++      Builder<Identifier, PostChainConfig> postChains = ImmutableMap.builder();
++      Map<Identifier, Resource> mapPostEffects = POST_CHAIN_ID_CONVERTER.listMatchingResources(manager);
+ 
+-        return new ShaderManager.Configs(shaderSources.build(), postChains.build());
+-    }
++      for (int i = 0; i < postShadersOF.length; i++) {
++         String name = postShadersOF[i];
++         String path = "post_effect/" + name + ".json";
++         Identifier loc = Identifier.withDefaultNamespace(path);
++         Optional<Resource> res = Config.getResourceSafe(loc);
++         if (res.isEmpty()) {
++            Config.warn("Resource not found: " + loc);
++         } else {
++            mapPostEffects.put(loc, res.get());
++         }
++      }
+ 
+-    private static void loadShader(
+-        final Identifier location,
+-        final Resource resource,
+-        final ShaderType type,
+-        final Map<Identifier, Resource> files,
+-        final Builder<ShaderManager.ShaderSourceKey, String> output
+-    ) {
+-        Identifier id = type.idConverter().fileToId(location);
+-        GlslPreprocessor preprocessor = createPreprocessor(files, location);
++      for (Entry<Identifier, Resource> entry : mapPostEffects.entrySet()) {
++         loadPostChain(entry.getKey(), entry.getValue(), postChains);
++      }
+ 
+-        try (Reader reader = resource.openAsReader()) {
+-            String source = IOUtils.toString(reader);
+-            output.put(new ShaderManager.ShaderSourceKey(id, type), String.join("", preprocessor.process(source)));
+-        } catch (IOException e) {
+-            LOGGER.error("Failed to load shader source at {}", location, e);
+-        }
+-    }
++      return new ShaderManager.Configs(shaderSources.build(), postChains.build());
++   }
+ 
+-    private static GlslPreprocessor createPreprocessor(final Map<Identifier, Resource> files, final Identifier location) {
+-        final Identifier parentLocation = location.withPath(FileUtil::getFullResourcePath);
+-        return new GlslPreprocessor() {
+-            private final Set<Identifier> importedLocations = new ObjectArraySet<>();
++   private static void loadShader(
++      Identifier location, Resource resource, ShaderType type, Map<Identifier, Resource> files, Builder<ShaderManager.ShaderSourceKey, String> output
++   ) {
++      Identifier id = type.idConverter().fileToId(location);
++      GlslPreprocessor preprocessor = createPreprocessor(files, location);
+ 
+-            @Override
+-            public @Nullable String applyImport(final boolean isRelative, final String path) {
+-                Identifier locationx;
+-                try {
+-                    if (isRelative) {
+-                        locationx = parentLocation.withPath(parentPath -> FileUtil.normalizeResourcePath(parentPath + path));
+-                    } else {
+-                        locationx = Identifier.parse(path).withPrefix("shaders/include/");
+-                    }
+-                } catch (IdentifierException e) {
+-                    ShaderManager.LOGGER.error("Malformed GLSL import {}: {}", path, e.getMessage());
+-                    return "#error " + e.getMessage();
+-                }
++      try (Reader reader = resource.openAsReader()) {
++         String source = IOUtils.toString(reader);
++         output.put(new ShaderManager.ShaderSourceKey(id, type), String.join("", preprocessor.process(source)));
++      } catch (IOException e) {
++         LOGGER.error("Failed to load shader source at {}", location, e);
++      }
++   }
+ 
+-                if (!this.importedLocations.add(locationx)) {
+-                    return null;
+-                }
++   private static GlslPreprocessor createPreprocessor(final Map<Identifier, Resource> files, Identifier location) {
++      final Identifier parentLocation = location.withPath(FileUtil::getFullResourcePath);
++      return new GlslPreprocessor() {
++         private final Set<Identifier> importedLocations = new ObjectArraySet<>();
+ 
+-                try (Reader importResource = files.get(locationx).openAsReader()) {
+-                    return IOUtils.toString(importResource);
+-                } catch (IOException e) {
+-                    ShaderManager.LOGGER.error("Could not open GLSL import {}: {}", locationx, e.getMessage());
+-                    return "#error " + e.getMessage();
+-                }
++         @Override
++         public String applyImport(boolean isRelative, String path) {
++            Identifier locationx;
++            try {
++               if (isRelative) {
++                  locationx = parentLocation.withPath(parentPath -> FileUtil.normalizeResourcePath(parentPath + path));
++               } else {
++                  locationx = Identifier.parse(path).withPrefix("shaders/include/");
++               }
++            } catch (IdentifierException e) {
++               ShaderManager.LOGGER.error("Malformed GLSL import {}: {}", path, e.getMessage());
++               return "#error " + e.getMessage();
+             }
+-        };
+-    }
+ 
+-    private static void loadPostChain(final Identifier location, final Resource resource, final Builder<Identifier, PostChainConfig> output) {
+-        Identifier id = POST_CHAIN_ID_CONVERTER.fileToId(location);
++            if (!this.importedLocations.add(locationx)) {
++               return null;
++            }
+ 
+-        try (Reader reader = resource.openAsReader()) {
+-            JsonElement json = StrictJsonParser.parse(reader);
+-            output.put(id, PostChainConfig.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow(JsonSyntaxException::new));
+-        } catch (IOException | JsonParseException e) {
+-            LOGGER.error("Failed to parse post chain at {}", location, e);
+-        }
+-    }
++            try (Reader importResource = files.get(locationx).openAsReader()) {
++               return IOUtils.toString(importResource);
++            } catch (IOException e) {
++               ShaderManager.LOGGER.error("Could not open GLSL import {}: {}", locationx, e.getMessage());
++               return "#error " + e.getMessage();
++            }
++         }
++      };
++   }
+ 
+-    private static boolean isShader(final Identifier location) {
+-        return ShaderType.byLocation(location) != null || location.getPath().endsWith(".glsl");
+-    }
++   private static void loadPostChain(Identifier location, Resource resource, Builder<Identifier, PostChainConfig> output) {
++      Identifier id = POST_CHAIN_ID_CONVERTER.fileToId(location);
+ 
+-    protected void apply(final ShaderManager.Configs preparations, final ResourceManager manager, final ProfilerFiller profiler) {
+-        ShaderManager.CompilationCache newCompilationCache = new ShaderManager.CompilationCache(preparations);
+-        Set<RenderPipeline> pipelinesToPreload = new HashSet<>(RenderPipelines.getStaticPipelines());
+-        List<Identifier> failedLoads = new ArrayList<>();
+-        GpuDevice device = RenderSystem.getDevice();
+-        device.clearPipelineCache();
++      try (Reader reader = resource.openAsReader()) {
++         JsonElement json = StrictJsonParser.parse(reader);
++         output.put(id, PostChainConfig.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow(JsonSyntaxException::new));
++      } catch (IOException | JsonParseException e) {
++         LOGGER.error("Failed to parse post chain at {}", location, e);
++      }
++   }
+ 
+-        for (RenderPipeline pipeline : pipelinesToPreload) {
+-            CompiledRenderPipeline compiled = device.precompilePipeline(pipeline, newCompilationCache::getShaderSource);
+-            if (!compiled.isValid()) {
+-                failedLoads.add(pipeline.getLocation());
+-            }
+-        }
++   private static boolean isShader(Identifier location) {
++      return ShaderType.byLocation(location) != null || location.getPath().endsWith(".glsl");
++   }
+ 
+-        if (!failedLoads.isEmpty()) {
+-            device.clearPipelineCache();
+-            device.loadCriticalShaders();
+-            throw new RuntimeException(
+-                "Failed to load required shader programs:\n" + failedLoads.stream().map(entry -> " - " + entry).collect(Collectors.joining("\n"))
+-            );
+-        }
++   protected void apply(ShaderManager.Configs preparations, ResourceManager manager, ProfilerFiller profiler) {
++      ShaderManager.CompilationCache newCompilationCache = new ShaderManager.CompilationCache(preparations);
++      Set<RenderPipeline> pipelinesToPreload = new HashSet<>(RenderPipelines.getStaticPipelines());
++      List<Identifier> failedLoads = new ArrayList<>();
++      GpuDevice device = RenderSystem.getDevice();
++      device.clearPipelineCache();
+ 
+-        this.compilationCache.close();
+-        this.compilationCache = newCompilationCache;
+-    }
++      for (RenderPipeline pipeline : pipelinesToPreload) {
++         CompiledRenderPipeline compiled = device.precompilePipeline(pipeline, newCompilationCache::getShaderSource);
++         if (!compiled.isValid()) {
++            failedLoads.add(pipeline.getLocation());
++         }
++      }
+ 
+-    @Override
+-    public String getName() {
+-        return "Shader Loader";
+-    }
++      if (!failedLoads.isEmpty()) {
++         device.clearPipelineCache();
++         device.loadCriticalShaders();
++         throw new RuntimeException(
++            "Failed to load required shader programs:\n" + failedLoads.stream().map(entry -> " - " + entry).collect(Collectors.joining("\n"))
++         );
++      }
+ 
+-    private void tryTriggerRecovery(final Exception exception) {
+-        if (!this.compilationCache.triggeredRecovery) {
+-            this.recoveryHandler.accept(exception);
+-            this.compilationCache.triggeredRecovery = true;
+-        }
+-    }
++      this.compilationCache.close();
++      this.compilationCache = newCompilationCache;
++   }
+ 
+-    public @Nullable PostChain getPostChain(final Identifier id, final Set<Identifier> allowedTargets) {
+-        try {
+-            return this.compilationCache.getOrLoadPostChain(id, allowedTargets);
+-        } catch (ShaderManager.CompilationException e) {
+-            LOGGER.error("Failed to load post chain: {}", id, e);
+-            this.compilationCache.postChains.put(id, Optional.empty());
+-            this.tryTriggerRecovery(e);
+-            return null;
+-        }
+-    }
++   @Override
++   public String getName() {
++      return "Shader Loader";
++   }
+ 
+-    @Override
+-    public void close() {
+-        this.compilationCache.close();
+-        this.postChainProjectionMatrixBuffer.close();
+-    }
++   private void tryTriggerRecovery(Exception exception) {
++      if (!this.compilationCache.triggeredRecovery) {
++         this.recoveryHandler.accept(exception);
++         this.compilationCache.triggeredRecovery = true;
++      }
++   }
+ 
+-    public @Nullable String getShader(final Identifier id, final ShaderType type) {
+-        return this.compilationCache.getShaderSource(id, type);
+-    }
++   public PostChain getPostChain(Identifier id, Set<Identifier> allowedTargets) {
++      try {
++         return this.compilationCache.getOrLoadPostChain(id, allowedTargets);
++      } catch (ShaderManager.CompilationException e) {
++         LOGGER.error("Failed to load post chain: {}", id, e);
++         this.compilationCache.postChains.put(id, Optional.empty());
++         this.tryTriggerRecovery(e);
++         return null;
++      }
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    private class CompilationCache implements AutoCloseable {
+-        private final ShaderManager.Configs configs;
+-        private final Map<Identifier, Optional<PostChain>> postChains = new HashMap<>();
+-        private boolean triggeredRecovery;
++   @Override
++   public void close() {
++      this.compilationCache.close();
++      this.postChainProjectionMatrixBuffer.close();
++   }
+ 
+-        private CompilationCache(final ShaderManager.Configs configs) {
+-            this.configs = configs;
+-        }
++   public String getShader(Identifier id, ShaderType type) {
++      return this.compilationCache.getShaderSource(id, type);
++   }
+ 
+-        public @Nullable PostChain getOrLoadPostChain(final Identifier id, final Set<Identifier> allowedTargets) throws ShaderManager.CompilationException {
+-            Optional<PostChain> cached = this.postChains.get(id);
+-            if (cached != null) {
+-                return cached.orElse(null);
+-            }
++   private class CompilationCache implements AutoCloseable {
++      private final ShaderManager.Configs configs;
++      private final Map<Identifier, Optional<PostChain>> postChains = new HashMap<>();
++      private boolean triggeredRecovery;
+ 
+-            PostChain postChain = this.loadPostChain(id, allowedTargets);
+-            this.postChains.put(id, Optional.of(postChain));
+-            return postChain;
+-        }
++      private CompilationCache(ShaderManager.Configs configs) {
++         this.configs = configs;
++      }
+ 
+-        private PostChain loadPostChain(final Identifier id, final Set<Identifier> allowedTargets) throws ShaderManager.CompilationException {
+-            PostChainConfig config = this.configs.postChains.get(id);
+-            if (config == null) {
+-                throw new ShaderManager.CompilationException("Could not find post chain with id: " + id);
+-            } else {
+-                return PostChain.load(
+-                    config,
+-                    ShaderManager.this.textureManager,
+-                    allowedTargets,
+-                    id,
+-                    ShaderManager.this.postChainProjection,
+-                    ShaderManager.this.postChainProjectionMatrixBuffer
+-                );
+-            }
+-        }
++      public PostChain getOrLoadPostChain(Identifier id, Set<Identifier> allowedTargets) throws ShaderManager.CompilationException {
++         Optional<PostChain> cached = this.postChains.get(id);
++         if (cached != null) {
++            return cached.orElse(null);
++         }
+ 
+-        @Override
+-        public void close() {
+-            this.postChains.values().forEach(chain -> chain.ifPresent(PostChain::close));
+-            this.postChains.clear();
+-        }
++         PostChain postChain = this.loadPostChain(id, allowedTargets);
++         this.postChains.put(id, Optional.of(postChain));
++         return postChain;
++      }
+ 
+-        public @Nullable String getShaderSource(final Identifier id, final ShaderType type) {
+-            return this.configs.shaderSources.get(new ShaderManager.ShaderSourceKey(id, type));
+-        }
+-    }
++      private PostChain loadPostChain(Identifier id, Set<Identifier> allowedTargets) throws ShaderManager.CompilationException {
++         PostChainConfig config = this.configs.postChains.get(id);
++         if (config == null) {
++            throw new ShaderManager.CompilationException("Could not find post chain with id: " + id);
++         } else {
++            return PostChain.load(
++               config,
++               ShaderManager.this.textureManager,
++               allowedTargets,
++               id,
++               ShaderManager.this.postChainProjection,
++               ShaderManager.this.postChainProjectionMatrixBuffer
++            );
++         }
++      }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public static class CompilationException extends Exception {
+-        public CompilationException(final String message) {
+-            super(message);
+-        }
+-    }
++      @Override
++      public void close() {
++         this.postChains.values().forEach(chain -> chain.ifPresent(PostChain::close));
++         this.postChains.clear();
++      }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record Configs(Map<ShaderManager.ShaderSourceKey, String> shaderSources, Map<Identifier, PostChainConfig> postChains) {
+-        public static final ShaderManager.Configs EMPTY = new ShaderManager.Configs(Map.of(), Map.of());
+-    }
++      public String getShaderSource(Identifier id, ShaderType type) {
++         return this.configs.shaderSources.get(new ShaderManager.ShaderSourceKey(id, type));
++      }
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    private record ShaderSourceKey(Identifier id, ShaderType type) {
+-        @Override
+-        public String toString() {
+-            return this.id + " (" + this.type + ")";
+-        }
+-    }
+-}
+\ No newline at end of file
++   public static class CompilationException extends Exception {
++      public CompilationException(String message) {
++         super(message);
++      }
++   }
++
++   public record Configs(Map<ShaderManager.ShaderSourceKey, String> shaderSources, Map<Identifier, PostChainConfig> postChains) {
++      public static final ShaderManager.Configs EMPTY = new ShaderManager.Configs(Map.of(), Map.of());
++   }
++
++   private record ShaderSourceKey(Identifier id, ShaderType type) {
++      @Override
++      public String toString() {
++         return this.id + " (" + this.type + ")";
++      }
++   }
++}

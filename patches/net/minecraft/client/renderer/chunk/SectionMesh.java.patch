@@ -1,0 +1,192 @@
+--- a/net/minecraft/client/renderer/chunk/SectionMesh.java
++++ b/net/minecraft/client/renderer/chunk/SectionMesh.java
+@@ -1,47 +1,158 @@
+ package net.minecraft.client.renderer.chunk;
+ 
+ import com.mojang.blaze3d.IndexType;
++import com.mojang.blaze3d.PrimitiveTopology;
++import com.mojang.blaze3d.vertex.MeshData;
++import java.nio.ByteBuffer;
++import java.util.BitSet;
+ import java.util.Collections;
+ import java.util.List;
++import java.util.Set;
+ import net.minecraft.core.Direction;
+ import net.minecraft.world.level.block.entity.BlockEntity;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.render.MultiTextureData;
++import net.optifine.render.SectionDrawData;
++import net.optifine.render.VboRange;
++import net.optifine.render.VboRegion;
++import org.lwjgl.system.MemoryUtil;
++import org.lwjgl.system.MemoryUtil.MemoryAllocator;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public interface SectionMesh extends AutoCloseable {
+-    default boolean isDifferentPointOfView(final TranslucencyPointOfView pointOfView) {
+-        return false;
+-    }
++   default boolean isDifferentPointOfView(TranslucencyPointOfView pointOfView) {
++      return false;
++   }
+ 
+-    default boolean hasRenderableLayers() {
+-        return false;
+-    }
++   default boolean hasRenderableLayers() {
++      return false;
++   }
+ 
+-    default boolean hasTranslucentGeometry() {
+-        return false;
+-    }
++   default boolean hasTranslucentGeometry() {
++      return false;
++   }
+ 
+-    default boolean isEmpty(final ChunkSectionLayer layer) {
+-        return true;
+-    }
++   default boolean isEmpty(ChunkSectionLayer layer) {
++      return true;
++   }
+ 
+-    default List<BlockEntity> getRenderableBlockEntities() {
+-        return Collections.emptyList();
+-    }
++   default List<BlockEntity> getRenderableBlockEntities() {
++      return Collections.emptyList();
++   }
+ 
+-    boolean facesCanSeeEachother(Direction direction1, Direction direction2);
++   boolean facesCanSeeEachother(Direction var1, Direction var2);
+ 
+-    default SectionMesh.@Nullable SectionDraw getSectionDraw(final ChunkSectionLayer layer) {
+-        return null;
+-    }
++   default SectionMesh.SectionDraw getSectionDraw(ChunkSectionLayer layer) {
++      return null;
++   }
+ 
+-    @Override
+-    default void close() {
+-    }
++   @Override
++   default void close() {
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    record SectionDraw(int indexCount, IndexType indexType, boolean hasCustomIndexBuffer) {
+-    }
+-}
+\ No newline at end of file
++   default BitSet getAnimatedSprites(ChunkSectionLayer layerIn) {
++      return null;
++   }
++
++   default void setAnimatedSprites(BitSet[] animatedSprites) {
++   }
++
++   default boolean isLayerUsed(ChunkSectionLayer layerIn) {
++      return false;
++   }
++
++   default boolean hasTerrainBlockEntities() {
++      return false;
++   }
++
++   default boolean isEmpty() {
++      return true;
++   }
++
++   default Set<ChunkSectionLayer> getLayersUsed() {
++      return Set.of();
++   }
++
++   record SectionDraw(int indexCount, IndexType indexType, boolean hasCustomIndexBuffer, SectionDrawData data) {
++      private static final MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
++
++      public SectionDraw(int indexCount, IndexType indexType, boolean hasCustomIndexBuffer) {
++         this(indexCount, indexType, hasCustomIndexBuffer, new SectionDrawData());
++      }
++
++      public void setVboRegion(VboRegion vboRegionIn) {
++         if (vboRegionIn != null) {
++            if (this.data.vboRegion == null && this.data.vboRange == null) {
++               this.data.vboRegion = vboRegionIn;
++               this.data.vboRange = new VboRange();
++            } else {
++               throw new IllegalArgumentException("Region is already set");
++            }
++         }
++      }
++
++      public void setMeshData(MeshData meshData) {
++         this.data.meshData = meshData;
++         if (this.data.vboRegion != null) {
++            if (this.data.vertexBufferUpload != null) {
++               long pointerUpload = MemoryUtil.memAddress(this.data.vertexBufferUpload);
++               ALLOCATOR.free(pointerUpload);
++               this.data.vertexBufferUpload = null;
++            }
++
++            long bufferSize = meshData.drawState().getVertexBufferSize();
++            long pointer = ALLOCATOR.malloc(bufferSize);
++            if (pointer == 0L) {
++               throw new OutOfMemoryError("Failed to allocate " + bufferSize + " bytes");
++            }
++
++            this.data.vertexBufferUpload = MemoryUtil.memByteBuffer(pointer, (int)bufferSize);
++            ByteBuffer vertexBuffer = meshData.vertexBuffer();
++            vertexBuffer.position(0);
++            MemoryUtil.memCopy(vertexBuffer, this.data.vertexBufferUpload);
++            vertexBuffer.position(0);
++            this.data.vertexBufferUpload.position(0);
++         }
++
++         this.data.multiTextureData = meshData.getMultiTextureData();
++      }
++
++      public VboRegion getVboRegion() {
++         return this.data.vboRegion;
++      }
++
++      public void uploadVertexData() {
++         MeshData meshData = this.data.meshData;
++         if (meshData != null) {
++            if (this.data.vboRegion != null && this.data.vertexBufferUpload != null) {
++               MeshData.DrawState drawState = meshData.drawState();
++               ByteBuffer bb = this.data.vertexBufferUpload;
++               bb.position(0);
++               bb.limit(drawState.getVertexBufferSize());
++               this.data.vboRegion.bufferData(bb, this.data.vboRange);
++               bb.position(0);
++               bb.limit(drawState.getVertexBufferSize());
++               long pointerCopy = MemoryUtil.memAddress(this.data.vertexBufferUpload);
++               ALLOCATOR.free(pointerCopy);
++               this.data.vertexBufferUpload = null;
++            }
++
++            this.uploadIndexData();
++         }
++      }
++
++      public void uploadIndexData() {
++         if (this.data.multiTextureData != null) {
++            this.data.multiTextureData.applySort();
++         }
++      }
++
++      public void drawInRegion() {
++         if (this.data.vboRegion != null) {
++            this.data.vboRegion.drawArrays(PrimitiveTopology.QUADS, this.data.vboRange);
++         }
++      }
++
++      public MultiTextureData getMultiTextureData() {
++         return this.data.multiTextureData;
++      }
++   }
++}

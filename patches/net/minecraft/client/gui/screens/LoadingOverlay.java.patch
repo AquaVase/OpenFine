@@ -1,0 +1,469 @@
+--- a/net/minecraft/client/gui/screens/LoadingOverlay.java
++++ b/net/minecraft/client/gui/screens/LoadingOverlay.java
+@@ -5,6 +5,7 @@
+ import java.io.IOException;
+ import java.io.InputStream;
+ import java.util.Optional;
++import java.util.Properties;
+ import java.util.function.Consumer;
+ import java.util.function.IntSupplier;
+ import net.minecraft.client.Minecraft;
+@@ -22,184 +23,298 @@
+ import net.minecraft.util.ARGB;
+ import net.minecraft.util.Mth;
+ import net.minecraft.util.Util;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.optifine.Config;
++import net.optifine.render.GlBlendState;
++import net.optifine.shaders.config.ShaderPackParser;
++import net.optifine.util.PropertiesOrdered;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class LoadingOverlay extends Overlay {
+-    public static final Identifier MOJANG_STUDIOS_LOGO_LOCATION = Identifier.withDefaultNamespace("textures/gui/title/mojangstudios.png");
+-    private static final int LOGO_BACKGROUND_COLOR = ARGB.color(255, 239, 50, 61);
+-    private static final int LOGO_BACKGROUND_COLOR_DARK = ARGB.color(255, 0, 0, 0);
+-    private static final IntSupplier BRAND_BACKGROUND = () -> Minecraft.getInstance().options.darkMojangStudiosBackground().get()
+-        ? LOGO_BACKGROUND_COLOR_DARK
+-        : LOGO_BACKGROUND_COLOR;
+-    private static final int LOGO_SCALE = 240;
+-    private static final float LOGO_QUARTER_FLOAT = 60.0F;
+-    private static final int LOGO_QUARTER = 60;
+-    private static final int LOGO_HALF = 120;
+-    private static final float LOGO_OVERLAP = 0.0625F;
+-    private static final float SMOOTHING = 0.95F;
+-    public static final long FADE_OUT_TIME = 1000L;
+-    public static final long FADE_IN_TIME = 500L;
+-    private final Minecraft minecraft;
+-    private final ReloadInstance reload;
+-    private final Consumer<Optional<Throwable>> onFinish;
+-    private final boolean fadeIn;
+-    private float currentProgress;
+-    private long fadeOutStart = -1L;
+-    private long fadeInStart = -1L;
++   public static final Identifier MOJANG_STUDIOS_LOGO_LOCATION = Identifier.withDefaultNamespace("textures/gui/title/mojangstudios.png");
++   private static final int LOGO_BACKGROUND_COLOR = ARGB.color(255, 239, 50, 61);
++   private static final int LOGO_BACKGROUND_COLOR_DARK = ARGB.color(255, 0, 0, 0);
++   private static final IntSupplier BRAND_BACKGROUND = () -> Minecraft.getInstance().options.darkMojangStudiosBackground().get()
++      ? LOGO_BACKGROUND_COLOR_DARK
++      : LOGO_BACKGROUND_COLOR;
++   private static final int LOGO_SCALE = 240;
++   private static final float LOGO_QUARTER_FLOAT = 60.0F;
++   private static final int LOGO_QUARTER = 60;
++   private static final int LOGO_HALF = 120;
++   private static final float LOGO_OVERLAP = 0.0625F;
++   private static final float SMOOTHING = 0.95F;
++   public static final long FADE_OUT_TIME = 1000L;
++   public static final long FADE_IN_TIME = 500L;
++   private final Minecraft minecraft;
++   private final ReloadInstance reload;
++   private final Consumer<Optional<Throwable>> onFinish;
++   private final boolean fadeIn;
++   private float currentProgress;
++   private long fadeOutStart = -1L;
++   private long fadeInStart = -1L;
++   private int colorBackground = BRAND_BACKGROUND.getAsInt();
++   private int colorBar = BRAND_BACKGROUND.getAsInt();
++   private int colorOutline = 16777215;
++   private int colorProgress = 16777215;
++   private GlBlendState blendState = null;
++   private boolean fadeOut = false;
+ 
+-    public LoadingOverlay(final Minecraft minecraft, final ReloadInstance reload, final Consumer<Optional<Throwable>> onFinish, final boolean fadeIn) {
+-        this.minecraft = minecraft;
+-        this.reload = reload;
+-        this.onFinish = onFinish;
+-        this.fadeIn = fadeIn;
+-    }
++   public LoadingOverlay(Minecraft minecraft, ReloadInstance reload, Consumer<Optional<Throwable>> onFinish, boolean fadeIn) {
++      this.minecraft = minecraft;
++      this.reload = reload;
++      this.onFinish = onFinish;
++      this.fadeIn = fadeIn;
++   }
+ 
+-    public static void registerTextures(final TextureManager textureManager) {
+-        textureManager.registerAndLoad(MOJANG_STUDIOS_LOGO_LOCATION, new LoadingOverlay.LogoTexture());
+-    }
++   public static void registerTextures(TextureManager textureManager) {
++      textureManager.registerAndLoad(MOJANG_STUDIOS_LOGO_LOCATION, new LoadingOverlay.LogoTexture());
++   }
+ 
+-    private static int replaceAlpha(final int color, final int alpha) {
+-        return color & 16777215 | alpha << 24;
+-    }
++   private static int replaceAlpha(int color, int alpha) {
++      return color & 16777215 | alpha << 24;
++   }
+ 
+-    @Override
+-    public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
+-        int width = graphics.guiWidth();
+-        int height = graphics.guiHeight();
+-        long now = Util.getMillis();
+-        if (this.fadeIn && this.fadeInStart == -1L) {
+-            this.fadeInStart = now;
+-        }
++   @Override
++   public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
++      int width = graphics.guiWidth();
++      int height = graphics.guiHeight();
++      long now = Util.getMillis();
++      if (this.fadeIn && this.fadeInStart == -1L) {
++         this.fadeInStart = now;
++      }
+ 
+-        float fadeOutAnim = this.fadeOutStart > -1L ? (float)(now - this.fadeOutStart) / 1000.0F : -1.0F;
+-        float fadeInAnim = this.fadeInStart > -1L ? (float)(now - this.fadeInStart) / 500.0F : -1.0F;
+-        float logoAlpha;
+-        if (fadeOutAnim >= 1.0F) {
+-            if (this.minecraft.gui.screen() != null) {
+-                this.minecraft.gui.screen().extractRenderStateWithTooltipAndSubtitles(graphics, 0, 0, a);
+-            } else {
+-                this.minecraft.gui.hud.extractDeferredSubtitles();
+-            }
++      float fadeOutAnim = this.fadeOutStart > -1L ? (float)(now - this.fadeOutStart) / 1000.0F : -1.0F;
++      float fadeInAnim = this.fadeInStart > -1L ? (float)(now - this.fadeInStart) / 500.0F : -1.0F;
++      float logoAlpha;
++      if (fadeOutAnim >= 1.0F) {
++         this.fadeOut = true;
++         if (this.minecraft.gui.screen() != null) {
++            this.minecraft.gui.screen().extractRenderStateWithTooltipAndSubtitles(graphics, 0, 0, a);
++         } else {
++            this.minecraft.gui.hud.extractDeferredSubtitles();
++         }
+ 
+-            int alpha = Mth.ceil((1.0F - Mth.clamp(fadeOutAnim - 1.0F, 0.0F, 1.0F)) * 255.0F);
+-            graphics.nextStratum();
+-            graphics.fill(0, 0, width, height, replaceAlpha(BRAND_BACKGROUND.getAsInt(), alpha));
+-            logoAlpha = 1.0F - Mth.clamp(fadeOutAnim - 1.0F, 0.0F, 1.0F);
+-        } else if (this.fadeIn) {
+-            if (this.minecraft.gui.screen() != null && fadeInAnim < 1.0F) {
+-                this.minecraft.gui.screen().extractRenderStateWithTooltipAndSubtitles(graphics, mouseX, mouseY, a);
+-            } else {
+-                this.minecraft.gui.hud.extractDeferredSubtitles();
++         int alpha = Mth.ceil((1.0F - Mth.clamp(fadeOutAnim - 1.0F, 0.0F, 1.0F)) * 255.0F);
++         graphics.nextStratum();
++         graphics.fill(0, 0, width, height, replaceAlpha(this.colorBackground, alpha));
++         logoAlpha = 1.0F - Mth.clamp(fadeOutAnim - 1.0F, 0.0F, 1.0F);
++      } else if (this.fadeIn) {
++         if (this.minecraft.gui.screen() != null && fadeInAnim < 1.0F) {
++            this.minecraft.gui.screen().extractRenderStateWithTooltipAndSubtitles(graphics, mouseX, mouseY, a);
++         } else {
++            this.minecraft.gui.hud.extractDeferredSubtitles();
++         }
++
++         int alpha = Mth.ceil(Mth.clamp(fadeInAnim, 0.15, 1.0) * 255.0);
++         graphics.nextStratum();
++         graphics.fill(0, 0, width, height, replaceAlpha(this.colorBackground, alpha));
++         logoAlpha = Mth.clamp(fadeInAnim, 0.0F, 1.0F);
++      } else {
++         ARGB.setVector4fFromARGB32(this.minecraft.gameRenderer.gameRenderState().guiRenderState.clearColorOverride, this.colorBackground);
++         logoAlpha = 1.0F;
++      }
++
++      if (this.renderContents(graphics, logoAlpha)) {
++         int contentX = (int)(graphics.guiWidth() * 0.5);
++         int logoY = (int)(graphics.guiHeight() * 0.5);
++         double logoHeight = Math.min(graphics.guiWidth() * 0.75, graphics.guiHeight()) * 0.25;
++         int logoHeightHalf = (int)(logoHeight * 0.5);
++         double contentWidth = logoHeight * 4.0;
++         int logoWidthHalf = (int)(contentWidth * 0.5);
++         int color = ARGB.white(logoAlpha);
++         boolean renderLogo = true;
++         if (this.blendState != null) {
++            this.blendState.apply();
++            if (!this.blendState.isEnabled() && this.fadeOut) {
++               renderLogo = false;
+             }
++         }
+ 
+-            int alpha = Mth.ceil(Mth.clamp(fadeInAnim, 0.15, 1.0) * 255.0);
+-            graphics.nextStratum();
+-            graphics.fill(0, 0, width, height, replaceAlpha(BRAND_BACKGROUND.getAsInt(), alpha));
+-            logoAlpha = Mth.clamp(fadeInAnim, 0.0F, 1.0F);
+-        } else {
+-            ARGB.setVector4fFromARGB32(this.minecraft.gameRenderer.gameRenderState().guiRenderState.clearColorOverride, BRAND_BACKGROUND.getAsInt());
+-            logoAlpha = 1.0F;
+-        }
++         if (renderLogo) {
++            graphics.blit(
++               RenderPipelines.MOJANG_LOGO,
++               MOJANG_STUDIOS_LOGO_LOCATION,
++               contentX - logoWidthHalf,
++               logoY - logoHeightHalf,
++               -0.0625F,
++               0.0F,
++               logoWidthHalf,
++               (int)logoHeight,
++               120,
++               60,
++               120,
++               120,
++               color
++            );
++            graphics.blit(
++               RenderPipelines.MOJANG_LOGO,
++               MOJANG_STUDIOS_LOGO_LOCATION,
++               contentX,
++               logoY - logoHeightHalf,
++               0.0625F,
++               60.0F,
++               logoWidthHalf,
++               (int)logoHeight,
++               120,
++               60,
++               120,
++               120,
++               color
++            );
++         }
+ 
+-        int contentX = (int)(graphics.guiWidth() * 0.5);
+-        int logoY = (int)(graphics.guiHeight() * 0.5);
+-        double logoHeight = Math.min(graphics.guiWidth() * 0.75, graphics.guiHeight()) * 0.25;
+-        int logoHeightHalf = (int)(logoHeight * 0.5);
+-        double contentWidth = logoHeight * 4.0;
+-        int logoWidthHalf = (int)(contentWidth * 0.5);
+-        int color = ARGB.white(logoAlpha);
+-        graphics.blit(
+-            RenderPipelines.MOJANG_LOGO,
+-            MOJANG_STUDIOS_LOGO_LOCATION,
+-            contentX - logoWidthHalf,
+-            logoY - logoHeightHalf,
+-            -0.0625F,
+-            0.0F,
+-            logoWidthHalf,
+-            (int)logoHeight,
+-            120,
+-            60,
+-            120,
+-            120,
+-            color
+-        );
+-        graphics.blit(
+-            RenderPipelines.MOJANG_LOGO,
+-            MOJANG_STUDIOS_LOGO_LOCATION,
+-            contentX,
+-            logoY - logoHeightHalf,
+-            0.0625F,
+-            60.0F,
+-            logoWidthHalf,
+-            (int)logoHeight,
+-            120,
+-            60,
+-            120,
+-            120,
+-            color
+-        );
+-        int barY = (int)(graphics.guiHeight() * 0.8325);
+-        float actualProgress = this.reload.getActualProgress();
+-        this.currentProgress = Mth.clamp(this.currentProgress * 0.95F + actualProgress * 0.050000012F, 0.0F, 1.0F);
+-        if (fadeOutAnim < 1.0F) {
++         int barY = (int)(graphics.guiHeight() * 0.8325);
++         float actualProgress = this.reload.getActualProgress();
++         this.currentProgress = Mth.clamp(this.currentProgress * 0.95F + actualProgress * 0.050000012F, 0.0F, 1.0F);
++         if (fadeOutAnim < 1.0F) {
+             this.extractProgressBar(
+-                graphics, width / 2 - logoWidthHalf, barY - 5, width / 2 + logoWidthHalf, barY + 5, 1.0F - Mth.clamp(fadeOutAnim, 0.0F, 1.0F)
++               graphics, width / 2 - logoWidthHalf, barY - 5, width / 2 + logoWidthHalf, barY + 5, 1.0F - Mth.clamp(fadeOutAnim, 0.0F, 1.0F)
+             );
+-        }
++         }
++      }
+ 
+-        if (fadeOutAnim >= 2.0F) {
+-            this.minecraft.gui.setOverlay(null);
+-        }
+-    }
++      if (fadeOutAnim >= 2.0F) {
++         this.minecraft.gui.setOverlay(null);
++      }
++   }
+ 
+-    @Override
+-    public void tick() {
+-        if (this.fadeOutStart == -1L && this.reload.isDone() && this.isReadyToFadeOut()) {
+-            try {
+-                this.reload.checkExceptions();
+-                this.onFinish.accept(Optional.empty());
+-            } catch (Throwable t) {
+-                this.onFinish.accept(Optional.of(t));
+-            }
++   @Override
++   public void tick() {
++      if (this.fadeOutStart == -1L && this.reload.isDone() && this.isReadyToFadeOut()) {
++         this.fadeOutStart = Util.getMillis();
+ 
+-            this.fadeOutStart = Util.getMillis();
+-            if (this.minecraft.gui.screen() != null) {
+-                Window window = this.minecraft.getWindow();
+-                this.minecraft.gui.screen().init(window.getGuiScaledWidth(), window.getGuiScaledHeight());
+-            }
+-        }
+-    }
++         try {
++            this.reload.checkExceptions();
++            this.onFinish.accept(Optional.empty());
++         } catch (Throwable t) {
++            this.onFinish.accept(Optional.of(t));
++         }
+ 
+-    private boolean isReadyToFadeOut() {
+-        return !this.fadeIn || this.fadeInStart > -1L && Util.getMillis() - this.fadeInStart >= 1000L;
+-    }
++         if (this.minecraft.gui.screen() != null) {
++            Window window = this.minecraft.getWindow();
++            this.minecraft.gui.screen().init(window.getGuiScaledWidth(), window.getGuiScaledHeight());
++         }
++      }
++   }
+ 
+-    private void extractProgressBar(final GuiGraphicsExtractor graphics, final int x0, final int y0, final int x1, final int y1, final float fade) {
+-        int width = Mth.ceil((x1 - x0 - 2) * this.currentProgress);
+-        int alpha = Math.round(fade * 255.0F);
+-        int white = ARGB.color(alpha, 255, 255, 255);
+-        graphics.fill(x0 + 2, y0 + 2, x0 + width, y1 - 2, white);
+-        graphics.fill(x0 + 1, y0, x1 - 1, y0 + 1, white);
+-        graphics.fill(x0 + 1, y1, x1 - 1, y1 - 1, white);
+-        graphics.fill(x0, y0, x0 + 1, y1, white);
+-        graphics.fill(x1, y0, x1 - 1, y1, white);
+-    }
++   private boolean isReadyToFadeOut() {
++      return !this.fadeIn || this.fadeInStart > -1L && Util.getMillis() - this.fadeInStart >= 1000L;
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    private static class LogoTexture extends ReloadableTexture {
+-        public LogoTexture() {
+-            super(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION);
+-        }
++   private void extractProgressBar(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1, float fade) {
++      int width = Mth.ceil((x1 - x0 - 2) * this.currentProgress);
++      int alpha = Math.round(fade * 255.0F);
++      if (this.colorBar != this.colorBackground) {
++         int colBgR = this.colorBar >> 16 & 0xFF;
++         int colBgG = this.colorBar >> 8 & 0xFF;
++         int colBgB = this.colorBar & 0xFF;
++         int colBg = ARGB.color(alpha, colBgR, colBgG, colBgB);
++         graphics.fill(x0, y0, x1, y1, colBg);
++      }
+ 
+-        @Override
+-        public TextureContents loadContents(final ResourceManager resourceManager) throws IOException {
+-            ResourceProvider vanillaProvider = Minecraft.getInstance().getVanillaPackResources().asProvider();
++      int colProgR = this.colorProgress >> 16 & 0xFF;
++      int colProgG = this.colorProgress >> 8 & 0xFF;
++      int colProgB = this.colorProgress & 0xFF;
++      int white = ARGB.color(alpha, colProgR, colProgG, colProgB);
++      graphics.fill(x0 + 2, y0 + 2, x0 + width, y1 - 2, white);
++      int colOutR = this.colorOutline >> 16 & 0xFF;
++      int colOutG = this.colorOutline >> 8 & 0xFF;
++      int colOutB = this.colorOutline & 0xFF;
++      white = ARGB.color(alpha, colOutR, colOutG, colOutB);
++      graphics.fill(x0 + 1, y0, x1 - 1, y0 + 1, white);
++      graphics.fill(x0 + 1, y1, x1 - 1, y1 - 1, white);
++      graphics.fill(x0, y0, x0 + 1, y1, white);
++      graphics.fill(x1, y0, x1 - 1, y1, white);
++   }
+ 
+-            try (InputStream resource = vanillaProvider.open(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION)) {
+-                return new TextureContents(NativeImage.read(resource), new TextureMetadataSection(true, true, MipmapStrategy.MEAN, 0.0F));
++   protected boolean renderContents(GuiGraphicsExtractor gui, float alpha) {
++      return true;
++   }
++
++   public void update() {
++      this.colorBackground = BRAND_BACKGROUND.getAsInt();
++      this.colorBar = BRAND_BACKGROUND.getAsInt();
++      this.colorOutline = 16777215;
++      this.colorProgress = 16777215;
++      if (Config.isCustomColors()) {
++         try {
++            String fileName = "optifine/color.properties";
++            Identifier loc = new Identifier(fileName);
++            if (!Config.hasResource(loc)) {
++               return;
+             }
+-        }
+-    }
+-}
+\ No newline at end of file
++
++            InputStream in = Config.getResourceStream(loc);
++            Config.dbg("Loading " + fileName);
++            Properties props = new PropertiesOrdered();
++            props.load(in);
++            in.close();
++            this.colorBackground = readColor(props, "screen.loading", this.colorBackground);
++            this.colorOutline = readColor(props, "screen.loading.outline", this.colorOutline);
++            this.colorBar = readColor(props, "screen.loading.bar", this.colorBar);
++            this.colorProgress = readColor(props, "screen.loading.progress", this.colorProgress);
++            this.blendState = ShaderPackParser.parseBlendState(props.getProperty("screen.loading.blend"));
++         } catch (Exception e) {
++            Config.warn(e.getClass().getName() + ": " + e.getMessage());
++         }
++      }
++   }
++
++   private static int readColor(Properties props, String name, int colDef) {
++      String str = props.getProperty(name);
++      if (str == null) {
++         return colDef;
++      } else {
++         str = str.trim();
++         int color = parseColor(str, colDef);
++         if (color < 0) {
++            Config.warn("Invalid color: " + name + " = " + str);
++            return color;
++         } else {
++            Config.dbg(name + " = " + str);
++            return color;
++         }
++      }
++   }
++
++   private static int parseColor(String str, int colDef) {
++      if (str == null) {
++         return colDef;
++      }
++
++      str = str.trim();
++
++      try {
++         return Integer.parseInt(str, 16) & 16777215;
++      } catch (NumberFormatException e) {
++         return colDef;
++      }
++   }
++
++   public boolean isFadeOut() {
++      return this.fadeOut;
++   }
++
++   public static String getGuiChatText(ChatScreen guiChat) {
++      return guiChat.input.getValue();
++   }
++
++   private static class LogoTexture extends ReloadableTexture {
++      public LogoTexture() {
++         super(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION);
++      }
++
++      @Override
++      public TextureContents loadContents(ResourceManager resourceManager) throws IOException {
++         ResourceProvider vanillaProvider = Minecraft.getInstance().getVanillaPackResources().asProvider();
++
++         try (InputStream resource = getLogoInputStream(resourceManager, vanillaProvider)) {
++            return new TextureContents(NativeImage.read(resource), new TextureMetadataSection(true, true, MipmapStrategy.MEAN, 0.0F));
++         }
++      }
++
++      private static InputStream getLogoInputStream(ResourceManager resourceManager, ResourceProvider resourceProvider) throws IOException {
++         return resourceManager.getResource(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION).isPresent()
++            ? resourceManager.open(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION)
++            : resourceProvider.open(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION);
++      }
++   }
++}

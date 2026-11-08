@@ -1,0 +1,7 @@
+--- /dev/null
++++ b/net/minecraftforge/client/textures/ForgeTextureMetadata.java
+@@ -0,0 +1,4 @@
++package net.minecraftforge.client.textures;
++
++public class ForgeTextureMetadata {
++}

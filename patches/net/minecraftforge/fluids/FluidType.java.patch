@@ -1,0 +1,10 @@
+--- /dev/null
++++ b/net/minecraftforge/fluids/FluidType.java
+@@ -0,0 +1,7 @@
++package net.minecraftforge.fluids;
++
++public class FluidType {
++   public boolean isAir() {
++      return false;
++   }
++}

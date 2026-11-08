@@ -1,0 +1,71 @@
+--- a/net/minecraft/client/gui/components/debug/DebugEntrySimplePerformanceImpactors.java
++++ b/net/minecraft/client/gui/components/debug/DebugEntrySimplePerformanceImpactors.java
+@@ -7,40 +7,33 @@
+ import net.minecraft.client.TextureFilteringMethod;
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.chunk.LevelChunk;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.Config;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class DebugEntrySimplePerformanceImpactors implements DebugScreenEntry {
+-    @Override
+-    public void display(
+-        final DebugScreenDisplayer displayer,
+-        final @Nullable Level serverOrClientLevel,
+-        final @Nullable LevelChunk clientChunk,
+-        final @Nullable LevelChunk serverChunk
+-    ) {
+-        Minecraft minecraft = Minecraft.getInstance();
+-        Options options = minecraft.options;
+-        displayer.addLine(
+-            String.format(
+-                Locale.ROOT,
+-                "%s%sB: %d",
+-                options.improvedTransparency().get() ? "improved-transparency " : "",
+-                options.cloudStatus().get() == CloudStatus.OFF ? "" : (options.cloudStatus().get() == CloudStatus.FAST ? "fast-clouds " : "fancy-clouds "),
+-                options.biomeBlendRadius().get()
+-            )
+-        );
+-        TextureFilteringMethod filteringMethod = options.textureFiltering().get();
+-        if (filteringMethod == TextureFilteringMethod.ANISOTROPIC) {
+-            displayer.addLine(String.format(Locale.ROOT, "Filtering: %s %dx", filteringMethod.caption().getString(), options.maxAnisotropyValue()));
+-        } else {
+-            displayer.addLine(String.format(Locale.ROOT, "Filtering: %s", filteringMethod.caption().getString()));
+-        }
+-    }
++   @Override
++   public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
++      Minecraft minecraft = Minecraft.getInstance();
++      Options options = minecraft.options;
++      displayer.addLine(
++         String.format(
++            Locale.ROOT,
++            "%s%sB: %d U: %d",
++            options.improvedTransparency().get() ? "improved-transparency " : "",
++            options.cloudStatus().get() == CloudStatus.OFF ? "" : (options.cloudStatus().get() == CloudStatus.FAST ? "fast-clouds " : "fancy-clouds "),
++            options.biomeBlendRadius().get(),
++            Config.getChunkUpdates()
++         )
++      );
++      TextureFilteringMethod filteringMethod = options.textureFiltering().get();
++      if (filteringMethod == TextureFilteringMethod.ANISOTROPIC) {
++         displayer.addLine(String.format(Locale.ROOT, "Filtering: %s %dx", filteringMethod.caption().getString(), options.maxAnisotropyValue()));
++      } else {
++         displayer.addLine(String.format(Locale.ROOT, "Filtering: %s", filteringMethod.caption().getString()));
++      }
++   }
+ 
+-    @Override
+-    public boolean isAllowed(final boolean reducedDebugInfo) {
+-        return true;
+-    }
+-}
+\ No newline at end of file
++   @Override
++   public boolean isAllowed(boolean reducedDebugInfo) {
++      return true;
++   }
++}

@@ -1,0 +1,40 @@
+--- a/net/minecraft/client/renderer/entity/layers/SkeletonClothingLayer.java
++++ b/net/minecraft/client/renderer/entity/layers/SkeletonClothingLayer.java
+@@ -9,25 +9,18 @@
+ import net.minecraft.client.renderer.entity.RenderLayerParent;
+ import net.minecraft.client.renderer.entity.state.SkeletonRenderState;
+ import net.minecraft.resources.Identifier;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class SkeletonClothingLayer<S extends SkeletonRenderState, M extends EntityModel<S>> extends RenderLayer<S, M> {
+-    private final SkeletonModel<S> layerModel;
+-    private final Identifier clothesLocation;
++   public SkeletonModel<S> layerModel;
++   public Identifier clothesLocation;
+ 
+-    public SkeletonClothingLayer(
+-        final RenderLayerParent<S, M> renderer, final EntityModelSet models, final ModelLayerLocation layerLocation, final Identifier clothesLocation
+-    ) {
+-        super(renderer);
+-        this.clothesLocation = clothesLocation;
+-        this.layerModel = new SkeletonModel<>(models.bakeLayer(layerLocation));
+-    }
++   public SkeletonClothingLayer(RenderLayerParent<S, M> renderer, EntityModelSet models, ModelLayerLocation layerLocation, Identifier clothesLocation) {
++      super(renderer);
++      this.clothesLocation = clothesLocation;
++      this.layerModel = new SkeletonModel<>(models.bakeLayer(layerLocation));
++   }
+ 
+-    public void submit(
+-        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
+-    ) {
+-        coloredCutoutModelCopyLayerRender(this.layerModel, this.clothesLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
+-    }
+-}
+\ No newline at end of file
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
++      coloredCutoutModelCopyLayerRender(this.layerModel, this.clothesLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
++   }
++}

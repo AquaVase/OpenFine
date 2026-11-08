@@ -1,0 +1,101 @@
+--- a/net/minecraft/client/renderer/rendertype/PreparedRenderType.java
++++ b/net/minecraft/client/renderer/rendertype/PreparedRenderType.java
+@@ -14,50 +14,59 @@
+ import java.util.Optional;
+ import java.util.OptionalDouble;
+ import net.minecraft.client.renderer.StagedVertexBuffer;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public record PreparedRenderType(
+-    RenderPipeline pipeline, OutputTarget outputTarget, GpuBufferSlice dynamicTransforms, ScissorState scissorState, List<PreparedRenderType.Texture> textures
++   RenderPipeline pipeline,
++   OutputTarget outputTarget,
++   GpuBufferSlice dynamicTransforms,
++   ScissorState scissorState,
++   List<PreparedRenderType.Texture> textures,
++   RenderType renderType
+ ) {
+-    public void drawFromBuffer(final StagedVertexBuffer.ExecuteInfo info) {
+-        this.drawFromBuffer(info.vertexBuffer(), info.indexBuffer(), info.indexType(), info.baseVertex(), info.firstIndex(), info.indexCount());
+-    }
++   public PreparedRenderType(
++      RenderPipeline pipeline,
++      OutputTarget outputTarget,
++      GpuBufferSlice dynamicTransforms,
++      ScissorState scissorState,
++      List<PreparedRenderType.Texture> textures
++   ) {
++      this(pipeline, outputTarget, dynamicTransforms, scissorState, textures, null);
++   }
+ 
+-    public void drawFromBuffer(
+-        final GpuBuffer vertexBuffer, final GpuBuffer indexBuffer, final IndexType indexType, final int baseVertex, final int firstIndex, final int indexCount
+-    ) {
+-        RenderTarget renderTarget = this.outputTarget.getRenderTarget();
+-        GpuTextureView colorTexture = RenderSystem.outputColorTextureOverride != null
+-            ? RenderSystem.outputColorTextureOverride
+-            : renderTarget.getColorTextureView();
+-        GpuTextureView depthTexture = renderTarget.useDepth
+-            ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : renderTarget.getDepthTextureView())
+-            : null;
++   public void drawFromBuffer(StagedVertexBuffer.ExecuteInfo info) {
++      this.drawFromBuffer(info.vertexBuffer(), info.indexBuffer(), info.indexType(), info.baseVertex(), info.firstIndex(), info.indexCount());
++   }
+ 
+-        try (RenderPass renderPass = RenderSystem.getDevice()
+-                .createCommandEncoder()
+-                .createRenderPass(() -> "Immediate draw with " + this.pipeline, colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
+-            renderPass.setPipeline(this.pipeline);
+-            if (this.scissorState.enabled()) {
+-                renderPass.enableScissor(this.scissorState.x(), this.scissorState.y(), this.scissorState.width(), this.scissorState.height());
+-            }
++   public void drawFromBuffer(GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int baseVertex, int firstIndex, int indexCount) {
++      RenderTarget renderTarget = this.outputTarget.getRenderTarget();
++      GpuTextureView colorTexture = RenderSystem.outputColorTextureOverride != null
++         ? RenderSystem.outputColorTextureOverride
++         : renderTarget.getColorTextureView();
++      GpuTextureView depthTexture = renderTarget.useDepth
++         ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : renderTarget.getDepthTextureView())
++         : null;
+ 
+-            RenderSystem.bindDefaultUniforms(renderPass);
+-            renderPass.setUniform("DynamicTransforms", this.dynamicTransforms);
+-            renderPass.setVertexBuffer(0, vertexBuffer.slice());
++      try (RenderPass renderPass = RenderSystem.getDevice()
++            .createCommandEncoder()
++            .createRenderPass(() -> "RT: " + this.pipeline, colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
++         renderPass.setPipeline(this.pipeline);
++         if (this.scissorState.enabled()) {
++            renderPass.enableScissor(this.scissorState.x(), this.scissorState.y(), this.scissorState.width(), this.scissorState.height());
++         }
+ 
+-            for (PreparedRenderType.Texture texture : this.textures) {
+-                renderPass.bindTexture(texture.name, texture.textureView, texture.sampler);
+-            }
++         RenderSystem.bindDefaultUniforms(renderPass);
++         renderPass.setUniform("DynamicTransforms", this.dynamicTransforms);
++         renderPass.setVertexBuffer(0, vertexBuffer.slice());
+ 
+-            renderPass.setIndexBuffer(indexBuffer, indexType);
+-            renderPass.drawIndexed(indexCount, 1, firstIndex, baseVertex, 0);
+-        }
+-    }
++         for (PreparedRenderType.Texture texture : this.textures) {
++            renderPass.bindTexture(texture.name, texture.textureView, texture.sampler);
++         }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record Texture(String name, GpuTextureView textureView, GpuSampler sampler) {
+-    }
+-}
+\ No newline at end of file
++         renderPass.setIndexBuffer(indexBuffer, indexType);
++         renderPass.drawIndexed(indexCount, 1, firstIndex, baseVertex, 0);
++      }
++   }
++
++   public record Texture(String name, GpuTextureView textureView, GpuSampler sampler) {
++   }
++}

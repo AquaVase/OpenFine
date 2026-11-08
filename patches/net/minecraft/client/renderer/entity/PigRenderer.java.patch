@@ -1,0 +1,144 @@
+--- a/net/minecraft/client/renderer/entity/PigRenderer.java
++++ b/net/minecraft/client/renderer/entity/PigRenderer.java
+@@ -9,70 +9,88 @@
+ import net.minecraft.client.model.animal.pig.PigModel;
+ import net.minecraft.client.model.geom.ModelLayers;
+ import net.minecraft.client.renderer.SubmitNodeCollector;
++import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
+ import net.minecraft.client.renderer.entity.layers.SimpleEquipmentLayer;
+ import net.minecraft.client.renderer.entity.state.PigRenderState;
+ import net.minecraft.client.renderer.state.level.CameraRenderState;
+ import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
+-import net.minecraft.client.resources.model.EquipmentClientInfo;
++import net.minecraft.client.resources.model.EquipmentClientInfo.LayerType;
+ import net.minecraft.resources.Identifier;
+ import net.minecraft.world.entity.EquipmentSlot;
+ import net.minecraft.world.entity.animal.pig.Pig;
+-import net.minecraft.world.entity.animal.pig.PigVariant;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.minecraft.world.entity.animal.pig.PigVariant.ModelType;
++import net.optifine.entity.model.ModelPairUtils;
++import net.optifine.entity.model.PigType;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class PigRenderer extends MobRenderer<Pig, PigRenderState, PigModel> {
+-    private final Map<PigVariant.ModelType, AdultAndBabyModelPair<PigModel>> models;
++   private final Map<ModelType, AdultAndBabyModelPair<PigModel>> models;
++   private AdultAndBabyModelPair<PigModel> warmModels;
++   private boolean customModels;
+ 
+-    public PigRenderer(final EntityRendererProvider.Context context) {
+-        super(context, new PigModel(context.bakeLayer(ModelLayers.PIG)), 0.7F);
+-        this.models = bakeModels(context);
+-        this.addLayer(
+-            new SimpleEquipmentLayer<>(
+-                this,
+-                context.getEquipmentRenderer(),
+-                EquipmentClientInfo.LayerType.PIG_SADDLE,
+-                state -> state.saddle,
+-                new PigModel(context.bakeLayer(ModelLayers.PIG_SADDLE)),
+-                null
+-            )
+-        );
+-    }
++   public PigRenderer(Context context) {
++      super(context, new PigModel(context.bakeLayer(ModelLayers.PIG)), 0.7F);
++      this.models = bakeModels(context);
++      this.addLayer(
++         new SimpleEquipmentLayer<>(
++            this, context.getEquipmentRenderer(), LayerType.PIG_SADDLE, state -> state.saddle, new PigModel(context.bakeLayer(ModelLayers.PIG_SADDLE)), null
++         )
++      );
++      this.warmModels = this.models.get(ModelType.NORMAL);
++   }
+ 
+-    private static Map<PigVariant.ModelType, AdultAndBabyModelPair<PigModel>> bakeModels(final EntityRendererProvider.Context context) {
+-        return Maps.newEnumMap(
+-            Map.of(
+-                PigVariant.ModelType.NORMAL,
+-                new AdultAndBabyModelPair<>(new PigModel(context.bakeLayer(ModelLayers.PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY))),
+-                PigVariant.ModelType.COLD,
+-                new AdultAndBabyModelPair<>(
+-                    new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY))
+-                )
+-            )
+-        );
+-    }
++   private static Map<ModelType, AdultAndBabyModelPair<PigModel>> bakeModels(Context context) {
++      return Maps.newEnumMap(
++         Map.of(
++            ModelType.NORMAL,
++            new AdultAndBabyModelPair<>(new PigModel(context.bakeLayer(ModelLayers.PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY))),
++            ModelType.COLD,
++            new AdultAndBabyModelPair<>(new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY)))
++         )
++      );
++   }
+ 
+-    public void submit(final PigRenderState state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
+-        if (state.variant != null) {
+-            this.model = this.models.get(state.variant.modelAndTexture().model()).getModel(state.isBaby);
+-            super.submit(state, poseStack, submitNodeCollector, camera);
+-        }
+-    }
++   public void submit(PigRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++      if (state.variant != null) {
++         this.model = this.models.get(state.variant.modelAndTexture().model()).getModel(state.isBaby);
++         if (this.customModels && state.variant.modelAndTexture().asset().id().getPath().endsWith("warm_pig")) {
++            this.model = this.warmModels.getModel(state.isBaby);
++         }
+ 
+-    public Identifier getTextureLocation(final PigRenderState state) {
+-        return state.variant == null
+-            ? MissingTextureAtlasSprite.getLocation()
+-            : (state.isBaby ? state.variant.babyTexture().texturePath() : state.variant.modelAndTexture().asset().texturePath());
+-    }
++         super.submit(state, poseStack, submitNodeCollector, camera);
++      }
++   }
+ 
+-    public PigRenderState createRenderState() {
+-        return new PigRenderState();
+-    }
++   public Identifier getTextureLocation(PigRenderState state) {
++      return state.variant == null
++         ? MissingTextureAtlasSprite.getLocation()
++         : (state.isBaby ? state.variant.babyTexture().texturePath() : state.variant.modelAndTexture().asset().texturePath());
++   }
+ 
+-    public void extractRenderState(final Pig entity, final PigRenderState state, final float partialTicks) {
+-        super.extractRenderState(entity, state, partialTicks);
+-        state.saddle = entity.getItemBySlot(EquipmentSlot.SADDLE).copy();
+-        state.variant = entity.getVariant().value();
+-    }
+-}
+\ No newline at end of file
++   public PigRenderState createRenderState() {
++      return new PigRenderState();
++   }
++
++   public void extractRenderState(Pig entity, PigRenderState state, float partialTicks) {
++      super.extractRenderState(entity, state, partialTicks);
++      state.saddle = entity.getItemBySlot(EquipmentSlot.SADDLE).copy();
++      state.variant = entity.getVariant().value();
++   }
++
++   public void setModel(PigType typeIn, boolean babyIn, PigModel modelIn) {
++      if (typeIn == PigType.NORMAL) {
++         this.setModel(ModelType.NORMAL, babyIn, modelIn);
++      } else if (typeIn == PigType.COLD) {
++         this.setModel(ModelType.COLD, babyIn, modelIn);
++      } else if (typeIn == PigType.WARM) {
++         this.warmModels = ModelPairUtils.updateModel(this.warmModels, babyIn, modelIn);
++      }
++
++      this.customModels = true;
++   }
++
++   private void setModel(ModelType typeIn, boolean babyIn, PigModel modelIn) {
++      AdultAndBabyModelPair<PigModel> pair = this.models.get(typeIn);
++      AdultAndBabyModelPair<PigModel> pair2 = ModelPairUtils.updateModel(pair, babyIn, modelIn);
++      this.models.put(typeIn, pair2);
++   }
++}

@@ -1,0 +1,20 @@
+--- /dev/null
++++ b/net/minecraftforge/client/event/ComputeFovModifierEvent.java
+@@ -0,0 +1,17 @@
++package net.minecraftforge.client.event;
++
++import net.minecraftforge.eventbus.api.event.MutableEvent;
++
++public class ComputeFovModifierEvent extends MutableEvent {
++   public float getFovModifier() {
++      throw new UnsupportedOperationException();
++   }
++
++   public float getScale() {
++      throw new UnsupportedOperationException();
++   }
++
++   public float getNewFovModifier() {
++      throw new UnsupportedOperationException();
++   }
++}

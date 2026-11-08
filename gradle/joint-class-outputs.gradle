@@ -1,0 +1,76 @@
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.Opcodes
+
+buildscript {
+    repositories { mavenCentral() }
+    dependencies { classpath 'org.ow2.asm:asm:9.10.1' }
+}
+
+// SourceFile identifies the source of inner, anonymous and extra top-level classes.
+def modules = []
+def compiler = tasks.named('compileJava', JavaCompile)
+def distribute = tasks.register('distributeJointClasses') {
+    group = 'build'
+    description = 'Assign jointly compiled classes to the module containing their source.'
+    dependsOn compiler
+    inputs.dir(compiler.flatMap { it.destinationDirectory }).withPathSensitivity(PathSensitivity.RELATIVE)
+    doLast {
+        def owners = [:]
+        def assigned = modules.collectEntries { [(it.path): []] }
+        modules.each { module ->
+            module.sourceSets.main.allJava.visit { source ->
+                if (!source.directory) {
+                    def path = source.relativePath.pathString
+                    def previous = owners.put(path, module)
+                    if (previous != null && previous != module) {
+                        throw new GradleException("Duplicate joint source ${path}: ${previous.path}, ${module.path}")
+                    }
+                }
+            }
+        }
+        def compiled = compiler.get().destinationDirectory.get().asFile
+        fileTree(compiled).matching { include '**/*.class' }.visit { entry ->
+            if (!entry.directory) {
+                def reader = new ClassReader(entry.file.bytes)
+                String sourceFile = null
+                reader.accept(new ClassVisitor(Opcodes.ASM9) {
+                    @Override
+                    void visitSource(String source, String debug) { sourceFile = source }
+                }, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES)
+                def separator = reader.className.lastIndexOf('/')
+                def sourcePath = reader.className.substring(0, separator + 1) + sourceFile
+                def owner = owners[sourcePath]
+                if (owner == null) {
+                    throw new GradleException("No source module for ${entry.relativePath} (${sourcePath})")
+                }
+                assigned[owner.path].add(entry.relativePath.pathString)
+            }
+        }
+        // Validate every assignment before syncing, and remove stale module outputs.
+        modules.each { module ->
+            project.sync { spec ->
+                spec.from(compiled) { classes ->
+                    if (assigned[module.path].isEmpty()) { classes.exclude '**' }
+                    else { classes.include assigned[module.path] }
+                }
+                spec.into module.layout.buildDirectory.dir('classes/java/main')
+            }
+            logger.lifecycle("${module.path}: ${assigned[module.path].size()} classes assigned by source")
+        }
+    }
+}
+
+ext.registerJointClassOutput = { Project module ->
+    modules.add(module)
+    def moduleIndex = modules.size()
+    def output = module.layout.buildDirectory.dir('classes/java/main')
+    distribute.configure {
+        inputs.files(module.sourceSets.main.allJava).withPropertyName("sources${moduleIndex}")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs.property("module${moduleIndex}", module.path)
+        outputs.dir(output)
+    }
+    module.sourceSets.main.output.classesDirs.setFrom(module.files(output).builtBy(distribute))
+    module.tasks.named('classes') { dependsOn distribute }
+}

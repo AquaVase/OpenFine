@@ -1,0 +1,7 @@
+--- /dev/null
++++ b/net/minecraftforge/client/extensions/IForgeGuiGraphicsExtractor.java
+@@ -0,0 +1,4 @@
++package net.minecraftforge.client.extensions;
++
++public interface IForgeGuiGraphicsExtractor {
++}

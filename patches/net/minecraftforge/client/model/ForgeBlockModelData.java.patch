@@ -1,0 +1,14 @@
+--- /dev/null
++++ b/net/minecraftforge/client/model/ForgeBlockModelData.java
+@@ -0,0 +1,11 @@
++package net.minecraftforge.client.model;
++
++import com.mojang.math.Transformation;
++import java.util.Map;
++import java.util.Optional;
++import net.minecraft.resources.Identifier;
++
++public record ForgeBlockModelData(
++   Optional<Transformation> transform, Optional<Identifier> renderType, Optional<Identifier> renderTypeFast, Optional<Map<String, Boolean>> visibility
++) {
++}

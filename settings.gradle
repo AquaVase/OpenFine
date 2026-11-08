@@ -1,0 +1,21 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.creeperhost.net' }
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+        gradlePluginPortal()
+        maven { url = 'https://jitpack.io' }
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id in ['patchgen', 'patchgen.settings']) {
+                useModule('com.github.AquaVase.patchgen:patchgen:-SNAPSHOT')
+            }
+        }
+    }
+}
+
+plugins { id 'patchgen.settings' }
+
+rootProject.name = 'OpenFine'
+include 'core', 'installer'

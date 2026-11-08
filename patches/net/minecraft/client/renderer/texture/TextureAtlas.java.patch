@@ -1,0 +1,1238 @@
+--- a/net/minecraft/client/renderer/texture/TextureAtlas.java
++++ b/net/minecraft/client/renderer/texture/TextureAtlas.java
+@@ -4,6 +4,8 @@
+ import com.google.common.collect.ImmutableList.Builder;
+ import com.mojang.blaze3d.GpuFormat;
+ import com.mojang.blaze3d.buffers.GpuBuffer;
++import com.mojang.blaze3d.buffers.GpuBufferSlice;
++import com.mojang.blaze3d.opengl.GlStateManager;
+ import com.mojang.blaze3d.platform.TextureUtil;
+ import com.mojang.blaze3d.systems.GpuDevice;
+ import com.mojang.blaze3d.systems.RenderPass;
+@@ -13,316 +15,982 @@
+ import com.mojang.blaze3d.textures.GpuTexture;
+ import com.mojang.blaze3d.textures.GpuTextureView;
+ import com.mojang.logging.LogUtils;
++import java.awt.Dimension;
+ import java.io.IOException;
++import java.io.InputStream;
+ import java.io.Writer;
+ import java.nio.ByteBuffer;
+ import java.nio.file.Files;
+ import java.nio.file.Path;
+ import java.util.ArrayList;
++import java.util.Collection;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.LinkedHashMap;
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
+ import java.util.Objects;
+ import java.util.Optional;
++import java.util.Set;
++import java.util.TreeSet;
+ import java.util.Map.Entry;
+ import net.minecraft.SharedConstants;
+ import net.minecraft.client.renderer.RenderPipelines;
++import net.minecraft.client.resources.metadata.animation.FrameSize;
+ import net.minecraft.resources.Identifier;
++import net.minecraft.server.packs.resources.Resource;
++import net.minecraft.server.packs.resources.ResourceManager;
+ import net.minecraft.util.Mth;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.Config;
++import net.optifine.EmissiveTextures;
++import net.optifine.SmartAnimations;
++import net.optifine.TextureProperties;
++import net.optifine.reflect.Reflector;
++import net.optifine.shaders.ITextureFormat;
++import net.optifine.shaders.Shaders;
++import net.optifine.shaders.ShadersTex;
++import net.optifine.shaders.ShadersTextureType;
++import net.optifine.texture.ColorBlenderLinear;
++import net.optifine.texture.IColorBlender;
++import net.optifine.util.CounterInt;
++import net.optifine.util.TextureUtils;
+ import org.lwjgl.system.MemoryUtil;
+ import org.slf4j.Logger;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class TextureAtlas extends AbstractTexture implements TickableTexture, Dumpable {
+-    private static final Logger LOGGER = LogUtils.getLogger();
+-    @Deprecated
+-    public static final Identifier LOCATION_BLOCKS = Identifier.withDefaultNamespace("textures/atlas/blocks.png");
+-    @Deprecated
+-    public static final Identifier LOCATION_ITEMS = Identifier.withDefaultNamespace("textures/atlas/items.png");
+-    @Deprecated
+-    public static final Identifier LOCATION_PARTICLES = Identifier.withDefaultNamespace("textures/atlas/particles.png");
+-    private List<TextureAtlasSprite> sprites = List.of();
+-    private List<SpriteContents.AnimationState> animatedTexturesStates = List.of();
+-    private Map<Identifier, TextureAtlasSprite> texturesByName = Map.of();
+-    private @Nullable TextureAtlasSprite missingSprite;
+-    private final Identifier location;
+-    private final int maxSupportedTextureSize;
+-    private int width;
+-    private int height;
+-    private int maxMipLevel;
+-    private int mipLevelCount;
+-    private GpuTextureView[] mipViews = new GpuTextureView[0];
+-    private @Nullable GpuBuffer spriteUbos;
++   private static final Logger LOGGER = LogUtils.getLogger();
++   @Deprecated
++   public static final Identifier LOCATION_BLOCKS = Identifier.withDefaultNamespace("textures/atlas/blocks.png");
++   @Deprecated
++   public static final Identifier LOCATION_ITEMS = Identifier.withDefaultNamespace("textures/atlas/items.png");
++   @Deprecated
++   public static final Identifier LOCATION_PARTICLES = Identifier.withDefaultNamespace("textures/atlas/particles.png");
++   private List<TextureAtlasSprite> sprites = List.of();
++   private List<SpriteContents.AnimationState> animatedTexturesStates = List.of();
++   private Map<Identifier, TextureAtlasSprite> texturesByName = Map.of();
++   private TextureAtlasSprite missingSprite;
++   private final Identifier location;
++   private final int maxSupportedTextureSize;
++   private int width;
++   private int height;
++   private int maxMipLevel;
++   private int mipLevelCount;
++   private GpuTextureView[] mipViews = new GpuTextureView[0];
++   private GpuBuffer spriteUbos;
++   private Map<Identifier, TextureAtlasSprite> mapRegisteredSprites = new LinkedHashMap<>();
++   private Map<Identifier, TextureAtlasSprite> mapMissingSprites = new LinkedHashMap<>();
++   private TextureAtlasSprite[] iconGrid = null;
++   private int iconGridSize = -1;
++   private int iconGridCountX = -1;
++   private int iconGridCountY = -1;
++   private double iconGridSizeU = -1.0;
++   private double iconGridSizeV = -1.0;
++   private CounterInt counterIndexInMap = new CounterInt(0);
++   public int atlasWidth = 0;
++   public int atlasHeight = 0;
++   public int mipmapLevel = 0;
++   private List<SpriteContents.AnimationState> activeAnimations = new ArrayList<>();
++   private int countAnimationsActive;
++   private int frameCountAnimations;
++   private boolean terrain;
++   private boolean items;
++   private ITextureFormat textureFormat;
++   private GpuTextureView[] mipViewsNormal = new GpuTextureView[0];
++   private GpuTextureView[] mipViewsSpecular = new GpuTextureView[0];
+ 
+-    public TextureAtlas(final Identifier location) {
+-        this.location = location;
+-        this.maxSupportedTextureSize = RenderSystem.getDevice().getDeviceInfo().limits().maxTextureSizeForFormat(GpuFormat.RGBA8_UNORM);
+-    }
++   public TextureAtlas(Identifier location) {
++      this.location = location;
++      this.maxSupportedTextureSize = RenderSystem.getDevice().getDeviceInfo().limits().maxTextureSizeForFormat(GpuFormat.RGBA8_UNORM);
++      this.terrain = location.equals(LOCATION_BLOCKS);
++      this.items = location.equals(LOCATION_ITEMS);
++      if (this.terrain) {
++         Config.setTextureMapBlocks(this);
++      }
+ 
+-    private void createTexture(final int newWidth, final int newHeight, final int newMipLevel) {
+-        LOGGER.info("Created: {}x{}x{} {}-atlas", newWidth, newHeight, newMipLevel, this.location);
+-        GpuDevice device = RenderSystem.getDevice();
+-        this.releaseTextures();
+-        this.texture = device.createTexture(this.location::toString, 15, GpuFormat.RGBA8_UNORM, newWidth, newHeight, 1, newMipLevel + 1);
+-        this.textureView = device.createTextureView(this.texture);
+-        this.width = newWidth;
+-        this.height = newHeight;
+-        this.maxMipLevel = newMipLevel;
+-        this.mipLevelCount = newMipLevel + 1;
+-        this.mipViews = new GpuTextureView[this.mipLevelCount];
++      if (this.items) {
++         Config.setTextureMapItems(this);
++      }
++   }
+ 
+-        for (int level = 0; level <= this.maxMipLevel; level++) {
+-            this.mipViews[level] = device.createTextureView(this.texture, level, 1);
+-        }
+-    }
++   private void createTexture(int newWidth, int newHeight, int newMipLevel) {
++      LOGGER.info("Created: {}x{}x{} {}-atlas", newWidth, newHeight, newMipLevel, this.location);
++      GpuDevice device = RenderSystem.getDevice();
++      this.releaseTextures();
++      this.texture = device.createTexture(this.location::toString, 15, GpuFormat.RGBA8_UNORM, newWidth, newHeight, 1, newMipLevel + 1);
++      this.textureView = device.createTextureView(this.texture);
++      this.width = newWidth;
++      this.height = newHeight;
++      this.maxMipLevel = newMipLevel;
++      this.mipLevelCount = newMipLevel + 1;
++      this.mipViews = new GpuTextureView[this.mipLevelCount];
++      if (Config.isShaders()) {
++         if (Shaders.configNormalMap) {
++            this.mipViewsNormal = new GpuTextureView[this.mipLevelCount];
++         }
+ 
+-    public void upload(final SpriteLoader.Preparations preparations) {
+-        this.createTexture(preparations.width(), preparations.height(), preparations.mipLevel());
+-        this.clearTextureData();
+-        this.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
+-        this.texturesByName = Map.copyOf(preparations.regions());
+-        this.missingSprite = this.texturesByName.get(MissingTextureAtlasSprite.getLocation());
+-        if (this.missingSprite == null) {
+-            throw new IllegalStateException("Atlas '" + this.location + "' (" + this.texturesByName.size() + " sprites) has no missing texture sprite");
+-        }
++         if (Shaders.configSpecularMap) {
++            this.mipViewsSpecular = new GpuTextureView[this.mipLevelCount];
++         }
++      }
+ 
+-        Builder<TextureAtlasSprite> spritesBuilder = ImmutableList.builder();
+-        int animatedSpriteCount = 0;
++      for (int level = 0; level <= this.maxMipLevel; level++) {
++         this.mipViews[level] = device.createTextureView(this.texture, level, 1);
++         if (Config.isShaders()) {
++            if (Shaders.configNormalMap) {
++               this.mipViewsNormal[level] = device.createTextureView(this.getMultiTexID().normTex, level, 1);
++            }
+ 
+-        for (TextureAtlasSprite sprite : preparations.regions().values()) {
+-            spritesBuilder.add(sprite);
++            if (Shaders.configSpecularMap) {
++               this.mipViewsSpecular[level] = device.createTextureView(this.getMultiTexID().specTex, level, 1);
++            }
++         }
++      }
++
++      this.texture.setParentTexture(this);
++   }
++
++   public void upload(SpriteLoader.Preparations preparations) {
++      this.createTexture(preparations.width(), preparations.height(), preparations.mipLevel());
++      this.atlasWidth = preparations.width();
++      this.atlasHeight = preparations.height();
++      this.mipmapLevel = preparations.mipLevel();
++      if (Config.isShaders()) {
++         ShadersTex.allocateTextureMapNS(this.mipmapLevel, this.atlasWidth, this.atlasHeight, this);
++      }
++
++      this.clearTextureData();
++      this.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
++      this.texturesByName = Map.copyOf(preparations.regions());
++      this.missingSprite = this.texturesByName.get(MissingTextureAtlasSprite.getLocation());
++      if (this.missingSprite == null) {
++         throw new IllegalStateException("Atlas '" + this.location + "' (" + this.texturesByName.size() + " sprites) has no missing texture sprite");
++      }
++
++      Builder<TextureAtlasSprite> spritesBuilder = ImmutableList.builder();
++      int animatedSpriteCount = 0;
++
++      for (TextureAtlasSprite sprite : preparations.regions().values()) {
++         spritesBuilder.add(sprite);
++         if (sprite.isAnimated()) {
++            animatedSpriteCount++;
++         }
++      }
++
++      this.sprites = spritesBuilder.build();
++      if (animatedSpriteCount > 0) {
++         List<SpriteContents.AnimationState> animationStates = new ArrayList<>();
++         int spriteUboSize = Mth.roundToward(SpriteContents.UBO_SIZE, RenderSystem.getDevice().getDeviceInfo().limits().minUniformOffsetAlignment());
++         int uboBlockSize = spriteUboSize * this.mipLevelCount;
++         ByteBuffer spriteUboBuffer = MemoryUtil.memAlloc(animatedSpriteCount * uboBlockSize);
++         int animationIndex = 0;
++
++         for (TextureAtlasSprite sprite : this.sprites) {
++            sprite.setTextureAtlas(this);
+             if (sprite.isAnimated()) {
+-                animatedSpriteCount++;
++               sprite.uploadSpriteUbo(spriteUboBuffer, animationIndex * uboBlockSize, this.maxMipLevel, this.width, this.height, spriteUboSize);
++               animationIndex++;
+             }
+-        }
++         }
+ 
+-        this.sprites = spritesBuilder.build();
+-        if (animatedSpriteCount > 0) {
+-            Builder<SpriteContents.AnimationState> animationStates = ImmutableList.builder();
+-            int spriteUboSize = Mth.roundToward(SpriteContents.UBO_SIZE, RenderSystem.getDevice().getDeviceInfo().limits().minUniformOffsetAlignment());
+-            int uboBlockSize = spriteUboSize * this.mipLevelCount;
+-            ByteBuffer spriteUboBuffer = MemoryUtil.memAlloc(animatedSpriteCount * uboBlockSize);
+-            int animationIndex = 0;
++         GpuBuffer spriteUbos = RenderSystem.getDevice().createBuffer(() -> this.location + " sprite UBOs", 128, spriteUboBuffer);
++         animationIndex = 0;
+ 
+-            for (TextureAtlasSprite sprite : this.sprites) {
+-                if (sprite.isAnimated()) {
+-                    sprite.uploadSpriteUbo(spriteUboBuffer, animationIndex * uboBlockSize, this.maxMipLevel, this.width, this.height, spriteUboSize);
+-                    animationIndex++;
+-                }
++         for (TextureAtlasSprite sprite : this.sprites) {
++            sprite.setTextureAtlas(this);
++            if (sprite.isAnimated()) {
++               GpuBufferSlice uboBufferSlice = spriteUbos.slice(animationIndex * uboBlockSize, uboBlockSize);
++               SpriteContents.AnimationState animationState = sprite.createAnimationState(uboBufferSlice, spriteUboSize);
++               animationIndex++;
++               if (animationState != null) {
++                  sprite.setTicker(animationState);
++                  sprite.setAnimationIndex(animationStates.size());
++                  animationStates.add(animationState);
++                  TextureAtlasSprite spriteNormal = sprite.spriteNormal;
++                  if (spriteNormal != null) {
++                     SpriteContents.AnimationState animState = spriteNormal.createAnimationState(uboBufferSlice, spriteUboSize);
++                     if (animState != null) {
++                        spriteNormal.setTicker(animState);
++                        spriteNormal.setAnimationIndex(animationStates.size());
++                     }
++                  }
++
++                  TextureAtlasSprite spriteSpecular = sprite.spriteSpecular;
++                  if (spriteSpecular != null) {
++                     SpriteContents.AnimationState animState = spriteSpecular.createAnimationState(uboBufferSlice, spriteUboSize);
++                     if (animState != null) {
++                        spriteSpecular.setTicker(animState);
++                        spriteSpecular.setAnimationIndex(animationStates.size());
++                     }
++                  }
++               }
+             }
++         }
+ 
+-            GpuBuffer spriteUbos = RenderSystem.getDevice().createBuffer(() -> this.location + " sprite UBOs", 128, spriteUboBuffer);
+-            animationIndex = 0;
++         this.spriteUbos = spriteUbos;
++         this.animatedTexturesStates = animationStates;
++         MemoryUtil.memFree(spriteUboBuffer);
++      }
+ 
+-            for (TextureAtlasSprite sprite : this.sprites) {
+-                if (sprite.isAnimated()) {
+-                    SpriteContents.AnimationState animationState = sprite.createAnimationState(
+-                        spriteUbos.slice(animationIndex * uboBlockSize, uboBlockSize), spriteUboSize
+-                    );
+-                    animationIndex++;
+-                    if (animationState != null) {
+-                        animationStates.add(animationState);
+-                    }
+-                }
++      this.uploadInitialContents();
++      TextureUtils.refreshCustomSprites(this);
++      Config.log("Animated sprites: " + this.animatedTexturesStates.size());
++      if (Config.isMultiTexture()) {
++         for (TextureAtlasSprite tas : preparations.regions().values()) {
++            uploadMipmapsSingle(tas);
++            if (tas.spriteNormal != null) {
++               uploadMipmapsSingle(tas.spriteNormal);
+             }
+ 
+-            this.spriteUbos = spriteUbos;
+-            this.animatedTexturesStates = animationStates.build();
+-            MemoryUtil.memFree(spriteUboBuffer);
+-        }
++            if (tas.spriteSpecular != null) {
++               uploadMipmapsSingle(tas.spriteSpecular);
++            }
++         }
+ 
+-        this.uploadInitialContents();
+-        if (SharedConstants.DEBUG_DUMP_TEXTURE_ATLAS) {
+-            Path dumpDir = TextureUtil.getDebugTexturePath();
++         GlStateManager._bindTexture(this.getGlTextureId());
++      }
+ 
+-            try {
+-                Files.createDirectories(dumpDir);
+-                this.dumpContents(this.location, dumpDir);
+-            } catch (Exception e) {
+-                LOGGER.warn("Failed to dump atlas contents to {}", dumpDir);
++      if (Config.isShaders()) {
++         if (Shaders.configNormalMap) {
++            this.uploadInitialContents(ShadersTextureType.NORMAL);
++         }
++
++         if (Shaders.configSpecularMap) {
++            this.uploadInitialContents(ShadersTextureType.SPECULAR);
++         }
++      }
++
++      Reflector.callVoid(Reflector.ForgeHooksClient_onTextureStitchedPost, this);
++      this.updateIconGrid(this.atlasWidth, this.atlasHeight);
++      if (Config.equals(System.getProperty("saveTextureMap"), "true")) {
++         Config.dbg("Exporting texture map: " + this.location);
++         TextureUtils.saveGlTexture(
++            "debug/" + this.location.getPath().replaceAll("/", "_"), this.getGlTextureId(), this.mipmapLevel, this.atlasWidth, this.atlasHeight
++         );
++         if (Config.isShaders()) {
++            if (Shaders.configNormalMap) {
++               TextureUtils.saveGlTexture(
++                  "debug/" + this.location.getPath().replaceAll("/", "_").replace(".png", "_n.png"),
++                  this.getMultiTexID().norm,
++                  this.mipmapLevel,
++                  this.atlasWidth,
++                  this.atlasHeight
++               );
+             }
+-        }
+-    }
+ 
+-    private void uploadInitialContents() {
+-        GpuDevice device = RenderSystem.getDevice();
+-        int spriteUboSize = Mth.roundToward(SpriteContents.UBO_SIZE, device.getDeviceInfo().limits().minUniformOffsetAlignment());
+-        int uboBlockSize = spriteUboSize * this.mipLevelCount;
+-        GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST, true);
+-        List<TextureAtlasSprite> staticSprites = this.sprites.stream().filter(s -> !s.isAnimated()).toList();
+-        List<GpuTextureView[]> scratchTextures = new ArrayList<>();
+-        ByteBuffer buffer = MemoryUtil.memAlloc(staticSprites.size() * uboBlockSize);
++            if (Shaders.configSpecularMap) {
++               TextureUtils.saveGlTexture(
++                  "debug/" + this.location.getPath().replaceAll("/", "_").replace(".png", "_s.png"),
++                  this.getMultiTexID().spec,
++                  this.mipmapLevel,
++                  this.atlasWidth,
++                  this.atlasHeight
++               );
++            }
+ 
+-        for (int i = 0; i < staticSprites.size(); i++) {
+-            TextureAtlasSprite sprite = staticSprites.get(i);
+-            sprite.uploadSpriteUbo(buffer, i * uboBlockSize, this.maxMipLevel, this.width, this.height, spriteUboSize);
+-            GpuTexture scratchTexture = device.createTexture(
+-                () -> sprite.contents().name().toString(),
+-                5,
+-                GpuFormat.RGBA8_UNORM,
+-                sprite.contents().width(),
+-                sprite.contents().height(),
+-                1,
+-                this.mipLevelCount
+-            );
+-            GpuTextureView[] views = new GpuTextureView[this.mipLevelCount];
++            GlStateManager._bindTexture(this.getGlTextureId());
++         }
++      }
+ 
+-            for (int level = 0; level <= this.maxMipLevel; level++) {
+-                sprite.uploadFirstFrame(scratchTexture, level);
+-                views[level] = device.createTextureView(scratchTexture);
++      if (SharedConstants.DEBUG_DUMP_TEXTURE_ATLAS) {
++         Path dumpDir = TextureUtil.getDebugTexturePath();
++
++         try {
++            Files.createDirectories(dumpDir);
++            this.dumpContents(this.location, dumpDir);
++         } catch (Exception e) {
++            LOGGER.warn("Failed to dump atlas contents to {}", dumpDir);
++         }
++      }
++   }
++
++   private void uploadInitialContents() {
++      this.uploadInitialContents(null);
++   }
++
++   private void uploadInitialContents(ShadersTextureType spriteType) {
++      GpuDevice device = RenderSystem.getDevice();
++      int spriteUboSize = Mth.roundToward(SpriteContents.UBO_SIZE, device.getDeviceInfo().limits().minUniformOffsetAlignment());
++      int uboBlockSize = spriteUboSize * this.mipLevelCount;
++      GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST, true);
++      List<TextureAtlasSprite> staticSprites = this.sprites;
++      if (spriteType != null) {
++         staticSprites = this.sprites.stream().filter(sprite2In -> sprite2In.getSubSprite(spriteType) != null).toList();
++      }
++
++      List<GpuTextureView[]> scratchTextures = new ArrayList<>();
++      ByteBuffer buffer = MemoryUtil.memAlloc(staticSprites.size() * uboBlockSize);
++
++      for (int i = 0; i < staticSprites.size(); i++) {
++         TextureAtlasSprite sprite = staticSprites.get(i).getSubSprite(spriteType);
++         sprite.uploadSpriteUbo(buffer, i * uboBlockSize, this.maxMipLevel, this.width, this.height, spriteUboSize);
++         GpuTexture scratchTexture = device.createTexture(
++            () -> sprite.contents().name().toString(), 5, GpuFormat.RGBA8_UNORM, sprite.contents().width(), sprite.contents().height(), 1, this.mipLevelCount
++         );
++         GpuTextureView[] views = new GpuTextureView[this.mipLevelCount];
++
++         for (int level = 0; level <= this.maxMipLevel; level++) {
++            sprite.uploadFirstFrame(scratchTexture, level);
++            views[level] = device.createTextureView(scratchTexture);
++         }
++
++         scratchTextures.add(views);
++      }
++
++      GpuTextureView[] mipViewsUpload = this.getMipViews(spriteType);
++
++      try (GpuBuffer ubo = device.createBuffer(() -> "SpriteAnimationInfo", 128, buffer)) {
++         for (int level = 0; level < this.mipLevelCount; level++) {
++            try (RenderPass renderPass = RenderSystem.getDevice()
++                  .createCommandEncoder()
++                  .createRenderPass(() -> "Animate " + this.location, mipViewsUpload[level], Optional.empty())) {
++               RenderSystem.bindDefaultUniforms(renderPass);
++               renderPass.setPipeline(RenderPipelines.ANIMATE_SPRITE_BLIT);
++
++               for (int i = 0; i < staticSprites.size(); i++) {
++                  renderPass.bindTexture("Sprite", scratchTextures.get(i)[level], sampler);
++                  renderPass.setUniform("SpriteAnimationInfo", ubo.slice(i * uboBlockSize + level * spriteUboSize, SpriteContents.UBO_SIZE));
++                  renderPass.draw(6, 1, 0, 0);
++               }
+             }
++         }
++      }
+ 
+-            scratchTextures.add(views);
+-        }
++      for (GpuTextureView[] views : scratchTextures) {
++         for (GpuTextureView view : views) {
++            view.close();
++            view.texture().close();
++         }
++      }
+ 
+-        try (GpuBuffer ubo = device.createBuffer(() -> "SpriteAnimationInfo", 128, buffer)) {
+-            for (int level = 0; level < this.mipLevelCount; level++) {
+-                try (RenderPass renderPass = RenderSystem.getDevice()
+-                        .createCommandEncoder()
+-                        .createRenderPass(() -> "Animate " + this.location, this.mipViews[level], Optional.empty())) {
+-                    RenderSystem.bindDefaultUniforms(renderPass);
+-                    renderPass.setPipeline(RenderPipelines.ANIMATE_SPRITE_BLIT);
++      MemoryUtil.memFree(buffer);
++      this.uploadAnimationFrames();
++   }
+ 
+-                    for (int i = 0; i < staticSprites.size(); i++) {
+-                        renderPass.bindTexture("Sprite", scratchTextures.get(i)[level], sampler);
+-                        renderPass.setUniform("SpriteAnimationInfo", ubo.slice(i * uboBlockSize + level * spriteUboSize, SpriteContents.UBO_SIZE));
+-                        renderPass.draw(6, 1, 0, 0);
+-                    }
+-                }
++   public void preStitch(Set<Identifier> set, ResourceManager resourceManagerIn, int mipmapLevelIn) {
++      this.mipmapLevel = mipmapLevelIn;
++      Config.dbg("Pre-stitch: " + this.location);
++      this.textureFormat = TextureProperties.getTextureFormat();
++      this.mapRegisteredSprites.clear();
++      this.mapMissingSprites.clear();
++      this.counterIndexInMap.reset();
++      Config.dbg("Multitexture: " + Config.isMultiTexture());
++      TextureUtils.registerCustomSpriteLocations(this.location(), set);
++      TextureUtils.registerCustomSprites(this);
++      set.addAll(this.mapRegisteredSprites.keySet());
++      Set<Identifier> locsEmissive = newHashSet(set, this.mapRegisteredSprites.keySet());
++      EmissiveTextures.updateIcons(this, locsEmissive);
++      set.addAll(this.mapRegisteredSprites.keySet());
++      if (this.mipmapLevel >= 4) {
++         this.mipmapLevel = this.detectMaxMipmapLevel(set, resourceManagerIn);
++         Config.log("Mipmap levels: " + this.mipmapLevel);
++      }
++
++      int minSpriteSize = getMinSpriteSize(this.mipmapLevel);
++      this.iconGridSize = minSpriteSize;
++   }
++
++   private GpuTextureView[] getMipViews(ShadersTextureType spriteType) {
++      if (spriteType == ShadersTextureType.NORMAL) {
++         return this.mipViewsNormal;
++      } else {
++         return spriteType == ShadersTextureType.SPECULAR ? this.mipViewsSpecular : this.mipViews;
++      }
++   }
++
++   @Override
++   public void dumpContents(Identifier selfId, Path dir) throws IOException {
++      String outputId = selfId.toDebugFileName();
++      TextureUtil.writeAsPNG(dir, outputId, this.getTexture(), this.maxMipLevel, argb -> argb);
++      dumpSpriteNames(dir, outputId, this.texturesByName);
++   }
++
++   private static void dumpSpriteNames(Path dir, String outputId, Map<Identifier, TextureAtlasSprite> regions) {
++      Path outputPath = dir.resolve(outputId + ".txt");
++
++      try (Writer output = Files.newBufferedWriter(outputPath)) {
++         for (Entry<Identifier, TextureAtlasSprite> e : regions.entrySet().stream().sorted(Entry.comparingByKey()).toList()) {
++            TextureAtlasSprite value = e.getValue();
++            output.write(
++               String.format(
++                  Locale.ROOT, "%s\tx=%d\ty=%d\tw=%d\th=%d%n", e.getKey(), value.getX(), value.getY(), value.contents().width(), value.contents().height()
++               )
++            );
++         }
++      } catch (IOException e) {
++         LOGGER.warn("Failed to write file {}", outputPath, e);
++      }
++   }
++
++   public void cycleAnimationFrames() {
++      if (this.texture != null) {
++         for (SpriteContents.AnimationState animationState : this.animatedTexturesStates) {
++            animationState.tick();
++         }
++
++         this.uploadAnimationFrames();
++      }
++   }
++
++   private void uploadAnimationFrames() {
++      boolean hasNormal = false;
++      boolean hasSpecular = false;
++      int countActive = 0;
++      int countActiveMipmap = 0;
++      this.activeAnimations.clear();
++
++      for (SpriteContents.AnimationState anim : this.animatedTexturesStates) {
++         TextureAtlasSprite sprite = anim.getSprite();
++         if (sprite == null || this.isAnimationEnabled(sprite) && (!SmartAnimations.isActive() || SmartAnimations.isSpriteRendered(sprite))) {
++            this.activeAnimations.add(anim);
++         }
++      }
++
++      if (!this.activeAnimations.isEmpty()) {
++         for (int level = 0; level <= this.maxMipLevel; level++) {
++            int levelF = level;
++
++            try (RenderPass renderPass = RenderSystem.getDevice()
++                  .createCommandEncoder()
++                  .createRenderPass(() -> "Animate " + levelF + " " + this.location, this.mipViews[level], Optional.empty())) {
++               RenderSystem.bindDefaultUniforms(renderPass);
++
++               for (SpriteContents.AnimationState animationState : this.activeAnimations) {
++                  if (animationState.needsToDraw()) {
++                     animationState.drawToAtlas(renderPass, animationState.getDrawUbo(level));
++                  }
++
++                  countActiveMipmap++;
++                  TextureAtlasSprite sprite = animationState.getSprite();
++                  if (sprite != null) {
++                     if (sprite.spriteNormal != null) {
++                        hasNormal = true;
++                     }
++
++                     if (sprite.spriteSpecular != null) {
++                        hasSpecular = true;
++                     }
++                  }
++               }
+             }
+-        }
++         }
++      }
+ 
+-        for (GpuTextureView[] views : scratchTextures) {
+-            for (GpuTextureView view : views) {
+-                view.close();
+-                view.texture().close();
++      if (Config.isShaders()) {
++         if (hasNormal) {
++            for (int i = 0; i <= this.maxMipLevel; i++) {
++               int level = i;
++
++               try (RenderPass renderpass = RenderSystem.getDevice()
++                     .createCommandEncoder()
++                     .createRenderPass(() -> "Animate normal " + level + " " + this.location, this.mipViewsNormal[i], Optional.empty())) {
++                  for (SpriteContents.AnimationState anim : this.activeAnimations) {
++                     TextureAtlasSprite sprite = anim.getSprite();
++                     if (sprite != null && sprite.spriteNormal != null) {
++                        SpriteContents.AnimationState animNormal = sprite.spriteNormal.getSpriteContentsTicker();
++                        if (animNormal != null) {
++                           animNormal.drawToAtlas(renderpass, animNormal.getDrawUbo(i));
++                           countActiveMipmap++;
++                        }
++                     }
++                  }
++               }
+             }
+-        }
++         }
+ 
+-        MemoryUtil.memFree(buffer);
+-        this.uploadAnimationFrames();
+-    }
++         if (hasSpecular) {
++            for (int i = 0; i <= this.maxMipLevel; i++) {
++               int level = i;
+ 
+-    @Override
+-    public void dumpContents(final Identifier selfId, final Path dir) throws IOException {
+-        String outputId = selfId.toDebugFileName();
+-        TextureUtil.writeAsPNG(dir, outputId, this.getTexture(), this.maxMipLevel, argb -> argb);
+-        dumpSpriteNames(dir, outputId, this.texturesByName);
+-    }
++               try (RenderPass renderpass = RenderSystem.getDevice()
++                     .createCommandEncoder()
++                     .createRenderPass(() -> "Animate specular " + level + " " + this.location, this.mipViewsSpecular[i], Optional.empty())) {
++                  for (SpriteContents.AnimationState anim : this.activeAnimations) {
++                     TextureAtlasSprite sprite = anim.getSprite();
++                     if (sprite != null && sprite.spriteSpecular != null) {
++                        SpriteContents.AnimationState animSpecular = sprite.spriteSpecular.getSpriteContentsTicker();
++                        if (animSpecular != null) {
++                           animSpecular.drawToAtlas(renderpass, animSpecular.getDrawUbo(i));
++                           countActiveMipmap++;
++                        }
++                     }
++                  }
++               }
++            }
++         }
++      }
+ 
+-    private static void dumpSpriteNames(final Path dir, final String outputId, final Map<Identifier, TextureAtlasSprite> regions) {
+-        Path outputPath = dir.resolve(outputId + ".txt");
++      if (Config.isMultiTexture()) {
++         RenderSystem.getGlDevice().debugLabels().pushDebugGroup(() -> "Animate single " + this.location);
+ 
+-        try (Writer output = Files.newBufferedWriter(outputPath)) {
+-            for (Entry<Identifier, TextureAtlasSprite> e : regions.entrySet().stream().sorted(Entry.comparingByKey()).toList()) {
+-                TextureAtlasSprite value = e.getValue();
+-                output.write(
+-                    String.format(
+-                        Locale.ROOT,
+-                        "%s\tx=%d\ty=%d\tw=%d\th=%d%n",
+-                        e.getKey(),
+-                        value.getX(),
+-                        value.getY(),
+-                        value.contents().width(),
+-                        value.contents().height()
+-                    )
+-                );
++         for (SpriteContents.AnimationState state : this.activeAnimations) {
++            TextureAtlasSprite ts = state.getSprite();
++            if (ts != null) {
++               if (state.needsToDraw()) {
++                  updateAnimationSingle(ts, this.mipViews);
++               }
++
++               if (ts.spriteSingle != null && ts.spriteSingle.isAnimationActive()) {
++                  countActive++;
++               }
++
++               if (ts.spriteNormal != null) {
++                  countActive += updateAnimationSingle(ts.spriteNormal, this.mipViewsNormal);
++               }
++
++               if (ts.spriteSpecular != null) {
++                  countActive += updateAnimationSingle(ts.spriteSpecular, this.mipViewsSpecular);
++               }
+             }
+-        } catch (IOException e) {
+-            LOGGER.warn("Failed to write file {}", outputPath, e);
+-        }
+-    }
++         }
+ 
+-    public void cycleAnimationFrames() {
+-        if (this.texture != null) {
+-            for (SpriteContents.AnimationState animationState : this.animatedTexturesStates) {
+-                animationState.tick();
++         RenderSystem.getGlDevice().debugLabels().popDebugGroup();
++      }
++
++      if (this.terrain) {
++         int frameCount = Config.getMinecraft().levelRenderer.getFrameCount();
++         if (frameCount != this.frameCountAnimations) {
++            int countActiveTotal = countActive + countActiveMipmap / (this.maxMipLevel + 1);
++            this.countAnimationsActive = countActiveTotal;
++            this.frameCountAnimations = frameCount;
++         }
++
++         if (SmartAnimations.isActive()) {
++            SmartAnimations.resetSpritesRendered(this);
++         }
++      }
++   }
++
++   @Override
++   public void tick() {
++      this.cycleAnimationFrames();
++   }
++
++   public TextureAtlasSprite getSprite(Identifier location) {
++      TextureAtlasSprite result = this.texturesByName.getOrDefault(location, this.missingSprite);
++      if (result == null) {
++         throw new IllegalStateException("Tried to lookup sprite, but atlas is not initialized");
++      } else {
++         return result;
++      }
++   }
++
++   public TextureAtlasSprite missingSprite() {
++      return Objects.requireNonNull(this.missingSprite, "Atlas not initialized");
++   }
++
++   public void clearTextureData() {
++      this.sprites.forEach(TextureAtlasSprite::close);
++      this.sprites = List.of();
++      this.animatedTexturesStates.forEach(SpriteContents.AnimationState::close);
++      this.animatedTexturesStates = List.of();
++      this.texturesByName = Map.of();
++      this.missingSprite = null;
++      if (this.spriteUbos != null) {
++         this.spriteUbos.close();
++         this.spriteUbos = null;
++      }
++   }
++
++   @Override
++   protected void releaseTextures() {
++      super.releaseTextures();
++
++      for (GpuTextureView view : this.mipViews) {
++         view.close();
++      }
++
++      for (GpuTextureView textureNormal : this.mipViewsNormal) {
++         textureNormal.close();
++      }
++
++      for (GpuTextureView textureSpecular : this.mipViewsSpecular) {
++         textureSpecular.close();
++      }
++   }
++
++   @Override
++   public void close() {
++      this.clearTextureData();
++      super.close();
++   }
++
++   public Identifier location() {
++      return this.location;
++   }
++
++   public int maxSupportedTextureSize() {
++      return this.maxSupportedTextureSize;
++   }
++
++   public int getWidth() {
++      return this.width;
++   }
++
++   public int getHeight() {
++      return this.height;
++   }
++
++   public static boolean isAbsoluteLocation(Identifier loc) {
++      String path = loc.getPath();
++      return isAbsoluteLocationPath(path);
++   }
++
++   private static boolean isAbsoluteLocationPath(String resPath) {
++      String path = resPath.toLowerCase();
++      return path.startsWith("optifine/");
++   }
++
++   public TextureAtlasSprite getRegisteredSprite(String name) {
++      Identifier loc = new Identifier(name);
++      return this.getRegisteredSprite(loc);
++   }
++
++   public TextureAtlasSprite getRegisteredSprite(Identifier loc) {
++      return this.mapRegisteredSprites.get(loc);
++   }
++
++   public TextureAtlasSprite getUploadedSprite(String name) {
++      Identifier loc = new Identifier(name);
++      return this.getUploadedSprite(loc);
++   }
++
++   public TextureAtlasSprite getUploadedSprite(Identifier loc) {
++      return this.texturesByName.get(loc);
++   }
++
++   private boolean isAnimationEnabled(TextureAtlasSprite ts) {
++      if (!this.terrain) {
++         return true;
++      } else if (ts == TextureUtils.iconWaterStill || ts == TextureUtils.iconWaterFlow) {
++         return Config.isAnimatedWater();
++      } else if (ts == TextureUtils.iconLavaStill || ts == TextureUtils.iconLavaFlow) {
++         return Config.isAnimatedLava();
++      } else if (ts == TextureUtils.iconFireLayer0 || ts == TextureUtils.iconFireLayer1) {
++         return Config.isAnimatedFire();
++      } else if (ts == TextureUtils.iconSoulFireLayer0 || ts == TextureUtils.iconSoulFireLayer1) {
++         return Config.isAnimatedFire();
++      } else if (ts == TextureUtils.iconCampFire || ts == TextureUtils.iconCampFireLogLit) {
++         return Config.isAnimatedFire();
++      } else if (ts == TextureUtils.iconSoulCampFire || ts == TextureUtils.iconSoulCampFireLogLit) {
++         return Config.isAnimatedFire();
++      } else {
++         return ts == TextureUtils.iconPortal ? Config.isAnimatedPortal() : Config.isAnimatedTerrain();
++      }
++   }
++
++   private static void uploadMipmapsSingle(TextureAtlasSprite tas) {
++      TextureAtlasSprite ss = tas.spriteSingle;
++      if (ss != null) {
++         ss.setAnimationIndex(tas.getAnimationIndex());
++         SpriteContents.AnimationState ticker = ss.createAnimationState(null, 0);
++         if (ticker != null) {
++            ss.setTicker(ticker);
++         }
++
++         try {
++            ss.uploadMipmaps(tas.getSpriteTexture());
++         } catch (Exception e) {
++            Config.dbg("Error uploading sprite single: " + ss + ", parent: " + tas);
++            e.printStackTrace();
++         }
++      }
++   }
++
++   private static int updateAnimationSingle(TextureAtlasSprite tas, GpuTextureView[] mipViewsRead) {
++      TextureAtlasSprite spriteSingle = tas.spriteSingle;
++      if (spriteSingle != null) {
++         for (int i = 0; i < mipViewsRead.length; i++) {
++            GpuTexture atlasTex = mipViewsRead[i].texture();
++            GpuTexture singleTex = tas.getSpriteTexture();
++            int srcX = tas.getOriginX() + 0 >> i;
++            int srcY = tas.getOriginY() + 0 >> i;
++            int width = tas.getWidth() >> i;
++            int height = tas.getHeight() >> i;
++            RenderSystem.getGlDevice().getGlCommandEncoder().copyTextureToTexture(atlasTex, singleTex, i, 0, 0, srcX, srcY, width, height);
++         }
++
++         if (spriteSingle.isAnimationActive()) {
++            return 1;
++         }
++      }
++
++      return 0;
++   }
++
++   public int getCountRegisteredSprites() {
++      return this.counterIndexInMap.getValue();
++   }
++
++   private int detectMaxMipmapLevel(Set<Identifier> setSpriteLocations, ResourceManager rm) {
++      int minSize = this.detectMinimumSpriteSize(setSpriteLocations, rm, 20);
++      if (minSize < 16) {
++         minSize = 16;
++      }
++
++      minSize = Mth.smallestEncompassingPowerOfTwo(minSize);
++      if (minSize > 16) {
++         Config.log("Sprite size: " + minSize);
++      }
++
++      int minLevel = Mth.log2(minSize);
++      if (minLevel < 4) {
++         minLevel = 4;
++      }
++
++      return minLevel;
++   }
++
++   private int detectMinimumSpriteSize(Set<Identifier> setSpriteLocations, ResourceManager rm, int percentScale) {
++      Map mapSizeCounts = new HashMap();
++
++      for (Identifier loc : setSpriteLocations) {
++         Identifier locComplete = this.getSpritePath(loc);
++
++         try {
++            Resource res = rm.getResourceOrThrow(locComplete);
++            if (res != null) {
++               InputStream in = res.open();
++               if (in != null) {
++                  Dimension dim = TextureUtils.getImageSize(in, "png");
++                  in.close();
++                  if (dim != null) {
++                     int width = dim.width;
++                     int width2 = Mth.smallestEncompassingPowerOfTwo(width);
++                     if (!mapSizeCounts.containsKey(width2)) {
++                        mapSizeCounts.put(width2, 1);
++                     } else {
++                        int count = (Integer)mapSizeCounts.get(width2);
++                        mapSizeCounts.put(width2, count + 1);
++                     }
++                  }
++               }
+             }
++         } catch (Exception e) {
++         }
++      }
+ 
+-            this.uploadAnimationFrames();
+-        }
+-    }
++      int countSprites = 0;
++      Set setSizes = mapSizeCounts.keySet();
++      Set setSizesSorted = new TreeSet(setSizes);
+ 
+-    private void uploadAnimationFrames() {
+-        if (this.animatedTexturesStates.stream().anyMatch(SpriteContents.AnimationState::needsToDraw)) {
+-            for (int level = 0; level <= this.maxMipLevel; level++) {
+-                try (RenderPass renderPass = RenderSystem.getDevice()
+-                        .createCommandEncoder()
+-                        .createRenderPass(() -> "Animate " + this.location, this.mipViews[level], Optional.empty())) {
+-                    RenderSystem.bindDefaultUniforms(renderPass);
++      for (int size : (java.lang.Iterable<Integer>)(java.lang.Iterable<?>)(setSizesSorted)) {
++         int count = (Integer)mapSizeCounts.get(size);
++         countSprites += count;
++      }
+ 
+-                    for (SpriteContents.AnimationState animationState : this.animatedTexturesStates) {
+-                        if (animationState.needsToDraw()) {
+-                            animationState.drawToAtlas(renderPass, animationState.getDrawUbo(level));
+-                        }
+-                    }
+-                }
++      int minSize = 16;
++      int countScale = 0;
++      int countScaleMax = countSprites * percentScale / 100;
++
++      for (int size : (java.lang.Iterable<Integer>)(java.lang.Iterable<?>)(setSizesSorted)) {
++         int count = (Integer)mapSizeCounts.get(size);
++         countScale += count;
++         if (size > minSize) {
++            minSize = size;
++         }
++
++         if (countScale > countScaleMax) {
++            return minSize;
++         }
++      }
++
++      return minSize;
++   }
++
++   private static int getMinSpriteSize(int mipmapLevels) {
++      int minSize = 1 << mipmapLevels;
++      if (minSize < 8) {
++         minSize = 8;
++      }
++
++      return minSize;
++   }
++
++   private static FrameSize fixSpriteSize(FrameSize info, int minSpriteSize) {
++      if (info.width() >= minSpriteSize && info.height() >= minSpriteSize) {
++         return info;
++      }
++
++      int widthNew = Math.max(info.width(), minSpriteSize);
++      int heightNew = Math.max(info.height(), minSpriteSize);
++      return new FrameSize(widthNew, heightNew);
++   }
++
++   public boolean isTextureBound() {
++      int boundTexId = GlStateManager.getBoundTexture();
++      int texId = this.getGlTextureId();
++      return boundTexId == texId;
++   }
++
++   private void updateIconGrid(int sheetWidth, int sheetHeight) {
++      this.iconGridCountX = -1;
++      this.iconGridCountY = -1;
++      this.iconGrid = null;
++      if (this.iconGridSize > 0) {
++         this.iconGridCountX = sheetWidth / this.iconGridSize;
++         this.iconGridCountY = sheetHeight / this.iconGridSize;
++         this.iconGrid = new TextureAtlasSprite[this.iconGridCountX * this.iconGridCountY];
++         this.iconGridSizeU = 1.0 / this.iconGridCountX;
++         this.iconGridSizeV = 1.0 / this.iconGridCountY;
++
++         for (TextureAtlasSprite ts : this.texturesByName.values()) {
++            double deltaU = 0.5 / sheetWidth;
++            double deltaV = 0.5 / sheetHeight;
++            double uMin = Math.min(ts.getU0(), ts.getU1()) + deltaU;
++            double vMin = Math.min(ts.getV0(), ts.getV1()) + deltaV;
++            double uMax = Math.max(ts.getU0(), ts.getU1()) - deltaU;
++            double vMax = Math.max(ts.getV0(), ts.getV1()) - deltaV;
++            int iuMin = (int)(uMin / this.iconGridSizeU);
++            int ivMin = (int)(vMin / this.iconGridSizeV);
++            int iuMax = (int)(uMax / this.iconGridSizeU);
++            int ivMax = (int)(vMax / this.iconGridSizeV);
++
++            for (int iu = iuMin; iu <= iuMax; iu++) {
++               if (iu >= 0 && iu < this.iconGridCountX) {
++                  for (int iv = ivMin; iv <= ivMax; iv++) {
++                     if (iv >= 0 && iv < this.iconGridCountX) {
++                        int index = iv * this.iconGridCountX + iu;
++                        this.iconGrid[index] = ts;
++                     } else {
++                        Config.warn("Invalid grid V: " + iv + ", icon: " + ts.getName());
++                     }
++                  }
++               } else {
++                  Config.warn("Invalid grid U: " + iu + ", icon: " + ts.getName());
++               }
+             }
+-        }
+-    }
++         }
++      }
++   }
+ 
+-    @Override
+-    public void tick() {
+-        this.cycleAnimationFrames();
+-    }
++   public TextureAtlasSprite getIconByUV(double u, double v) {
++      if (this.iconGrid == null) {
++         return null;
++      }
+ 
+-    public TextureAtlasSprite getSprite(final Identifier location) {
+-        TextureAtlasSprite result = this.texturesByName.getOrDefault(location, this.missingSprite);
+-        if (result == null) {
+-            throw new IllegalStateException("Tried to lookup sprite, but atlas is not initialized");
+-        } else {
+-            return result;
+-        }
+-    }
++      int iu = (int)(u / this.iconGridSizeU);
++      int iv = (int)(v / this.iconGridSizeV);
++      int index = iv * this.iconGridCountX + iu;
++      return index >= 0 && index <= this.iconGrid.length ? this.iconGrid[index] : null;
++   }
+ 
+-    public TextureAtlasSprite missingSprite() {
+-        return Objects.requireNonNull(this.missingSprite, "Atlas not initialized");
+-    }
++   public int getCountAnimations() {
++      return this.animatedTexturesStates.size();
++   }
+ 
+-    public void clearTextureData() {
+-        this.sprites.forEach(TextureAtlasSprite::close);
+-        this.sprites = List.of();
+-        this.animatedTexturesStates.forEach(SpriteContents.AnimationState::close);
+-        this.animatedTexturesStates = List.of();
+-        this.texturesByName = Map.of();
+-        this.missingSprite = null;
+-        if (this.spriteUbos != null) {
+-            this.spriteUbos.close();
+-            this.spriteUbos = null;
+-        }
+-    }
++   public int getCountAnimationsActive() {
++      return this.countAnimationsActive;
++   }
+ 
+-    @Override
+-    protected void releaseTextures() {
+-        super.releaseTextures();
++   public int getIconGridSize() {
++      return this.iconGridSize;
++   }
+ 
+-        for (GpuTextureView view : this.mipViews) {
+-            view.close();
+-        }
+-    }
++   public TextureAtlasSprite registerSprite(Identifier location) {
++      if (location == null) {
++         throw new IllegalArgumentException("Location is null");
++      }
+ 
+-    @Override
+-    public void close() {
+-        this.clearTextureData();
+-        super.close();
+-    }
++      TextureAtlasSprite sprite = this.mapRegisteredSprites.get(location);
++      if (sprite != null) {
++         return sprite;
++      }
+ 
+-    public Identifier location() {
+-        return this.location;
+-    }
++      sprite = new TextureAtlasSprite(this.location, location);
++      sprite.setTextureAtlas(this);
++      this.mapRegisteredSprites.put(location, sprite);
++      sprite.updateIndexInMap(this.counterIndexInMap);
++      return sprite;
++   }
+ 
+-    public int maxSupportedTextureSize() {
+-        return this.maxSupportedTextureSize;
+-    }
++   public Collection<TextureAtlasSprite> getRegisteredSprites() {
++      return Collections.unmodifiableCollection(this.mapRegisteredSprites.values());
++   }
+ 
+-    int getWidth() {
+-        return this.width;
+-    }
++   public Map<Identifier, TextureAtlasSprite> getMapRegisteredSprites() {
++      return Collections.unmodifiableMap(this.mapRegisteredSprites);
++   }
+ 
+-    int getHeight() {
+-        return this.height;
+-    }
+-}
+\ No newline at end of file
++   public Collection<Identifier> getRegisteredSpriteNames() {
++      return Collections.unmodifiableCollection(this.mapRegisteredSprites.keySet());
++   }
++
++   public boolean isTerrain() {
++      return this.terrain;
++   }
++
++   public boolean isItems() {
++      return this.items;
++   }
++
++   public CounterInt getCounterIndexInMap() {
++      return this.counterIndexInMap;
++   }
++
++   private void onSpriteMissing(Identifier loc) {
++      TextureAtlasSprite sprite = this.mapRegisteredSprites.get(loc);
++      if (sprite != null) {
++         this.mapMissingSprites.put(loc, sprite);
++      }
++   }
++
++   private static <T> Set<T> newHashSet(Set<T> set1, Set<T> set2) {
++      Set<T> set = new HashSet<>();
++      set.addAll(set1);
++      set.addAll(set2);
++      return set;
++   }
++
++   public int getMipmapLevel() {
++      return this.mipmapLevel;
++   }
++
++   public boolean isMipmaps() {
++      return this.mipmapLevel > 0;
++   }
++
++   public ITextureFormat getTextureFormat() {
++      return this.textureFormat;
++   }
++
++   public IColorBlender getShadersColorBlender(ShadersTextureType typeIn) {
++      if (typeIn == null) {
++         return null;
++      } else {
++         return this.textureFormat != null ? this.textureFormat.getColorBlender(typeIn) : new ColorBlenderLinear();
++      }
++   }
++
++   public boolean isTextureBlend(ShadersTextureType typeIn) {
++      if (typeIn == null) {
++         return true;
++      } else {
++         return this.textureFormat != null ? this.textureFormat.isTextureBlend(typeIn) : true;
++      }
++   }
++
++   public boolean isNormalBlend() {
++      return this.isTextureBlend(ShadersTextureType.NORMAL);
++   }
++
++   public boolean isSpecularBlend() {
++      return this.isTextureBlend(ShadersTextureType.SPECULAR);
++   }
++
++   public Identifier getSpritePath(Identifier location) {
++      return isAbsoluteLocation(location)
++         ? new Identifier(location.getNamespace(), location.getPath() + ".png")
++         : new Identifier(location.getNamespace(), String.format(Locale.ROOT, "textures/%s%s", location.getPath(), ".png"));
++   }
++
++   @Override
++   public String toString() {
++      return this.location + ", texture: " + this.texture;
++   }
++
++   public Set<Identifier> getTextureLocations() {
++      return Collections.unmodifiableSet(this.texturesByName.keySet());
++   }
++}

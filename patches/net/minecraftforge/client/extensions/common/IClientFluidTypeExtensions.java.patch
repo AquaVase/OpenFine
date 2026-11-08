@@ -1,0 +1,40 @@
+--- /dev/null
++++ b/net/minecraftforge/client/extensions/common/IClientFluidTypeExtensions.java
+@@ -0,0 +1,37 @@
++package net.minecraftforge.client.extensions.common;
++
++import com.mojang.blaze3d.vertex.PoseStack;
++import net.minecraft.client.Minecraft;
++import net.minecraft.client.renderer.SubmitNodeCollector;
++import net.minecraft.client.renderer.block.BlockAndTintGetter;
++import net.minecraft.client.renderer.block.FluidModel;
++import net.minecraft.core.BlockPos;
++import net.minecraft.world.level.material.FluidState;
++import net.minecraftforge.fluids.FluidType;
++
++public interface IClientFluidTypeExtensions {
++   IClientFluidTypeExtensions DUMMY = new IClientFluidTypeExtensions() {};
++
++   static IClientFluidTypeExtensions of(FluidState fluidState) {
++      return DUMMY;
++   }
++
++   static IClientFluidTypeExtensions of(FluidType fluidType) {
++      return DUMMY;
++   }
++
++   default int getColorTint() {
++      return -1;
++   }
++
++   default void renderOverlay(Minecraft mc, PoseStack stack, SubmitNodeCollector buffer) {
++   }
++
++   default int getTintColor() {
++      return this.getColorTint();
++   }
++
++   default FluidModel getModel(FluidState state, BlockAndTintGetter getter, BlockPos pos, FluidModel vanilla) {
++      return vanilla;
++   }
++}

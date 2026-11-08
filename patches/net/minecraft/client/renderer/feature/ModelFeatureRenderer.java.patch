@@ -1,0 +1,211 @@
+--- a/net/minecraft/client/renderer/feature/ModelFeatureRenderer.java
++++ b/net/minecraft/client/renderer/feature/ModelFeatureRenderer.java
+@@ -5,69 +5,156 @@
+ import com.mojang.blaze3d.vertex.VertexConsumer;
+ import java.util.List;
+ import net.minecraft.client.model.Model;
++import net.minecraft.client.renderer.Lightmap;
++import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
++import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
++import net.minecraft.client.renderer.entity.layers.EyesLayer;
++import net.minecraft.client.renderer.entity.layers.LivingEntityEmissiveLayer;
++import net.minecraft.client.renderer.entity.state.EntityRenderState;
+ import net.minecraft.client.renderer.feature.submit.BatchableSubmit;
+ import net.minecraft.client.renderer.feature.submit.TranslucentSubmit;
+ import net.minecraft.client.renderer.rendertype.RenderType;
++import net.minecraft.client.renderer.rendertype.RenderTypes;
+ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.minecraft.resources.Identifier;
++import net.optifine.Config;
++import net.optifine.EmissiveTextures;
++import net.optifine.render.RenderState;
++import net.optifine.util.TextureUtils;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class ModelFeatureRenderer extends RenderTypeFeatureRenderer<ModelFeatureRenderer.Submit<?>> {
+-    public static final FeatureRendererType<ModelFeatureRenderer.Submit<?>> TYPE = FeatureRendererType.create("Entity Model");
+-    private final PoseStack poseStack = new PoseStack();
++   public static final FeatureRendererType<ModelFeatureRenderer.Submit<?>> TYPE = FeatureRendererType.create("Entity Model");
++   private final PoseStack poseStack = new PoseStack();
++   private boolean isShaders;
+ 
+-    @Override
+-    protected void buildGroup(final FeatureFrameContext context, final List<ModelFeatureRenderer.Submit<?>> submits) {
+-        for (ModelFeatureRenderer.Submit<?> submit : submits) {
+-            this.prepareModel(submit);
+-        }
+-    }
++   @Override
++   protected void buildGroup(FeatureFrameContext context, List<ModelFeatureRenderer.Submit<?>> submits) {
++      this.isShaders = Config.isShaders();
+ 
+-    private <S> void prepareModel(final ModelFeatureRenderer.Submit<S> submit) {
+-        this.poseStack.last().set(submit.pose());
+-        VertexConsumer buffer = this.getVertexBuilder(submit.renderType());
+-        if (submit.sheetedDecalPose() != null) {
+-            buffer = new SheetedDecalTextureGenerator(buffer, submit.sheetedDecalPose(), 1.0F);
+-        } else if (submit.sprite() != null) {
+-            buffer = submit.sprite().wrap(buffer);
+-        }
++      for (ModelFeatureRenderer.Submit<?> submit : submits) {
++         RenderType renderType = submit.renderType();
++         if (EmissiveTextures.isActive()) {
++            EmissiveTextures.beginRender();
++            Identifier textureLoc = renderType.getTextureLocation();
++            if (textureLoc != null) {
++               EmissiveTextures.getEmissiveTexture(textureLoc);
++            }
++         }
+ 
+-        Model<? super S> model = submit.model();
+-        model.setupAnim(submit.state());
+-        model.renderToBuffer(this.poseStack, buffer, submit.lightCoords(), submit.overlayCoords(), submit.tintedColor());
+-    }
++         this.prepareModel(submit);
++         if (EmissiveTextures.isActive()) {
++            if (EmissiveTextures.hasEmissive()) {
++               if (renderType.isEntitySolid()) {
++                  renderType = RenderTypes.entityCutout(renderType.getTextureLocation());
++               }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record CrumblingOverlay(int progress, PoseStack.Pose cameraPose) {
+-    }
++               EmissiveTextures.beginRenderEmissive();
++               Identifier textureLoc = renderType.getTextureLocation();
++               if (textureLoc != null) {
++                  Identifier textureLocEmissive = EmissiveTextures.getEmissiveTexture(textureLoc);
++                  if (textureLocEmissive != textureLoc) {
++                     renderType = renderType.getTextured(textureLocEmissive);
++                  }
++               }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record Submit<S>(
+-        RenderType renderType,
+-        PoseStack.Pose pose,
+-        Model<? super S> model,
+-        S state,
+-        int lightCoords,
+-        int overlayCoords,
+-        int tintedColor,
+-        @Nullable TextureAtlasSprite sprite,
+-        PoseStack.@Nullable Pose sheetedDecalPose
+-    ) implements BatchableSubmit, TranslucentSubmit {
+-        @Override
+-        public Object batchKey() {
+-            return this.renderType;
+-        }
++               VertexConsumer bufferEmissive = this.getVertexBuilder(renderType);
++               this.prepareModel(submit);
++               EmissiveTextures.endRenderEmissive();
++            }
+ 
+-        @Override
+-        public float distanceToCameraSq() {
+-            return TranslucentSubmit.computeDistanceToCameraSq(this.pose.pose());
+-        }
++            EmissiveTextures.endRender();
++         }
++      }
++   }
+ 
+-        @Override
+-        public FeatureRendererType<ModelFeatureRenderer.Submit<S>> featureType() {
+-            return (FeatureRendererType<ModelFeatureRenderer.Submit<S>>)(FeatureRendererType)ModelFeatureRenderer.TYPE;
+-        }
+-    }
++   private <S> void prepareModel(ModelFeatureRenderer.Submit<S> submit) {
++      this.poseStack.last().set(submit.pose());
++      VertexConsumer buffer = this.getVertexBuilder(submit.renderType());
++      Object renderState = submit.renderState();
++      if (renderState instanceof EntityRenderState ers) {
++         RenderState.setEntityRenderState(ers);
++         RenderState.setRenderOverlayEyes(this.isRenderOverlayEyes(ers, submit.renderType));
++         RenderState.setRenderItemHead(this.isRenderItemHead(ers));
++         if (this.isShaders) {
++            this.currentGroup().getLastDraw().setEntityRenderState(ers);
++         }
++      } else if (renderState instanceof BlockEntityRenderState bers) {
++         RenderState.setBlockEntityRenderState(bers);
++         if (this.isShaders) {
++            this.currentGroup().getLastDraw().setBlockEntityRenderState(bers);
++         }
++      }
++
++      TextureAtlasSprite sprite = TextureUtils.getCustomSprite(submit.sprite());
++      if (submit.sheetedDecalPose() != null) {
++         buffer = new SheetedDecalTextureGenerator(buffer, submit.sheetedDecalPose(), 1.0F);
++      } else if (sprite != null) {
++         buffer = sprite.wrap(buffer);
++      }
++
++      Model<? super S> model = submit.model();
++      model.setupAnim(submit.state());
++      if (EmissiveTextures.isRenderEmissive()) {
++         model.renderToBuffer(this.poseStack, buffer, Lightmap.MAX_BRIGHTNESS, submit.overlayCoords(), submit.tintedColor());
++      } else {
++         model.renderToBuffer(this.poseStack, buffer, submit.lightCoords(), submit.overlayCoords(), submit.tintedColor());
++      }
++   }
++
++   private boolean isRenderOverlayEyes(EntityRenderState ers, RenderType renderTypeIn) {
++      if (ers.renderLayer instanceof EyesLayer) {
++         return true;
++      } else {
++         return ers.renderLayer instanceof LivingEntityEmissiveLayer ? true : renderTypeIn.isEyes();
++      }
++   }
++
++   private boolean isRenderItemHead(EntityRenderState ers) {
++      return ers.renderLayer instanceof CustomHeadLayer;
++   }
++
++   public record CrumblingOverlay(int progress, PoseStack.Pose cameraPose) {
++   }
++
++   public record Submit<S>(
++      RenderType renderType,
++      PoseStack.Pose pose,
++      Model<? super S> model,
++      S state,
++      int lightCoords,
++      int overlayCoords,
++      int tintedColor,
++      TextureAtlasSprite sprite,
++      PoseStack.Pose sheetedDecalPose,
++      Object renderState
++   ) implements BatchableSubmit, TranslucentSubmit {
++      public Submit(
++         RenderType renderType,
++         PoseStack.Pose pose,
++         Model<? super S> model,
++         S state,
++         int lightCoords,
++         int overlayCoords,
++         int tintedColor,
++         TextureAtlasSprite sprite,
++         PoseStack.Pose sheetedDecalPose
++      ) {
++         this(renderType, pose, model, state, lightCoords, overlayCoords, tintedColor, sprite, sheetedDecalPose, RenderState.getRenderState());
++      }
++
++      @Override
++      public Object batchKey() {
++         return this.renderType;
++      }
++
++      @Override
++      public float distanceToCameraSq() {
++         return TranslucentSubmit.computeDistanceToCameraSq(this.pose.pose());
++      }
++
++      @Override
++      public FeatureRendererType<ModelFeatureRenderer.Submit<S>> featureType() {
++         return (FeatureRendererType<ModelFeatureRenderer.Submit<S>>)(FeatureRendererType<?>)ModelFeatureRenderer.TYPE;
++      }
++   }
+ }

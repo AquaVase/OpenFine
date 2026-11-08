@@ -1,0 +1,128 @@
+--- a/net/minecraft/client/model/Model.java
++++ b/net/minecraft/client/model/Model.java
+@@ -5,61 +5,81 @@
+ import java.util.List;
+ import java.util.function.Function;
+ import net.minecraft.client.model.geom.ModelPart;
++import net.minecraft.client.model.player.PlayerModel;
+ import net.minecraft.client.renderer.rendertype.RenderType;
++import net.minecraft.client.renderer.rendertype.RenderTypes;
+ import net.minecraft.resources.Identifier;
+ import net.minecraft.util.Unit;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.optifine.Config;
++import net.optifine.EmissiveTextures;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public abstract class Model<S> {
+-    protected final ModelPart root;
+-    protected final Function<Identifier, RenderType> renderType;
+-    private final List<ModelPart> allParts;
++   protected final ModelPart root;
++   protected final Function<Identifier, RenderType> renderType;
++   private final List<ModelPart> allParts;
++   public int textureWidth = 64;
++   public int textureHeight = 32;
++   public Identifier locationTextureCustom;
+ 
+-    public Model(final ModelPart root, final Function<Identifier, RenderType> renderType) {
+-        this.root = root;
+-        this.renderType = renderType;
+-        this.allParts = root.getAllParts();
+-    }
++   public Model(ModelPart root, Function<Identifier, RenderType> renderType) {
++      this.root = root;
++      this.renderType = renderType;
++      this.allParts = root.getAllParts();
++   }
+ 
+-    public final Function<Identifier, RenderType> renderType() {
+-        return this.renderType;
+-    }
++   public final Function<Identifier, RenderType> renderType() {
++      return this.renderType;
++   }
+ 
+-    public final RenderType renderType(final Identifier texture) {
+-        return this.renderType().apply(texture);
+-    }
++   public final RenderType renderType(Identifier texture) {
++      if (this.locationTextureCustom != null) {
++         texture = this.locationTextureCustom;
++      }
+ 
+-    public final void renderToBuffer(final PoseStack poseStack, final VertexConsumer buffer, final int lightCoords, final int overlayCoords, final int color) {
+-        this.root().render(poseStack, buffer, lightCoords, overlayCoords, color);
+-    }
++      RenderType type = this.renderType().apply(texture);
++      if (EmissiveTextures.isRenderEmissive() && type.isEntitySolid()) {
++         type = RenderTypes.entityCutout(texture, type.affectsOutline());
++      }
+ 
+-    public final ModelPart root() {
+-        return this.root;
+-    }
++      if (Config.isShaders() && this instanceof PlayerModel && type.hasBlending()) {
++         type = RenderTypes.entityCutout(texture, type.affectsOutline());
++      }
+ 
+-    public final List<ModelPart> allParts() {
+-        return this.allParts;
+-    }
++      return type;
++   }
+ 
+-    public void setupAnim(final S state) {
+-        this.resetPose();
+-    }
++   public final void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color) {
++      this.root().render(poseStack, buffer, lightCoords, overlayCoords, color);
++   }
+ 
+-    public final void resetPose() {
+-        for (ModelPart part : this.allParts) {
+-            part.resetPose();
+-        }
+-    }
++   public final ModelPart root() {
++      return this.root;
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public static class Simple extends Model<Unit> {
+-        public Simple(final ModelPart root, final Function<Identifier, RenderType> renderType) {
+-            super(root, renderType);
+-        }
++   public final List<ModelPart> allParts() {
++      return this.allParts;
++   }
+ 
+-        public void setupAnim(final Unit state) {
+-        }
+-    }
+-}
+\ No newline at end of file
++   public void setupAnim(S state) {
++      this.resetPose();
++   }
++
++   public final void resetPose() {
++      for (ModelPart part : this.allParts) {
++         part.resetPose();
++      }
++   }
++
++   public boolean isRenderRoot() {
++      return true;
++   }
++
++   public static class Simple extends Model<Unit> {
++      public Simple(ModelPart root, Function<Identifier, RenderType> renderType) {
++         super(root, renderType);
++      }
++
++      public void setupAnim(Unit state) {
++      }
++   }
++}

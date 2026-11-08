@@ -1,0 +1,7 @@
+--- /dev/null
++++ b/net/minecraftforge/event/entity/living/ILivingTargetType.java
+@@ -0,0 +1,4 @@
++package net.minecraftforge.event.entity.living;
++
++public interface ILivingTargetType {
++}

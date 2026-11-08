@@ -1,0 +1,11 @@
+.gradle/
+build/
+installer/build/
+core/build/
+run/
+*.log
+.patchgen/
+.idea/
+
+# Local Minecraft sources; maintain changes as source patches.
+/src/

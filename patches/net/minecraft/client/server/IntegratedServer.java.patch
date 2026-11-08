@@ -1,0 +1,936 @@
+--- a/net/minecraft/client/server/IntegratedServer.java
++++ b/net/minecraft/client/server/IntegratedServer.java
+@@ -22,12 +22,17 @@
+ import net.minecraft.core.GlobalPos;
+ import net.minecraft.gizmos.Gizmos;
+ import net.minecraft.gizmos.SimpleGizmoCollector;
++import net.minecraft.gizmos.Gizmos.TemporaryCollection;
++import net.minecraft.gizmos.SimpleGizmoCollector.GizmoInstance;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.server.Services;
+ import net.minecraft.server.WorldStem;
++import net.minecraft.server.MinecraftServer.MultiplayerScope;
++import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.server.level.ServerPlayer.SavedPosition;
+ import net.minecraft.server.level.progress.LevelLoadListener;
+ import net.minecraft.server.notifications.NotificationManager;
+ import net.minecraft.server.packs.repository.PackRepository;
+@@ -35,455 +40,545 @@
+ import net.minecraft.server.players.NameAndId;
+ import net.minecraft.stats.Stats;
+ import net.minecraft.util.ModCheck;
+-import net.minecraft.util.ProblemReporter;
++import net.minecraft.util.ProblemReporter.ScopedCollector;
+ import net.minecraft.util.debugchart.LocalSampleLogger;
+ import net.minecraft.util.profiling.Profiler;
+ import net.minecraft.util.profiling.ProfilerFiller;
+ import net.minecraft.util.thread.BlockableEventLoop;
++import net.minecraft.world.DifficultyInstance;
+ import net.minecraft.world.level.ChunkPos;
+ import net.minecraft.world.level.GameType;
++import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
+ import net.minecraft.world.level.gamerules.GameRules;
+-import net.minecraft.world.level.storage.LevelStorageSource;
+ import net.minecraft.world.level.storage.TagValueInput;
+ import net.minecraft.world.level.storage.ValueInput;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess;
++import net.optifine.Config;
++import net.optifine.reflect.Reflector;
+ import org.slf4j.Logger;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class IntegratedServer extends MinecraftServer {
+-    private static final Logger LOGGER = LogUtils.getLogger();
+-    private static final int MIN_SIM_DISTANCE = 2;
+-    public static final int MAX_PLAYERS = 8;
+-    private final Minecraft minecraft;
+-    private boolean paused = true;
+-    private int publishedPort = -1;
+-    private @Nullable GameType gameTypeForOtherPlayers;
+-    private @Nullable Boolean commandsAllowedForOtherPlayers;
+-    private @Nullable LanServerPinger lanPinger;
+-    private @Nullable UUID uuid;
+-    private int previousSimulationDistance = 0;
+-    private volatile List<SimpleGizmoCollector.GizmoInstance> latestTicksGizmos = new ArrayList<>();
+-    private final SimpleGizmoCollector gizmoCollector = new SimpleGizmoCollector();
+-    private MinecraftServer.MultiplayerScope multiplayerScope = MinecraftServer.MultiplayerScope.OFF;
++   private static final Logger LOGGER = LogUtils.getLogger();
++   private static final int MIN_SIM_DISTANCE = 2;
++   public static final int MAX_PLAYERS = 8;
++   private final Minecraft minecraft;
++   private boolean paused = true;
++   private int publishedPort = -1;
++   private GameType gameTypeForOtherPlayers;
++   private Boolean commandsAllowedForOtherPlayers;
++   private LanServerPinger lanPinger;
++   private UUID uuid;
++   private int previousSimulationDistance = 0;
++   private volatile List<GizmoInstance> latestTicksGizmos = new ArrayList<>();
++   private final SimpleGizmoCollector gizmoCollector = new SimpleGizmoCollector();
++   private MultiplayerScope multiplayerScope = MultiplayerScope.OFF;
++   private long ticksSaveLast = 0L;
++   public Level difficultyUpdateWorld = null;
++   public BlockPos difficultyUpdatePos = null;
++   public DifficultyInstance difficultyLast = null;
+ 
+-    public IntegratedServer(
+-        final Thread serverThread,
+-        final Minecraft minecraft,
+-        final LevelStorageSource.LevelStorageAccess levelStorageAccess,
+-        final PackRepository packRepository,
+-        final WorldStem worldStem,
+-        final Optional<GameRules> gameRules,
+-        final Services services,
+-        final LevelLoadListener levelLoadListener
+-    ) {
+-        super(
+-            serverThread,
+-            levelStorageAccess,
+-            packRepository,
+-            worldStem,
+-            gameRules,
+-            minecraft.getProxy(),
+-            minecraft.getFixerUpper(),
+-            services,
+-            levelLoadListener,
+-            false,
+-            new NotificationManager()
+-        );
+-        this.setSingleplayerProfile(minecraft.getGameProfile());
+-        this.setDemo(minecraft.isDemo());
+-        this.setPlayerList(new IntegratedPlayerList(this, this.registries(), this.playerDataStorage));
+-        this.minecraft = minecraft;
+-    }
++   public IntegratedServer(
++      Thread serverThread,
++      Minecraft minecraft,
++      LevelStorageAccess levelStorageAccess,
++      PackRepository packRepository,
++      WorldStem worldStem,
++      Optional<GameRules> gameRules,
++      Services services,
++      LevelLoadListener levelLoadListener
++   ) {
++      super(
++         serverThread,
++         levelStorageAccess,
++         packRepository,
++         worldStem,
++         gameRules,
++         minecraft.getProxy(),
++         minecraft.getFixerUpper(),
++         services,
++         levelLoadListener,
++         false,
++         new NotificationManager()
++      );
++      this.setSingleplayerProfile(minecraft.getGameProfile());
++      this.setDemo(minecraft.isDemo());
++      this.setPlayerList(new IntegratedPlayerList(this, this.registries(), this.playerDataStorage));
++      this.minecraft = minecraft;
++   }
+ 
+-    @Override
+-    protected boolean initServer() {
+-        LOGGER.info("Starting integrated minecraft server version {}", SharedConstants.getCurrentVersion().name());
+-        this.setUsesAuthentication(true);
+-        this.initializeKeyPair();
+-        this.loadLevel();
+-        GameProfile host = this.getSingleplayerProfile();
+-        String levelName = this.getWorldData().getLevelName();
+-        this.setMotd(host != null ? host.name() + " - " + levelName : levelName);
+-        this.saveEverything(false, true, true);
+-        return true;
+-    }
++   @Override
++   protected boolean initServer() {
++      LOGGER.info("Starting integrated minecraft server version {}", SharedConstants.getCurrentVersion().name());
++      this.setUsesAuthentication(true);
++      this.initializeKeyPair();
++      if (Reflector.ServerLifecycleHooks_handleServerAboutToStart.exists()
++         && !Reflector.callBoolean(Reflector.ServerLifecycleHooks_handleServerAboutToStart, this)) {
++         return false;
++      }
+ 
+-    @Override
+-    public boolean isPaused() {
+-        return this.paused;
+-    }
++      this.loadLevel();
++      GameProfile host = this.getSingleplayerProfile();
++      String levelName = this.getWorldData().getLevelName();
++      this.setMotd(host != null ? host.name() + " - " + levelName : levelName);
++      this.saveEverything(false, true, true);
++      return Reflector.ServerLifecycleHooks_handleServerStarting.exists()
++         ? Reflector.callBoolean(Reflector.ServerLifecycleHooks_handleServerStarting, this)
++         : true;
++   }
+ 
+-    @Override
+-    protected void processPacketsAndTick(final boolean sprinting) {
+-        try (Gizmos.TemporaryCollection ignored = Gizmos.withCollector(this.gizmoCollector)) {
+-            super.processPacketsAndTick(sprinting);
+-        }
++   @Override
++   public boolean isPaused() {
++      return this.paused;
++   }
+ 
+-        if (this.tickRateManager().runsNormally()) {
+-            this.latestTicksGizmos = this.gizmoCollector.drainGizmos();
+-        }
+-    }
++   @Override
++   protected void processPacketsAndTick(boolean sprinting) {
++      try (TemporaryCollection ignored = Gizmos.withCollector(this.gizmoCollector)) {
++         super.processPacketsAndTick(sprinting);
++      }
+ 
+-    @Override
+-    protected void tickServer(final BooleanSupplier haveTime) {
+-        boolean wasPaused = this.paused;
+-        this.paused = Minecraft.getInstance().isPaused() || this.getPlayerList().getPlayers().isEmpty();
+-        ProfilerFiller profiler = Profiler.get();
+-        if (!wasPaused && this.paused) {
+-            profiler.push("autoSave");
+-            LOGGER.info("Saving and pausing game...");
+-            this.saveEverything(false, false, false);
+-            profiler.pop();
+-        }
++      if (this.tickRateManager().runsNormally()) {
++         this.latestTicksGizmos = this.gizmoCollector.drainGizmos();
++      }
++   }
+ 
+-        if (this.paused) {
+-            this.tickPaused();
+-        } else {
+-            if (wasPaused) {
+-                this.forceGameTimeSynchronization();
+-            }
++   @Override
++   protected void tickServer(BooleanSupplier haveTime) {
++      this.onTick();
++      boolean wasPaused = this.paused;
++      this.paused = Minecraft.getInstance().isPaused() || this.getPlayerList().getPlayers().isEmpty();
++      ProfilerFiller profiler = Profiler.get();
++      if (!wasPaused && this.paused) {
++         profiler.push("autoSave");
++         LOGGER.info("Saving and pausing game...");
++         this.saveEverything(false, false, false);
++         profiler.pop();
++      }
+ 
+-            super.tickServer(haveTime);
+-            int serverViewDistance = Math.max(2, this.minecraft.options.renderDistance().get());
+-            if (serverViewDistance != this.getPlayerList().getViewDistance()) {
+-                LOGGER.info("Changing view distance to {}, from {}", serverViewDistance, this.getPlayerList().getViewDistance());
+-                this.getPlayerList().setViewDistance(serverViewDistance);
+-            }
++      if (this.paused) {
++         this.tickPaused();
++      } else {
++         if (wasPaused) {
++            this.forceGameTimeSynchronization();
++         }
+ 
+-            int serverSimulationDistance = Math.max(2, this.minecraft.options.simulationDistance().get());
+-            if (serverSimulationDistance != this.previousSimulationDistance) {
+-                LOGGER.info("Changing simulation distance to {}, from {}", serverSimulationDistance, this.previousSimulationDistance);
+-                this.getPlayerList().setSimulationDistance(serverSimulationDistance);
+-                this.previousSimulationDistance = serverSimulationDistance;
+-            }
+-        }
+-    }
++         super.tickServer(haveTime);
++         int serverViewDistance = Math.max(2, this.minecraft.options.renderDistance().get());
++         if (serverViewDistance != this.getPlayerList().getViewDistance()) {
++            LOGGER.info("Changing view distance to {}, from {}", serverViewDistance, this.getPlayerList().getViewDistance());
++            this.getPlayerList().setViewDistance(serverViewDistance);
++         }
+ 
+-    protected LocalSampleLogger getTickTimeLogger() {
+-        return this.minecraft.getDebugOverlay().getTickTimeLogger();
+-    }
++         int serverSimulationDistance = Math.max(2, this.minecraft.options.simulationDistance().get());
++         if (serverSimulationDistance != this.previousSimulationDistance) {
++            LOGGER.info("Changing simulation distance to {}, from {}", serverSimulationDistance, this.previousSimulationDistance);
++            this.getPlayerList().setSimulationDistance(serverSimulationDistance);
++            this.previousSimulationDistance = serverSimulationDistance;
++         }
++      }
++   }
+ 
+-    @Override
+-    public boolean isTickTimeLoggingEnabled() {
+-        return true;
+-    }
++   protected LocalSampleLogger getTickTimeLogger() {
++      return this.minecraft.getDebugOverlay().getTickTimeLogger();
++   }
+ 
+-    private void tickPaused() {
+-        this.tickConnection();
++   @Override
++   public boolean isTickTimeLoggingEnabled() {
++      return true;
++   }
+ 
+-        for (ServerPlayer player : this.getPlayerList().getPlayers()) {
+-            player.awardStat(Stats.TOTAL_WORLD_TIME);
+-        }
+-    }
++   private void tickPaused() {
++      this.tickConnection();
+ 
+-    @Override
+-    public boolean shouldRconBroadcast() {
+-        return true;
+-    }
++      for (ServerPlayer player : this.getPlayerList().getPlayers()) {
++         player.awardStat(Stats.TOTAL_WORLD_TIME);
++      }
++   }
+ 
+-    @Override
+-    public boolean shouldInformAdmins() {
+-        return true;
+-    }
++   @Override
++   public boolean shouldRconBroadcast() {
++      return true;
++   }
+ 
+-    @Override
+-    public Path getServerDirectory() {
+-        return this.minecraft.gameDirectory.toPath();
+-    }
++   @Override
++   public boolean shouldInformAdmins() {
++      return true;
++   }
+ 
+-    @Override
+-    public boolean isDedicatedServer() {
+-        return false;
+-    }
++   @Override
++   public Path getServerDirectory() {
++      return this.minecraft.gameDirectory.toPath();
++   }
+ 
+-    @Override
+-    public int getRateLimitPacketsPerSecond() {
+-        return 0;
+-    }
++   @Override
++   public boolean isDedicatedServer() {
++      return false;
++   }
+ 
+-    @Override
+-    public int getCommandSpamThresholdSeconds() {
+-        return 0;
+-    }
++   @Override
++   public int getRateLimitPacketsPerSecond() {
++      return 0;
++   }
+ 
+-    @Override
+-    public int getChatSpamThresholdSeconds() {
+-        return 0;
+-    }
++   @Override
++   public int getCommandSpamThresholdSeconds() {
++      return 0;
++   }
+ 
+-    @Override
+-    public boolean useNativeTransport() {
+-        return this.minecraft.options.useNativeTransport();
+-    }
++   @Override
++   public int getChatSpamThresholdSeconds() {
++      return 0;
++   }
+ 
+-    @Override
+-    protected void onServerCrash(final CrashReport report) {
+-        BlockableEventLoop.relayDelayCrash(report);
+-    }
++   @Override
++   public boolean useNativeTransport() {
++      return this.minecraft.options.useNativeTransport();
++   }
+ 
+-    @Override
+-    public SystemReport fillServerSystemReport(final SystemReport systemReport) {
+-        systemReport.setDetail("Type", "Integrated Server");
+-        systemReport.setDetail("Is Modded", () -> this.getModdedStatus().fullDescription());
+-        systemReport.setDetail("Launched Version", this.minecraft::getLaunchedVersion);
+-        return systemReport;
+-    }
++   @Override
++   protected void onServerCrash(CrashReport report) {
++      BlockableEventLoop.relayDelayCrash(report);
++   }
+ 
+-    @Override
+-    public ModCheck getModdedStatus() {
+-        return Minecraft.checkModStatus().merge(super.getModdedStatus());
+-    }
++   @Override
++   public SystemReport fillServerSystemReport(SystemReport systemReport) {
++      systemReport.setDetail("Type", "Integrated Server");
++      systemReport.setDetail("Is Modded", () -> this.getModdedStatus().fullDescription());
++      systemReport.setDetail("Launched Version", this.minecraft::getLaunchedVersion);
++      return systemReport;
++   }
+ 
+-    @Override
+-    public boolean publishServer(final MinecraftServer.MultiplayerScope scope, final @Nullable GameType gameMode, final boolean allowCommands, final int port) {
+-        if (gameMode != null) {
+-            this.setGameTypeForOtherPlayers(gameMode);
+-        }
++   @Override
++   public ModCheck getModdedStatus() {
++      return Minecraft.checkModStatus().merge(super.getModdedStatus());
++   }
+ 
+-        this.setCommandsAllowedForOtherPlayers(allowCommands);
+-        return this.publishServer(scope, port);
+-    }
++   @Override
++   public boolean publishServer(MultiplayerScope scope, GameType gameMode, boolean allowCommands, int port) {
++      if (gameMode != null) {
++         this.setGameTypeForOtherPlayers(gameMode);
++      }
+ 
+-    public boolean publishServer(final MinecraftServer.MultiplayerScope scope, final int port) {
+-        if (scope != MinecraftServer.MultiplayerScope.OFF && !this.isPublished()) {
+-            try {
+-                this.minecraft.prepareForMultiplayer();
+-                this.minecraft.getConnection().prepareKeyPair();
+-                this.getConnection().startTcpServerListener(null, port);
+-                LOGGER.info("Published LAN server on port {}", port);
+-                this.publishedPort = port;
+-                this.lanPinger = new LanServerPinger(this.getMotd(), Integer.toString(port));
+-                this.lanPinger.start();
+-                this.setMultiplayerScope(scope);
+-                this.updateCommandsAllowedForOtherPlayers();
+-                return true;
+-            } catch (IOException var4) {
+-                return false;
+-            }
+-        } else {
++      this.setCommandsAllowedForOtherPlayers(allowCommands);
++      return this.publishServer(scope, port);
++   }
++
++   public boolean publishServer(MultiplayerScope scope, int port) {
++      if (scope != MultiplayerScope.OFF && !this.isPublished()) {
++         try {
++            this.minecraft.prepareForMultiplayer();
++            this.minecraft.getConnection().prepareKeyPair();
++            this.getConnection().startTcpServerListener(null, port);
++            LOGGER.info("Published LAN server on port {}", port);
++            this.publishedPort = port;
++            this.lanPinger = new LanServerPinger(this.getMotd(), Integer.toString(port));
++            this.lanPinger.start();
++            this.setMultiplayerScope(scope);
++            this.updateCommandsAllowedForOtherPlayers();
++            return true;
++         } catch (IOException var4) {
+             return false;
+-        }
+-    }
++         }
++      } else {
++         return false;
++      }
++   }
+ 
+-    public void setWorldGameType(final GameType gameMode) {
+-        this.setDefaultGameType(gameMode);
+-        this.applyGameTypeToPlayers(gameMode, true);
+-        if (this.gameTypeForOtherPlayers == null) {
+-            this.applyGameTypeToPlayers(gameMode, false);
+-        }
+-    }
++   public void setWorldGameType(GameType gameMode) {
++      this.setDefaultGameType(gameMode);
++      this.applyGameTypeToPlayers(gameMode, true);
++      if (this.gameTypeForOtherPlayers == null) {
++         this.applyGameTypeToPlayers(gameMode, false);
++      }
++   }
+ 
+-    public GameType getGameTypeForOtherPlayers() {
+-        return MoreObjects.firstNonNull(this.gameTypeForOtherPlayers, this.worldData.getGameType());
+-    }
++   public GameType getGameTypeForOtherPlayers() {
++      return MoreObjects.firstNonNull(this.gameTypeForOtherPlayers, this.worldData.getGameType());
++   }
+ 
+-    public void setGameTypeForOtherPlayers(final GameType gameMode) {
+-        this.gameTypeForOtherPlayers = gameMode;
+-        this.applyGameTypeToPlayers(gameMode, false);
+-    }
++   public void setGameTypeForOtherPlayers(GameType gameMode) {
++      this.gameTypeForOtherPlayers = gameMode;
++      this.applyGameTypeToPlayers(gameMode, false);
++   }
+ 
+-    private void applyGameTypeToPlayers(final GameType gameMode, final boolean singleplayerOwner) {
+-        for (ServerPlayer player : this.getPlayerList().getPlayers()) {
+-            if (this.isSingleplayerOwner(player.nameAndId()) == singleplayerOwner) {
+-                player.setGameMode(gameMode);
+-            }
+-        }
+-    }
++   private void applyGameTypeToPlayers(GameType gameMode, boolean singleplayerOwner) {
++      for (ServerPlayer player : this.getPlayerList().getPlayers()) {
++         if (this.isSingleplayerOwner(player.nameAndId()) == singleplayerOwner) {
++            player.setGameMode(gameMode);
++         }
++      }
++   }
+ 
+-    public void setWorldAllowCommands(final boolean allowCommands) {
+-        this.getWorldData().setAllowCommands(allowCommands);
+-        this.updateCommandsAllowedForOtherPlayers();
+-    }
++   public void setWorldAllowCommands(boolean allowCommands) {
++      this.getWorldData().setAllowCommands(allowCommands);
++      this.updateCommandsAllowedForOtherPlayers();
++   }
+ 
+-    public boolean commandsAllowedForOtherPlayers() {
+-        return MoreObjects.firstNonNull(this.commandsAllowedForOtherPlayers, this.worldData.isAllowCommands());
+-    }
++   public boolean commandsAllowedForOtherPlayers() {
++      return MoreObjects.firstNonNull(this.commandsAllowedForOtherPlayers, this.worldData.isAllowCommands());
++   }
+ 
+-    public void setCommandsAllowedForOtherPlayers(final boolean allowCommands) {
+-        this.commandsAllowedForOtherPlayers = allowCommands;
+-        this.updateCommandsAllowedForOtherPlayers();
+-    }
++   public void setCommandsAllowedForOtherPlayers(boolean allowCommands) {
++      this.commandsAllowedForOtherPlayers = allowCommands;
++      this.updateCommandsAllowedForOtherPlayers();
++   }
+ 
+-    private void updateCommandsAllowedForOtherPlayers() {
+-        this.getPlayerList().setAllowCommandsForAllPlayers(this.commandsAllowedForOtherPlayers());
++   private void updateCommandsAllowedForOtherPlayers() {
++      this.getPlayerList().setAllowCommandsForAllPlayers(this.commandsAllowedForOtherPlayers());
+ 
+-        for (ServerPlayer player : this.getPlayerList().getPlayers()) {
+-            this.getPlayerList().sendPlayerPermissionLevel(player);
+-        }
++      for (ServerPlayer player : this.getPlayerList().getPlayers()) {
++         this.getPlayerList().sendPlayerPermissionLevel(player);
++      }
+ 
+-        LocalPlayer player = this.minecraft.player;
+-        if (player != null) {
+-            this.updatePermissionAndChatAbilities(player);
+-        }
+-    }
++      LocalPlayer player = this.minecraft.player;
++      if (player != null) {
++         this.updatePermissionAndChatAbilities(player);
++      }
++   }
+ 
+-    private void updatePermissionAndChatAbilities(final LocalPlayer player) {
+-        player.setPermissions(this.getProfilePermissions(player.nameAndId()));
+-        player.refreshChatAbilities();
+-    }
++   private void updatePermissionAndChatAbilities(LocalPlayer player) {
++      player.setPermissions(this.getProfilePermissions(player.nameAndId()));
++      player.refreshChatAbilities();
++   }
+ 
+-    private void teardownPublishedState() {
+-        this.stopLanPinger();
+-        this.publishedPort = -1;
+-        this.setMultiplayerScope(MinecraftServer.MultiplayerScope.OFF);
+-        this.updateCommandsAllowedForOtherPlayers();
+-    }
++   private void teardownPublishedState() {
++      this.stopLanPinger();
++      this.publishedPort = -1;
++      this.setMultiplayerScope(MultiplayerScope.OFF);
++      this.updateCommandsAllowedForOtherPlayers();
++   }
+ 
+-    private void stopLanPinger() {
+-        if (this.lanPinger != null) {
+-            this.lanPinger.interrupt();
+-            this.lanPinger = null;
+-        }
+-    }
++   private void stopLanPinger() {
++      if (this.lanPinger != null) {
++         this.lanPinger.interrupt();
++         this.lanPinger = null;
++      }
++   }
+ 
+-    @Override
+-    public boolean unpublishServer() {
+-        if (!this.isPublished()) {
+-            return false;
+-        }
++   @Override
++   public boolean unpublishServer() {
++      if (!this.isPublished()) {
++         return false;
++      }
+ 
+-        if (this.multiplayerScope == MinecraftServer.MultiplayerScope.LAN) {
+-            LOGGER.info("Unpublishing integrated server (was on port {})", this.publishedPort);
+-        }
++      if (this.multiplayerScope == MultiplayerScope.LAN) {
++         LOGGER.info("Unpublishing integrated server (was on port {})", this.publishedPort);
++      }
+ 
+-        this.getConnection().stopTcpServerListener();
+-        Component reason = Component.translatable("multiplayer.disconnect.server_shutdown");
++      this.getConnection().stopTcpServerListener();
++      Component reason = Component.translatable("multiplayer.disconnect.server_shutdown");
+ 
+-        for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
+-            if (!player.getUUID().equals(this.uuid)) {
+-                player.connection.disconnect(reason);
+-            }
+-        }
++      for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
++         if (!player.getUUID().equals(this.uuid)) {
++            player.connection.disconnect(reason);
++         }
++      }
+ 
+-        this.getPlayerList().setAllowCommandsForAllPlayers(false);
+-        this.teardownPublishedState();
+-        return true;
+-    }
++      this.getPlayerList().setAllowCommandsForAllPlayers(false);
++      this.teardownPublishedState();
++      return true;
++   }
+ 
+-    @Override
+-    public void stopServer() {
+-        this.teardownPublishedState();
+-        super.stopServer();
+-    }
++   @Override
++   public void stopServer() {
++      this.teardownPublishedState();
++      super.stopServer();
++   }
+ 
+-    @Override
+-    public void halt(final boolean wait) {
+-        this.executeBlocking(() -> {
++   @Override
++   public void halt(boolean wait) {
++      if (!Reflector.MinecraftForge.exists() || this.isRunning()) {
++         this.executeBlocking(() -> {
+             for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
+-                if (!player.getUUID().equals(this.uuid)) {
+-                    this.getPlayerList().remove(player);
+-                }
++               if (!player.getUUID().equals(this.uuid)) {
++                  this.getPlayerList().remove(player);
++               }
+             }
+-        });
+-        super.halt(wait);
+-        this.stopLanPinger();
+-    }
++         });
++      }
+ 
+-    @Override
+-    public boolean isPublished() {
+-        return this.multiplayerScope != MinecraftServer.MultiplayerScope.OFF;
+-    }
++      super.halt(wait);
++      this.stopLanPinger();
++   }
+ 
+-    @Override
+-    public int getPort() {
+-        return this.publishedPort;
+-    }
++   @Override
++   public boolean isPublished() {
++      return this.multiplayerScope != MultiplayerScope.OFF;
++   }
+ 
+-    @Override
+-    public LevelBasedPermissionSet operatorUserPermissions() {
+-        return LevelBasedPermissionSet.GAMEMASTER;
+-    }
++   @Override
++   public int getPort() {
++      return this.publishedPort;
++   }
+ 
+-    public LevelBasedPermissionSet getFunctionCompilationPermissions() {
+-        return LevelBasedPermissionSet.GAMEMASTER;
+-    }
++   @Override
++   public LevelBasedPermissionSet operatorUserPermissions() {
++      return LevelBasedPermissionSet.GAMEMASTER;
++   }
+ 
+-    public void setUUID(final UUID uuid) {
+-        this.uuid = uuid;
+-    }
++   public LevelBasedPermissionSet getFunctionCompilationPermissions() {
++      return LevelBasedPermissionSet.GAMEMASTER;
++   }
+ 
+-    @Override
+-    public boolean isSingleplayerOwner(final NameAndId nameAndId) {
+-        return this.getSingleplayerProfile() != null && nameAndId.name().equalsIgnoreCase(this.getSingleplayerProfile().name());
+-    }
++   public void setUUID(UUID uuid) {
++      this.uuid = uuid;
++   }
+ 
+-    @Override
+-    public int getScaledTrackingDistance(final int baseRange) {
+-        return (int)(this.minecraft.options.entityDistanceScaling().get() * baseRange);
+-    }
++   @Override
++   public boolean isSingleplayerOwner(NameAndId nameAndId) {
++      return this.getSingleplayerProfile() != null && nameAndId.name().equalsIgnoreCase(this.getSingleplayerProfile().name());
++   }
+ 
+-    @Override
+-    public boolean forceSynchronousWrites() {
+-        return this.minecraft.options.syncWrites;
+-    }
++   @Override
++   public int getScaledTrackingDistance(int baseRange) {
++      return (int)(this.minecraft.options.entityDistanceScaling().get() * baseRange);
++   }
+ 
+-    @Override
+-    public @Nullable GameType getForcedGameType() {
+-        return this.isPublished() && !this.isHardcore() ? this.getGameTypeForOtherPlayers() : null;
+-    }
++   @Override
++   public boolean forceSynchronousWrites() {
++      return this.minecraft.options.syncWrites;
++   }
+ 
+-    @Override
+-    protected GlobalPos selectLevelLoadFocusPos() {
+-        UUID lastSinglePlayerOwnerUUID = this.worldData.getSinglePlayerUUID();
+-        if (lastSinglePlayerOwnerUUID == null) {
+-            return super.selectLevelLoadFocusPos();
+-        }
++   @Override
++   public GameType getForcedGameType() {
++      return this.isPublished() && !this.isHardcore() ? this.getGameTypeForOtherPlayers() : null;
++   }
+ 
+-        Optional<CompoundTag> playerData = this.playerDataStorage.load(new NameAndId(lastSinglePlayerOwnerUUID, "<single player owner>"));
+-        if (playerData.isEmpty()) {
+-            return super.selectLevelLoadFocusPos();
+-        }
++   @Override
++   protected GlobalPos selectLevelLoadFocusPos() {
++      UUID lastSinglePlayerOwnerUUID = this.worldData.getSinglePlayerUUID();
++      if (lastSinglePlayerOwnerUUID == null) {
++         return super.selectLevelLoadFocusPos();
++      }
+ 
+-        try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(LOGGER)) {
+-            ValueInput input = TagValueInput.create(reporter, this.registryAccess(), playerData.get());
+-            ServerPlayer.SavedPosition loadedPosition = input.read(ServerPlayer.SavedPosition.MAP_CODEC).orElse(ServerPlayer.SavedPosition.EMPTY);
+-            if (loadedPosition.dimension().isPresent() && loadedPosition.position().isPresent()) {
+-                return new GlobalPos(loadedPosition.dimension().get(), BlockPos.containing(loadedPosition.position().get()));
+-            }
+-        }
++      Optional<CompoundTag> playerData = this.playerDataStorage.load(new NameAndId(lastSinglePlayerOwnerUUID, "<single player owner>"));
++      if (playerData.isEmpty()) {
++         return super.selectLevelLoadFocusPos();
++      }
+ 
+-        return super.selectLevelLoadFocusPos();
+-    }
++      try (ScopedCollector reporter = new ScopedCollector(LOGGER)) {
++         ValueInput input = TagValueInput.create(reporter, this.registryAccess(), playerData.get());
++         SavedPosition loadedPosition = input.read(SavedPosition.MAP_CODEC).orElse(SavedPosition.EMPTY);
++         if (loadedPosition.dimension().isPresent() && loadedPosition.position().isPresent()) {
++            return new GlobalPos(loadedPosition.dimension().get(), BlockPos.containing(loadedPosition.position().get()));
++         }
++      }
+ 
+-    @Override
+-    public void sendLowDiskSpaceWarning() {
+-        super.sendLowDiskSpaceWarning();
+-        this.minecraft.sendLowDiskSpaceWarning();
+-    }
++      return super.selectLevelLoadFocusPos();
++   }
+ 
+-    @Override
+-    public void reportChunkLoadFailure(final Throwable throwable, final RegionStorageInfo storageInfo, final ChunkPos pos) {
+-        super.reportChunkLoadFailure(throwable, storageInfo, pos);
+-        this.warnOnLowDiskSpace();
+-        this.minecraft.execute(() -> SystemToast.onChunkLoadFailure(this.minecraft, pos));
+-    }
++   @Override
++   public void sendLowDiskSpaceWarning() {
++      super.sendLowDiskSpaceWarning();
++      this.minecraft.sendLowDiskSpaceWarning();
++   }
+ 
+-    @Override
+-    public void reportChunkSaveFailure(final Throwable throwable, final RegionStorageInfo storageInfo, final ChunkPos pos) {
+-        super.reportChunkSaveFailure(throwable, storageInfo, pos);
+-        this.warnOnLowDiskSpace();
+-        this.minecraft.execute(() -> SystemToast.onChunkSaveFailure(this.minecraft, pos));
+-    }
++   @Override
++   public void reportChunkLoadFailure(Throwable throwable, RegionStorageInfo storageInfo, ChunkPos pos) {
++      super.reportChunkLoadFailure(throwable, storageInfo, pos);
++      this.warnOnLowDiskSpace();
++      this.minecraft.execute(() -> SystemToast.onChunkLoadFailure(this.minecraft, pos));
++   }
+ 
+-    @Override
+-    public int getMaxPlayers() {
+-        return 8;
+-    }
++   @Override
++   public void reportChunkSaveFailure(Throwable throwable, RegionStorageInfo storageInfo, ChunkPos pos) {
++      super.reportChunkSaveFailure(throwable, storageInfo, pos);
++      this.warnOnLowDiskSpace();
++      this.minecraft.execute(() -> SystemToast.onChunkSaveFailure(this.minecraft, pos));
++   }
+ 
+-    public Collection<SimpleGizmoCollector.GizmoInstance> getPerTickGizmos() {
+-        return this.latestTicksGizmos;
+-    }
++   @Override
++   public int getMaxPlayers() {
++      return 8;
++   }
+ 
+-    private void setMultiplayerScope(final MinecraftServer.MultiplayerScope multiplayerScope) {
+-        if (this.multiplayerScope != multiplayerScope) {
+-            this.multiplayerScope = multiplayerScope;
+-        }
+-    }
++   public Collection<GizmoInstance> getPerTickGizmos() {
++      return this.latestTicksGizmos;
++   }
+ 
+-    public MinecraftServer.MultiplayerScope getMultiplayerScope() {
+-        return this.multiplayerScope;
+-    }
+-}
+\ No newline at end of file
++   private void setMultiplayerScope(MultiplayerScope multiplayerScope) {
++      if (this.multiplayerScope != multiplayerScope) {
++         this.multiplayerScope = multiplayerScope;
++      }
++   }
++
++   public MultiplayerScope getMultiplayerScope() {
++      return this.multiplayerScope;
++   }
++
++   private void onTick() {
++      for (ServerLevel ws : this.getAllLevels()) {
++         this.onTick(ws);
++      }
++   }
++
++   private void onTick(ServerLevel ws) {
++      if (!Config.isTimeDefault()) {
++         this.fixWorldTime(ws);
++      }
++
++      if (!Config.isWeatherEnabled()) {
++         this.fixWorldWeather(ws);
++      }
++
++      if (this.difficultyUpdateWorld == ws && this.difficultyUpdatePos != null) {
++         this.difficultyLast = ws.getCurrentDifficultyAt(this.difficultyUpdatePos);
++         this.difficultyUpdateWorld = null;
++         this.difficultyUpdatePos = null;
++      }
++   }
++
++   public DifficultyInstance getDifficultyAsync(Level world, BlockPos blockPos) {
++      this.difficultyUpdateWorld = world;
++      this.difficultyUpdatePos = blockPos;
++      return this.difficultyLast;
++   }
++
++   private void fixWorldWeather(ServerLevel ws) {
++      if (ws.getRainLevel(1.0F) > 0.0F || ws.isThundering()) {
++         this.setWeatherParameters(6000, 0, false, false);
++      }
++   }
++
++   private void fixWorldTime(ServerLevel ws) {
++      if (this.getDefaultGameType() == GameType.CREATIVE) {
++         long time = Config.getDayTime(ws);
++         long timeOfDay = time % 24000L;
++         if (Config.isTimeDayOnly()) {
++            if (timeOfDay <= 1000L) {
++               Config.setDayTime(ws, time - timeOfDay + 1001L);
++            }
++
++            if (timeOfDay >= 11000L) {
++               Config.setDayTime(ws, time - timeOfDay + 24001L);
++            }
++         }
++
++         if (Config.isTimeNightOnly()) {
++            if (timeOfDay <= 14000L) {
++               Config.setDayTime(ws, time - timeOfDay + 14001L);
++            }
++
++            if (timeOfDay >= 22000L) {
++               Config.setDayTime(ws, time - timeOfDay + 24000L + 14001L);
++            }
++         }
++      }
++   }
++
++   @Override
++   public boolean saveAllChunks(boolean silentIn, boolean flushIn, boolean commandIn) {
++      if (silentIn) {
++         int ticks = this.getTickCount();
++         int ticksSaveInterval = this.minecraft.options.ofAutoSaveTicks;
++         if (ticks < this.ticksSaveLast + ticksSaveInterval) {
++            return false;
++         }
++
++         this.ticksSaveLast = ticks;
++      }
++
++      return super.saveAllChunks(silentIn, flushIn, commandIn);
++   }
++}

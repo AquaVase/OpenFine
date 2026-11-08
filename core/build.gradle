@@ -1,0 +1,34 @@
+plugins { id 'java' }
+
+group = rootProject.group
+version = rootProject.version
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+}
+
+// OptiFine and patched Minecraft reference each other's added members.
+// Compile them together in the root task, then give each module its own output.
+def jointCompile = rootProject.tasks.named('compileJava', JavaCompile)
+
+// Reuse patchgen/ForgeGradle repositories, including the generated mapped library
+// repository and its sources artifact, without hard-coding a local JAR path.
+rootProject.repositories.each { repositories.add(it) }
+
+// Expose patched game members and the Minecraft libraries to the IDE as well.
+dependencies {
+    compileOnly(project(':')) { transitive = false }
+}
+configurations.compileOnly.withDependencies { dependencies ->
+    // Copy library declarations rather than a task's resolved file collection:
+    // IDE Gradle import needs module metadata to attach Minecraft and its sources.
+    dependencies.addAll(rootProject.configurations.compileClasspath.allDependencies
+        .findAll { !(it instanceof ProjectDependency) }
+        .collect { it.copy() })
+}
+
+tasks.named('compileJava', JavaCompile) {
+    enabled = false
+}
+
+rootProject.registerJointClassOutput(project)

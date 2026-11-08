@@ -1,0 +1,165 @@
+--- a/net/minecraft/client/resources/model/ClientItemInfoLoader.java
++++ b/net/minecraft/client/resources/model/ClientItemInfoLoader.java
+@@ -9,11 +9,15 @@
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.Optional;
+ import java.util.concurrent.CompletableFuture;
+ import java.util.concurrent.Executor;
+ import net.minecraft.client.multiplayer.ClientRegistryLayer;
+ import net.minecraft.client.renderer.item.ClientItem;
+-import net.minecraft.core.RegistryAccess;
++import net.minecraft.client.renderer.item.CuboidItemModelWrapper;
++import net.minecraft.client.renderer.item.ClientItem.Properties;
++import net.minecraft.client.renderer.item.ItemModel.Unbaked;
++import net.minecraft.core.RegistryAccess.Frozen;
+ import net.minecraft.resources.FileToIdConverter;
+ import net.minecraft.resources.Identifier;
+ import net.minecraft.server.packs.resources.Resource;
+@@ -21,75 +25,82 @@
+ import net.minecraft.util.PlaceholderLookupProvider;
+ import net.minecraft.util.StrictJsonParser;
+ import net.minecraft.util.Util;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.Config;
++import net.optifine.CustomItems;
+ import org.slf4j.Logger;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class ClientItemInfoLoader {
+-    private static final Logger LOGGER = LogUtils.getLogger();
+-    private static final FileToIdConverter LISTER = FileToIdConverter.json("items");
++   private static final Logger LOGGER = LogUtils.getLogger();
++   private static final FileToIdConverter LISTER = FileToIdConverter.json("items");
+ 
+-    public static CompletableFuture<ClientItemInfoLoader.LoadedClientInfos> scheduleLoad(final ResourceManager manager, final Executor executor) {
+-        RegistryAccess.Frozen staticRegistries = ClientRegistryLayer.createRegistryAccess().compositeAccess();
+-        return CompletableFuture.<Map<Identifier, Resource>>supplyAsync(() -> LISTER.listMatchingResources(manager), executor)
+-            .thenCompose(
+-                resources -> {
+-                    List<CompletableFuture<ClientItemInfoLoader.PendingLoad>> pendingLoads = new ArrayList<>(resources.size());
+-                    resources.forEach(
+-                        (resourceId, resource) -> pendingLoads.add(
+-                            CompletableFuture.supplyAsync(
+-                                () -> {
+-                                    Identifier modelId = LISTER.fileToId(resourceId);
++   public static CompletableFuture<ClientItemInfoLoader.LoadedClientInfos> scheduleLoad(ResourceManager manager, Executor executor) {
++      Frozen staticRegistries = ClientRegistryLayer.createRegistryAccess().compositeAccess();
++      return CompletableFuture.<Map<Identifier, Resource>>supplyAsync(() -> LISTER.listMatchingResources(manager), executor)
++         .thenCompose(
++            resources -> {
++               List<CompletableFuture<ClientItemInfoLoader.PendingLoad>> pendingLoads = new ArrayList<>(resources.size());
++               resources.forEach(
++                  (resourceId, resource) -> pendingLoads.add(
++                     CompletableFuture.supplyAsync(
++                        () -> {
++                           Identifier modelId = LISTER.fileToId(resourceId);
+ 
+-                                    try (Reader reader = resource.openAsReader()) {
+-                                        PlaceholderLookupProvider lookup = new PlaceholderLookupProvider(staticRegistries);
+-                                        DynamicOps<JsonElement> ops = lookup.createSerializationContext(JsonOps.INSTANCE);
+-                                        ClientItem parsedInfo = ClientItem.CODEC
+-                                            .parse(ops, StrictJsonParser.parse(reader))
+-                                            .ifError(
+-                                                error -> LOGGER.error(
+-                                                    "Couldn't parse item model '{}' from pack '{}': {}", modelId, resource.sourcePackId(), error.message()
+-                                                )
+-                                            )
+-                                            .result()
+-                                            .map(
+-                                                clientItem -> lookup.hasRegisteredPlaceholders()
+-                                                    ? clientItem.withRegistrySwapper(lookup.createSwapper())
+-                                                    : clientItem
+-                                            )
+-                                            .orElse(null);
+-                                        return new ClientItemInfoLoader.PendingLoad(modelId, parsedInfo);
+-                                    } catch (Exception e) {
+-                                        LOGGER.error("Failed to open item model {} from pack '{}'", resourceId, resource.sourcePackId(), e);
+-                                        return new ClientItemInfoLoader.PendingLoad(modelId, null);
+-                                    }
+-                                },
+-                                executor
+-                            )
+-                        )
+-                    );
+-                    return Util.sequence(pendingLoads).thenApply(loads -> {
+-                        Map<Identifier, ClientItem> resultMap = new HashMap<>();
++                           try (Reader reader = resource.openAsReader()) {
++                              PlaceholderLookupProvider lookup = new PlaceholderLookupProvider(staticRegistries);
++                              DynamicOps<JsonElement> ops = lookup.createSerializationContext(JsonOps.INSTANCE);
++                              ClientItem parsedInfo = ClientItem.CODEC
++                                 .parse(ops, StrictJsonParser.parse(reader))
++                                 .ifError(
++                                    error -> LOGGER.error(
++                                       "Couldn't parse item model '{}' from pack '{}': {}", modelId, resource.sourcePackId(), error.message()
++                                    )
++                                 )
++                                 .result()
++                                 .map(clientItem -> lookup.hasRegisteredPlaceholders() ? clientItem.withRegistrySwapper(lookup.createSwapper()) : clientItem)
++                                 .orElse(null);
++                              return new ClientItemInfoLoader.PendingLoad(modelId, parsedInfo);
++                           } catch (Exception e) {
++                              LOGGER.error("Failed to open item model {} from pack '{}'", resourceId, resource.sourcePackId(), e);
++                              return new ClientItemInfoLoader.PendingLoad(modelId, null);
++                           }
++                        },
++                        executor
++                     )
++                  )
++               );
++               return Util.sequence(pendingLoads).thenApply(loads -> {
++                  Map<Identifier, ClientItem> resultMap = new HashMap<>();
+ 
+-                        for (ClientItemInfoLoader.PendingLoad load : loads) {
+-                            if (load.clientItemInfo != null) {
+-                                resultMap.put(load.id, load.clientItemInfo);
+-                            }
++                  for (ClientItemInfoLoader.PendingLoad load : loads) {
++                     if (load.clientItemInfo != null) {
++                        resultMap.put(load.id, load.clientItemInfo);
++                     }
++                  }
++
++                  if (Config.isCustomItems()) {
++                     Map<Identifier, Resource> modelResources = CustomItems.getModelResources(false);
++
++                     for (Identifier locJson : modelResources.keySet()) {
++                        Identifier locModel = locJson.removePrefixSuffix("models/", ".json");
++                        Identifier locItem = locModel.removePrefix("item/");
++                        if (!resultMap.containsKey(locItem)) {
++                           Unbaked unbaked = new CuboidItemModelWrapper.Unbaked(locModel, Optional.empty(), List.of());
++                           Properties props = Properties.DEFAULT;
++                           ClientItem ci = new ClientItem(unbaked, props);
++                           resultMap.put(locItem, ci);
+                         }
++                     }
++                  }
+ 
+-                        return new ClientItemInfoLoader.LoadedClientInfos(resultMap);
+-                    });
+-                }
+-            );
+-    }
++                  return new ClientItemInfoLoader.LoadedClientInfos(resultMap);
++               });
++            }
++         );
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record LoadedClientInfos(Map<Identifier, ClientItem> contents) {
+-    }
++   public record LoadedClientInfos(Map<Identifier, ClientItem> contents) {
++   }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    private record PendingLoad(Identifier id, @Nullable ClientItem clientItemInfo) {
+-    }
+-}
+\ No newline at end of file
++   private record PendingLoad(Identifier id, ClientItem clientItemInfo) {
++   }
++}

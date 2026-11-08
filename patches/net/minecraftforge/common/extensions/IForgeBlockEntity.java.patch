@@ -1,0 +1,27 @@
+--- /dev/null
++++ b/net/minecraftforge/common/extensions/IForgeBlockEntity.java
+@@ -0,0 +1,24 @@
++package net.minecraftforge.common.extensions;
++
++import net.minecraft.world.phys.AABB;
++
++public interface IForgeBlockEntity {
++   AABB INFINITE_EXTENT_AABB = new AABB(
++      Double.NEGATIVE_INFINITY,
++      Double.NEGATIVE_INFINITY,
++      Double.NEGATIVE_INFINITY,
++      Double.POSITIVE_INFINITY,
++      Double.POSITIVE_INFINITY,
++      Double.POSITIVE_INFINITY
++   );
++
++   default void requestModelDataUpdate() {
++   }
++
++   default void onChunkUnloaded() {
++   }
++
++   default boolean hasCustomOutlineRendering() {
++      return false;
++   }
++}

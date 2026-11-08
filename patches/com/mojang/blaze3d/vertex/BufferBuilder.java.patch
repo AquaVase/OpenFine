@@ -1,0 +1,1007 @@
+--- a/com/mojang/blaze3d/vertex/BufferBuilder.java
++++ b/com/mojang/blaze3d/vertex/BufferBuilder.java
+@@ -2,321 +2,734 @@
+ 
+ import com.mojang.blaze3d.IndexType;
+ import com.mojang.blaze3d.PrimitiveTopology;
++import java.nio.ByteBuffer;
+ import java.nio.ByteOrder;
++import java.nio.FloatBuffer;
++import java.nio.IntBuffer;
++import java.util.BitSet;
+ import java.util.stream.Collectors;
+ import java.util.stream.IntStream;
++import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
++import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
++import net.minecraft.client.renderer.rendertype.RenderType;
++import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+ import net.minecraft.util.ARGB;
+ import net.minecraft.util.Mth;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+-import org.jspecify.annotations.Nullable;
++import net.optifine.Config;
++import net.optifine.SmartAnimations;
++import net.optifine.render.BufferBuilderCache;
++import net.optifine.render.MultiTextureBuilder;
++import net.optifine.render.MultiTextureData;
++import net.optifine.render.RegionLayerRenderer;
++import net.optifine.render.VertexPosition;
++import net.optifine.shaders.SVertexBuilder;
++import net.optifine.shaders.SVertexFormat;
++import net.optifine.util.MathUtils;
++import org.joml.Matrix4f;
++import org.joml.Vector3f;
+ import org.lwjgl.system.MemoryUtil;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class BufferBuilder implements VertexConsumer {
+-    private static final int MAX_VERTEX_COUNT = 16777215;
+-    private static final long NOT_BUILDING = -1L;
+-    private static final long UNKNOWN_ELEMENT = -1L;
+-    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+-    private final ByteBufferBuilder buffer;
+-    private long vertexPointer = -1L;
+-    private int vertices;
+-    private final VertexFormat format;
+-    private final PrimitiveTopology primitiveTopology;
+-    private final boolean blockFormat;
+-    private final boolean entityFormat;
+-    private final int vertexSize;
+-    private final int initialElementsToFill;
+-    private int elementsToFill;
+-    private boolean building = true;
+-    private static final int POSITION_SEMANTIC_ID = 0;
+-    private static final int COLOR_SEMANTIC_ID = 1;
+-    private static final int UV0_SEMANTIC_ID = 2;
+-    private static final int UV1_SEMANTIC_ID = 3;
+-    private static final int UV2_SEMANTIC_ID = 4;
+-    private static final int NORMAL_SEMANTIC_ID = 5;
+-    private static final int LINE_WIDTH_SEMANTIC_ID = 6;
+-    private static final String[] elementNames = new String[]{"Position", "Color", "UV0", "UV1", "UV2", "Normal", "LineWidth"};
+-    private final @Nullable VertexFormatElement[] elements = new VertexFormatElement[elementNames.length];
++   private static final int MAX_VERTEX_COUNT = 16777215;
++   private static final long NOT_BUILDING = -1L;
++   private static final long UNKNOWN_ELEMENT = -1L;
++   private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
++   private final ByteBufferBuilder buffer;
++   private long vertexPointer = -1L;
++   private int vertices;
++   private final VertexFormat format;
++   private final PrimitiveTopology primitiveTopology;
++   private final boolean blockFormat;
++   private final boolean entityFormat;
++   private final int vertexSize;
++   private int initialElementsToFill;
++   private int elementsToFill;
++   private boolean building = true;
++   private static final int POSITION_SEMANTIC_ID = 0;
++   private static final int COLOR_SEMANTIC_ID = 1;
++   private static final int UV0_SEMANTIC_ID = 2;
++   private static final int UV1_SEMANTIC_ID = 3;
++   private static final int UV2_SEMANTIC_ID = 4;
++   private static final int NORMAL_SEMANTIC_ID = 5;
++   private static final int LINE_WIDTH_SEMANTIC_ID = 6;
++   private static final String[] elementNames = new String[]{"Position", "Color", "UV0", "UV1", "UV2", "Normal", "LineWidth"};
++   private final VertexFormatElement[] elements = new VertexFormatElement[elementNames.length];
++   private final RenderType renderType;
++   private final ChunkSectionLayer blockLayer;
++   private BufferBuilderCache cache;
++   protected TextureAtlasSprite[] quadSprites;
++   private TextureAtlasSprite quadSprite;
++   private MultiTextureBuilder multiTextureBuilder;
++   public SVertexBuilder sVertexBuilder;
++   public BitSet animatedSprites;
++   private VertexPosition[] quadVertexPositions;
++   protected RenderTypeFeatureRenderer renderTypeBuffer;
++   private Vector3f midBlock;
+ 
+-    public BufferBuilder(final ByteBufferBuilder buffer, final PrimitiveTopology primitiveTopology, final VertexFormat format) {
+-        if (!format.contains("Position")) {
+-            throw new IllegalArgumentException("Cannot build mesh with no position element");
+-        }
++   public BufferBuilder(ByteBufferBuilder buffer, PrimitiveTopology primitiveTopology, VertexFormat format) {
++      this(buffer, primitiveTopology, format, null, null);
++   }
+ 
+-        this.buffer = buffer;
+-        this.primitiveTopology = primitiveTopology;
+-        this.format = format;
+-        this.vertexSize = format.getVertexSize();
+-        int elementsMask = 0;
++   public BufferBuilder(
++      ByteBufferBuilder buffer, PrimitiveTopology primitiveTopology, VertexFormat format, RenderType renderTypeIn, ChunkSectionLayer blockLayerIn
++   ) {
++      if (!format.contains("Position")) {
++         throw new IllegalArgumentException("Cannot build mesh with no position element");
++      }
+ 
+-        for (int i = 0; i < elementNames.length; i++) {
+-            String elementName = elementNames[i];
+-            VertexFormatElement element = format.getElement(elementName);
+-            if (element != null) {
+-                elementsMask |= 1 << i;
+-            }
++      this.buffer = buffer;
++      this.primitiveTopology = primitiveTopology;
++      this.format = format;
++      this.vertexSize = format.getVertexSize();
++      int elementsMask = 0;
+ 
+-            this.elements[i] = element;
+-        }
++      for (int i = 0; i < elementNames.length; i++) {
++         String elementName = elementNames[i];
++         VertexFormatElement element = format.getElement(elementName);
++         if (element != null) {
++            elementsMask |= 1 << i;
++         }
+ 
+-        this.initialElementsToFill = elementsMask & -2;
+-        this.blockFormat = format == DefaultVertexFormat.BLOCK;
+-        this.entityFormat = format == DefaultVertexFormat.ENTITY;
+-    }
++         this.elements[i] = element;
++      }
+ 
+-    public @Nullable MeshData build() {
+-        this.ensureBuilding();
+-        this.endLastVertex();
+-        MeshData mesh = this.storeMesh();
+-        this.building = false;
+-        this.vertexPointer = -1L;
+-        return mesh;
+-    }
++      this.initialElementsToFill = elementsMask & -2;
++      if (format.isExtended()) {
++         this.initialElementsToFill = SVertexFormat.removeExtendedElements(this.initialElementsToFill);
++      }
+ 
+-    public MeshData buildOrThrow() {
+-        MeshData buffer = this.build();
+-        if (buffer == null) {
+-            throw new IllegalStateException("BufferBuilder was empty");
+-        } else {
+-            return buffer;
+-        }
+-    }
++      this.blockFormat = format == DefaultVertexFormat.BLOCK;
++      this.entityFormat = format == DefaultVertexFormat.ENTITY;
++      this.renderType = renderTypeIn;
++      this.blockLayer = blockLayerIn;
++      this.cache = buffer.getBufferBuilderCache();
++      this.multiTextureBuilder = this.cache.getMultiTextureBuilder();
++      this.sVertexBuilder = this.cache.getSVertexBuilder();
++      this.midBlock = this.cache.getMidBlock();
++      if (Config.isShaders()) {
++         SVertexBuilder.endSetVertexFormat(this);
++      }
+ 
+-    private void ensureBuilding() {
+-        if (!this.building) {
+-            throw new IllegalStateException("Not building!");
+-        }
+-    }
++      if (Config.isMultiTexture()) {
++         this.initQuadSprites();
++      }
+ 
+-    private @Nullable MeshData storeMesh() {
+-        if (this.vertices == 0) {
+-            return null;
+-        }
++      if (SmartAnimations.isActive()) {
++         this.animatedSprites = this.cache.getAnimatedSprites();
++         this.animatedSprites.clear();
++      }
+ 
+-        ByteBufferBuilder.Result vertexBuffer = this.buffer.build();
+-        if (vertexBuffer == null) {
+-            return null;
+-        }
++      this.checkCapacity();
++   }
+ 
+-        int indices = this.primitiveTopology.indexCount(this.vertices);
+-        IndexType indexType = IndexType.least(this.vertices);
+-        return new MeshData(vertexBuffer, new MeshData.DrawState(this.format, this.vertices, indices, this.primitiveTopology, indexType));
+-    }
++   public MeshData build() {
++      this.ensureBuilding();
++      this.endLastVertex();
++      if (this.animatedSprites != null) {
++         SmartAnimations.spritesRendered(this.animatedSprites);
++      }
+ 
+-    private long beginVertex() {
+-        this.ensureBuilding();
+-        this.endLastVertex();
+-        if (this.vertices >= 16777215) {
+-            throw new IllegalStateException("Trying to write too many vertices (>16777215) into BufferBuilder");
+-        }
++      MeshData mesh = this.storeMesh();
++      this.building = true;
++      this.vertices = 0;
++      this.quadSprite = null;
++      if (this.animatedSprites != null) {
++         this.animatedSprites.clear();
++      }
+ 
+-        this.vertices++;
+-        long pointer = this.buffer.reserve(this.vertexSize);
+-        this.vertexPointer = pointer;
+-        return pointer;
+-    }
++      this.vertexPointer = -1L;
++      return mesh;
++   }
+ 
+-    private long beginElement(final int semanticID) {
+-        int oldElements = this.elementsToFill;
+-        int newElements = oldElements & ~(1 << semanticID);
+-        VertexFormatElement element = this.elements[semanticID];
+-        if (newElements != oldElements && element != null) {
+-            this.elementsToFill = newElements;
+-            long vertexPointer = this.vertexPointer;
+-            if (vertexPointer == -1L) {
+-                throw new IllegalArgumentException("Not currently building vertex");
+-            } else {
+-                return vertexPointer + element.offset();
+-            }
+-        } else {
+-            return -1L;
+-        }
+-    }
++   public MeshData buildOrThrow() {
++      MeshData buffer = this.build();
++      if (buffer == null) {
++         throw new IllegalStateException("BufferBuilder was empty");
++      } else {
++         return buffer;
++      }
++   }
+ 
+-    private void endLastVertex() {
+-        if (this.vertices != 0) {
+-            if (this.elementsToFill != 0) {
+-                String missingElements = IntStream.range(0, elementNames.length)
+-                    .filter(i -> (this.elementsToFill & i) != 0)
+-                    .mapToObj(i -> elementNames[i])
+-                    .collect(Collectors.joining(", "));
+-                throw new IllegalStateException("Missing elements in vertex: " + missingElements);
+-            }
++   private void ensureBuilding() {
++      if (!this.building) {
++         throw new IllegalStateException("Not building!");
++      }
++   }
+ 
+-            if (this.primitiveTopology == PrimitiveTopology.LINES) {
+-                long pointer = this.buffer.reserve(this.vertexSize);
+-                MemoryUtil.memCopy(pointer - this.vertexSize, pointer, this.vertexSize);
+-                this.vertices++;
+-            }
+-        }
+-    }
++   private MeshData storeMesh() {
++      if (this.vertices == 0) {
++         return null;
++      }
+ 
+-    private static void putRgba(final long pointer, final int argb) {
+-        int abgr = ARGB.toABGR(argb);
+-        MemoryUtil.memPutInt(pointer, IS_LITTLE_ENDIAN ? abgr : Integer.reverseBytes(abgr));
+-    }
++      ByteBufferBuilder.Result vertexBuffer = this.buffer.build();
++      if (vertexBuffer == null) {
++         return null;
++      }
+ 
+-    private static void putPackedUv(final long pointer, final int packedUv) {
+-        if (IS_LITTLE_ENDIAN) {
+-            MemoryUtil.memPutInt(pointer, packedUv);
+-        } else {
+-            MemoryUtil.memPutShort(pointer, (short)(packedUv & 65535));
+-            MemoryUtil.memPutShort(pointer + 2L, (short)(packedUv >> 16 & 65535));
+-        }
+-    }
++      int indices = this.primitiveTopology.indexCount(this.vertices);
++      int indexCount = this.vertices;
++      if (Config.isRenderRegions() && RegionLayerRenderer.canRenderLayer(this.blockLayer)) {
++         indexCount = Math.max(indexCount, 65536);
++      }
+ 
+-    @Override
+-    public VertexConsumer addVertex(final float x, final float y, final float z) {
+-        VertexFormatElement positionElement = this.elements[0];
+-        long pointer = this.beginVertex() + positionElement.offset();
+-        this.elementsToFill = this.initialElementsToFill;
+-        putVec3f(pointer, x, y, z);
+-        return this;
+-    }
++      IndexType indexType = IndexType.least(indexCount);
++      MultiTextureData mtd = this.multiTextureBuilder.build(this.vertices, this.blockLayer, this.quadSprites, null);
++      return new MeshData(vertexBuffer, new MeshData.DrawState(this.format, this.vertices, indices, this.primitiveTopology, indexType), mtd);
++   }
+ 
+-    @Override
+-    public VertexConsumer setColor(final int r, final int g, final int b, final int a) {
+-        long pointer = this.beginElement(1);
+-        if (pointer != -1L) {
+-            MemoryUtil.memPutByte(pointer, (byte)r);
+-            MemoryUtil.memPutByte(pointer + 1L, (byte)g);
+-            MemoryUtil.memPutByte(pointer + 2L, (byte)b);
+-            MemoryUtil.memPutByte(pointer + 3L, (byte)a);
+-        }
++   private long beginVertex() {
++      return this.beginVertex(1);
++   }
+ 
+-        return this;
+-    }
++   private long beginVertex(int countIn) {
++      this.ensureBuilding();
++      this.endLastVertex();
++      if (this.vertices >= 16777215) {
++         throw new IllegalStateException("Trying to write too many vertices (>16777215) into BufferBuilder");
++      }
+ 
+-    @Override
+-    public VertexConsumer setColor(final int color) {
+-        long pointer = this.beginElement(1);
+-        if (pointer != -1L) {
+-            putRgba(pointer, color);
+-        }
++      if (this.vertices == 0) {
++         this.initPreDraw();
++      }
+ 
+-        return this;
+-    }
++      this.vertices += countIn;
++      long pointer = this.buffer.reserve(this.vertexSize * countIn);
++      this.checkCapacity();
++      this.vertexPointer = pointer;
++      return pointer;
++   }
+ 
+-    @Override
+-    public VertexConsumer setUv(final float u, final float v) {
+-        long pointer = this.beginElement(2);
+-        if (pointer != -1L) {
+-            MemoryUtil.memPutFloat(pointer, u);
+-            MemoryUtil.memPutFloat(pointer + 4L, v);
+-        }
++   private void initPreDraw() {
++      if (Config.isShaders() && this.sVertexBuilder.getVertexFormat() != this.format) {
++         SVertexBuilder.endSetVertexFormat(this);
++      }
++   }
+ 
+-        return this;
+-    }
++   private long beginElement(int semanticID) {
++      int oldElements = this.elementsToFill;
++      int newElements = oldElements & ~(1 << semanticID);
++      VertexFormatElement element = this.elements[semanticID];
++      if (newElements != oldElements && element != null) {
++         this.elementsToFill = newElements;
++         long vertexPointer = this.vertexPointer;
++         if (vertexPointer == -1L) {
++            throw new IllegalArgumentException("Not currently building vertex");
++         } else {
++            return vertexPointer + element.offset();
++         }
++      } else {
++         return -1L;
++      }
++   }
+ 
+-    @Override
+-    public VertexConsumer setUv1(final int u, final int v) {
+-        return this.uvShort((short)u, (short)v, 3);
+-    }
++   private void endLastVertex() {
++      if (this.vertices != 0) {
++         if (this.elementsToFill != 0) {
++            String missingElements = IntStream.range(0, elementNames.length)
++               .filter(i -> (this.elementsToFill & i) != 0)
++               .mapToObj(i -> elementNames[i])
++               .collect(Collectors.joining(", "));
++            throw new IllegalStateException("Missing elements in vertex: " + missingElements);
++         }
+ 
+-    @Override
+-    public VertexConsumer setOverlay(final int packedOverlayCoords) {
+-        long pointer = this.beginElement(3);
+-        if (pointer != -1L) {
+-            putPackedUv(pointer, packedOverlayCoords);
+-        }
++         if (this.primitiveTopology == PrimitiveTopology.LINES) {
++            long pointer = this.buffer.reserve(this.vertexSize);
++            MemoryUtil.memCopy(pointer - this.vertexSize, pointer, this.vertexSize);
++            this.vertices++;
++         }
++      }
++   }
+ 
+-        return this;
+-    }
++   private static void putRgba(long pointer, int argb) {
++      int abgr = ARGB.toABGR(argb);
++      MemoryUtil.memPutInt(pointer, IS_LITTLE_ENDIAN ? abgr : Integer.reverseBytes(abgr));
++   }
+ 
+-    @Override
+-    public VertexConsumer setUv2(final int u, final int v) {
+-        return this.uvShort((short)u, (short)v, 4);
+-    }
++   private static void putPackedUv(long pointer, int packedUv) {
++      if (IS_LITTLE_ENDIAN) {
++         MemoryUtil.memPutInt(pointer, packedUv);
++      } else {
++         MemoryUtil.memPutShort(pointer, (short)(packedUv & 65535));
++         MemoryUtil.memPutShort(pointer + 2L, (short)(packedUv >> 16 & 65535));
++      }
++   }
+ 
+-    @Override
+-    public VertexConsumer setLight(final int packedLightCoords) {
+-        long pointer = this.beginElement(4);
+-        if (pointer != -1L) {
+-            putPackedUv(pointer, packedLightCoords);
+-        }
++   @Override
++   public VertexConsumer addVertex(float x, float y, float z) {
++      VertexFormatElement positionElement = this.elements[0];
++      long pointer = this.beginVertex() + positionElement.offset();
++      this.elementsToFill = this.initialElementsToFill;
++      putVec3f(pointer, x, y, z);
++      return this;
++   }
+ 
+-        return this;
+-    }
++   @Override
++   public VertexConsumer setColor(int r, int g, int b, int a) {
++      long pointer = this.beginElement(1);
++      if (pointer != -1L) {
++         MemoryUtil.memPutByte(pointer, (byte)r);
++         MemoryUtil.memPutByte(pointer + 1L, (byte)g);
++         MemoryUtil.memPutByte(pointer + 2L, (byte)b);
++         MemoryUtil.memPutByte(pointer + 3L, (byte)a);
++      }
+ 
+-    private VertexConsumer uvShort(final short u, final short v, final int semanticID) {
+-        long pointer = this.beginElement(semanticID);
+-        if (pointer != -1L) {
+-            MemoryUtil.memPutShort(pointer, u);
+-            MemoryUtil.memPutShort(pointer + 2L, v);
+-        }
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
+ 
+-        return this;
+-    }
++      return this;
++   }
+ 
+-    @Override
+-    public VertexConsumer setNormal(final float x, final float y, final float z) {
+-        long pointer = this.beginElement(5);
+-        if (pointer != -1L) {
+-            putNormals(pointer, x, y, z);
+-        }
++   @Override
++   public VertexConsumer setColor(int color) {
++      long pointer = this.beginElement(1);
++      if (pointer != -1L) {
++         putRgba(pointer, color);
++      }
+ 
+-        return this;
+-    }
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
+ 
+-    @Override
+-    public VertexConsumer setLineWidth(final float width) {
+-        long pointer = this.beginElement(6);
+-        if (pointer != -1L) {
+-            MemoryUtil.memPutFloat(pointer, width);
+-        }
++      return this;
++   }
+ 
+-        return this;
+-    }
++   @Override
++   public VertexConsumer setUv(float u, float v) {
++      if (this.quadSprite != null && this.quadSprites != null) {
++         u = this.quadSprite.toSingleU(u);
++         v = this.quadSprite.toSingleV(v);
++         this.quadSprites[this.vertices / 4] = this.quadSprite;
++      }
+ 
+-    private static byte normalIntValue(final float c) {
+-        return (byte)((int)(Mth.clamp(c, -1.0F, 1.0F) * 127.0F) & 0xFF);
+-    }
++      long pointer = this.beginElement(2);
++      if (pointer != -1L) {
++         MemoryUtil.memPutFloat(pointer, u);
++         MemoryUtil.memPutFloat(pointer + 4L, v);
++      }
+ 
+-    private static void putVec3f(final long pointer, final float x, final float y, final float z) {
+-        MemoryUtil.memPutFloat(pointer, x);
+-        MemoryUtil.memPutFloat(pointer + 4L, y);
+-        MemoryUtil.memPutFloat(pointer + 8L, z);
+-    }
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
+ 
+-    private static void putNormals(final long pointer, final float nx, final float ny, final float nz) {
+-        MemoryUtil.memPutByte(pointer, normalIntValue(nx));
+-        MemoryUtil.memPutByte(pointer + 1L, normalIntValue(ny));
+-        MemoryUtil.memPutByte(pointer + 2L, normalIntValue(nz));
+-    }
++      return this;
++   }
+ 
+-    @Override
+-    public void addVertex(
+-        final float x,
+-        final float y,
+-        final float z,
+-        final int color,
+-        final float u,
+-        final float v,
+-        final int overlayCoords,
+-        final int lightCoords,
+-        final float nx,
+-        final float ny,
+-        final float nz
+-    ) {
+-        if (this.blockFormat) {
+-            long pointer = this.beginVertex();
+-            putVec3f(pointer, x, y, z);
+-            putRgba(pointer + 12L, color);
+-            MemoryUtil.memPutFloat(pointer + 16L, u);
+-            MemoryUtil.memPutFloat(pointer + 20L, v);
+-            putPackedUv(pointer + 24L, lightCoords);
+-        } else if (this.entityFormat) {
+-            long pointer = this.beginVertex();
+-            putVec3f(pointer, x, y, z);
+-            putRgba(pointer + 12L, color);
+-            MemoryUtil.memPutFloat(pointer + 16L, u);
+-            MemoryUtil.memPutFloat(pointer + 20L, v);
+-            putPackedUv(pointer + 24L, overlayCoords);
+-            putPackedUv(pointer + 28L, lightCoords);
+-            putNormals(pointer + 32L, nx, ny, nz);
+-        } else {
+-            VertexConsumer.super.addVertex(x, y, z, color, u, v, overlayCoords, lightCoords, nx, ny, nz);
+-        }
+-    }
+-}
+\ No newline at end of file
++   @Override
++   public VertexConsumer setUv1(int u, int v) {
++      return this.uvShort((short)u, (short)v, 3);
++   }
++
++   @Override
++   public VertexConsumer setOverlay(int packedOverlayCoords) {
++      long pointer = this.beginElement(3);
++      if (pointer != -1L) {
++         putPackedUv(pointer, packedOverlayCoords);
++      }
++
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
++
++      return this;
++   }
++
++   @Override
++   public VertexConsumer setUv2(int u, int v) {
++      return this.uvShort((short)u, (short)v, 4);
++   }
++
++   @Override
++   public VertexConsumer setLight(int packedLightCoords) {
++      long pointer = this.beginElement(4);
++      if (pointer != -1L) {
++         putPackedUv(pointer, packedLightCoords);
++      }
++
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
++
++      return this;
++   }
++
++   private VertexConsumer uvShort(short u, short v, int semanticID) {
++      long pointer = this.beginElement(semanticID);
++      if (pointer != -1L) {
++         MemoryUtil.memPutShort(pointer, u);
++         MemoryUtil.memPutShort(pointer + 2L, v);
++      }
++
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
++
++      return this;
++   }
++
++   @Override
++   public VertexConsumer setNormal(float x, float y, float z) {
++      long pointer = this.beginElement(5);
++      if (pointer != -1L) {
++         putNormals(pointer, x, y, z);
++      }
++
++      if (Config.isShaders() && this.elementsToFill == 0) {
++         SVertexBuilder.endAddVertex(this);
++      }
++
++      return this;
++   }
++
++   @Override
++   public VertexConsumer setLineWidth(float width) {
++      long pointer = this.beginElement(6);
++      if (pointer != -1L) {
++         MemoryUtil.memPutFloat(pointer, width);
++      }
++
++      return this;
++   }
++
++   public static byte normalIntValue(float c) {
++      return (byte)((int)(Mth.clamp(c, -1.0F, 1.0F) * 127.0F) & 0xFF);
++   }
++
++   private static void putVec3f(long pointer, float x, float y, float z) {
++      MemoryUtil.memPutFloat(pointer, x);
++      MemoryUtil.memPutFloat(pointer + 4L, y);
++      MemoryUtil.memPutFloat(pointer + 8L, z);
++   }
++
++   private static void putNormals(long pointer, float nx, float ny, float nz) {
++      MemoryUtil.memPutByte(pointer, normalIntValue(nx));
++      MemoryUtil.memPutByte(pointer + 1L, normalIntValue(ny));
++      MemoryUtil.memPutByte(pointer + 2L, normalIntValue(nz));
++   }
++
++   @Override
++   public void addVertex(float x, float y, float z, int color, float u, float v, int overlayCoords, int lightCoords, float nx, float ny, float nz) {
++      if (this.blockFormat) {
++         long pointer = this.beginVertex();
++         putVec3f(pointer, x, y, z);
++         putRgba(pointer + 12L, color);
++         if (this.quadSprite != null && this.quadSprites != null) {
++            u = this.quadSprite.toSingleU(u);
++            v = this.quadSprite.toSingleV(v);
++            this.quadSprites[this.vertices / 4] = this.quadSprite;
++         }
++
++         MemoryUtil.memPutFloat(pointer + 16L, u);
++         MemoryUtil.memPutFloat(pointer + 20L, v);
++         putPackedUv(pointer + 24L, lightCoords);
++         if (Config.isShaders()) {
++            SVertexBuilder.endAddVertex(this);
++         }
++      } else if (this.entityFormat) {
++         long pointer = this.beginVertex();
++         putVec3f(pointer, x, y, z);
++         putRgba(pointer + 12L, color);
++         if (this.quadSprite != null && this.quadSprites != null) {
++            u = this.quadSprite.toSingleU(u);
++            v = this.quadSprite.toSingleV(v);
++            this.quadSprites[this.vertices / 4] = this.quadSprite;
++         }
++
++         MemoryUtil.memPutFloat(pointer + 16L, u);
++         MemoryUtil.memPutFloat(pointer + 20L, v);
++         putPackedUv(pointer + 24L, overlayCoords);
++         putPackedUv(pointer + 28L, lightCoords);
++         putNormals(pointer + 32L, nx, ny, nz);
++         if (Config.isShaders()) {
++            SVertexBuilder.endAddVertex(this);
++         }
++      } else {
++         VertexConsumer.super.addVertex(x, y, z, color, u, v, overlayCoords, lightCoords, nx, ny, nz);
++      }
++   }
++
++   @Override
++   public void putSprite(TextureAtlasSprite sprite) {
++      if (this.animatedSprites != null && sprite != null && sprite.isTerrain() && sprite.getAnimationIndex() >= 0) {
++         this.animatedSprites.set(sprite.getAnimationIndex());
++      }
++
++      if (this.quadSprites != null) {
++         int countQuads = this.vertices / 4;
++         this.quadSprites[countQuads] = sprite;
++      }
++   }
++
++   @Override
++   public void setSprite(TextureAtlasSprite sprite) {
++      if (this.animatedSprites != null && sprite != null && sprite.isTerrain() && sprite.getAnimationIndex() >= 0) {
++         this.animatedSprites.set(sprite.getAnimationIndex());
++      }
++
++      if (this.quadSprites != null) {
++         this.quadSprite = sprite;
++      }
++   }
++
++   @Override
++   public boolean isMultiTexture() {
++      return this.quadSprites != null;
++   }
++
++   @Override
++   public RenderType getRenderType() {
++      return this.renderType;
++   }
++
++   @Override
++   public ChunkSectionLayer getBlockLayer() {
++      return this.blockLayer;
++   }
++
++   private void initQuadSprites() {
++      if (this.blockLayer != null) {
++         this.quadSprites = this.cache.getQuadSprites();
++      }
++   }
++
++   private int getBufferQuadCapacity() {
++      int vertexSize = this.buffer.getCapacity() / this.format.getVertexSize();
++      return vertexSize / 4;
++   }
++
++   private static void quadsToTriangles(ByteBuffer byteBuffer, VertexFormat vertexFormat, int vertexCount, ByteBuffer byteBufferTriangles) {
++      int vertexSize = vertexFormat.getVertexSize();
++      int limit = byteBuffer.limit();
++      byteBuffer.rewind();
++      byteBufferTriangles.clear();
++
++      for (int v = 0; v < vertexCount; v += 4) {
++         byteBuffer.limit((v + 3) * vertexSize);
++         byteBuffer.position(v * vertexSize);
++         byteBufferTriangles.put(byteBuffer);
++         byteBuffer.limit((v + 1) * vertexSize);
++         byteBuffer.position(v * vertexSize);
++         byteBufferTriangles.put(byteBuffer);
++         byteBuffer.limit((v + 2 + 2) * vertexSize);
++         byteBuffer.position((v + 2) * vertexSize);
++         byteBufferTriangles.put(byteBuffer);
++      }
++
++      byteBuffer.limit(limit);
++      byteBuffer.rewind();
++      byteBufferTriangles.flip();
++   }
++
++   public PrimitiveTopology getDrawMode() {
++      return this.primitiveTopology;
++   }
++
++   @Override
++   public int getVertexCount() {
++      return this.vertices;
++   }
++
++   @Override
++   public Vector3f getTempVec3f() {
++      return this.cache.getTempVec3f();
++   }
++
++   @Override
++   public float[] getTempFloat4(float f1, float f2, float f3, float f4) {
++      float[] tempFloat4 = this.cache.getTempFloat4();
++      tempFloat4[0] = f1;
++      tempFloat4[1] = f2;
++      tempFloat4[2] = f3;
++      tempFloat4[3] = f4;
++      return tempFloat4;
++   }
++
++   @Override
++   public int[] getTempInt4(int i1, int i2, int i3, int i4) {
++      int[] tempInt4 = this.cache.getTempInt4();
++      tempInt4[0] = i1;
++      tempInt4[1] = i2;
++      tempInt4[2] = i3;
++      tempInt4[3] = i4;
++      return tempInt4;
++   }
++
++   public int getBufferIntSize() {
++      return this.vertices * this.format.getIntegerSize();
++   }
++
++   @Override
++   public RenderTypeFeatureRenderer getRenderTypeBuffer() {
++      return this.renderTypeBuffer;
++   }
++
++   @Override
++   public void setRenderTypeBuffer(RenderTypeFeatureRenderer renderTypeBuffer) {
++      this.renderTypeBuffer = renderTypeBuffer;
++   }
++
++   public boolean canAddVertexText() {
++      return this.format.getVertexSize() != DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP.getVertexSize() ? false : this.elementsToFill == 0;
++   }
++
++   public void addVertexText(Matrix4f mat4, float x, float y, float z, int col, float texU, float texV, int lightmapUV) {
++      if (mat4 != null) {
++         float xt = MathUtils.getTransformX(mat4, x, y, z);
++         float yt = MathUtils.getTransformY(mat4, x, y, z);
++         float zt = MathUtils.getTransformZ(mat4, x, y, z);
++         x = xt;
++         y = yt;
++         z = zt;
++      }
++
++      long i = this.beginVertex();
++      MemoryUtil.memPutFloat(i + 0L, x);
++      MemoryUtil.memPutFloat(i + 4L, y);
++      MemoryUtil.memPutFloat(i + 8L, z);
++      putRgba(i + 12L, col);
++      MemoryUtil.memPutFloat(i + 16L, texU);
++      MemoryUtil.memPutFloat(i + 20L, texV);
++      putPackedUv(i + 24L, lightmapUV);
++      if (Config.isShaders()) {
++         SVertexBuilder.endAddVertex(this);
++      }
++   }
++
++   @Override
++   public boolean canAddVertexFast() {
++      return this.entityFormat && this.elementsToFill == 0;
++   }
++
++   @Override
++   public void addVertexFast(float x, float y, float z, int color, float texU, float texV, int overlayUV, int lightmapUV, int normals) {
++      long i = this.beginVertex();
++      MemoryUtil.memPutFloat(i + 0L, x);
++      MemoryUtil.memPutFloat(i + 4L, y);
++      MemoryUtil.memPutFloat(i + 8L, z);
++      putRgba(i + 12L, color);
++      MemoryUtil.memPutFloat(i + 16L, texU);
++      MemoryUtil.memPutFloat(i + 20L, texV);
++      putPackedUv(i + 24L, overlayUV);
++      putPackedUv(i + 28L, lightmapUV);
++      MemoryUtil.memPutInt(i + 32L, normals);
++      if (Config.isShaders()) {
++         SVertexBuilder.endAddVertex(this);
++      }
++   }
++
++   @Override
++   public void setQuadVertexPositions(VertexPosition[] vps) {
++      this.quadVertexPositions = vps;
++   }
++
++   public VertexPosition[] getQuadVertexPositions() {
++      return this.quadVertexPositions;
++   }
++
++   @Override
++   public void setMidBlock(float mx, float my, float mz) {
++      this.midBlock.set(mx, my, mz);
++   }
++
++   @Override
++   public Vector3f getMidBlock() {
++      return this.midBlock;
++   }
++
++   @Override
++   public void putBulkData(ByteBuffer bufferIn) {
++      if (Config.isShaders()) {
++         SVertexBuilder.beginAddVertexData(this, bufferIn);
++      }
++
++      int addCount = bufferIn.limit() / this.format.getVertexSize();
++      this.beginVertex(addCount);
++      ByteBuffer bb = this.getByteBuffer();
++      bb.position(this.buffer.getNextResultOffset());
++      bb.put(bufferIn);
++      bb.position(0);
++      if (Config.isShaders()) {
++         SVertexBuilder.endAddVertexData(this, addCount);
++      }
++   }
++
++   @Override
++   public void getBulkData(ByteBuffer bufferIn) {
++      ByteBuffer bb = this.getByteBuffer();
++      bb.position(this.buffer.getNextResultOffset());
++      bb.limit(this.buffer.getWriteOffset());
++      bufferIn.put(bb);
++      bb.clear();
++   }
++
++   public VertexFormat getVertexFormat() {
++      return this.format;
++   }
++
++   public int getStartPosition() {
++      return this.buffer.getNextResultOffset();
++   }
++
++   public int getIntStartPosition() {
++      return this.getStartPosition() / 4;
++   }
++
++   private int getNextElementBytes() {
++      return this.vertices * this.format.getVertexSize();
++   }
++
++   public ByteBuffer getByteBuffer() {
++      return this.buffer.getByteBuffer();
++   }
++
++   public FloatBuffer getFloatBuffer() {
++      return this.buffer.getFloatBuffer();
++   }
++
++   public IntBuffer getIntBuffer() {
++      return this.buffer.getIntBuffer();
++   }
++
++   private void checkCapacity() {
++      if (this.quadSprites != null) {
++         TextureAtlasSprite[] sprites = this.quadSprites;
++         int quadSize = this.getBufferQuadCapacity() + 1;
++         if (this.quadSprites.length < quadSize) {
++            this.quadSprites = new TextureAtlasSprite[quadSize];
++            System.arraycopy(sprites, 0, this.quadSprites, 0, Math.min(sprites.length, this.quadSprites.length));
++            this.cache.setQuadSprites(this.quadSprites);
++         }
++      }
++   }
++
++   public boolean isDrawing() {
++      return this.building;
++   }
++
++   public void clear() {
++      this.buffer.clear();
++   }
++
++   @Override
++   public String toString() {
++      String type = this.renderType != null
++         ? "renderType: " + this.renderType.getName()
++         : (this.blockLayer != null ? "blockLayer: " + this.blockLayer.name() : "?");
++      return type
++         + ", vertexFormat: "
++         + this.format.getName()
++         + ", vertexSize: "
++         + this.vertexSize
++         + ", drawMode: "
++         + this.primitiveTopology
++         + ", vertexCount: "
++         + this.vertices
++         + ", elementsLeft: "
++         + Integer.bitCount(this.elementsToFill)
++         + "/"
++         + Integer.bitCount(this.initialElementsToFill)
++         + ", byteBuffer: ("
++         + this.buffer
++         + ")";
++   }
++}

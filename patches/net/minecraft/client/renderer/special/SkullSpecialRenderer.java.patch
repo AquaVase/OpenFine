@@ -1,0 +1,145 @@
+--- a/net/minecraft/client/renderer/special/SkullSpecialRenderer.java
++++ b/net/minecraft/client/renderer/special/SkullSpecialRenderer.java
+@@ -7,78 +7,81 @@
+ import java.util.Optional;
+ import java.util.function.Consumer;
+ import net.minecraft.client.model.object.skull.SkullModelBase;
++import net.minecraft.client.model.object.skull.SkullModelBase.State;
+ import net.minecraft.client.renderer.SubmitNodeCollector;
+ import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
+ import net.minecraft.client.renderer.rendertype.RenderType;
++import net.minecraft.client.renderer.special.SpecialModelRenderer.BakingContext;
+ import net.minecraft.resources.Identifier;
+-import net.minecraft.world.level.block.SkullBlock;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.minecraft.world.level.block.SkullBlock.Type;
++import net.optifine.entity.model.CustomEntityModels;
+ import org.joml.Vector3fc;
+-import org.jspecify.annotations.Nullable;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class SkullSpecialRenderer implements NoDataSpecialModelRenderer {
+-    private final SkullModelBase model;
+-    private final float animation;
+-    private final RenderType renderType;
++   private SkullModelBase model;
++   private final float animation;
++   private final RenderType renderType;
++   private Type skullType;
++   private boolean modelUpdated;
+ 
+-    public SkullSpecialRenderer(final SkullModelBase model, final float animation, final RenderType renderType) {
+-        this.model = model;
+-        this.animation = animation;
+-        this.renderType = renderType;
+-    }
++   public SkullSpecialRenderer(SkullModelBase model, float animation, RenderType renderType) {
++      this(model, animation, renderType, null);
++   }
+ 
+-    @Override
+-    public void submit(
+-        final PoseStack poseStack,
+-        final SubmitNodeCollector submitNodeCollector,
+-        final int lightCoords,
+-        final int overlayCoords,
+-        final boolean hasFoil,
+-        final int outlineColor
+-    ) {
+-        SkullBlockRenderer.submitSkull(this.animation, poseStack, submitNodeCollector, lightCoords, this.model, this.renderType, outlineColor, null);
+-    }
++   public SkullSpecialRenderer(SkullModelBase model, float animation, RenderType renderType, Type skullTypeIn) {
++      this.model = model;
++      this.animation = animation;
++      this.renderType = renderType;
++      this.skullType = skullTypeIn;
++   }
+ 
+-    @Override
+-    public void getExtents(final Consumer<Vector3fc> output) {
+-        PoseStack poseStack = new PoseStack();
+-        SkullModelBase.State modelState = new SkullModelBase.State();
+-        modelState.animationPos = this.animation;
+-        this.model.setupAnim(modelState);
+-        this.model.root().getExtentsForGui(poseStack, output);
+-    }
++   @Override
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
++      if (CustomEntityModels.isActive() && !this.modelUpdated) {
++         this.model = SkullBlockRenderer.getGlobalModels().getOrDefault(this.skullType, this.model);
++         this.modelUpdated = true;
++      }
+ 
+-    @OnlyIn(Dist.CLIENT)
+-    public record Unbaked(SkullBlock.Type kind, Optional<Identifier> textureOverride, float animation) implements NoDataSpecialModelRenderer.Unbaked {
+-        public static final MapCodec<SkullSpecialRenderer.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
+-            i -> i.group(
+-                    SkullBlock.Type.CODEC.fieldOf("kind").forGetter(SkullSpecialRenderer.Unbaked::kind),
+-                    Identifier.CODEC.optionalFieldOf("texture").forGetter(SkullSpecialRenderer.Unbaked::textureOverride),
+-                    Codec.FLOAT.optionalFieldOf("animation", 0.0F).forGetter(SkullSpecialRenderer.Unbaked::animation)
+-                )
+-                .apply(i, SkullSpecialRenderer.Unbaked::new)
+-        );
++      SkullBlockRenderer.submitSkull(this.animation, poseStack, submitNodeCollector, lightCoords, this.model, this.renderType, outlineColor, null);
++   }
+ 
+-        public Unbaked(final SkullBlock.Type kind) {
+-            this(kind, Optional.empty(), 0.0F);
+-        }
++   @Override
++   public void getExtents(Consumer<Vector3fc> output) {
++      PoseStack poseStack = new PoseStack();
++      State modelState = new State();
++      modelState.animationPos = this.animation;
++      this.model.setupAnim(modelState);
++      this.model.root().getExtentsForGui(poseStack, output);
++   }
+ 
+-        @Override
+-        public MapCodec<SkullSpecialRenderer.Unbaked> type() {
+-            return MAP_CODEC;
+-        }
++   public record Unbaked(Type kind, Optional<Identifier> textureOverride, float animation) implements NoDataSpecialModelRenderer.Unbaked {
++      public static final MapCodec<SkullSpecialRenderer.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
++         i -> i.group(
++               Type.CODEC.fieldOf("kind").forGetter(SkullSpecialRenderer.Unbaked::kind),
++               Identifier.CODEC.optionalFieldOf("texture").forGetter(SkullSpecialRenderer.Unbaked::textureOverride),
++               Codec.FLOAT.optionalFieldOf("animation", 0.0F).forGetter(SkullSpecialRenderer.Unbaked::animation)
++            )
++            .apply(i, SkullSpecialRenderer.Unbaked::new)
++      );
+ 
+-        public @Nullable SkullSpecialRenderer bake(final SpecialModelRenderer.BakingContext context) {
+-            SkullModelBase model = SkullBlockRenderer.createModel(context.entityModelSet(), this.kind);
+-            Identifier textureOverride = this.textureOverride.<Identifier>map(t -> t.withPath(p -> "textures/entity/" + p + ".png")).orElse(null);
+-            if (model == null) {
+-                return null;
+-            }
++      public Unbaked(Type kind) {
++         this(kind, Optional.empty(), 0.0F);
++      }
+ 
+-            RenderType renderType = SkullBlockRenderer.getSkullRenderType(this.kind, textureOverride);
+-            return new SkullSpecialRenderer(model, this.animation, renderType);
+-        }
+-    }
+-}
+\ No newline at end of file
++      @Override
++      public MapCodec<SkullSpecialRenderer.Unbaked> type() {
++         return MAP_CODEC;
++      }
++
++      public SkullSpecialRenderer bake(BakingContext context) {
++         SkullModelBase model = SkullBlockRenderer.createModel(context.entityModelSet(), this.kind);
++         Identifier textureOverride = this.textureOverride.<Identifier>map(t -> t.withPath(p -> "textures/entity/" + p + ".png")).orElse(null);
++         if (model == null) {
++            return null;
++         }
++
++         RenderType renderType = SkullBlockRenderer.getSkullRenderType(this.kind, textureOverride);
++         return new SkullSpecialRenderer(model, this.animation, renderType, this.kind);
++      }
++   }
++}
