@@ -9,7 +9,7 @@ pluginManagement {
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id in ['patchgen', 'patchgen.settings']) {
-                useModule('com.github.AquaVase.patchgen:patchgen:-SNAPSHOT')
+                useModule('com.github.AquaVase.patchgen:patchgen:1c1d3e3eb9')
             }
         }
     }

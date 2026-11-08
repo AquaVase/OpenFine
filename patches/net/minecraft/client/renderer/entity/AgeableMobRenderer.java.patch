@@ -20,28 +20,20 @@
 +   private M babyModel;
  
 -    public AgeableMobRenderer(final EntityRendererProvider.Context context, final M adultModel, final M babyModel, final float shadow) {
--        super(context, adultModel, shadow);
--        this.adultModel = adultModel;
--        this.babyModel = babyModel;
--    }
 +   public AgeableMobRenderer(Context context, M adultModel, M babyModel, float shadow) {
-+      super(context, adultModel, shadow);
-+      this.adultModel = adultModel;
-+      this.babyModel = babyModel;
-+   }
+         super(context, adultModel, shadow);
+         this.adultModel = adultModel;
+         this.babyModel = babyModel;
+     }
  
--    @Override
+     @Override
 -    public void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
--        this.model = state.isBaby ? this.babyModel : this.adultModel;
--        super.submit(state, poseStack, submitNodeCollector, camera);
--    }
++   public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
+         this.model = state.isBaby ? this.babyModel : this.adultModel;
+         super.submit(state, poseStack, submitNodeCollector, camera);
+     }
 -}
 \ No newline at end of file
-+   @Override
-+   public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
-+      this.model = state.isBaby ? this.babyModel : this.adultModel;
-+      super.submit(state, poseStack, submitNodeCollector, camera);
-+   }
 +
 +   public M getAdultModel() {
 +      return this.adultModel;

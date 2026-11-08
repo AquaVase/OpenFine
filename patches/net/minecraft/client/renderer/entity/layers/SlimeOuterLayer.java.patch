@@ -15,13 +15,10 @@
 +   public Identifier customTextureLocation;
  
 -    public SlimeOuterLayer(final RenderLayerParent<SlimeRenderState, SlimeModel> renderer, final EntityModelSet modelSet) {
--        super(renderer);
--        this.model = new SlimeModel(modelSet.bakeLayer(ModelLayers.SLIME_OUTER));
--    }
 +   public SlimeOuterLayer(RenderLayerParent<SlimeRenderState, SlimeModel> renderer, EntityModelSet modelSet) {
-+      super(renderer);
-+      this.model = new SlimeModel(modelSet.bakeLayer(ModelLayers.SLIME_OUTER));
-+   }
+         super(renderer);
+         this.model = new SlimeModel(modelSet.bakeLayer(ModelLayers.SLIME_OUTER));
+     }
  
 -    public void submit(
 -        final PoseStack poseStack,
@@ -31,16 +28,19 @@
 -        final float yRot,
 -        final float xRot
 -    ) {
--        boolean appearsGlowingWithInvisibility = state.appearsGlowing() && state.isInvisible;
--        if (!state.isInvisible || appearsGlowingWithInvisibility) {
--            int overlayCoords = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
--            if (appearsGlowingWithInvisibility) {
--                submitNodeCollector.order(1)
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, SlimeRenderState state, float yRot, float xRot) {
+         boolean appearsGlowingWithInvisibility = state.appearsGlowing() && state.isInvisible;
+         if (!state.isInvisible || appearsGlowingWithInvisibility) {
+             int overlayCoords = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
++         Identifier textureLocation = this.customTextureLocation != null ? this.customTextureLocation : SlimeRenderer.SLIME_LOCATION;
+             if (appearsGlowingWithInvisibility) {
+                 submitNodeCollector.order(1)
 -                    .submitModel(
 -                        this.model, state, poseStack, RenderTypes.outline(SlimeRenderer.SLIME_LOCATION), lightCoords, overlayCoords, state.outlineColor, null
 -                    );
--            } else {
--                submitNodeCollector.order(1)
++               .submitModel(this.model, state, poseStack, RenderTypes.outline(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
+             } else {
+                 submitNodeCollector.order(1)
 -                    .submitModel(
 -                        this.model,
 -                        state,
@@ -51,23 +51,10 @@
 -                        state.outlineColor,
 -                        null
 -                    );
--            }
--        }
--    }
++               .submitModel(this.model, state, poseStack, RenderTypes.entityTranslucent(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
+             }
+         }
+     }
 -}
 \ No newline at end of file
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, SlimeRenderState state, float yRot, float xRot) {
-+      boolean appearsGlowingWithInvisibility = state.appearsGlowing() && state.isInvisible;
-+      if (!state.isInvisible || appearsGlowingWithInvisibility) {
-+         int overlayCoords = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
-+         Identifier textureLocation = this.customTextureLocation != null ? this.customTextureLocation : SlimeRenderer.SLIME_LOCATION;
-+         if (appearsGlowingWithInvisibility) {
-+            submitNodeCollector.order(1)
-+               .submitModel(this.model, state, poseStack, RenderTypes.outline(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
-+         } else {
-+            submitNodeCollector.order(1)
-+               .submitModel(this.model, state, poseStack, RenderTypes.entityTranslucent(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
-+         }
-+      }
-+   }
 +}

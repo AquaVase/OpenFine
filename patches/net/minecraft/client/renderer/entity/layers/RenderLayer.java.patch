@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/entity/layers/RenderLayer.java
 +++ b/net/minecraft/client/renderer/entity/layers/RenderLayer.java
-@@ -10,62 +10,48 @@
+@@ -10,26 +10,17 @@
  import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
  import net.minecraft.client.renderer.rendertype.RenderTypes;
  import net.minecraft.resources.Identifier;
@@ -9,18 +9,15 @@
  
 -@OnlyIn(Dist.CLIENT)
  public abstract class RenderLayer<S extends EntityRenderState, M extends EntityModel<? super S>> {
--    private final RenderLayerParent<S, M> renderer;
-+   private final RenderLayerParent<S, M> renderer;
+     private final RenderLayerParent<S, M> renderer;
 +   public boolean custom = false;
  
 -    public RenderLayer(final RenderLayerParent<S, M> renderer) {
--        this.renderer = renderer;
--    }
 +   public RenderLayer(RenderLayerParent<S, M> renderer) {
-+      this.renderer = renderer;
-+   }
+         this.renderer = renderer;
+     }
  
--    protected static <S extends LivingEntityRenderState> void coloredCutoutModelCopyLayerRender(
+     protected static <S extends LivingEntityRenderState> void coloredCutoutModelCopyLayerRender(
 -        final Model<? super S> model,
 -        final Identifier texture,
 -        final PoseStack poseStack,
@@ -29,20 +26,14 @@
 -        final S state,
 -        final int color,
 -        final int order
--    ) {
--        if (!state.isInvisible) {
--            renderColoredCutoutModel(model, texture, poseStack, submitNodeCollector, lightCoords, state, color, order);
--        }
--    }
-+   protected static <S extends LivingEntityRenderState> void coloredCutoutModelCopyLayerRender(
 +      Model<? super S> model, Identifier texture, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, int color, int order
-+   ) {
-+      if (!state.isInvisible) {
-+         renderColoredCutoutModel(model, texture, poseStack, submitNodeCollector, lightCoords, state, color, order);
-+      }
-+   }
+     ) {
+         if (!state.isInvisible) {
+             renderColoredCutoutModel(model, texture, poseStack, submitNodeCollector, lightCoords, state, color, order);
+@@ -37,15 +28,12 @@
+     }
  
--    protected static <S extends LivingEntityRenderState> void renderColoredCutoutModel(
+     protected static <S extends LivingEntityRenderState> void renderColoredCutoutModel(
 -        final Model<? super S> model,
 -        final Identifier texture,
 -        final PoseStack poseStack,
@@ -51,54 +42,23 @@
 -        final S state,
 -        final int color,
 -        final int order
--    ) {
--        submitNodeCollector.order(order)
--            .submitModel(
--                model,
--                state,
--                poseStack,
--                RenderTypes.entityCutout(texture),
--                lightCoords,
--                LivingEntityRenderer.getOverlayCoords(state, 0.0F),
--                color,
--                null,
--                state.outlineColor,
--                null
--            );
--    }
-+   protected static <S extends LivingEntityRenderState> void renderColoredCutoutModel(
 +      Model<? super S> model, Identifier texture, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, int color, int order
-+   ) {
+     ) {
 +      if (model.locationTextureCustom != null) {
 +         texture = model.locationTextureCustom;
 +      }
- 
--    public M getParentModel() {
--        return this.renderer.getModel();
--    }
-+      submitNodeCollector.order(order)
-+         .submitModel(
-+            model,
-+            state,
-+            poseStack,
-+            RenderTypes.entityCutout(texture),
-+            lightCoords,
-+            LivingEntityRenderer.getOverlayCoords(state, 0.0F),
-+            color,
-+            null,
-+            state.outlineColor,
-+            null
-+         );
-+   }
++
+         submitNodeCollector.order(order)
+             .submitModel(
+                 model,
+@@ -65,7 +53,5 @@
+         return this.renderer.getModel();
+     }
  
 -    public abstract void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, S state, float yRot, float xRot
 -    );
 -}
 \ No newline at end of file
-+   public M getParentModel() {
-+      return this.renderer.getModel();
-+   }
-+
 +   public abstract void submit(PoseStack var1, SubmitNodeCollector var2, int var3, S var4, float var5, float var6);
 +}

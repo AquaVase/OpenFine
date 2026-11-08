@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/packs/CompositePackResources.java
 +++ b/net/minecraft/server/packs/CompositePackResources.java
-@@ -10,73 +10,73 @@
+@@ -10,15 +10,15 @@
  import java.util.Map;
  import java.util.Set;
  import net.minecraft.resources.Identifier;
@@ -16,115 +16,56 @@
 +   public final List<PackResources> packResourcesStack;
  
 -    public CompositePackResources(final PackResources primaryPackResources, final List<PackResources> overlayPackResources) {
--        this.primaryPackResources = primaryPackResources;
--        List<PackResources> stack = new ArrayList<>(overlayPackResources.size() + 1);
--        stack.addAll(Lists.reverse(overlayPackResources));
--        stack.add(primaryPackResources);
--        this.packResourcesStack = List.copyOf(stack);
--    }
 +   public CompositePackResources(PackResources primaryPackResources, List<PackResources> overlayPackResources) {
-+      this.primaryPackResources = primaryPackResources;
-+      List<PackResources> stack = new ArrayList<>(overlayPackResources.size() + 1);
-+      stack.addAll(Lists.reverse(overlayPackResources));
-+      stack.add(primaryPackResources);
-+      this.packResourcesStack = List.copyOf(stack);
-+   }
+         this.primaryPackResources = primaryPackResources;
+         List<PackResources> stack = new ArrayList<>(overlayPackResources.size() + 1);
+         stack.addAll(Lists.reverse(overlayPackResources));
+@@ -27,12 +27,12 @@
+     }
  
--    @Override
+     @Override
 -    public @Nullable IoSupplier<InputStream> getRootResource(final String... path) {
--        return this.primaryPackResources.getRootResource(path);
--    }
-+   @Override
 +   public IoSupplier<InputStream> getRootResource(String... path) {
-+      return this.primaryPackResources.getRootResource(path);
-+   }
+         return this.primaryPackResources.getRootResource(path);
+     }
  
--    @Override
+     @Override
 -    public @Nullable IoSupplier<InputStream> getResource(final PackType type, final Identifier location) {
--        for (PackResources packResources : this.packResourcesStack) {
--            IoSupplier<InputStream> resource = packResources.getResource(type, location);
--            if (resource != null) {
--                return resource;
--            }
--        }
-+   @Override
 +   public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
-+      for (PackResources packResources : this.packResourcesStack) {
-+         IoSupplier<InputStream> resource = packResources.getResource(type, location);
-+         if (resource != null) {
-+            return resource;
-+         }
-+      }
+         for (PackResources packResources : this.packResourcesStack) {
+             IoSupplier<InputStream> resource = packResources.getResource(type, location);
+             if (resource != null) {
+@@ -44,7 +44,7 @@
+     }
  
--        return null;
--    }
-+      return null;
-+   }
- 
--    @Override
+     @Override
 -    public void listResources(final PackType type, final String namespace, final String directory, final PackResources.ResourceOutput output) {
--        Map<Identifier, IoSupplier<InputStream>> result = new HashMap<>();
-+   @Override
 +   public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
-+      Map<Identifier, IoSupplier<InputStream>> result = new HashMap<>();
+         Map<Identifier, IoSupplier<InputStream>> result = new HashMap<>();
  
--        for (PackResources packResources : this.packResourcesStack) {
--            packResources.listResources(type, namespace, directory, result::putIfAbsent);
--        }
-+      for (PackResources packResources : this.packResourcesStack) {
-+         packResources.listResources(type, namespace, directory, result::putIfAbsent);
-+      }
+         for (PackResources packResources : this.packResourcesStack) {
+@@ -55,7 +55,7 @@
+     }
  
--        result.forEach(output);
--    }
-+      result.forEach(output);
-+   }
- 
--    @Override
+     @Override
 -    public Set<String> getNamespaces(final PackType type) {
--        Set<String> result = new HashSet<>();
-+   @Override
 +   public Set<String> getNamespaces(PackType type) {
-+      Set<String> result = new HashSet<>();
+         Set<String> result = new HashSet<>();
  
--        for (PackResources overlayPackResource : this.packResourcesStack) {
--            result.addAll(overlayPackResource.getNamespaces(type));
--        }
-+      for (PackResources overlayPackResource : this.packResourcesStack) {
-+         result.addAll(overlayPackResource.getNamespaces(type));
-+      }
+         for (PackResources overlayPackResource : this.packResourcesStack) {
+@@ -66,7 +66,7 @@
+     }
  
--        return result;
--    }
-+      return result;
-+   }
- 
--    @Override
+     @Override
 -    public <T> @Nullable T getMetadataSection(final MetadataSectionType<T> metadataSerializer) throws IOException {
--        return this.primaryPackResources.getMetadataSection(metadataSerializer);
--    }
-+   @Override
 +   public <T> T getMetadataSection(MetadataSectionType<T> metadataSerializer) throws IOException {
-+      return this.primaryPackResources.getMetadataSection(metadataSerializer);
-+   }
+         return this.primaryPackResources.getMetadataSection(metadataSerializer);
+     }
  
--    @Override
--    public PackLocationInfo location() {
--        return this.primaryPackResources.location();
--    }
-+   @Override
-+   public PackLocationInfo location() {
-+      return this.primaryPackResources.location();
-+   }
- 
--    @Override
--    public void close() {
--        this.packResourcesStack.forEach(PackResources::close);
--    }
+@@ -79,4 +79,4 @@
+     public void close() {
+         this.packResourcesStack.forEach(PackResources::close);
+     }
 -}
 \ No newline at end of file
-+   @Override
-+   public void close() {
-+      this.packResourcesStack.forEach(PackResources::close);
-+   }
 +}

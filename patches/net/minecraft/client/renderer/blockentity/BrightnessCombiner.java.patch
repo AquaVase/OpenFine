@@ -23,24 +23,17 @@
 +         ? i -> Lightmap.MAX_BRIGHTNESS
 +         : i -> LightCoordsUtil.max(
              LightCoordsUtil.getLightCoords(first.getLevel(), first.getBlockPos()), LightCoordsUtil.getLightCoords(second.getLevel(), second.getBlockPos())
--        );
--    }
-+         );
-+   }
+         );
+     }
  
 -    public Int2IntFunction acceptSingle(final S single) {
--        return i -> i;
--    }
 +   public Int2IntFunction acceptSingle(S single) {
-+      return i -> i;
-+   }
+         return i -> i;
+     }
  
--    public Int2IntFunction acceptNone() {
--        return i -> i;
--    }
+     public Int2IntFunction acceptNone() {
+         return i -> i;
+     }
 -}
 \ No newline at end of file
-+   public Int2IntFunction acceptNone() {
-+      return i -> i;
-+   }
 +}

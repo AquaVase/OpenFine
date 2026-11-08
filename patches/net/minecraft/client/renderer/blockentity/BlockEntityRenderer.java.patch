@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/blockentity/BlockEntityRenderer.java
 +++ b/net/minecraft/client/renderer/blockentity/BlockEntityRenderer.java
-@@ -1,41 +1,63 @@
+@@ -1,31 +1,29 @@
  package net.minecraft.client.renderer.blockentity;
  
  import com.mojang.blaze3d.vertex.PoseStack;
@@ -22,9 +22,10 @@
  
 -@OnlyIn(Dist.CLIENT)
 -public interface BlockEntityRenderer<T extends BlockEntity, S extends BlockEntityRenderState> {
--    S createRenderState();
 +public interface BlockEntityRenderer<T extends BlockEntity, S extends BlockEntityRenderState> extends IEntityRenderer {
 +   IdentityHashMap<BlockEntityRenderer, BlockEntityType> CACHED_TYPES = new IdentityHashMap<>();
++
+     S createRenderState();
  
 -    default void extractRenderState(
 -        final T blockEntity,
@@ -33,39 +34,25 @@
 -        final Vec3 cameraPosition,
 -        final ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress
 -    ) {
--        BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
--    }
-+   S createRenderState();
++   default void extractRenderState(T blockEntity, S state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
+         BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
+     }
  
 -    void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera);
-+   default void extractRenderState(T blockEntity, S state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
-+      BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
-+   }
- 
--    default boolean shouldRenderOffScreen() {
--        return false;
--    }
 +   void submit(S var1, PoseStack var2, SubmitNodeCollector var3, CameraRenderState var4);
  
--    default int getViewDistance() {
--        return 64;
--    }
-+   default boolean shouldRenderOffScreen() {
-+      return false;
-+   }
+     default boolean shouldRenderOffScreen() {
+         return false;
+@@ -35,7 +33,31 @@
+         return 64;
+     }
  
 -    default boolean shouldRender(final T blockEntity, final Vec3 cameraPosition) {
--        return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPosition, this.getViewDistance());
--    }
++   default boolean shouldRender(T blockEntity, Vec3 cameraPosition) {
+         return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPosition, this.getViewDistance());
+     }
 -}
 \ No newline at end of file
-+   default int getViewDistance() {
-+      return 64;
-+   }
-+
-+   default boolean shouldRender(T blockEntity, Vec3 cameraPosition) {
-+      return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPosition, this.getViewDistance());
-+   }
 +
 +   @Override
 +   default Either<EntityType, BlockEntityType> getType() {

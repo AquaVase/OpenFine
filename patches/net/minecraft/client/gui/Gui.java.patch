@@ -19,7 +19,7 @@
  import net.minecraft.client.gui.screens.Overlay;
  import net.minecraft.client.gui.screens.PauseScreen;
  import net.minecraft.client.gui.screens.Screen;
-@@ -57,413 +59,435 @@
+@@ -57,13 +59,12 @@
  import net.minecraft.util.profiling.Profiler;
  import net.minecraft.util.profiling.ProfilerFiller;
  import net.minecraft.util.profiling.Zone;
@@ -34,765 +34,192 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class Gui {
--    private static final Logger LOGGER = LogUtils.getLogger();
--    private static final Component SOCIAL_INTERACTIONS_NOT_AVAILABLE = Component.translatable("multiplayer.socialInteractions.not_available");
--    public static final Component SAVING_LEVEL = Component.translatable("menu.savingLevel");
--    private final Minecraft minecraft;
--    public final Hud hud;
--    private final GuiRenderState guiRenderState;
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private static final Component SOCIAL_INTERACTIONS_NOT_AVAILABLE = Component.translatable("multiplayer.socialInteractions.not_available");
+@@ -71,15 +72,16 @@
+     private final Minecraft minecraft;
+     public final Hud hud;
+     private final GuiRenderState guiRenderState;
 -    private @Nullable Screen screen;
 -    private @Nullable Overlay overlay;
--    private boolean clientLevelTeardownInProgress;
--    private final SplashManager splashManager;
--    private final ToastManager toastManager;
--    private final ChatListener chatListener;
--    private @Nullable TutorialToast socialInteractionsToast;
-+   private static final Logger LOGGER = LogUtils.getLogger();
-+   private static final Component SOCIAL_INTERACTIONS_NOT_AVAILABLE = Component.translatable("multiplayer.socialInteractions.not_available");
-+   public static final Component SAVING_LEVEL = Component.translatable("menu.savingLevel");
-+   private final Minecraft minecraft;
-+   public final Hud hud;
-+   private final GuiRenderState guiRenderState;
 +   private Screen screen;
 +   private Overlay overlay;
-+   private boolean clientLevelTeardownInProgress;
-+   private final SplashManager splashManager;
-+   private final ToastManager toastManager;
-+   private final ChatListener chatListener;
+     private boolean clientLevelTeardownInProgress;
+     private final SplashManager splashManager;
+     private final ToastManager toastManager;
+     private final ChatListener chatListener;
+-    private @Nullable TutorialToast socialInteractionsToast;
 +   private TutorialToast socialInteractionsToast;
 +   private boolean guiLoadingVisible = false;
  
 -    public Gui(final Minecraft minecraft, final Hud hud, final GuiRenderState guiRenderState) {
--        this.minecraft = minecraft;
--        this.hud = hud;
--        this.splashManager = new SplashManager(minecraft.getUser());
--        this.toastManager = new ToastManager(minecraft, minecraft.options);
--        this.chatListener = new ChatListener(minecraft);
--        this.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
--        this.guiRenderState = guiRenderState;
--    }
 +   public Gui(Minecraft minecraft, Hud hud, GuiRenderState guiRenderState) {
-+      this.minecraft = minecraft;
-+      this.hud = hud;
-+      this.splashManager = new SplashManager(minecraft.getUser());
-+      this.toastManager = new ToastManager(minecraft, minecraft.options);
-+      this.chatListener = new ChatListener(minecraft);
-+      this.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
-+      this.guiRenderState = guiRenderState;
-+   }
+         this.minecraft = minecraft;
+         this.hud = hud;
+         this.splashManager = new SplashManager(minecraft.getUser());
+@@ -89,7 +91,7 @@
+         this.guiRenderState = guiRenderState;
+     }
  
 -    public void registerReloadListeners(final ReloadableResourceManager resourceManager) {
--        resourceManager.registerReloadListener(this.splashManager);
--        this.hud.registerReloadListeners(resourceManager);
--    }
 +   public void registerReloadListeners(ReloadableResourceManager resourceManager) {
-+      resourceManager.registerReloadListener(this.splashManager);
-+      this.hud.registerReloadListeners(resourceManager);
-+   }
+         resourceManager.registerReloadListener(this.splashManager);
+         this.hud.registerReloadListeners(resourceManager);
+     }
+@@ -145,7 +147,7 @@
+         }
+     }
  
--    public void tick() {
--        ProfilerFiller profiler = Profiler.get();
--        this.chatListener.tick();
--        this.hud.tick(this.minecraft.isPaused());
--        profiler.push("screen");
--        LocalPlayer player = this.minecraft.player;
--        if (this.screen != null || player == null) {
--            if (this.screen instanceof InBedChatScreen inBedScreen && !player.isSleeping()) {
--                inBedScreen.onPlayerWokeUp();
--            }
--        } else if (player.isDeadOrDying() && !(this.screen instanceof DeathScreen)) {
--            this.setScreen(null);
--        } else if (player.isSleeping() && this.minecraft.level != null) {
--            this.hud.getChat().openScreen(ChatComponent.ChatMethod.MESSAGE, InBedChatScreen::new);
--        }
-+   public void tick() {
-+      ProfilerFiller profiler = Profiler.get();
-+      this.chatListener.tick();
-+      this.hud.tick(this.minecraft.isPaused());
-+      profiler.push("screen");
-+      LocalPlayer player = this.minecraft.player;
-+      if (this.screen != null || player == null) {
-+         if (this.screen instanceof InBedChatScreen inBedScreen && !player.isSleeping()) {
-+            inBedScreen.onPlayerWokeUp();
-+         }
-+      } else if (player.isDeadOrDying() && !(this.screen instanceof DeathScreen)) {
-+         this.setScreen(null);
-+      } else if (player.isSleeping() && this.minecraft.level != null) {
-+         this.hud.getChat().openScreen(ChatComponent.ChatMethod.MESSAGE, InBedChatScreen::new);
-+      }
- 
--        if (this.screen != null) {
--            try {
--                this.screen.tick();
--            } catch (Throwable t) {
--                CrashReport report = CrashReport.forThrowable(t, "Ticking screen");
--                this.screen.fillCrashDetails(report);
--                throw new ReportedException(report);
--            }
--        }
-+      if (this.screen != null) {
-+         try {
-+            this.screen.tick();
-+         } catch (Throwable t) {
-+            CrashReport report = CrashReport.forThrowable(t, "Ticking screen");
-+            this.screen.fillCrashDetails(report);
-+            throw new ReportedException(report);
-+         }
-+      }
- 
--        profiler.pop();
--        if (this.overlay != null) {
--            this.overlay.tick();
--        }
-+      profiler.pop();
-+      if (this.overlay != null) {
-+         this.overlay.tick();
-+      }
- 
--        if (!this.minecraft.getDebugOverlay().showDebugScreen()) {
--            this.hud.clearCache();
--        }
--    }
-+      if (!this.minecraft.getDebugOverlay().showDebugScreen()) {
-+         this.hud.clearCache();
-+      }
-+   }
- 
--    public void update() {
--        this.toastManager.update();
-+   public void update() {
-+      this.toastManager.update();
- 
--        try {
--            if (this.screen != null) {
--                this.screen.handleDelayedNarration();
-+      try {
-+         if (this.screen != null) {
-+            this.screen.handleDelayedNarration();
-+         }
-+      } catch (Throwable t) {
-+         CrashReport report = CrashReport.forThrowable(t, "Narrating screen");
-+         CrashReportCategory category = report.addCategory("Screen details");
-+         category.setDetail("Screen name", () -> this.screen.getClass().getCanonicalName());
-+         throw new ReportedException(report);
-+      }
-+   }
-+
+-    public void extractRenderState(final DeltaTracker deltaTracker, final boolean shouldRenderLevel, final boolean resourcesLoaded) {
 +   public void extractRenderState(DeltaTracker deltaTracker, boolean shouldRenderLevel, boolean resourcesLoaded) {
-+      ProfilerFiller profiler = Profiler.get();
-+      int xMouse = (int)this.minecraft.mouseHandler.getScaledXPos(this.minecraft.getWindow());
-+      int yMouse = (int)this.minecraft.mouseHandler.getScaledYPos(this.minecraft.getWindow());
-+      profiler.push("gui");
-+      this.guiRenderState.reset();
-+      GuiGraphicsExtractor graphics = new GuiGraphicsExtractor(this.minecraft, this.guiRenderState, xMouse, yMouse);
-+      if (shouldRenderLevel) {
-+         profiler.push("hud");
-+         this.hud.extractRenderState(graphics, deltaTracker);
-+         profiler.pop();
-+      }
-+
+         ProfilerFiller profiler = Profiler.get();
+         int xMouse = (int)this.minecraft.mouseHandler.getScaledXPos(this.minecraft.getWindow());
+         int yMouse = (int)this.minecraft.mouseHandler.getScaledYPos(this.minecraft.getWindow());
+@@ -158,6 +160,18 @@
+             profiler.pop();
+         }
+ 
 +      if (this.guiLoadingVisible != (this.minecraft.gui.overlay() != null)) {
 +         if (this.minecraft.gui.overlay() != null) {
 +            LoadingOverlay.registerTextures(this.minecraft.getTextureManager());
 +            if (this.minecraft.gui.overlay() instanceof LoadingOverlay) {
 +               LoadingOverlay rlpg = (LoadingOverlay)this.minecraft.gui.overlay();
 +               rlpg.update();
-             }
--        } catch (Throwable t) {
--            CrashReport report = CrashReport.forThrowable(t, "Narrating screen");
--            CrashReportCategory category = report.addCategory("Screen details");
--            category.setDetail("Screen name", () -> this.screen.getClass().getCanonicalName());
--            throw new ReportedException(report);
--        }
--    }
++            }
 +         }
- 
--    public void extractRenderState(final DeltaTracker deltaTracker, final boolean shouldRenderLevel, final boolean resourcesLoaded) {
--        ProfilerFiller profiler = Profiler.get();
--        int xMouse = (int)this.minecraft.mouseHandler.getScaledXPos(this.minecraft.getWindow());
--        int yMouse = (int)this.minecraft.mouseHandler.getScaledYPos(this.minecraft.getWindow());
--        profiler.push("gui");
--        this.guiRenderState.reset();
--        GuiGraphicsExtractor graphics = new GuiGraphicsExtractor(this.minecraft, this.guiRenderState, xMouse, yMouse);
--        if (shouldRenderLevel) {
--            profiler.push("hud");
--            this.hud.extractRenderState(graphics, deltaTracker);
--            profiler.pop();
--        }
++
 +         this.guiLoadingVisible = this.minecraft.gui.overlay() != null;
 +      }
++
+         if (this.overlay != null) {
+             profiler.push("overlay");
  
--        if (this.overlay != null) {
--            profiler.push("overlay");
-+      if (this.overlay != null) {
-+         profiler.push("overlay");
+@@ -175,7 +189,17 @@
+             profiler.push("screen");
  
--            try {
--                this.overlay.extractRenderState(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
--            } catch (Throwable t) {
--                CrashReport report = CrashReport.forThrowable(t, "Extracting overlay render state");
--                CrashReportCategory category = report.addCategory("Overlay details");
--                category.setDetail("Overlay name", () -> this.overlay.getClass().getCanonicalName());
--                throw new ReportedException(report);
--            }
-+         try {
-+            this.overlay.extractRenderState(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
-+         } catch (Throwable t) {
-+            CrashReport report = CrashReport.forThrowable(t, "Extracting overlay render state");
-+            CrashReportCategory category = report.addCategory("Overlay details");
-+            category.setDetail("Overlay name", () -> this.overlay.getClass().getCanonicalName());
-+            throw new ReportedException(report);
-+         }
- 
--            profiler.pop();
--        } else if (resourcesLoaded && this.screen != null) {
--            profiler.push("screen");
-+         profiler.pop();
-+      } else if (resourcesLoaded && this.screen != null) {
-+         profiler.push("screen");
- 
--            try {
--                this.screen.extractRenderStateWithTooltipAndSubtitles(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
--            } catch (Throwable t) {
--                CrashReport report = CrashReport.forThrowable(t, "Rendering screen");
--                CrashReportCategory category = report.addCategory("Screen render details");
--                category.setDetail("Screen name", () -> this.screen.getClass().getCanonicalName());
--                this.minecraft.mouseHandler.fillMousePositionDetails(category, this.minecraft.getWindow());
--                throw new ReportedException(report);
-+         try {
+             try {
 +            if (Config.isCustomEntityModels()) {
 +               CustomEntityModels.onRenderScreen(this.minecraft.gui.screen);
-             }
- 
--            if (SharedConstants.DEBUG_CURSOR_POS) {
--                this.minecraft.mouseHandler.drawDebugMouseInfo(this.minecraft.font, graphics);
++            }
++
 +            if (Reflector.ForgeHooksClient_drawScreen.exists()) {
 +               Reflector.callVoid(
 +                  Reflector.ForgeHooksClient_drawScreen, this.minecraft.gui.screen, graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks()
 +               );
 +            } else {
-+               this.screen.extractRenderStateWithTooltipAndSubtitles(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
-             }
-+         } catch (Throwable t) {
-+            CrashReport report = CrashReport.forThrowable(t, "Rendering screen");
-+            CrashReportCategory category = report.addCategory("Screen render details");
-+            category.setDetail("Screen name", () -> this.screen.getClass().getCanonicalName());
-+            this.minecraft.mouseHandler.fillMousePositionDetails(category, this.minecraft.getWindow());
-+            throw new ReportedException(report);
-+         }
+                 this.screen.extractRenderStateWithTooltipAndSubtitles(graphics, xMouse, yMouse, deltaTracker.getGameTimeDeltaTicks());
++            }
+             } catch (Throwable t) {
+                 CrashReport report = CrashReport.forThrowable(t, "Rendering screen");
+                 CrashReportCategory category = report.addCategory("Screen render details");
+@@ -215,11 +239,11 @@
+     }
  
--            profiler.pop();
--        }
-+         if (SharedConstants.DEBUG_CURSOR_POS) {
-+            this.minecraft.mouseHandler.drawDebugMouseInfo(this.minecraft.font, graphics);
-+         }
- 
--        if (shouldRenderLevel) {
--            this.hud.extractSavingIndicator(graphics, deltaTracker);
--        }
-+         profiler.pop();
-+      }
- 
--        if (resourcesLoaded) {
--            try (Zone ignored = profiler.zone("toasts")) {
--                this.toastManager().extractRenderState(graphics);
--            }
--        }
-+      if (shouldRenderLevel) {
-+         this.hud.extractSavingIndicator(graphics, deltaTracker);
-+      }
- 
--        if (!(this.screen instanceof DebugOptionsScreen)) {
--            this.hud.extractDebugOverlay(graphics);
--        }
-+      if (resourcesLoaded) {
-+         try (Zone ignored = profiler.zone("toasts")) {
-+            this.toastManager().extractRenderState(graphics);
-+         }
-+      }
- 
--        this.hud.extractDeferredSubtitles();
--        if (SharedConstants.DEBUG_ACTIVE_TEXT_AREAS) {
--            this.renderActiveTextDebug();
--        }
-+      if (!(this.screen instanceof DebugOptionsScreen)) {
-+         this.hud.extractDebugOverlay(graphics);
-+      }
- 
--        profiler.pop();
--        graphics.applyCursor(this.minecraft.getWindow());
--    }
-+      this.hud.extractDeferredSubtitles();
-+      if (SharedConstants.DEBUG_ACTIVE_TEXT_AREAS) {
-+         this.renderActiveTextDebug();
-+      }
- 
--    @Contract(pure = true)
+     @Contract(pure = true)
 -    public @Nullable Screen screen() {
--        return this.screen;
--    }
-+      profiler.pop();
-+      graphics.applyCursor(this.minecraft.getWindow());
-+   }
++   public Screen screen() {
+         return this.screen;
+     }
  
 -    public void setScreen(@Nullable Screen screen) {
--        if (SharedConstants.IS_RUNNING_IN_IDE && Thread.currentThread() != this.minecraft.getRunningThread()) {
--            LOGGER.error("setScreen called from non-game thread");
--        }
-+   @Contract(pure = true)
-+   public Screen screen() {
-+      return this.screen;
-+   }
- 
--        if (this.screen != null) {
--            this.screen.removed();
--        } else {
--            this.minecraft.setLastInputType(InputType.NONE);
--        }
 +   public void setScreen(Screen screen) {
-+      if (SharedConstants.IS_RUNNING_IN_IDE && Thread.currentThread() != this.minecraft.getRunningThread()) {
-+         LOGGER.error("setScreen called from non-game thread");
-+      }
+         if (SharedConstants.IS_RUNNING_IN_IDE && Thread.currentThread() != this.minecraft.getRunningThread()) {
+             LOGGER.error("setScreen called from non-game thread");
+         }
+@@ -271,11 +295,11 @@
+     }
  
--        if (screen == null) {
--            if (this.clientLevelTeardownInProgress) {
--                throw new IllegalStateException("Trying to return to in-game GUI during disconnection");
--            }
-+      if (this.screen != null) {
-+         this.screen.removed();
-+      } else {
-+         this.minecraft.setLastInputType(InputType.NONE);
-+      }
- 
--            if (this.minecraft.level == null) {
--                screen = new TitleScreen();
--            } else if (this.minecraft.player.isDeadOrDying()) {
--                if (this.minecraft.player.shouldShowDeathScreen()) {
--                    screen = new DeathScreen(null, this.minecraft.level.getLevelData().isHardcore(), this.minecraft.player);
--                } else {
--                    this.minecraft.player.respawn();
--                }
-+      if (screen == null) {
-+         if (this.clientLevelTeardownInProgress) {
-+            throw new IllegalStateException("Trying to return to in-game GUI during disconnection");
-+         }
-+
-+         if (this.minecraft.level == null) {
-+            screen = new TitleScreen();
-+         } else if (this.minecraft.player.isDeadOrDying()) {
-+            if (this.minecraft.player.shouldShowDeathScreen()) {
-+               screen = new DeathScreen(null, this.minecraft.level.getLevelData().isHardcore(), this.minecraft.player);
-             } else {
--                screen = this.hud.getChat().restoreChatScreen();
-+               this.minecraft.player.respawn();
-             }
--        }
-+         } else {
-+            screen = this.hud.getChat().restoreChatScreen();
-+         }
-+      }
- 
--        this.screen = screen;
--        if (this.screen != null) {
--            this.screen.added();
--        }
-+      this.screen = screen;
-+      if (this.screen != null) {
-+         this.screen.added();
-+      }
- 
--        if (screen != null) {
--            this.minecraft.mouseHandler.releaseMouse();
--            KeyMapping.releaseAll();
--            screen.init(this.minecraft.getWindow().getGuiScaledWidth(), this.minecraft.getWindow().getGuiScaledHeight());
--        } else {
--            this.minecraft.textInputManager().stopTextInput();
--            if (this.minecraft.level != null) {
--                KeyMapping.restoreToggleStatesOnScreenClosed();
--            }
-+      if (screen != null) {
-+         this.minecraft.mouseHandler.releaseMouse();
-+         KeyMapping.releaseAll();
-+         screen.init(this.minecraft.getWindow().getGuiScaledWidth(), this.minecraft.getWindow().getGuiScaledHeight());
-+      } else {
-+         this.minecraft.textInputManager().stopTextInput();
-+         if (this.minecraft.level != null) {
-+            KeyMapping.restoreToggleStatesOnScreenClosed();
-+         }
- 
--            this.minecraft.getSoundManager().resume();
--            this.minecraft.mouseHandler.grabMouse();
--        }
-+         this.minecraft.getSoundManager().resume();
-+         this.minecraft.mouseHandler.grabMouse();
-+      }
- 
--        this.minecraft.updateTitle();
--    }
-+      this.minecraft.updateTitle();
-+   }
- 
--    @Contract(pure = true)
+     @Contract(pure = true)
 -    public @Nullable Overlay overlay() {
--        return this.overlay;
--    }
-+   @Contract(pure = true)
 +   public Overlay overlay() {
-+      return this.overlay;
-+   }
+         return this.overlay;
+     }
  
 -    public void setOverlay(final @Nullable Overlay overlay) {
--        this.overlay = overlay;
--    }
 +   public void setOverlay(Overlay overlay) {
-+      this.overlay = overlay;
-+   }
+         this.overlay = overlay;
+     }
  
--    public boolean isPausing() {
--        return this.screen != null && this.screen.isPauseScreen() || this.overlay != null && this.overlay.isPausing();
--    }
-+   public boolean isPausing() {
-+      return this.screen != null && this.screen.isPauseScreen() || this.overlay != null && this.overlay.isPausing();
-+   }
- 
--    public SplashManager splashManager() {
--        return this.splashManager;
--    }
-+   public SplashManager splashManager() {
-+      return this.splashManager;
-+   }
- 
--    public ToastManager toastManager() {
--        return this.toastManager;
--    }
-+   public ToastManager toastManager() {
-+      return this.toastManager;
-+   }
- 
--    public ChatListener chatListener() {
--        return this.chatListener;
--    }
-+   public ChatListener chatListener() {
-+      return this.chatListener;
-+   }
- 
--    public void addSocialInteractionsToast() {
--        Component title = Component.translatable("tutorial.socialInteractions.title");
--        Component message = Component.translatable("tutorial.socialInteractions.description", Tutorial.key("socialInteractions"));
+@@ -298,11 +322,11 @@
+     public void addSocialInteractionsToast() {
+         Component title = Component.translatable("tutorial.socialInteractions.title");
+         Component message = Component.translatable("tutorial.socialInteractions.description", Tutorial.key("socialInteractions"));
 -        this.socialInteractionsToast = new TutorialToast(this.minecraft.font, TutorialToast.Icons.SOCIAL_INTERACTIONS, title, message, true, 8000);
--        this.toastManager.addToast(this.socialInteractionsToast);
--    }
-+   public void addSocialInteractionsToast() {
-+      Component title = Component.translatable("tutorial.socialInteractions.title");
-+      Component message = Component.translatable("tutorial.socialInteractions.description", Tutorial.key("socialInteractions"));
 +      this.socialInteractionsToast = new TutorialToast(this.minecraft.font, Icons.SOCIAL_INTERACTIONS, title, message, true, 8000);
-+      this.toastManager.addToast(this.socialInteractionsToast);
-+   }
+         this.toastManager.addToast(this.socialInteractionsToast);
+     }
  
 -    public void setPauseScreen(final boolean suppressPauseMenuIfWeReallyArePausing, final boolean canGameReallyBePaused) {
--        if (this.screen == null) {
--            if (canGameReallyBePaused) {
--                this.setScreen(new PauseScreen(!suppressPauseMenuIfWeReallyArePausing));
--            } else {
--                this.setScreen(new PauseScreen(true));
--            }
--        }
--    }
 +   public void setPauseScreen(boolean suppressPauseMenuIfWeReallyArePausing, boolean canGameReallyBePaused) {
-+      if (this.screen == null) {
-+         if (canGameReallyBePaused) {
-+            this.setScreen(new PauseScreen(!suppressPauseMenuIfWeReallyArePausing));
-+         } else {
-+            this.setScreen(new PauseScreen(true));
-+         }
-+      }
-+   }
- 
--    public void handleKeybinds() {
--        Options options = this.minecraft.options;
-+   public void handleKeybinds() {
-+      Options options = this.minecraft.options;
- 
--        while (options.keyToggleGui.consumeClick()) {
--            this.hud.toggle();
--        }
-+      while (options.keyToggleGui.consumeClick()) {
-+         this.hud.toggle();
-+      }
- 
--        while (options.keyAdvancements.consumeClick()) {
--            this.setScreen(new AdvancementsScreen(this.minecraft.player.connection.getAdvancements()));
--        }
-+      while (options.keyAdvancements.consumeClick()) {
-+         this.setScreen(new AdvancementsScreen(this.minecraft.player.connection.getAdvancements()));
-+      }
- 
--        while (options.keySocialInteractions.consumeClick()) {
--            if (!this.minecraft.isMultiplayerServer() && !SharedConstants.DEBUG_SOCIAL_INTERACTIONS) {
--                this.chatListener.handleOverlay(SOCIAL_INTERACTIONS_NOT_AVAILABLE);
--                this.minecraft.getNarrator().saySystemNow(SOCIAL_INTERACTIONS_NOT_AVAILABLE);
--            } else {
--                if (this.socialInteractionsToast != null) {
--                    this.socialInteractionsToast.hide();
--                    this.socialInteractionsToast = null;
--                }
--
--                this.setScreen(new SocialInteractionsScreen());
-+      while (options.keySocialInteractions.consumeClick()) {
-+         if (!this.minecraft.isMultiplayerServer() && !SharedConstants.DEBUG_SOCIAL_INTERACTIONS) {
-+            this.chatListener.handleOverlay(SOCIAL_INTERACTIONS_NOT_AVAILABLE);
-+            this.minecraft.getNarrator().saySystemNow(SOCIAL_INTERACTIONS_NOT_AVAILABLE);
-+         } else {
-+            if (this.socialInteractionsToast != null) {
-+               this.socialInteractionsToast.hide();
-+               this.socialInteractionsToast = null;
-             }
--        }
- 
--        while (options.keyChat.consumeClick()) {
--            this.openChatScreen(ChatComponent.ChatMethod.MESSAGE);
--        }
-+            this.setScreen(new SocialInteractionsScreen());
-+         }
-+      }
- 
--        if (this.screen == null && this.overlay == null && options.keyCommand.consumeClick()) {
--            this.openChatScreen(ChatComponent.ChatMethod.COMMAND);
--        }
--    }
-+      while (options.keyChat.consumeClick()) {
-+         this.openChatScreen(ChatComponent.ChatMethod.MESSAGE);
-+      }
+         if (this.screen == null) {
+             if (canGameReallyBePaused) {
+                 this.setScreen(new PauseScreen(!suppressPauseMenuIfWeReallyArePausing));
+@@ -346,20 +370,20 @@
+         }
+     }
  
 -    public void openChatScreen(final ChatComponent.ChatMethod chatMethod) {
--        if (this.minecraft.player != null) {
--            this.hud.getChat().openScreen(chatMethod, ChatScreen::new);
--        }
--    }
-+      if (this.screen == null && this.overlay == null && options.keyCommand.consumeClick()) {
-+         this.openChatScreen(ChatComponent.ChatMethod.COMMAND);
-+      }
-+   }
++   public void openChatScreen(ChatComponent.ChatMethod chatMethod) {
+         if (this.minecraft.player != null) {
+             this.hud.getChat().openScreen(chatMethod, ChatScreen::new);
+         }
+     }
  
 -    public void openChatAndAddText(final ChatComponent.ChatMethod chatMethod, final String text) {
--        this.openChatScreen(ChatComponent.ChatMethod.COMMAND);
--        if (this.screen instanceof ChatScreen chatScreen) {
--            chatScreen.insertText(text, false);
--        }
--    }
-+   public void openChatScreen(ChatComponent.ChatMethod chatMethod) {
-+      if (this.minecraft.player != null) {
-+         this.hud.getChat().openScreen(chatMethod, ChatScreen::new);
-+      }
-+   }
++   public void openChatAndAddText(ChatComponent.ChatMethod chatMethod, String text) {
+         this.openChatScreen(ChatComponent.ChatMethod.COMMAND);
+         if (this.screen instanceof ChatScreen chatScreen) {
+             chatScreen.insertText(text, false);
+         }
+     }
  
 -    public Runnable buildInitialScreens(final @Nullable GameLoadCookie cookie) {
--        List<Function<Runnable, Screen>> screens = new ArrayList<>();
--        boolean onboardingScreenAdded = this.addInitialScreens(screens);
--        Runnable nextStep = () -> {
--            if (cookie != null && cookie.quickPlayData().isEnabled()) {
--                QuickPlay.connect(this.minecraft, cookie.quickPlayData().variant(), cookie.realmsClient());
--            } else {
--                this.setScreen(new TitleScreen(true, new LogoRenderer(onboardingScreenAdded)));
--            }
--        };
-+   public void openChatAndAddText(ChatComponent.ChatMethod chatMethod, String text) {
-+      this.openChatScreen(ChatComponent.ChatMethod.COMMAND);
-+      if (this.screen instanceof ChatScreen chatScreen) {
-+         chatScreen.insertText(text, false);
-+      }
-+   }
- 
--        for (Function<Runnable, Screen> function : Lists.reverse(screens)) {
--            Screen screen = function.apply(nextStep);
--            nextStep = () -> this.setScreen(screen);
--        }
 +   public Runnable buildInitialScreens(GameLoadCookie cookie) {
-+      List<Function<Runnable, Screen>> screens = new ArrayList<>();
-+      boolean onboardingScreenAdded = this.addInitialScreens(screens);
-+      Runnable nextStep = () -> {
-+         if (cookie != null && cookie.quickPlayData().isEnabled()) {
-+            QuickPlay.connect(this.minecraft, cookie.quickPlayData().variant(), cookie.realmsClient());
-+         } else {
-+            this.setScreen(new TitleScreen(true, new LogoRenderer(onboardingScreenAdded)));
-+         }
-+      };
- 
--        return nextStep;
--    }
-+      for (Function<Runnable, Screen> function : Lists.reverse(screens)) {
-+         Screen screen = function.apply(nextStep);
-+         nextStep = () -> this.setScreen(screen);
-+      }
+         List<Function<Runnable, Screen>> screens = new ArrayList<>();
+         boolean onboardingScreenAdded = this.addInitialScreens(screens);
+         Runnable nextStep = () -> {
+@@ -378,7 +402,7 @@
+         return nextStep;
+     }
  
 -    private boolean addInitialScreens(final List<Function<Runnable, Screen>> screens) {
--        boolean onboardingScreenAdded = false;
--        if (this.minecraft.options.onboardAccessibility || SharedConstants.DEBUG_FORCE_ONBOARDING_SCREEN) {
--            screens.add(next -> new AccessibilityOnboardingScreen(this.minecraft.options, next));
--            onboardingScreenAdded = true;
--        }
-+      return nextStep;
-+   }
- 
--        BanDetails multiplayerBan = this.minecraft.multiplayerBan();
--        if (multiplayerBan != null) {
--            screens.add(next -> BanNoticeScreens.create(result -> {
--                if (result) {
--                    Util.getPlatform().openUri(CommonLinks.SUSPENSION_HELP);
--                }
 +   private boolean addInitialScreens(List<Function<Runnable, Screen>> screens) {
-+      boolean onboardingScreenAdded = false;
-+      if (this.minecraft.options.onboardAccessibility || SharedConstants.DEBUG_FORCE_ONBOARDING_SCREEN) {
-+         screens.add(next -> new AccessibilityOnboardingScreen(this.minecraft.options, next));
-+         onboardingScreenAdded = true;
-+      }
- 
--                next.run();
--            }, multiplayerBan));
--        }
--
--        ProfileResult profileResult = this.minecraft.getProfileResult();
--        if (profileResult != null) {
--            GameProfile profile = profileResult.profile();
--            Set<ProfileActionType> actions = profileResult.actions();
--            if (actions.contains(ProfileActionType.FORCED_NAME_CHANGE)) {
--                screens.add(onClose -> BanNoticeScreens.createNameBan(profile.name(), onClose));
-+      BanDetails multiplayerBan = this.minecraft.multiplayerBan();
-+      if (multiplayerBan != null) {
-+         screens.add(next -> BanNoticeScreens.create(result -> {
-+            if (result) {
-+               Util.getPlatform().openUri(CommonLinks.SUSPENSION_HELP);
-             }
- 
--            if (actions.contains(ProfileActionType.USING_BANNED_SKIN)) {
--                screens.add(BanNoticeScreens::createSkinBan);
--            }
--        }
-+            next.run();
-+         }, multiplayerBan));
-+      }
- 
--        return onboardingScreenAdded;
--    }
-+      ProfileResult profileResult = this.minecraft.getProfileResult();
-+      if (profileResult != null) {
-+         GameProfile profile = profileResult.profile();
-+         Set<ProfileActionType> actions = profileResult.actions();
-+         if (actions.contains(ProfileActionType.FORCED_NAME_CHANGE)) {
-+            screens.add(onClose -> BanNoticeScreens.createNameBan(profile.name(), onClose));
-+         }
- 
--    public boolean canInterruptScreen() {
--        return (this.screen == null || this.screen.canInterruptWithAnotherScreen()) && !this.clientLevelTeardownInProgress;
--    }
-+         if (actions.contains(ProfileActionType.USING_BANNED_SKIN)) {
-+            screens.add(BanNoticeScreens::createSkinBan);
-+         }
-+      }
+         boolean onboardingScreenAdded = false;
+         if (this.minecraft.options.onboardAccessibility || SharedConstants.DEBUG_FORCE_ONBOARDING_SCREEN) {
+             screens.add(next -> new AccessibilityOnboardingScreen(this.minecraft.options, next));
+@@ -416,7 +440,7 @@
+         return (this.screen == null || this.screen.canInterruptWithAnotherScreen()) && !this.clientLevelTeardownInProgress;
+     }
  
 -    public void setClientLevelTeardownInProgress(final boolean clientLevelTeardownInProgress) {
--        this.clientLevelTeardownInProgress = clientLevelTeardownInProgress;
--    }
-+      return onboardingScreenAdded;
-+   }
- 
--    private void renderActiveTextDebug() {
--        this.guiRenderState.nextStratum();
--        this.guiRenderState
--            .forEachText(
--                text -> text.ensurePrepared()
--                    .visit(
--                        new Font.GlyphVisitor() {
--                            private int index;
-+   public boolean canInterruptScreen() {
-+      return (this.screen == null || this.screen.canInterruptWithAnotherScreen()) && !this.clientLevelTeardownInProgress;
-+   }
- 
--                            @Override
--                            public void acceptGlyph(final TextRenderable.Styled glyph) {
--                                this.renderDebugMarkers(glyph, false);
--                            }
 +   public void setClientLevelTeardownInProgress(boolean clientLevelTeardownInProgress) {
-+      this.clientLevelTeardownInProgress = clientLevelTeardownInProgress;
-+   }
+         this.clientLevelTeardownInProgress = clientLevelTeardownInProgress;
+     }
  
--                            @Override
+@@ -430,16 +454,16 @@
+                             private int index;
+ 
+                             @Override
+-                            public void acceptGlyph(final TextRenderable.Styled glyph) {
++                     public void acceptGlyph(Styled glyph) {
+                                 this.renderDebugMarkers(glyph, false);
+                             }
+ 
+                             @Override
 -                            public void acceptEmptyArea(final EmptyArea empty) {
--                                this.renderDebugMarkers(empty, true);
--                            }
-+   private void renderActiveTextDebug() {
-+      this.guiRenderState.nextStratum();
-+      this.guiRenderState
-+         .forEachText(
-+            text -> text.ensurePrepared()
-+               .visit(
-+                  new Font.GlyphVisitor() {
-+                     private int index;
++                     public void acceptEmptyArea(EmptyArea empty) {
+                                 this.renderDebugMarkers(empty, true);
+                             }
  
 -                            private void renderDebugMarkers(final ActiveArea glyph, final boolean isEmpty) {
--                                int intensity = (isEmpty ? 128 : 255) - (this.index++ & 1) * 64;
--                                Style style = glyph.style();
--                                int red = style.getClickEvent() != null ? intensity : 0;
--                                int green = style.getHoverEvent() != null ? intensity : 0;
--                                int blue = red != 0 && green != 0 ? 0 : intensity;
--                                int color = ARGB.color(128, red, green, blue);
--                                Gui.this.guiRenderState
--                                    .addGuiElement(
--                                        new ColoredRectangleRenderState(
--                                            RenderPipelines.GUI,
--                                            TextureSetup.noTexture(),
--                                            text.pose,
--                                            (int)glyph.activeLeft(),
--                                            (int)glyph.activeTop(),
--                                            (int)glyph.activeRight(),
--                                            (int)glyph.activeBottom(),
--                                            color,
--                                            color,
--                                            text.scissor
--                                        )
--                                    );
--                            }
--                        }
--                    )
--            );
--    }
++                     private void renderDebugMarkers(ActiveArea glyph, boolean isEmpty) {
+                                 int intensity = (isEmpty ? 128 : 255) - (this.index++ & 1) * 64;
+                                 Style style = glyph.style();
+                                 int red = style.getClickEvent() != null ? intensity : 0;
+@@ -466,4 +490,4 @@
+                     )
+             );
+     }
 -}
 \ No newline at end of file
-+                     @Override
-+                     public void acceptGlyph(Styled glyph) {
-+                        this.renderDebugMarkers(glyph, false);
-+                     }
-+
-+                     @Override
-+                     public void acceptEmptyArea(EmptyArea empty) {
-+                        this.renderDebugMarkers(empty, true);
-+                     }
-+
-+                     private void renderDebugMarkers(ActiveArea glyph, boolean isEmpty) {
-+                        int intensity = (isEmpty ? 128 : 255) - (this.index++ & 1) * 64;
-+                        Style style = glyph.style();
-+                        int red = style.getClickEvent() != null ? intensity : 0;
-+                        int green = style.getHoverEvent() != null ? intensity : 0;
-+                        int blue = red != 0 && green != 0 ? 0 : intensity;
-+                        int color = ARGB.color(128, red, green, blue);
-+                        Gui.this.guiRenderState
-+                           .addGuiElement(
-+                              new ColoredRectangleRenderState(
-+                                 RenderPipelines.GUI,
-+                                 TextureSetup.noTexture(),
-+                                 text.pose,
-+                                 (int)glyph.activeLeft(),
-+                                 (int)glyph.activeTop(),
-+                                 (int)glyph.activeRight(),
-+                                 (int)glyph.activeBottom(),
-+                                 color,
-+                                 color,
-+                                 text.scissor
-+                              )
-+                           );
-+                     }
-+                  }
-+               )
-+         );
-+   }
 +}

@@ -17,24 +17,18 @@
 -    public SkeletonClothingLayer(
 -        final RenderLayerParent<S, M> renderer, final EntityModelSet models, final ModelLayerLocation layerLocation, final Identifier clothesLocation
 -    ) {
--        super(renderer);
--        this.clothesLocation = clothesLocation;
--        this.layerModel = new SkeletonModel<>(models.bakeLayer(layerLocation));
--    }
 +   public SkeletonClothingLayer(RenderLayerParent<S, M> renderer, EntityModelSet models, ModelLayerLocation layerLocation, Identifier clothesLocation) {
-+      super(renderer);
-+      this.clothesLocation = clothesLocation;
-+      this.layerModel = new SkeletonModel<>(models.bakeLayer(layerLocation));
-+   }
+         super(renderer);
+         this.clothesLocation = clothesLocation;
+         this.layerModel = new SkeletonModel<>(models.bakeLayer(layerLocation));
+     }
  
 -    public void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
 -    ) {
--        coloredCutoutModelCopyLayerRender(this.layerModel, this.clothesLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
--    }
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
+         coloredCutoutModelCopyLayerRender(this.layerModel, this.clothesLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
+     }
 -}
 \ No newline at end of file
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
-+      coloredCutoutModelCopyLayerRender(this.layerModel, this.clothesLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
-+   }
 +}

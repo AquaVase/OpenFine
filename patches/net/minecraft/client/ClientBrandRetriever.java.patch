@@ -9,15 +9,12 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class ClientBrandRetriever {
--    public static final String VANILLA_NAME = "vanilla";
-+   public static final String VANILLA_NAME = "vanilla";
+     public static final String VANILLA_NAME = "vanilla";
  
--    public static String getClientModName() {
+     public static String getClientModName() {
 -        return "vanilla";
--    }
++      return Reflector.BrandingControl_getBranding.exists() ? Reflector.BrandingControl_getBranding.callString() : "optifine";
+     }
 -}
 \ No newline at end of file
-+   public static String getClientModName() {
-+      return Reflector.BrandingControl_getBranding.exists() ? Reflector.BrandingControl_getBranding.callString() : "optifine";
-+   }
 +}

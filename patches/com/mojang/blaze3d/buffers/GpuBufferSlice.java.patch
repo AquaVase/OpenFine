@@ -1,6 +1,6 @@
 --- a/com/mojang/blaze3d/buffers/GpuBufferSlice.java
 +++ b/com/mojang/blaze3d/buffers/GpuBufferSlice.java
-@@ -1,38 +1,52 @@
+@@ -1,12 +1,15 @@
  package com.mojang.blaze3d.buffers;
  
 +import com.mojang.blaze3d.opengl.GlBuffer;
@@ -12,61 +12,25 @@
 -@OnlyIn(Dist.CLIENT)
 -public record GpuBufferSlice(GpuBuffer buffer, long offset, long length) {
 -    public GpuBufferSlice slice(final long offset, final long length) {
--        if (offset >= 0L && length >= 0L && offset + length <= this.length) {
--            return new GpuBufferSlice(this.buffer, this.offset + offset, length);
--        } else {
--            throw new IllegalArgumentException(
--                "Offset of "
--                    + offset
--                    + " and length "
--                    + length
--                    + " would put new slice outside existing slice's range (of "
--                    + this.offset
--                    + ","
--                    + this.length
--                    + ")"
--            );
--        }
--    }
 +public record GpuBufferSlice(GpuBuffer buffer, long offset, long length, Mutable<Object> mutableData) {
 +   public GpuBufferSlice(GpuBuffer buffer, long offset, long length) {
 +      this(buffer, offset, length, new Mutable<>());
 +   }
++
++   public GpuBufferSlice slice(long offset, long length) {
+         if (offset >= 0L && length >= 0L && offset + length <= this.length) {
+             return new GpuBufferSlice(this.buffer, this.offset + offset, length);
+         } else {
+@@ -24,15 +27,26 @@
+         }
+     }
  
 -    public GpuBufferSlice.MappedView map(final boolean read, final boolean write) {
--        return this.buffer.map(this.offset, this.length, read, write);
--    }
-+   public GpuBufferSlice slice(long offset, long length) {
-+      if (offset >= 0L && length >= 0L && offset + length <= this.length) {
-+         return new GpuBufferSlice(this.buffer, this.offset + offset, length);
-+      } else {
-+         throw new IllegalArgumentException(
-+            "Offset of "
-+               + offset
-+               + " and length "
-+               + length
-+               + " would put new slice outside existing slice's range (of "
-+               + this.offset
-+               + ","
-+               + this.length
-+               + ")"
-+         );
-+      }
-+   }
++   public GpuBufferSlice.MappedView map(boolean read, boolean write) {
+         return this.buffer.map(this.offset, this.length, read, write);
+     }
  
 -    @OnlyIn(Dist.CLIENT)
--    public record MappedView(GpuBufferSlice slice, ByteBuffer data, Runnable onClose) implements AutoCloseable {
--        @Override
--        public void close() {
--            this.onClose.run();
--        }
--    }
--}
-\ No newline at end of file
-+   public GpuBufferSlice.MappedView map(boolean read, boolean write) {
-+      return this.buffer.map(this.offset, this.length, read, write);
-+   }
-+
 +   public GlBuffer glBuffer() {
 +      return (GlBuffer)this.buffer;
 +   }
@@ -79,10 +43,12 @@
 +      this.mutableData.set(data);
 +   }
 +
-+   public record MappedView(GpuBufferSlice slice, ByteBuffer data, Runnable onClose) implements AutoCloseable {
-+      @Override
-+      public void close() {
-+         this.onClose.run();
-+      }
-+   }
+     public record MappedView(GpuBufferSlice slice, ByteBuffer data, Runnable onClose) implements AutoCloseable {
+         @Override
+         public void close() {
+             this.onClose.run();
+         }
+     }
+-}
+\ No newline at end of file
 +}

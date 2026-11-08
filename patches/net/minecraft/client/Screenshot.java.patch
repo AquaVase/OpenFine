@@ -8,7 +8,7 @@
  import com.mojang.blaze3d.systems.RenderSystem;
  import com.mojang.blaze3d.textures.GpuTexture;
  import com.mojang.logging.LogUtils;
-@@ -11,145 +12,189 @@
+@@ -11,25 +12,24 @@
  import java.util.function.Consumer;
  import net.minecraft.ChatFormatting;
  import net.minecraft.SharedConstants;
@@ -27,48 +27,26 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class Screenshot {
--    private static final Logger LOGGER = LogUtils.getLogger();
--    public static final String SCREENSHOT_DIR = "screenshots";
-+   private static final Logger LOGGER = LogUtils.getLogger();
-+   public static final String SCREENSHOT_DIR = "screenshots";
+     private static final Logger LOGGER = LogUtils.getLogger();
+     public static final String SCREENSHOT_DIR = "screenshots";
  
 -    public static void grab(final File workDir, final RenderTarget target, final Consumer<Component> callback) {
--        grab(workDir, null, target, 1, callback);
--    }
 +   public static void grab(File workDir, RenderTarget target, Consumer<Component> callback) {
-+      grab(workDir, null, target, 1, callback);
-+   }
+         grab(workDir, null, target, 1, callback);
+     }
  
 -    public static void grab(final Minecraft minecraft, final boolean debugPanoramaRequested) {
--        if (debugPanoramaRequested && SharedConstants.DEBUG_PANORAMA_SCREENSHOT) {
--            minecraft.showDebugChat(minecraft.grabPanoramixScreenshot(minecraft.gameDirectory));
--        } else {
--            grab(minecraft.gameDirectory, minecraft.gameRenderer.mainRenderTarget(), message -> minecraft.execute(() -> minecraft.showDebugChat(message)));
--        }
--    }
 +   public static void grab(Minecraft minecraft, boolean debugPanoramaRequested) {
-+      if (debugPanoramaRequested && SharedConstants.DEBUG_PANORAMA_SCREENSHOT) {
-+         minecraft.showDebugChat(minecraft.grabPanoramixScreenshot(minecraft.gameDirectory));
-+      } else {
-+         grab(minecraft.gameDirectory, minecraft.gameRenderer.mainRenderTarget(), message -> minecraft.execute(() -> minecraft.showDebugChat(message)));
-+      }
-+   }
+         if (debugPanoramaRequested && SharedConstants.DEBUG_PANORAMA_SCREENSHOT) {
+             minecraft.showDebugChat(minecraft.grabPanoramixScreenshot(minecraft.gameDirectory));
+         } else {
+@@ -37,9 +37,35 @@
+         }
+     }
  
 -    public static void grab(
 -        final File workDir, final @Nullable String forceName, final RenderTarget target, final int downscaleFactor, final Consumer<Component> callback
 -    ) {
--        takeScreenshot(
--            target,
--            downscaleFactor,
--            image -> {
--                File picDir = new File(workDir, "screenshots");
--                picDir.mkdir();
--                File file;
--                if (forceName == null) {
--                    file = getFile(picDir);
--                } else {
--                    file = new File(picDir, forceName);
--                }
 +   public static void grab(File workDir, String forceName, RenderTarget target, int downscaleFactor, Consumer<Component> callback) {
 +      Minecraft mc = Config.getMinecraft();
 +      Window mainWindow = mc.getWindow();
@@ -81,22 +59,7 @@
 +      boolean resize = target == mc.gameRenderer.mainRenderTarget() && mul > 1;
 +      if (resize) {
 +         gameSettings.guiScale().set(guiScale * mul);
- 
--                Util.ioPool()
--                    .execute(
--                        () -> {
--                            try (image) {
--                                image.writeToFile(file);
--                                Component component = Component.literal(file.getName())
--                                    .withStyle(ChatFormatting.UNDERLINE)
--                                    .withStyle(s -> s.withClickEvent(new ClickEvent.OpenFile(file.getAbsoluteFile())));
--                                callback.accept(Component.translatable("screenshot.success", component));
--                            } catch (Exception e) {
--                                LOGGER.warn("Couldn't save screenshot", e);
--                                callback.accept(Component.translatable("screenshot.failure", e.getMessage()));
--                            }
--                        }
--                    );
++
 +         try {
 +            mainWindow.resizeFramebuffer(fbWidth * mul, fbHeight * mul);
 +         } catch (Exception e) {
@@ -113,24 +76,13 @@
 +         RenderSystem.getModelViewStack().popMatrix();
 +      }
 +
-+      takeScreenshot(
-+         target,
-+         downscaleFactor,
-+         image -> {
-+            File picDir = new File(workDir, "screenshots");
-+            picDir.mkdir();
-+            File file;
-+            if (forceName == null) {
-+               file = getFile(picDir);
-+            } else {
-+               file = new File(picDir, forceName);
-             }
--        );
--    }
+         takeScreenshot(
+             target,
+             downscaleFactor,
+@@ -53,15 +79,33 @@
+                     file = new File(picDir, forceName);
+                 }
  
--    public static void takeScreenshot(final RenderTarget target, final Consumer<NativeImage> callback) {
--        takeScreenshot(target, 1, callback);
--    }
 +            Object event = null;
 +            if (Reflector.ScreenshotEvent_Constructor.exists()) {
 +               event = Reflector.ScreenshotEvent_Constructor.newInstance(image, file);
@@ -139,182 +91,85 @@
 +                  callback.accept(msg);
 +                  return;
 +               }
- 
--    public static void takeScreenshot(final RenderTarget target, final int downscaleFactor, final Consumer<NativeImage> callback) {
--        int width = target.width;
--        int height = target.height;
--        GpuTexture sourceTexture = target.getColorTexture();
--        if (sourceTexture == null) {
--            throw new IllegalStateException("Tried to capture screenshot of an incomplete framebuffer");
--        }
++
 +               file = (File)Reflector.call(event, Reflector.ScreenshotEvent_getScreenshotFile);
 +            }
- 
--        if (width % downscaleFactor == 0 && height % downscaleFactor == 0) {
--            GpuBuffer buffer = RenderSystem.getDevice()
--                .createBuffer(() -> "Screenshot buffer", 9, (long)width * height * sourceTexture.getFormat().blockSize());
--            RenderSystem.getDevice()
--                .createCommandEncoder()
--                .copyTextureToBuffer(
--                    sourceTexture,
--                    buffer,
--                    0L,
--                    () -> {
--                        try (GpuBufferSlice.MappedView read = buffer.map(true, false)) {
--                            int outputHeight = height / downscaleFactor;
--                            int outputWidth = width / downscaleFactor;
--                            NativeImage image = new NativeImage(outputWidth, outputHeight, false);
++
 +            File targetFile = file;
 +            Object eventF = event;
-+            Util.ioPool()
-+               .execute(
-+                  () -> {
-+                     try (image) {
+                 Util.ioPool()
+                     .execute(
+                         () -> {
+                             try (image) {
+-                                image.writeToFile(file);
+-                                Component component = Component.literal(file.getName())
 +                        image.writeToFile(targetFile);
 +                        Component component = Component.literal(targetFile.getName())
-+                           .withStyle(ChatFormatting.UNDERLINE)
+                                     .withStyle(ChatFormatting.UNDERLINE)
+-                                    .withStyle(s -> s.withClickEvent(new ClickEvent.OpenFile(file.getAbsoluteFile())));
 +                           .withStyle(s -> s.withClickEvent(new OpenFile(targetFile.getAbsoluteFile())));
 +                        if (eventF != null && Reflector.call(eventF, Reflector.ScreenshotEvent_getResultMessage) != null) {
 +                           callback.accept((Component)Reflector.call(eventF, Reflector.ScreenshotEvent_getResultMessage));
 +                        } else {
-+                           callback.accept(Component.translatable("screenshot.success", component));
+                                 callback.accept(Component.translatable("screenshot.success", component));
 +                        }
-+                     } catch (Exception e) {
-+                        LOGGER.warn("Couldn't save screenshot", e);
-+                        callback.accept(Component.translatable("screenshot.failure", e.getMessage()));
-+                     }
-+                  }
-+               );
-+         }
-+      );
+                             } catch (Exception e) {
+                                 LOGGER.warn("Couldn't save screenshot", e);
+                                 callback.accept(Component.translatable("screenshot.failure", e.getMessage()));
+@@ -70,13 +114,17 @@
+                     );
+             }
+         );
 +      if (resize) {
 +         Config.getGameSettings().guiScale().set(guiScaleOld);
 +         mainWindow.resizeFramebuffer(fbWidth, fbHeight);
-+      }
+     }
 +   }
  
--                            for (int y = 0; y < outputHeight; y++) {
--                                for (int x = 0; x < outputWidth; x++) {
--                                    if (downscaleFactor == 1) {
--                                        int argb = read.data().getInt((x + y * width) * sourceTexture.getFormat().blockSize());
--                                        image.setPixelABGR(x, height - y - 1, argb | 0xFF000000);
--                                    } else {
--                                        int red = 0;
--                                        int green = 0;
--                                        int blue = 0;
+-    public static void takeScreenshot(final RenderTarget target, final Consumer<NativeImage> callback) {
 +   public static void takeScreenshot(RenderTarget target, Consumer<NativeImage> callback) {
-+      takeScreenshot(target, 1, callback);
-+   }
+         takeScreenshot(target, 1, callback);
+     }
  
--                                        for (int i = 0; i < downscaleFactor; i++) {
--                                            for (int j = 0; j < downscaleFactor; j++) {
--                                                int argb = read.data()
+-    public static void takeScreenshot(final RenderTarget target, final int downscaleFactor, final Consumer<NativeImage> callback) {
++   public static void takeScreenshot(RenderTarget target, int downscaleFactor, Consumer<NativeImage> callback) {
+         int width = target.width;
+         int height = target.height;
+         GpuTexture sourceTexture = target.getColorTexture();
+@@ -85,8 +133,7 @@
+         }
+ 
+         if (width % downscaleFactor == 0 && height % downscaleFactor == 0) {
+-            GpuBuffer buffer = RenderSystem.getDevice()
+-                .createBuffer(() -> "Screenshot buffer", 9, (long)width * height * sourceTexture.getFormat().blockSize());
++         GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "Screenshot buffer", 9, (long)width * height * sourceTexture.getFormat().blockSize());
+             RenderSystem.getDevice()
+                 .createCommandEncoder()
+                 .copyTextureToBuffer(
+@@ -112,9 +159,7 @@
+                                         for (int i = 0; i < downscaleFactor; i++) {
+                                             for (int j = 0; j < downscaleFactor; j++) {
+                                                 int argb = read.data()
 -                                                    .getInt(
 -                                                        (x * downscaleFactor + i + (y * downscaleFactor + j) * width) * sourceTexture.getFormat().blockSize()
 -                                                    );
--                                                red += ARGB.red(argb);
--                                                green += ARGB.green(argb);
--                                                blue += ARGB.blue(argb);
--                                            }
--                                        }
-+   public static void takeScreenshot(RenderTarget target, int downscaleFactor, Consumer<NativeImage> callback) {
-+      int width = target.width;
-+      int height = target.height;
-+      GpuTexture sourceTexture = target.getColorTexture();
-+      if (sourceTexture == null) {
-+         throw new IllegalStateException("Tried to capture screenshot of an incomplete framebuffer");
-+      }
- 
--                                        int sampleCount = downscaleFactor * downscaleFactor;
--                                        image.setPixelABGR(x, outputHeight - y - 1, ARGB.color(255, red / sampleCount, green / sampleCount, blue / sampleCount));
--                                    }
--                                }
--                            }
-+      if (width % downscaleFactor == 0 && height % downscaleFactor == 0) {
-+         GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> "Screenshot buffer", 9, (long)width * height * sourceTexture.getFormat().blockSize());
-+         RenderSystem.getDevice()
-+            .createCommandEncoder()
-+            .copyTextureToBuffer(
-+               sourceTexture,
-+               buffer,
-+               0L,
-+               () -> {
-+                  try (GpuBufferSlice.MappedView read = buffer.map(true, false)) {
-+                     int outputHeight = height / downscaleFactor;
-+                     int outputWidth = width / downscaleFactor;
-+                     NativeImage image = new NativeImage(outputWidth, outputHeight, false);
- 
--                            callback.accept(image);
-+                     for (int y = 0; y < outputHeight; y++) {
-+                        for (int x = 0; x < outputWidth; x++) {
-+                           if (downscaleFactor == 1) {
-+                              int argb = read.data().getInt((x + y * width) * sourceTexture.getFormat().blockSize());
-+                              image.setPixelABGR(x, height - y - 1, argb | 0xFF000000);
-+                           } else {
-+                              int red = 0;
-+                              int green = 0;
-+                              int blue = 0;
-+
-+                              for (int i = 0; i < downscaleFactor; i++) {
-+                                 for (int j = 0; j < downscaleFactor; j++) {
-+                                    int argb = read.data()
 +                                       .getInt((x * downscaleFactor + i + (y * downscaleFactor + j) * width) * sourceTexture.getFormat().blockSize());
-+                                    red += ARGB.red(argb);
-+                                    green += ARGB.green(argb);
-+                                    blue += ARGB.blue(argb);
-+                                 }
-+                              }
-+
-+                              int sampleCount = downscaleFactor * downscaleFactor;
-+                              image.setPixelABGR(x, outputHeight - y - 1, ARGB.color(255, red / sampleCount, green / sampleCount, blue / sampleCount));
-+                           }
-                         }
-+                     }
- 
--                        buffer.close();
--                    },
--                    0
--                );
--        } else {
--            throw new IllegalArgumentException("Image size is not divisible by downscale factor");
--        }
--    }
-+                     callback.accept(image);
-+                  }
+                                                 red += ARGB.red(argb);
+                                                 green += ARGB.green(argb);
+                                                 blue += ARGB.blue(argb);
+@@ -139,7 +184,7 @@
+         }
+     }
  
 -    private static File getFile(final File picDir) {
--        String name = Util.getFilenameFormattedDateTime();
--        int count = 1;
-+                  buffer.close();
-+               },
-+               0
-+            );
-+      } else {
-+         throw new IllegalArgumentException("Image size is not divisible by downscale factor");
-+      }
-+   }
- 
--        while (true) {
--            File file = new File(picDir, name + (count == 1 ? "" : "_" + count) + ".png");
--            if (!file.exists()) {
--                return file;
--            }
 +   private static File getFile(File picDir) {
-+      String name = Util.getFilenameFormattedDateTime();
-+      int count = 1;
+         String name = Util.getFilenameFormattedDateTime();
+         int count = 1;
  
--            count++;
--        }
--    }
+@@ -152,4 +197,4 @@
+             count++;
+         }
+     }
 -}
 \ No newline at end of file
-+      while (true) {
-+         File file = new File(picDir, name + (count == 1 ? "" : "_" + count) + ".png");
-+         if (!file.exists()) {
-+            return file;
-+         }
-+
-+         count++;
-+      }
-+   }
 +}

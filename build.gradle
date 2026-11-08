@@ -12,6 +12,7 @@ patchgen {
     srgPrefix = 'srg/'
     unprefixedPackages = ['optifine/']
     outputArchive = layout.projectDirectory.file("build/${preview_version ? 'preview_' : ''}${artifact_id}_${mc_version}_${version}.jar")
+    ignoreSourceIndentation = true
 }
 
 repositories {

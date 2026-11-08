@@ -17,7 +17,7 @@
  import net.minecraft.server.level.BlockDestructionProgress;
  import net.minecraft.server.packs.resources.ResourceManager;
  import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-@@ -55,481 +58,578 @@
+@@ -55,25 +58,32 @@
  import net.minecraft.world.entity.Entity;
  import net.minecraft.world.entity.LivingEntity;
  import net.minecraft.world.level.ChunkPos;
@@ -48,339 +48,108 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class LevelExtractor implements ResourceManagerReloadListener {
--    private static final float CHUNK_VISIBILITY_THRESHOLD = 0.3F;
--    private final Minecraft minecraft;
--    private final LevelRenderer levelRenderer;
+     private static final float CHUNK_VISIBILITY_THRESHOLD = 0.3F;
+     private final Minecraft minecraft;
+     private final LevelRenderer levelRenderer;
 -    private @Nullable ClientLevel level;
 -    private @Nullable SectionUpdateTracker sectionUpdateTracker;
--    private final LevelRenderState levelRenderState;
--    public final DebugRenderer debugRenderer = new DebugRenderer();
--    public final GameTestBlockHighlightRenderer gameTestBlockHighlightRenderer = new GameTestBlockHighlightRenderer();
--    private final SimpleGizmoCollector mainThreadGizmos = new SimpleGizmoCollector();
--    private double prevCamRotX = Double.MIN_VALUE;
--    private double prevCamRotY = Double.MIN_VALUE;
--    private int lastViewDistance = -1;
--    private boolean shouldInvalidateCompiledGeometry;
--    private boolean shouldResetLevelRenderData;
--    private boolean shouldResetChunkLayerSampler;
--    private boolean shouldResetSkyRenderer;
-+   private static final float CHUNK_VISIBILITY_THRESHOLD = 0.3F;
-+   private final Minecraft minecraft;
-+   private final LevelRenderer levelRenderer;
 +   private ClientLevel level;
 +   private SectionUpdateTracker sectionUpdateTracker;
-+   private final LevelRenderState levelRenderState;
-+   public final DebugRenderer debugRenderer = new DebugRenderer();
-+   public final GameTestBlockHighlightRenderer gameTestBlockHighlightRenderer = new GameTestBlockHighlightRenderer();
-+   private final SimpleGizmoCollector mainThreadGizmos = new SimpleGizmoCollector();
-+   private double prevCamRotX = Double.MIN_VALUE;
-+   private double prevCamRotY = Double.MIN_VALUE;
-+   private int lastViewDistance = -1;
-+   private boolean shouldInvalidateCompiledGeometry;
-+   private boolean shouldResetLevelRenderData;
-+   private boolean shouldResetChunkLayerSampler;
-+   private boolean shouldResetSkyRenderer;
+     private final LevelRenderState levelRenderState;
+     public final DebugRenderer debugRenderer = new DebugRenderer();
+     public final GameTestBlockHighlightRenderer gameTestBlockHighlightRenderer = new GameTestBlockHighlightRenderer();
+@@ -85,14 +95,17 @@
+     private boolean shouldResetLevelRenderData;
+     private boolean shouldResetChunkLayerSampler;
+     private boolean shouldResetSkyRenderer;
 +   public int renderDistance = 0;
 +   public int renderDistanceSq = 0;
 +   public int renderDistanceXZSq = 0;
  
 -    public LevelExtractor(final Minecraft minecraft, final LevelRenderState levelRenderState, final LevelRenderer levelRenderer) {
--        this.minecraft = minecraft;
--        this.levelRenderer = levelRenderer;
--        this.levelRenderState = levelRenderState;
--    }
 +   public LevelExtractor(Minecraft minecraft, LevelRenderState levelRenderState, LevelRenderer levelRenderer) {
-+      this.minecraft = minecraft;
-+      this.levelRenderer = levelRenderer;
-+      this.levelRenderState = levelRenderState;
-+   }
+         this.minecraft = minecraft;
+         this.levelRenderer = levelRenderer;
+         this.levelRenderState = levelRenderState;
+     }
  
 -    public void extract(final DeltaTracker deltaTracker, final Camera camera, final float deltaPartialTick) {
--        if (this.minecraft.options.getEffectiveRenderDistance() != this.lastViewDistance) {
--            this.allChanged();
--        }
 +   public void extract(DeltaTracker deltaTracker, Camera camera, float deltaPartialTick) {
-+      if (this.minecraft.options.getEffectiveRenderDistance() != this.lastViewDistance) {
-+         this.allChanged();
-+      }
- 
--        Vec3 cameraPos = camera.position();
--        if (this.sectionUpdateTracker != null) {
--            this.sectionUpdateTracker.repositionCamera(SectionPos.of(cameraPos));
--        }
-+      Vec3 cameraPos = camera.position();
-+      if (this.sectionUpdateTracker != null) {
-+         this.sectionUpdateTracker.repositionCamera(SectionPos.of(cameraPos));
-+      }
- 
--        if (this.shouldResetLevelRenderData) {
--            this.levelRenderer.resetLevelRenderData();
--            this.shouldResetLevelRenderData = false;
--        }
-+      if (this.shouldResetLevelRenderData) {
-+         this.levelRenderer.resetLevelRenderData();
-+         this.shouldResetLevelRenderData = false;
-+      }
- 
--        this.levelRenderState.reset();
--        ProfilerFiller profiler = Profiler.get();
--        profiler.push("level");
--        this.levelRenderState.shouldResetChunkLayerSampler = this.shouldResetChunkLayerSampler;
--        this.shouldResetChunkLayerSampler = false;
--        this.levelRenderState.shouldResetSkyRenderer = this.shouldResetSkyRenderer;
+         if (this.minecraft.options.getEffectiveRenderDistance() != this.lastViewDistance) {
+             this.allChanged();
+         }
+@@ -113,25 +126,33 @@
+         this.levelRenderState.shouldResetChunkLayerSampler = this.shouldResetChunkLayerSampler;
+         this.shouldResetChunkLayerSampler = false;
+         this.levelRenderState.shouldResetSkyRenderer = this.shouldResetSkyRenderer;
 -        this.shouldResetSkyRenderer = false;
--        this.levelRenderState.gameTime = this.level.getGameTime();
--        Frustum cullFrustum = camera.getCullFrustum();
--        profiler.push("prepareDispatchers");
--        this.levelRenderer.blockEntityRenderDispatcher().prepare(cameraPos);
--        this.levelRenderer.entityRenderDispatcher().prepare(camera, this.minecraft.crosshairPickEntity);
--        if (this.shouldInvalidateCompiledGeometry) {
--            this.levelRenderer.invalidateCompiledGeometry(this.level, this.minecraft.options, camera, this.minecraft.getBlockColors());
--            this.shouldInvalidateCompiledGeometry = false;
--        } else if (camera.getCapturedFrustum() == null) {
--            double camRotX = Math.floor(camera.xRot() / 2.0F);
--            double camRotY = Math.floor(camera.yRot() / 2.0F);
--            if (this.levelRenderer.sectionOcclusionGraph().consumeFrustumUpdate() || camRotX != this.prevCamRotX || camRotY != this.prevCamRotY) {
--                profiler.popPush("applyFrustum");
--                this.applyFrustum(cullFrustum);
--                this.prevCamRotX = camRotX;
--                this.prevCamRotY = camRotY;
--            }
--        }
-+      this.levelRenderState.reset();
-+      ProfilerFiller profiler = Profiler.get();
-+      profiler.push("level");
-+      this.levelRenderState.shouldResetChunkLayerSampler = this.shouldResetChunkLayerSampler;
-+      this.shouldResetChunkLayerSampler = false;
-+      this.levelRenderState.shouldResetSkyRenderer = this.shouldResetSkyRenderer;
-+      this.levelRenderState.gameTime = this.level.getGameTime();
-+      Frustum cullFrustum = camera.getCullFrustum();
-+      profiler.push("prepareDispatchers");
-+      this.levelRenderer.blockEntityRenderDispatcher().prepare(cameraPos);
-+      this.levelRenderer.entityRenderDispatcher().prepare(camera, this.minecraft.crosshairPickEntity);
+         this.levelRenderState.gameTime = this.level.getGameTime();
+         Frustum cullFrustum = camera.getCullFrustum();
+         profiler.push("prepareDispatchers");
+         this.levelRenderer.blockEntityRenderDispatcher().prepare(cameraPos);
+         this.levelRenderer.entityRenderDispatcher().prepare(camera, this.minecraft.crosshairPickEntity);
 +      Lagometer.timerVisibility.start();
-+      if (this.shouldInvalidateCompiledGeometry) {
-+         this.levelRenderer.invalidateCompiledGeometry(this.level, this.minecraft.options, camera, this.minecraft.getBlockColors());
-+         this.shouldInvalidateCompiledGeometry = false;
-+      } else if (camera.getCapturedFrustum() == null) {
-+         double camRotX = Math.floor(camera.xRot() / 2.0F);
-+         double camRotY = Math.floor(camera.yRot() / 2.0F);
+         if (this.shouldInvalidateCompiledGeometry) {
+             this.levelRenderer.invalidateCompiledGeometry(this.level, this.minecraft.options, camera, this.minecraft.getBlockColors());
+             this.shouldInvalidateCompiledGeometry = false;
+         } else if (camera.getCapturedFrustum() == null) {
+             double camRotX = Math.floor(camera.xRot() / 2.0F);
+             double camRotY = Math.floor(camera.yRot() / 2.0F);
 +         boolean frustumChanged = false;
-+         if (this.levelRenderer.sectionOcclusionGraph().consumeFrustumUpdate() || camRotX != this.prevCamRotX || camRotY != this.prevCamRotY) {
-+            profiler.popPush("applyFrustum");
-+            this.applyFrustum(cullFrustum);
-+            this.prevCamRotX = camRotX;
-+            this.prevCamRotY = camRotY;
+             if (this.levelRenderer.sectionOcclusionGraph().consumeFrustumUpdate() || camRotX != this.prevCamRotX || camRotY != this.prevCamRotY) {
+                 profiler.popPush("applyFrustum");
+                 this.applyFrustum(cullFrustum);
+                 this.prevCamRotX = camRotX;
+                 this.prevCamRotY = camRotY;
 +            frustumChanged = true;
 +            ShadersRender.frustumTerrainShadowChanged = true;
-+         }
- 
--        if (this.sectionUpdateTracker != null && this.level != null) {
--            ClientChunkCache chunkCache = this.level.getChunkSource();
--            this.levelRenderState.chunkLoadingRenderState.addedEmptySections = chunkCache.addedEmptySections();
--            this.levelRenderState.chunkLoadingRenderState.removedEmptySections = chunkCache.removedEmptySections();
--            this.levelRenderState.chunkLoadingRenderState.addedLoadedChunks = chunkCache.addedLoadedChunks();
--            this.levelRenderState.chunkLoadingRenderState.removedLoadedChunks = chunkCache.removedLoadedChunks();
--            chunkCache.flipUpdateTrackingSets();
--            LongCollection expectedChunks = this.levelRenderer.expectedChunks();
--            expectedChunks.forEach(expectedChunk -> {
--                if (chunkCache.hasChunk(ChunkPos.getX(expectedChunk), ChunkPos.getZ(expectedChunk))) {
--                    this.levelRenderState.chunkLoadingRenderState.loadedExpectedChunks.add(expectedChunk);
--                }
--            });
--            profiler.popPush("sectionUpdates");
--            RenderRegionCache cache = new RenderRegionCache();
+             }
++
 +         if (this.level.getSectionStorage().resetUpdated() || frustumChanged) {
 +            this.applyFrustumEntities(cullFrustum, -1);
 +            ShadersRender.frustumEntitiesShadowChanged = true;
-+         }
+         }
 +      }
  
--            for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.visibleSections()) {
--                SectionUpdateTracker.SectionDirtyState dirtyState = this.sectionUpdateTracker.getDirtyState(section.getSectionNode());
--                if (dirtyState != null
--                    && dirtyState.isDirty()
--                    && (
--                        section.sectionMesh.get() != CompiledSectionMesh.UNCOMPILED
--                            || this.sectionUpdateTracker.hasAllNeighbors(this.level, section.getSectionNode())
--                    )) {
--                    this.levelRenderState
--                        .sectionUpdateRenderStates
--                        .add(
--                            new SectionUpdateRenderState(
--                                section.getSectionNode(), dirtyState.isDirtyFromPlayer(), cache.createRegion(this.level, section.getSectionNode())
--                            )
--                        );
--                    dirtyState.setNotDirty();
--                }
-+      if (this.sectionUpdateTracker != null && this.level != null) {
-+         ClientChunkCache chunkCache = this.level.getChunkSource();
-+         this.levelRenderState.chunkLoadingRenderState.addedEmptySections = chunkCache.addedEmptySections();
-+         this.levelRenderState.chunkLoadingRenderState.removedEmptySections = chunkCache.removedEmptySections();
-+         this.levelRenderState.chunkLoadingRenderState.addedLoadedChunks = chunkCache.addedLoadedChunks();
-+         this.levelRenderState.chunkLoadingRenderState.removedLoadedChunks = chunkCache.removedLoadedChunks();
-+         chunkCache.flipUpdateTrackingSets();
-+         LongCollection expectedChunks = this.levelRenderer.expectedChunks();
-+         expectedChunks.forEach(expectedChunk -> {
-+            if (chunkCache.hasChunk(ChunkPos.getX(expectedChunk), ChunkPos.getZ(expectedChunk))) {
-+               this.levelRenderState.chunkLoadingRenderState.loadedExpectedChunks.add(expectedChunk);
-             }
--        }
-+         });
-+         profiler.popPush("sectionUpdates");
-+         RenderRegionCache cache = new RenderRegionCache();
- 
--        profiler.popPush("entities");
--        this.extractVisibleEntities(camera, cullFrustum, deltaTracker, this.levelRenderState);
--        profiler.popPush("blockEntities");
--        this.extractVisibleBlockEntities(camera, deltaPartialTick, this.levelRenderState);
--        profiler.popPush("blockOutline");
--        this.extractBlockOutline(camera, this.levelRenderState);
--        profiler.popPush("blockBreaking");
--        this.extractBlockDestroyAnimation(camera, this.levelRenderState);
--        profiler.popPush("weather");
--        this.levelRenderer.weatherEffectRenderer().extractRenderState(this.level, deltaPartialTick, cameraPos, this.levelRenderState.weatherRenderState);
--        SkyRenderer skyRenderer = this.levelRenderer.skyRenderer();
--        if (skyRenderer != null) {
--            profiler.popPush("sky");
--            skyRenderer.extractRenderState(this.level, deltaPartialTick, camera, this.levelRenderState.skyRenderState);
--        }
-+         for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.visibleSections()) {
-+            SectionUpdateTracker.SectionDirtyState dirtyState = this.sectionUpdateTracker.getDirtyState(section.getSectionNode());
-+            if (dirtyState != null
-+               && dirtyState.isDirty()
-+               && (
-+                  section.sectionMesh.get() != CompiledSectionMesh.UNCOMPILED
-+                     || this.sectionUpdateTracker.hasAllNeighbors(this.level, section.getSectionNode())
-+               )) {
-+               this.levelRenderState
-+                  .sectionUpdateRenderStates
-+                  .add(
-+                     new SectionUpdateRenderState(
-+                        section.getSectionNode(), dirtyState.isDirtyFromPlayer(), cache.createRegion(this.level, section.getSectionNode())
-+                     )
-+                  );
+         if (this.sectionUpdateTracker != null && this.level != null) {
+             ClientChunkCache chunkCache = this.level.getChunkSource();
+@@ -164,11 +185,13 @@
+                                 section.getSectionNode(), dirtyState.isDirtyFromPlayer(), cache.createRegion(this.level, section.getSectionNode())
+                             )
+                         );
 +               cache.compileStarted();
-+               dirtyState.setNotDirty();
-+            }
-+         }
-+      }
+                     dirtyState.setNotDirty();
+                 }
+             }
+         }
  
--        profiler.popPush("border");
--        this.levelRenderer
--            .worldBorderRenderer()
--            .extract(
--                this.level.getWorldBorder(),
--                deltaPartialTick,
--                cameraPos,
--                this.minecraft.options.getEffectiveRenderDistance() * 16,
--                this.levelRenderState.worldBorderRenderState
--            );
--        profiler.popPush("particles");
--        this.minecraft.particleEngine.extract(this.levelRenderState.particlesRenderState, new Frustum(cullFrustum).offset(-3.0F), camera, deltaPartialTick);
--        profiler.popPush("cloud");
--        this.levelRenderState.cloudColor = camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_COLOR, deltaPartialTick);
--        if (ARGB.alpha(this.levelRenderState.cloudColor) > 0) {
--            this.levelRenderState.cloudHeight = camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, deltaPartialTick);
--        }
 +      Lagometer.timerVisibility.end();
-+      profiler.popPush("entities");
-+      this.extractVisibleEntities(camera, cullFrustum, deltaTracker, this.levelRenderState);
-+      profiler.popPush("blockEntities");
-+      this.extractVisibleBlockEntities(camera, deltaPartialTick, this.levelRenderState);
-+      profiler.popPush("blockOutline");
-+      this.extractBlockOutline(camera, this.levelRenderState);
-+      profiler.popPush("blockBreaking");
-+      this.extractBlockDestroyAnimation(camera, this.levelRenderState);
-+      profiler.popPush("weather");
-+      this.levelRenderer.weatherEffectRenderer().extractRenderState(this.level, deltaPartialTick, cameraPos, this.levelRenderState.weatherRenderState);
-+      SkyRenderer skyRenderer = this.levelRenderer.skyRenderer();
-+      if (skyRenderer != null) {
-+         profiler.popPush("sky");
-+         skyRenderer.extractRenderState(this.level, deltaPartialTick, camera, this.levelRenderState.skyRenderState);
-+      }
- 
--        profiler.popPush("debug");
--        this.debugRenderer.emitGizmos(cullFrustum, cameraPos.x, cameraPos.y, cameraPos.z, deltaTracker.getGameTimeDeltaPartialTick(false));
--        this.gameTestBlockHighlightRenderer.emitGizmos();
--        this.levelRenderState.render3dCrosshair = this.minecraft.debugEntries.isCurrentlyEnabled(DebugScreenEntries.THREE_DIMENSIONAL_CROSSHAIR);
--        ClientPacketListener connection = this.minecraft.getConnection();
--        if (connection != null) {
--            this.levelRenderState.playerCompiledSectionCallback = connection.getPlayerCompiledSectionCallback();
--        }
-+      profiler.popPush("border");
-+      this.levelRenderer
-+         .worldBorderRenderer()
-+         .extract(
-+            this.level.getWorldBorder(),
-+            deltaPartialTick,
-+            cameraPos,
-+            this.minecraft.options.getEffectiveRenderDistance() * 16,
-+            this.levelRenderState.worldBorderRenderState
-+         );
-+      profiler.popPush("particles");
-+      this.minecraft.particleEngine.extract(this.levelRenderState.particlesRenderState, new Frustum(cullFrustum).offset(-3.0F), camera, deltaPartialTick);
-+      profiler.popPush("cloud");
-+      this.levelRenderState.cloudColor = camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_COLOR, deltaPartialTick);
-+      if (ARGB.alpha(this.levelRenderState.cloudColor) > 0) {
-+         this.levelRenderState.cloudHeight = camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, deltaPartialTick);
-+      }
- 
--        this.levelRenderState.shouldShowEntityOutlines = this.shouldShowEntityOutlines(camera);
--        this.extractGizmos();
--        profiler.pop();
--        profiler.pop();
--    }
-+      profiler.popPush("debug");
-+      this.debugRenderer.emitGizmos(cullFrustum, cameraPos.x, cameraPos.y, cameraPos.z, deltaTracker.getGameTimeDeltaPartialTick(false));
-+      this.gameTestBlockHighlightRenderer.emitGizmos();
-+      this.levelRenderState.render3dCrosshair = this.minecraft.debugEntries.isCurrentlyEnabled(DebugScreenEntries.THREE_DIMENSIONAL_CROSSHAIR);
-+      ClientPacketListener connection = this.minecraft.getConnection();
-+      if (connection != null) {
-+         this.levelRenderState.playerCompiledSectionCallback = connection.getPlayerCompiledSectionCallback();
-+      }
+         profiler.popPush("entities");
+         this.extractVisibleEntities(camera, cullFrustum, deltaTracker, this.levelRenderState);
+         profiler.popPush("blockEntities");
+@@ -218,20 +241,27 @@
+         profiler.pop();
+     }
  
 -    private void extractVisibleEntities(final Camera camera, final Frustum frustum, final DeltaTracker deltaTracker, final LevelRenderState output) {
--        Vec3 cameraPos = camera.position();
--        double camX = cameraPos.x();
--        double camY = cameraPos.y();
--        double camZ = cameraPos.z();
--        TickRateManager tickRateManager = this.minecraft.level.tickRateManager();
++   public void extractVisibleEntities(Camera camera, Frustum frustum, DeltaTracker deltaTracker, LevelRenderState output) {
+         Vec3 cameraPos = camera.position();
+         double camX = cameraPos.x();
+         double camY = cameraPos.y();
+         double camZ = cameraPos.z();
+         TickRateManager tickRateManager = this.minecraft.level.tickRateManager();
 -        Entity.setViewScale(
 -            Mth.clamp(this.minecraft.options.getEffectiveRenderDistance() / 8.0, 1.0, 2.5) * this.minecraft.options.entityDistanceScaling().get()
 -        );
--        EntityRenderDispatcher entityRenderDispatcher = this.levelRenderer.entityRenderDispatcher();
-+      this.levelRenderState.shouldShowEntityOutlines = this.shouldShowEntityOutlines(camera);
-+      this.extractGizmos();
-+      profiler.pop();
-+      profiler.pop();
-+   }
- 
--        for (Entity entity : this.level.entitiesForRendering()) {
--            if (this.isEntityVisible(entity, frustum, camX, camY, camZ)
--                && (entity != camera.entity() || camera.isDetached() || camera.entity() instanceof LivingEntity && ((LivingEntity)camera.entity()).isSleeping())
--                && (!(entity instanceof LocalPlayer) || camera.entity() == entity)) {
--                if (entity.tickCount == 0) {
--                    entity.xOld = entity.getX();
--                    entity.yOld = entity.getY();
--                    entity.zOld = entity.getZ();
--                }
-+   public void extractVisibleEntities(Camera camera, Frustum frustum, DeltaTracker deltaTracker, LevelRenderState output) {
-+      Vec3 cameraPos = camera.position();
-+      double camX = cameraPos.x();
-+      double camY = cameraPos.y();
-+      double camZ = cameraPos.z();
-+      TickRateManager tickRateManager = this.minecraft.level.tickRateManager();
 +      Entity.setViewScale(Mth.clamp(this.minecraft.options.getEffectiveRenderDistance() / 8.0, 1.0, 2.5) * this.minecraft.options.entityDistanceScaling().get());
-+      EntityRenderDispatcher entityRenderDispatcher = this.levelRenderer.entityRenderDispatcher();
+         EntityRenderDispatcher entityRenderDispatcher = this.levelRenderer.entityRenderDispatcher();
 +      int minWorldY = this.level.getMinY();
 +      int maxWorldY = this.level.getMaxY();
 +      boolean playerShadowPass = Shaders.isShadowPass && !this.minecraft.player.isSpectator();
  
--                float partialEntity = deltaTracker.getGameTimeDeltaPartialTick(!tickRateManager.isEntityFrozen(entity));
--                EntityRenderState state = this.extractEntity(entity, partialEntity);
--                output.entityRenderStates.add(state);
-+      for (Entity entity : this.level.entitiesForRendering()) {
+         for (Entity entity : this.level.entitiesForRendering()) {
+-            if (this.isEntityVisible(entity, frustum, camX, camY, camZ)
+-                && (entity != camera.entity() || camera.isDetached() || camera.entity() instanceof LivingEntity && ((LivingEntity)camera.entity()).isSleeping())
 +         if (this.levelRenderer.shouldRenderEntity(entity, minWorldY, maxWorldY)
 +            && this.isEntityVisible(entity, frustum, camX, camY, camZ)
 +            && (
@@ -389,99 +158,45 @@
 +                  || camera.isDetached()
 +                  || camera.entity() instanceof LivingEntity && ((LivingEntity)camera.entity()).isSleeping()
 +            )
-+            && (!(entity instanceof LocalPlayer) || camera.entity() == entity)) {
-+            if (entity.tickCount == 0) {
-+               entity.xOld = entity.getX();
-+               entity.yOld = entity.getY();
-+               entity.zOld = entity.getZ();
-             }
--        }
- 
--        output.lastEntityRenderStateCount = output.entityRenderStates.size();
--    }
-+            float partialEntity = deltaTracker.getGameTimeDeltaPartialTick(!tickRateManager.isEntityFrozen(entity));
-+            EntityRenderState state = this.extractEntity(entity, partialEntity);
-+            output.entityRenderStates.add(state);
-+         }
-+      }
+                 && (!(entity instanceof LocalPlayer) || camera.entity() == entity)) {
+                 if (entity.tickCount == 0) {
+                     entity.xOld = entity.getX();
+@@ -248,7 +278,7 @@
+         output.lastEntityRenderStateCount = output.entityRenderStates.size();
+     }
  
 -    public boolean isEntityVisible(final Entity entity, final Frustum frustum, final double camX, final double camY, final double camZ) {
--        if (this.level == null) {
--            return false;
--        } else if (this.levelRenderer.entityRenderDispatcher().shouldRender(entity, frustum, camX, camY, camZ)
--            || this.minecraft.player != null && entity.hasIndirectPassenger(this.minecraft.player)) {
--            BlockPos blockPos = entity.blockPosition();
--            return this.level.isOutsideBuildHeight(blockPos.getY()) || this.levelRenderer.isSectionCompiledAndVisible(blockPos);
--        } else {
--            return false;
--        }
--    }
-+      output.lastEntityRenderStateCount = output.entityRenderStates.size();
-+   }
++   public boolean isEntityVisible(Entity entity, Frustum frustum, double camX, double camY, double camZ) {
+         if (this.level == null) {
+             return false;
+         } else if (this.levelRenderer.entityRenderDispatcher().shouldRender(entity, frustum, camX, camY, camZ)
+@@ -260,21 +290,33 @@
+         }
+     }
  
 -    private EntityRenderState extractEntity(final Entity entity, final float partialTickTime) {
--        return this.levelRenderer.entityRenderDispatcher().extractEntity(entity, partialTickTime);
--    }
-+   public boolean isEntityVisible(Entity entity, Frustum frustum, double camX, double camY, double camZ) {
-+      if (this.level == null) {
-+         return false;
-+      } else if (this.levelRenderer.entityRenderDispatcher().shouldRender(entity, frustum, camX, camY, camZ)
-+         || this.minecraft.player != null && entity.hasIndirectPassenger(this.minecraft.player)) {
-+         BlockPos blockPos = entity.blockPosition();
-+         return this.level.isOutsideBuildHeight(blockPos.getY()) || this.levelRenderer.isSectionCompiledAndVisible(blockPos);
-+      } else {
-+         return false;
-+      }
-+   }
++   public EntityRenderState extractEntity(Entity entity, float partialTickTime) {
+         return this.levelRenderer.entityRenderDispatcher().extractEntity(entity, partialTickTime);
+     }
  
 -    private void extractVisibleBlockEntities(final Camera camera, final float deltaPartialTick, final LevelRenderState levelRenderState) {
--        Vec3 cameraPos = camera.position();
--        double camX = cameraPos.x();
--        double camY = cameraPos.y();
--        double camZ = cameraPos.z();
--        PoseStack poseStack = new PoseStack();
-+   public EntityRenderState extractEntity(Entity entity, float partialTickTime) {
-+      return this.levelRenderer.entityRenderDispatcher().extractEntity(entity, partialTickTime);
-+   }
- 
--        for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.visibleSections()) {
--            List<BlockEntity> renderableBlockEntities = section.getSectionMesh().getRenderableBlockEntities();
--            if (!renderableBlockEntities.isEmpty() && !(section.getVisibility(Util.getMillis()) < 0.3F)) {
--                for (BlockEntity blockEntity : renderableBlockEntities) {
--                    BlockPos blockPos = blockEntity.getBlockPos();
--                    SortedSet<BlockDestructionProgress> progresses = this.level.destructionProgress().get(blockPos.asLong());
--                    ModelFeatureRenderer.CrumblingOverlay breakProgress;
--                    if (progresses != null && !progresses.isEmpty()) {
--                        poseStack.pushPose();
--                        poseStack.translate(blockPos.getX() - camX, blockPos.getY() - camY, blockPos.getZ() - camZ);
--                        breakProgress = new ModelFeatureRenderer.CrumblingOverlay(progresses.last().getProgress(), poseStack.last());
--                        poseStack.popPose();
--                    } else {
--                        breakProgress = null;
--                    }
 +   private void extractVisibleBlockEntities(Camera camera, float deltaPartialTick, LevelRenderState levelRenderState) {
 +      this.extractVisibleBlockEntities(camera, deltaPartialTick, levelRenderState, FrustumDummy.INSTANCE);
 +   }
- 
--                    BlockEntityRenderState state = this.levelRenderer
--                        .blockEntityRenderDispatcher()
--                        .tryExtractRenderState(blockEntity, deltaPartialTick, breakProgress, false);
--                    if (state != null) {
--                        levelRenderState.blockEntityRenderStates.add(state);
--                    }
--                }
-+   public void extractVisibleBlockEntities(Camera camera, float deltaPartialTick, LevelRenderState levelRenderState, Frustum frustumIn) {
-+      Vec3 cameraPos = camera.position();
-+      double camX = cameraPos.x();
-+      double camY = cameraPos.y();
-+      double camZ = cameraPos.z();
-+      PoseStack poseStack = new PoseStack();
-+      boolean forgeRenderBoundingBox = Reflector.IForgeBlockEntity_getRenderBoundingBox.exists();
 +
++   public void extractVisibleBlockEntities(Camera camera, float deltaPartialTick, LevelRenderState levelRenderState, Frustum frustumIn) {
+         Vec3 cameraPos = camera.position();
+         double camX = cameraPos.x();
+         double camY = cameraPos.y();
+         double camZ = cameraPos.z();
+         PoseStack poseStack = new PoseStack();
++      boolean forgeRenderBoundingBox = Reflector.IForgeBlockEntity_getRenderBoundingBox.exists();
+ 
+-        for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.visibleSections()) {
 +      for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.getRenderInfosTileEntities()) {
-+         List<BlockEntity> renderableBlockEntities = section.getSectionMesh().getRenderableBlockEntities();
-+         if (!renderableBlockEntities.isEmpty() && !(section.getVisibility(Util.getMillis()) < 0.3F)) {
-+            for (BlockEntity blockEntity : renderableBlockEntities) {
+             List<BlockEntity> renderableBlockEntities = section.getSectionMesh().getRenderableBlockEntities();
+             if (!renderableBlockEntities.isEmpty() && !(section.getVisibility(Util.getMillis()) < 0.3F)) {
+                 for (BlockEntity blockEntity : renderableBlockEntities) {
 +               if (forgeRenderBoundingBox) {
 +                  AABB aabb = (AABB)Reflector.call(blockEntity, Reflector.IForgeBlockEntity_getRenderBoundingBox);
 +                  if (aabb != null && !frustumIn.isVisible(aabb)) {
@@ -489,129 +204,49 @@
 +                  }
 +               }
 +
-+               BlockPos blockPos = blockEntity.getBlockPos();
-+               SortedSet<BlockDestructionProgress> progresses = this.level.destructionProgress().get(blockPos.asLong());
-+               ModelFeatureRenderer.CrumblingOverlay breakProgress;
-+               if (progresses != null && !progresses.isEmpty()) {
-+                  poseStack.pushPose();
-+                  poseStack.translate(blockPos.getX() - camX, blockPos.getY() - camY, blockPos.getZ() - camZ);
-+                  breakProgress = new ModelFeatureRenderer.CrumblingOverlay(progresses.last().getProgress(), poseStack.last());
-+                  poseStack.popPose();
-+               } else {
-+                  breakProgress = null;
-+               }
-+
-+               BlockEntityRenderState state = this.levelRenderer
-+                  .blockEntityRenderDispatcher()
-+                  .tryExtractRenderState(blockEntity, deltaPartialTick, breakProgress, false);
-+               if (state != null) {
-+                  levelRenderState.blockEntityRenderStates.add(state);
-+               }
-             }
--        }
-+         }
-+      }
- 
--        Iterator<BlockEntity> iterator = this.level.getGloballyRenderedBlockEntities().iterator();
-+      Iterator<BlockEntity> iterator = this.level.getGloballyRenderedBlockEntities().iterator();
- 
--        while (iterator.hasNext()) {
--            BlockEntity blockEntity = iterator.next();
--            if (blockEntity.isRemoved()) {
--                iterator.remove();
--            } else {
+                     BlockPos blockPos = blockEntity.getBlockPos();
+                     SortedSet<BlockDestructionProgress> progresses = this.level.destructionProgress().get(blockPos.asLong());
+                     ModelFeatureRenderer.CrumblingOverlay breakProgress;
+@@ -304,9 +346,14 @@
+             if (blockEntity.isRemoved()) {
+                 iterator.remove();
+             } else {
 -                BlockEntityRenderState state = this.levelRenderer
 -                    .blockEntityRenderDispatcher()
 -                    .tryExtractRenderState(blockEntity, deltaPartialTick, null, true);
--                if (state != null) {
--                    levelRenderState.blockEntityRenderStates.add(state);
--                }
-+      while (iterator.hasNext()) {
-+         BlockEntity blockEntity = iterator.next();
-+         if (blockEntity.isRemoved()) {
-+            iterator.remove();
-+         } else {
 +            if (forgeRenderBoundingBox) {
 +               AABB aabb = (AABB)Reflector.call(blockEntity, Reflector.IForgeBlockEntity_getRenderBoundingBox);
 +               if (aabb != null && !frustumIn.isVisible(aabb)) {
 +                  continue;
 +               }
-             }
--        }
--    }
++            }
++
++            BlockEntityRenderState state = this.levelRenderer.blockEntityRenderDispatcher().tryExtractRenderState(blockEntity, deltaPartialTick, null, true);
+                 if (state != null) {
+                     levelRenderState.blockEntityRenderStates.add(state);
+                 }
+@@ -314,7 +361,7 @@
+         }
+     }
  
 -    private void extractBlockDestroyAnimation(final Camera camera, final LevelRenderState levelRenderState) {
--        Vec3 cameraPos = camera.position();
--        double camX = cameraPos.x();
--        double camY = cameraPos.y();
--        double camZ = cameraPos.z();
--        levelRenderState.blockBreakingRenderStates.clear();
-+            BlockEntityRenderState state = this.levelRenderer.blockEntityRenderDispatcher().tryExtractRenderState(blockEntity, deltaPartialTick, null, true);
-+            if (state != null) {
-+               levelRenderState.blockEntityRenderStates.add(state);
-+            }
-+         }
-+      }
-+   }
- 
--        for (Entry<SortedSet<BlockDestructionProgress>> entry : this.level.destructionProgress().long2ObjectEntrySet()) {
--            BlockPos pos = BlockPos.of(entry.getLongKey());
--            if (!(pos.distToCenterSqr(camX, camY, camZ) > 1024.0)) {
--                SortedSet<BlockDestructionProgress> progresses = entry.getValue();
--                if (progresses != null && !progresses.isEmpty()) {
--                    int progress = progresses.last().getProgress();
--                    levelRenderState.blockBreakingRenderStates.add(new BlockBreakingRenderState(pos, this.level.getBlockState(pos), progress));
--                }
 +   private void extractBlockDestroyAnimation(Camera camera, LevelRenderState levelRenderState) {
-+      Vec3 cameraPos = camera.position();
-+      double camX = cameraPos.x();
-+      double camY = cameraPos.y();
-+      double camZ = cameraPos.z();
-+      levelRenderState.blockBreakingRenderStates.clear();
-+
-+      for (Entry<SortedSet<BlockDestructionProgress>> entry : this.level.destructionProgress().long2ObjectEntrySet()) {
-+         BlockPos pos = BlockPos.of(entry.getLongKey());
-+         if (!(pos.distToCenterSqr(camX, camY, camZ) > 1024.0)) {
-+            SortedSet<BlockDestructionProgress> progresses = entry.getValue();
-+            if (progresses != null && !progresses.isEmpty()) {
-+               int progress = progresses.last().getProgress();
-+               levelRenderState.blockBreakingRenderStates.add(new BlockBreakingRenderState(pos, this.level.getBlockState(pos), progress));
-             }
--        }
--    }
-+         }
-+      }
-+   }
+         Vec3 cameraPos = camera.position();
+         double camX = cameraPos.x();
+         double camY = cameraPos.y();
+@@ -333,10 +380,26 @@
+         }
+     }
  
 -    private void extractBlockOutline(final Camera camera, final LevelRenderState levelRenderState) {
--        levelRenderState.blockOutlineRenderState = null;
--        if (this.minecraft.hitResult instanceof BlockHitResult blockHitResult) {
--            if (blockHitResult.getType() != HitResult.Type.MISS) {
--                BlockPos pos = blockHitResult.getBlockPos();
--                BlockState state = this.level.getBlockState(pos);
--                if (!state.isAir() && this.level.getWorldBorder().isWithinBounds(pos)) {
--                    BlockStateModel blockStateModel = this.minecraft.getModelManager().getBlockStateModelSet().get(state);
--                    boolean isBlockTranslucent = blockStateModel.hasMaterialFlag(1);
--                    boolean highContrast = this.minecraft.options.highContrastBlockOutline().get();
--                    CollisionContext context = CollisionContext.of(camera.entity());
--                    VoxelShape shape = state.getShape(this.level, pos, context);
--                    if (SharedConstants.DEBUG_SHAPES) {
--                        VoxelShape collisionShape = state.getCollisionShape(this.level, pos, context);
--                        VoxelShape occlusionShape = state.getOcclusionShape();
--                        VoxelShape interactionShape = state.getInteractionShape(this.level, pos);
--                        levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(
--                            pos, isBlockTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape
--                        );
--                    } else {
--                        levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(pos, isBlockTranslucent, highContrast, shape);
--                    }
--                }
 +   private void extractBlockOutline(Camera camera, LevelRenderState levelRenderState) {
 +      this.extractBlockOutline(camera, levelRenderState, true);
 +   }
 +
 +   private void extractBlockOutline(Camera camera, LevelRenderState levelRenderState, boolean shouldRender) {
-+      levelRenderState.blockOutlineRenderState = null;
+         levelRenderState.blockOutlineRenderState = null;
+-        if (this.minecraft.hitResult instanceof BlockHitResult blockHitResult) {
+-            if (blockHitResult.getType() != HitResult.Type.MISS) {
 +      if (Reflector.ForgeHooksClient_onExtractBlockOutline.exists()) {
 +         RenderHighlightEvent.Callback custom = (RenderHighlightEvent.Callback)Reflector.ForgeHooksClient_onExtractBlockOutline
 +            .call(this, camera, levelRenderState, this.minecraft.hitResult);
@@ -626,340 +261,192 @@
 +      }
 +
 +      if (this.minecraft.hitResult instanceof BlockHitResult blockHitResult && blockHitResult.getType() != Type.MISS) {
-+         BlockPos pos = blockHitResult.getBlockPos();
-+         BlockState state = this.level.getBlockState(pos);
-+         if (!state.isAir() && this.level.getWorldBorder().isWithinBounds(pos)) {
-+            BlockStateModel blockStateModel = this.minecraft.getModelManager().getBlockStateModelSet().get(state);
-+            boolean isBlockTranslucent = blockStateModel.hasMaterialFlag(1);
-+            boolean highContrast = this.minecraft.options.highContrastBlockOutline().get();
-+            CollisionContext context = CollisionContext.of(camera.entity());
-+            VoxelShape shape = state.getShape(this.level, pos, context);
-+            if (SharedConstants.DEBUG_SHAPES) {
-+               VoxelShape collisionShape = state.getCollisionShape(this.level, pos, context);
-+               VoxelShape occlusionShape = state.getOcclusionShape();
-+               VoxelShape interactionShape = state.getInteractionShape(this.level, pos);
-+               levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(
-+                  pos, isBlockTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape
-+               );
-+            } else {
+                 BlockPos pos = blockHitResult.getBlockPos();
+                 BlockState state = this.level.getBlockState(pos);
+                 if (!state.isAir() && this.level.getWorldBorder().isWithinBounds(pos)) {
+@@ -353,12 +416,11 @@
+                             pos, isBlockTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape
+                         );
+                     } else {
+-                        levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(pos, isBlockTranslucent, highContrast, shape);
 +               levelRenderState.blockOutlineRenderState = new BlockOutlineRenderState(pos, isBlockTranslucent, highContrast, shape, state);
+                     }
+                 }
              }
--        }
+         }
 -    }
-+         }
-+      }
-+   }
  
--    private void extractGizmos() {
--        this.mainThreadGizmos.addTemporaryGizmos(Minecraft.getInstance().getPerTickGizmos());
--        IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
--        if (server != null) {
--            this.mainThreadGizmos.addTemporaryGizmos(server.getPerTickGizmos());
--        }
-+   private void extractGizmos() {
-+      this.mainThreadGizmos.addTemporaryGizmos(Minecraft.getInstance().getPerTickGizmos());
-+      IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
-+      if (server != null) {
-+         this.mainThreadGizmos.addTemporaryGizmos(server.getPerTickGizmos());
-+      }
- 
--        this.levelRenderer.addMainThreadGizmos(this.mainThreadGizmos.drainGizmos());
--    }
-+      this.levelRenderer.addMainThreadGizmos(this.mainThreadGizmos.drainGizmos());
-+   }
+     private void extractGizmos() {
+         this.mainThreadGizmos.addTemporaryGizmos(Minecraft.getInstance().getPerTickGizmos());
+@@ -370,27 +432,35 @@
+         this.levelRenderer.addMainThreadGizmos(this.mainThreadGizmos.drainGizmos());
+     }
  
 -    private void applyFrustum(final Frustum frustum) {
--        if (!Minecraft.getInstance().isSameThread()) {
--            throw new IllegalStateException("applyFrustum called from wrong thread: " + Thread.currentThread().getName());
--        }
 +   private void applyFrustum(Frustum frustum) {
 +      this.applyFrustum(frustum, true, -1);
 +   }
- 
--        this.levelRenderer.clearVisibleSections();
--        this.levelRenderer
--            .sectionOcclusionGraph()
--            .addSectionsInFrustum(frustum, this.levelRenderer.visibleSections(), this.levelRenderer.nearbyVisibleSections());
--    }
++
 +   public void applyFrustum(Frustum frustum, boolean updateRenderInfos, int maxChunkDistance) {
-+      if (!Minecraft.getInstance().isSameThread()) {
-+         throw new IllegalStateException("applyFrustum called from wrong thread: " + Thread.currentThread().getName());
+         if (!Minecraft.getInstance().isSameThread()) {
+             throw new IllegalStateException("applyFrustum called from wrong thread: " + Thread.currentThread().getName());
+         }
+ 
++      if (updateRenderInfos) {
+         this.levelRenderer.clearVisibleSections();
 +      }
++
++      this.levelRenderer.clearRenderInfosTerrain();
+         this.levelRenderer
+             .sectionOcclusionGraph()
+             .addSectionsInFrustum(frustum, this.levelRenderer.visibleSections(), this.levelRenderer.nearbyVisibleSections());
+     }
  
 -    private boolean shouldShowEntityOutlines(final Camera camera) {
 -        return !camera.isPanoramicMode() && this.minecraft.player != null;
--    }
-+      if (updateRenderInfos) {
-+         this.levelRenderer.clearVisibleSections();
-+      }
- 
--    @Override
--    public void onResourceManagerReload(final ResourceManager resourceManager) {
--        this.shouldResetSkyRenderer = true;
--    }
-+      this.levelRenderer.clearRenderInfosTerrain();
-+      this.levelRenderer
-+         .sectionOcclusionGraph()
-+         .addSectionsInFrustum(frustum, this.levelRenderer.visibleSections(), this.levelRenderer.nearbyVisibleSections());
-+   }
- 
--    public void setLevel(final @Nullable ClientLevel level) {
--        this.level = level;
--        if (level != null) {
--            this.allChanged();
--        } else {
--            this.levelRenderer.entityRenderDispatcher().resetCamera();
--            this.sectionUpdateTracker = null;
--        }
 +   public boolean shouldShowEntityOutlines(Camera camera) {
 +      return !Config.isShaders() && Config.isMainFramebufferEnabled() ? !camera.isPanoramicMode() && this.minecraft.player != null : false;
-+   }
+     }
  
--        this.shouldResetLevelRenderData = true;
--        this.gameTestBlockHighlightRenderer.clear();
--    }
-+   @Override
+     @Override
+-    public void onResourceManagerReload(final ResourceManager resourceManager) {
 +   public void onResourceManagerReload(ResourceManager resourceManager) {
-+      this.shouldResetSkyRenderer = true;
-+   }
+         this.shouldResetSkyRenderer = true;
+     }
  
--    public void allChanged() {
--        if (this.level != null) {
--            this.level.clearTintCaches();
--            Options options = this.minecraft.options;
--            this.lastViewDistance = options.getEffectiveRenderDistance();
--            this.sectionUpdateTracker = new SectionUpdateTracker(this.level, this.lastViewDistance);
--            Camera camera = this.minecraft.gameRenderer.mainCamera();
--            SectionPos cameraSectionPos = SectionPos.of(camera.position());
--            this.sectionUpdateTracker.repositionCamera(cameraSectionPos);
--            this.shouldInvalidateCompiledGeometry = true;
--        }
--    }
+-    public void setLevel(final @Nullable ClientLevel level) {
 +   public void setLevel(ClientLevel level) {
-+      this.level = level;
-+      if (level != null) {
-+         this.allChanged();
-+      } else {
-+         this.levelRenderer.entityRenderDispatcher().resetCamera();
-+         this.sectionUpdateTracker = null;
-+      }
+         this.level = level;
+         if (level != null) {
+             this.allChanged();
+@@ -401,6 +471,7 @@
  
--    public void resetSampler() {
--        this.shouldResetChunkLayerSampler = true;
--    }
-+      this.shouldResetLevelRenderData = true;
-+      this.gameTestBlockHighlightRenderer.clear();
+         this.shouldResetLevelRenderData = true;
+         this.gameTestBlockHighlightRenderer.clear();
 +      this.levelRenderer.setLevel(level);
-+   }
+     }
  
--    public void blockChanged(final BlockPos pos, final @Block.UpdateFlags int updateFlags) {
--        this.setBlockDirty(pos, (updateFlags & 8) != 0);
--    }
-+   public void allChanged() {
-+      if (this.level != null) {
-+         this.level.clearTintCaches();
-+         Options options = this.minecraft.options;
-+         this.lastViewDistance = options.getEffectiveRenderDistance();
+     public void allChanged() {
+@@ -408,6 +479,10 @@
+             this.level.clearTintCaches();
+             Options options = this.minecraft.options;
+             this.lastViewDistance = options.getEffectiveRenderDistance();
 +         this.renderDistance = this.lastViewDistance * 16;
 +         this.renderDistanceSq = this.renderDistance * this.renderDistance;
 +         double renderDistanceXZ = (this.lastViewDistance + 1) * 16;
 +         this.renderDistanceXZSq = (int)(renderDistanceXZ * renderDistanceXZ);
-+         this.sectionUpdateTracker = new SectionUpdateTracker(this.level, this.lastViewDistance);
-+         Camera camera = this.minecraft.gameRenderer.mainCamera();
-+         SectionPos cameraSectionPos = SectionPos.of(camera.position());
-+         this.sectionUpdateTracker.repositionCamera(cameraSectionPos);
-+         this.shouldInvalidateCompiledGeometry = true;
-+      }
-+   }
+             this.sectionUpdateTracker = new SectionUpdateTracker(this.level, this.lastViewDistance);
+             Camera camera = this.minecraft.gameRenderer.mainCamera();
+             SectionPos cameraSectionPos = SectionPos.of(camera.position());
+@@ -420,11 +495,11 @@
+         this.shouldResetChunkLayerSampler = true;
+     }
+ 
+-    public void blockChanged(final BlockPos pos, final @Block.UpdateFlags int updateFlags) {
++   public void blockChanged(BlockPos pos, @UpdateFlags int updateFlags) {
+         this.setBlockDirty(pos, (updateFlags & 8) != 0);
+     }
  
 -    private void setBlockDirty(final BlockPos pos, final boolean playerChanged) {
--        for (int z = pos.getZ() - 1; z <= pos.getZ() + 1; z++) {
--            for (int x = pos.getX() - 1; x <= pos.getX() + 1; x++) {
--                for (int y = pos.getY() - 1; y <= pos.getY() + 1; y++) {
--                    this.setSectionDirty(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(y), SectionPos.blockToSectionCoord(z), playerChanged);
--                }
-+   public void resetSampler() {
-+      this.shouldResetChunkLayerSampler = true;
-+   }
-+
-+   public void blockChanged(BlockPos pos, @UpdateFlags int updateFlags) {
-+      this.setBlockDirty(pos, (updateFlags & 8) != 0);
-+   }
-+
 +   private void setBlockDirty(BlockPos pos, boolean playerChanged) {
-+      for (int z = pos.getZ() - 1; z <= pos.getZ() + 1; z++) {
-+         for (int x = pos.getX() - 1; x <= pos.getX() + 1; x++) {
-+            for (int y = pos.getY() - 1; y <= pos.getY() + 1; y++) {
-+               this.setSectionDirty(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(y), SectionPos.blockToSectionCoord(z), playerChanged);
-             }
--        }
--    }
-+         }
-+      }
-+   }
+         for (int z = pos.getZ() - 1; z <= pos.getZ() + 1; z++) {
+             for (int x = pos.getX() - 1; x <= pos.getX() + 1; x++) {
+                 for (int y = pos.getY() - 1; y <= pos.getY() + 1; y++) {
+@@ -434,7 +509,7 @@
+         }
+     }
  
 -    public void setBlocksDirty(final int x0, final int y0, final int z0, final int x1, final int y1, final int z1) {
--        for (int z = z0 - 1; z <= z1 + 1; z++) {
--            for (int x = x0 - 1; x <= x1 + 1; x++) {
--                for (int y = y0 - 1; y <= y1 + 1; y++) {
--                    this.setSectionDirty(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(y), SectionPos.blockToSectionCoord(z));
--                }
 +   public void setBlocksDirty(int x0, int y0, int z0, int x1, int y1, int z1) {
-+      for (int z = z0 - 1; z <= z1 + 1; z++) {
-+         for (int x = x0 - 1; x <= x1 + 1; x++) {
-+            for (int y = y0 - 1; y <= y1 + 1; y++) {
-+               this.setSectionDirty(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(y), SectionPos.blockToSectionCoord(z));
-             }
--        }
--    }
-+         }
-+      }
-+   }
+         for (int z = z0 - 1; z <= z1 + 1; z++) {
+             for (int x = x0 - 1; x <= x1 + 1; x++) {
+                 for (int y = y0 - 1; y <= y1 + 1; y++) {
+@@ -444,19 +519,17 @@
+         }
+     }
  
 -    public void setBlockDirty(final BlockPos pos, final BlockState oldState, final BlockState newState) {
--        if (this.minecraft.getModelManager().requiresRender(oldState, newState)) {
--            this.setBlocksDirty(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
--        }
--    }
 +   public void setBlockDirty(BlockPos pos, BlockState oldState, BlockState newState) {
-+      if (this.minecraft.getModelManager().requiresRender(oldState, newState)) {
-+         this.setBlocksDirty(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
-+      }
-+   }
+         if (this.minecraft.getModelManager().requiresRender(oldState, newState)) {
+             this.setBlocksDirty(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
+         }
+     }
  
 -    public void setSectionDirtyWithNeighbors(final int sectionX, final int sectionY, final int sectionZ) {
--        this.setSectionRangeDirty(sectionX - 1, sectionY - 1, sectionZ - 1, sectionX + 1, sectionY + 1, sectionZ + 1);
--    }
 +   public void setSectionDirtyWithNeighbors(int sectionX, int sectionY, int sectionZ) {
-+      this.setSectionRangeDirty(sectionX - 1, sectionY - 1, sectionZ - 1, sectionX + 1, sectionY + 1, sectionZ + 1);
-+   }
+         this.setSectionRangeDirty(sectionX - 1, sectionY - 1, sectionZ - 1, sectionX + 1, sectionY + 1, sectionZ + 1);
+     }
  
 -    public void setSectionRangeDirty(
 -        final int minSectionX, final int minSectionY, final int minSectionZ, final int maxSectionX, final int maxSectionY, final int maxSectionZ
 -    ) {
--        for (int z = minSectionZ; z <= maxSectionZ; z++) {
--            for (int x = minSectionX; x <= maxSectionX; x++) {
--                for (int y = minSectionY; y <= maxSectionY; y++) {
--                    this.setSectionDirty(x, y, z);
--                }
 +   public void setSectionRangeDirty(int minSectionX, int minSectionY, int minSectionZ, int maxSectionX, int maxSectionY, int maxSectionZ) {
-+      for (int z = minSectionZ; z <= maxSectionZ; z++) {
-+         for (int x = minSectionX; x <= maxSectionX; x++) {
-+            for (int y = minSectionY; y <= maxSectionY; y++) {
-+               this.setSectionDirty(x, y, z);
-             }
--        }
--    }
-+         }
-+      }
-+   }
+         for (int z = minSectionZ; z <= maxSectionZ; z++) {
+             for (int x = minSectionX; x <= maxSectionX; x++) {
+                 for (int y = minSectionY; y <= maxSectionY; y++) {
+@@ -466,32 +539,24 @@
+         }
+     }
  
 -    public void setSectionDirty(final int sectionX, final int sectionY, final int sectionZ) {
--        this.setSectionDirty(sectionX, sectionY, sectionZ, false);
--    }
 +   public void setSectionDirty(int sectionX, int sectionY, int sectionZ) {
-+      this.setSectionDirty(sectionX, sectionY, sectionZ, false);
-+   }
+         this.setSectionDirty(sectionX, sectionY, sectionZ, false);
+     }
  
 -    private void setSectionDirty(final int sectionX, final int sectionY, final int sectionZ, final boolean playerChanged) {
--        this.sectionUpdateTracker.setDirty(sectionX, sectionY, sectionZ, playerChanged);
--    }
 +   private void setSectionDirty(int sectionX, int sectionY, int sectionZ, boolean playerChanged) {
-+      this.sectionUpdateTracker.setDirty(sectionX, sectionY, sectionZ, playerChanged);
-+   }
+         this.sectionUpdateTracker.setDirty(sectionX, sectionY, sectionZ, playerChanged);
+     }
  
 -    public Gizmos.TemporaryCollection collectPerFrameMainThreadGizmos() {
--        return Gizmos.withCollector(this.mainThreadGizmos);
--    }
 +   public TemporaryCollection collectPerFrameMainThreadGizmos() {
-+      return Gizmos.withCollector(this.mainThreadGizmos);
-+   }
+         return Gizmos.withCollector(this.mainThreadGizmos);
+     }
  
--    public int countRenderedSections() {
+     public int countRenderedSections() {
 -        int rendered = 0;
-+   public int countRenderedSections() {
-+      return this.levelRenderer.getRenderInfosTerrain().size();
-+   }
- 
+-
 -        for (SectionRenderDispatcher.RenderSection section : this.levelRenderer.visibleSections()) {
 -            if (section.getSectionMesh().hasRenderableLayers()) {
 -                rendered++;
--            }
++      return this.levelRenderer.getRenderInfosTerrain().size();
+             }
 -        }
-+   @VisibleForDebug
-+   public String sectionStatistics() {
-+      ViewArea viewArea = this.levelRenderer.viewArea();
-+      if (viewArea == null) {
-+         return null;
-+      }
  
 -        return rendered;
 -    }
-+      int totalSections = viewArea.size();
-+      int rendered = this.countRenderedSections();
-+      SectionRenderDispatcher sectionRenderDispatcher = this.levelRenderer.sectionRenderDispatcher();
-+      return String.format(
-+         Locale.ROOT,
-+         "C: %d/%d %sD: %d, %s",
-+         rendered,
-+         totalSections,
-+         this.minecraft.smartCull ? "(s) " : "",
-+         this.lastViewDistance,
-+         sectionRenderDispatcher == null ? "null" : sectionRenderDispatcher.getStats()
-+      );
-+   }
- 
--    @VisibleForDebug
+-
+     @VisibleForDebug
 -    public @Nullable String sectionStatistics() {
--        ViewArea viewArea = this.levelRenderer.viewArea();
--        if (viewArea == null) {
--            return null;
--        }
-+   @VisibleForDebug
-+   public String entityStatistics() {
-+      return this.level == null
-+         ? null
-+         : "E: " + this.levelRenderState.lastEntityRenderStateCount + "/" + this.level.getEntityCount() + ", SD: " + this.level.getServerSimulationDistance();
-+   }
++   public String sectionStatistics() {
+         ViewArea viewArea = this.levelRenderer.viewArea();
+         if (viewArea == null) {
+             return null;
+@@ -512,15 +577,10 @@
+     }
  
--        int totalSections = viewArea.size();
--        int rendered = this.countRenderedSections();
--        SectionRenderDispatcher sectionRenderDispatcher = this.levelRenderer.sectionRenderDispatcher();
--        return String.format(
--            Locale.ROOT,
--            "C: %d/%d %sD: %d, %s",
--            rendered,
--            totalSections,
--            this.minecraft.smartCull ? "(s) " : "",
--            this.lastViewDistance,
--            sectionRenderDispatcher == null ? "null" : sectionRenderDispatcher.getStats()
--        );
--    }
-+   @VisibleForDebug
-+   public double totalSections() {
-+      return this.sectionUpdateTracker == null ? 0.0 : this.sectionUpdateTracker.size();
-+   }
- 
--    @VisibleForDebug
+     @VisibleForDebug
 -    public @Nullable String entityStatistics() {
--        return this.level == null
--            ? null
++   public String entityStatistics() {
+         return this.level == null
+             ? null
 -            : "E: "
 -                + this.levelRenderState.lastEntityRenderStateCount
 -                + "/"
 -                + this.level.getEntityCount()
 -                + ", SD: "
 -                + this.level.getServerSimulationDistance();
--    }
-+   @VisibleForDebug
-+   public double lastViewDistance() {
-+      return this.lastViewDistance;
-+   }
++         : "E: " + this.levelRenderState.lastEntityRenderStateCount + "/" + this.level.getEntityCount() + ", SD: " + this.level.getServerSimulationDistance();
+     }
  
--    @VisibleForDebug
--    public double totalSections() {
--        return this.sectionUpdateTracker == null ? 0.0 : this.sectionUpdateTracker.size();
--    }
+     @VisibleForDebug
+@@ -532,4 +592,44 @@
+     public double lastViewDistance() {
+         return this.lastViewDistance;
+     }
+-}
+\ No newline at end of file
++
 +   public void applyFrustumEntities(Frustum camera, int maxChunkDistance) {
 +      this.levelRenderer.getRenderInfosEntities().clear();
 +      int cameraChunkX = (int)camera.getCameraX() >> 4 << 4;
@@ -970,13 +457,7 @@
 +      BlockPosM posM = new BlockPosM();
 +      LongSet posLongSet = entitySectionStorage.getSectionKeys();
 +      LongIterator it = posLongSet.iterator();
- 
--    @VisibleForDebug
--    public double lastViewDistance() {
--        return this.lastViewDistance;
--    }
--}
-\ No newline at end of file
++
 +      while (it.hasNext()) {
 +         long posLong = it.nextLong();
 +         posM.setXyz(

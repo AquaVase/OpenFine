@@ -9,43 +9,31 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class EntityModelSet {
--    public static final EntityModelSet EMPTY = new EntityModelSet(Map.of());
--    private final Map<ModelLayerLocation, LayerDefinition> roots;
-+   public static final EntityModelSet EMPTY = new EntityModelSet(Map.of());
-+   private final Map<ModelLayerLocation, LayerDefinition> roots;
+     public static final EntityModelSet EMPTY = new EntityModelSet(Map.of());
+     private final Map<ModelLayerLocation, LayerDefinition> roots;
  
 -    public EntityModelSet(final Map<ModelLayerLocation, LayerDefinition> roots) {
--        this.roots = roots;
--    }
 +   public EntityModelSet(Map<ModelLayerLocation, LayerDefinition> roots) {
-+      this.roots = roots;
-+   }
+         this.roots = roots;
+     }
  
 -    public ModelPart bakeLayer(final ModelLayerLocation id) {
--        LayerDefinition result = this.roots.get(id);
--        if (result == null) {
--            throw new IllegalArgumentException("No model for layer " + id);
++   public ModelPart bakeLayer(ModelLayerLocation id) {
+         LayerDefinition result = this.roots.get(id);
+         if (result == null) {
+             throw new IllegalArgumentException("No model for layer " + id);
 -        } else {
 -            return result.bakeRoot();
--        }
--    }
-+   public ModelPart bakeLayer(ModelLayerLocation id) {
-+      LayerDefinition result = this.roots.get(id);
-+      if (result == null) {
-+         throw new IllegalArgumentException("No model for layer " + id);
-+      }
- 
--    public static EntityModelSet vanilla() {
--        return new EntityModelSet(ImmutableMap.copyOf(LayerDefinitions.createRoots()));
--    }
--}
-\ No newline at end of file
+         }
++
 +      ModelPart part = result.bakeRoot();
 +      part.setModelLayerLocation(id);
 +      return part;
-+   }
-+
-+   public static EntityModelSet vanilla() {
-+      return new EntityModelSet(ImmutableMap.copyOf(LayerDefinitions.createRoots()));
-+   }
+     }
+ 
+     public static EntityModelSet vanilla() {
+         return new EntityModelSet(ImmutableMap.copyOf(LayerDefinitions.createRoots()));
+     }
+-}
+\ No newline at end of file
 +}

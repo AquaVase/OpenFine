@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/entity/layers/SimpleEquipmentLayer.java
 +++ b/net/minecraft/client/renderer/entity/layers/SimpleEquipmentLayer.java
-@@ -6,74 +6,72 @@
+@@ -6,32 +6,28 @@
  import net.minecraft.client.renderer.SubmitNodeCollector;
  import net.minecraft.client.renderer.entity.RenderLayerParent;
  import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -15,22 +15,18 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class SimpleEquipmentLayer<S extends LivingEntityRenderState, RM extends EntityModel<? super S>, EM extends EntityModel<? super S>>
--    extends RenderLayer<S, RM> {
--    private final EquipmentLayerRenderer equipmentRenderer;
+     extends RenderLayer<S, RM> {
+     private final EquipmentLayerRenderer equipmentRenderer;
 -    private final EquipmentClientInfo.LayerType layer;
--    private final Function<S, ItemStack> itemGetter;
++   private final LayerType layer;
+     private final Function<S, ItemStack> itemGetter;
 -    private final EM adultModel;
 -    private final @Nullable EM babyModel;
--    private final int order;
-+   extends RenderLayer<S, RM> {
-+   private final EquipmentLayerRenderer equipmentRenderer;
-+   private final LayerType layer;
-+   private final Function<S, ItemStack> itemGetter;
 +   public EM adultModel;
 +   public EM babyModel;
-+   private final int order;
+     private final int order;
  
--    public SimpleEquipmentLayer(
+     public SimpleEquipmentLayer(
 -        final RenderLayerParent<S, RM> renderer,
 -        final EquipmentLayerRenderer equipmentRenderer,
 -        final EquipmentClientInfo.LayerType layer,
@@ -38,16 +34,6 @@
 -        final EM adultModel,
 -        final @Nullable EM babyModel,
 -        final int order
--    ) {
--        super(renderer);
--        this.equipmentRenderer = equipmentRenderer;
--        this.layer = layer;
--        this.itemGetter = itemGetter;
--        this.adultModel = adultModel;
--        this.babyModel = babyModel;
--        this.order = order;
--    }
-+   public SimpleEquipmentLayer(
 +      RenderLayerParent<S, RM> renderer,
 +      EquipmentLayerRenderer equipmentRenderer,
 +      LayerType layer,
@@ -55,83 +41,42 @@
 +      EM adultModel,
 +      EM babyModel,
 +      int order
-+   ) {
-+      super(renderer);
-+      this.equipmentRenderer = equipmentRenderer;
-+      this.layer = layer;
-+      this.itemGetter = itemGetter;
-+      this.adultModel = adultModel;
-+      this.babyModel = babyModel;
-+      this.order = order;
-+   }
+     ) {
+         super(renderer);
+         this.equipmentRenderer = equipmentRenderer;
+@@ -43,19 +39,17 @@
+     }
  
--    public SimpleEquipmentLayer(
+     public SimpleEquipmentLayer(
 -        final RenderLayerParent<S, RM> renderer,
 -        final EquipmentLayerRenderer equipmentRenderer,
 -        final EquipmentClientInfo.LayerType layer,
 -        final Function<S, ItemStack> itemGetter,
 -        final EM adultModel,
 -        final @Nullable EM babyModel
--    ) {
--        this(renderer, equipmentRenderer, layer, itemGetter, adultModel, babyModel, 0);
--    }
-+   public SimpleEquipmentLayer(
 +      RenderLayerParent<S, RM> renderer,
 +      EquipmentLayerRenderer equipmentRenderer,
 +      LayerType layer,
 +      Function<S, ItemStack> itemGetter,
 +      EM adultModel,
 +      EM babyModel
-+   ) {
-+      this(renderer, equipmentRenderer, layer, itemGetter, adultModel, babyModel, 0);
-+   }
+     ) {
+         this(renderer, equipmentRenderer, layer, itemGetter, adultModel, babyModel, 0);
+     }
  
 -    public void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
 -    ) {
--        ItemStack equipment = this.itemGetter.apply(state);
--        Equippable equippable = equipment.get(DataComponents.EQUIPPABLE);
--        if (equippable != null && !equippable.assetId().isEmpty() && (!state.isBaby || this.babyModel != null)) {
--            EM model = state.isBaby ? this.babyModel : this.adultModel;
--            this.equipmentRenderer
--                .renderLayers(
--                    this.layer,
--                    equippable.assetId().get(),
--                    model,
--                    state,
--                    equipment,
--                    poseStack,
--                    submitNodeCollector,
--                    lightCoords,
--                    null,
--                    state.outlineColor,
--                    this.order
--                );
--        }
--    }
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
+         ItemStack equipment = this.itemGetter.apply(state);
+         Equippable equippable = equipment.get(DataComponents.EQUIPPABLE);
+         if (equippable != null && !equippable.assetId().isEmpty() && (!state.isBaby || this.babyModel != null)) {
+@@ -76,4 +70,8 @@
+                 );
+         }
+     }
 -}
 \ No newline at end of file
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
-+      ItemStack equipment = this.itemGetter.apply(state);
-+      Equippable equippable = equipment.get(DataComponents.EQUIPPABLE);
-+      if (equippable != null && !equippable.assetId().isEmpty() && (!state.isBaby || this.babyModel != null)) {
-+         EM model = state.isBaby ? this.babyModel : this.adultModel;
-+         this.equipmentRenderer
-+            .renderLayers(
-+               this.layer,
-+               equippable.assetId().get(),
-+               model,
-+               state,
-+               equipment,
-+               poseStack,
-+               submitNodeCollector,
-+               lightCoords,
-+               null,
-+               state.outlineColor,
-+               this.order
-+            );
-+      }
-+   }
 +
 +   public LayerType getLayerType() {
 +      return this.layer;

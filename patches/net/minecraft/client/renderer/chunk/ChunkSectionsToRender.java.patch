@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/chunk/ChunkSectionsToRender.java
 +++ b/net/minecraft/client/renderer/chunk/ChunkSectionsToRender.java
-@@ -18,52 +18,55 @@
+@@ -18,17 +18,16 @@
  import net.minecraft.SharedConstants;
  import net.minecraft.client.Minecraft;
  import net.minecraft.client.renderer.RenderPipelines;
@@ -11,90 +11,55 @@
  
 -@OnlyIn(Dist.CLIENT)
  public record ChunkSectionsToRender(
--    GpuTextureView textureView,
--    EnumMap<ChunkSectionLayer, Int2ObjectOpenHashMap<List<RenderPass.Draw<GpuBufferSlice[]>>>> drawGroupsPerLayer,
--    int maxIndicesRequired,
--    GpuBufferSlice[] chunkSectionInfos
-+   GpuTextureView textureView,
-+   EnumMap<ChunkSectionLayer, Int2ObjectOpenHashMap<List<RenderPass.Draw<GpuBufferSlice[]>>>> drawGroupsPerLayer,
-+   int maxIndicesRequired,
-+   GpuBufferSlice[] chunkSectionInfos
+     GpuTextureView textureView,
+     EnumMap<ChunkSectionLayer, Int2ObjectOpenHashMap<List<RenderPass.Draw<GpuBufferSlice[]>>>> drawGroupsPerLayer,
+     int maxIndicesRequired,
+     GpuBufferSlice[] chunkSectionInfos
  ) {
 -    public void renderGroup(final ChunkSectionLayerGroup group, final GpuSampler sampler) {
--        RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
--        GpuBuffer defaultIndexBuffer = this.maxIndicesRequired == 0 ? null : autoIndices.getBuffer(this.maxIndicesRequired);
--        IndexType defaultIndexType = this.maxIndicesRequired == 0 ? null : autoIndices.type();
--        ChunkSectionLayer[] layers = group.layers();
--        Minecraft minecraft = Minecraft.getInstance();
--        boolean wireframe = SharedConstants.DEBUG_HOTKEYS && minecraft.wireframe;
--        RenderTarget renderTarget = group.outputTarget();
 +   public void renderGroup(ChunkSectionLayerGroup group, GpuSampler sampler) {
-+      RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-+      GpuBuffer defaultIndexBuffer = this.maxIndicesRequired == 0 ? null : autoIndices.getBuffer(this.maxIndicesRequired);
-+      IndexType defaultIndexType = this.maxIndicesRequired == 0 ? null : autoIndices.type();
-+      ChunkSectionLayer[] layers = group.layers();
-+      Minecraft minecraft = Minecraft.getInstance();
-+      boolean wireframe = SharedConstants.DEBUG_HOTKEYS && minecraft.wireframe;
-+      RenderTarget renderTarget = group.outputTarget();
+         RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+         GpuBuffer defaultIndexBuffer = this.maxIndicesRequired == 0 ? null : autoIndices.getBuffer(this.maxIndicesRequired);
+         IndexType defaultIndexType = this.maxIndicesRequired == 0 ? null : autoIndices.type();
+@@ -36,15 +35,12 @@
+         Minecraft minecraft = Minecraft.getInstance();
+         boolean wireframe = SharedConstants.DEBUG_HOTKEYS && minecraft.wireframe;
+         RenderTarget renderTarget = group.outputTarget();
 +      boolean shaders = Config.isShaders();
  
--        try (RenderPass renderPass = RenderSystem.getDevice()
--                .createCommandEncoder()
--                .createRenderPass(
+         try (RenderPass renderPass = RenderSystem.getDevice()
+                 .createCommandEncoder()
+                 .createRenderPass(
 -                    () -> "Section layers for " + group.label(),
 -                    renderTarget.getColorTextureView(),
 -                    Optional.empty(),
 -                    renderTarget.getDepthTextureView(),
 -                    OptionalDouble.empty()
--                )) {
--            RenderSystem.bindDefaultUniforms(renderPass);
--            renderPass.bindTexture("Sampler0", this.textureView, sampler);
--            renderPass.bindTexture("Sampler2", minecraft.gameRenderer.lightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-+      try (RenderPass renderPass = RenderSystem.getDevice()
-+            .createCommandEncoder()
-+            .createRenderPass(
 +               () -> "BL: " + group.label(), renderTarget.getColorTextureView(), Optional.empty(), renderTarget.getDepthTextureView(), OptionalDouble.empty()
-+            )) {
-+         RenderSystem.bindDefaultUniforms(renderPass);
-+         renderPass.bindTexture("Sampler0", this.textureView, sampler);
-+         renderPass.bindTexture("Sampler2", minecraft.gameRenderer.lightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+                 )) {
+             RenderSystem.bindDefaultUniforms(renderPass);
+             renderPass.bindTexture("Sampler0", this.textureView, sampler);
+@@ -56,14 +52,21 @@
  
--            for (ChunkSectionLayer layer : layers) {
--                renderPass.setPipeline(wireframe ? RenderPipelines.WIREFRAME : layer.pipeline());
--                Int2ObjectOpenHashMap<List<RenderPass.Draw<GpuBufferSlice[]>>> drawGroup = this.drawGroupsPerLayer.get(layer);
-+         for (ChunkSectionLayer layer : layers) {
-+            renderPass.setPipeline(wireframe ? RenderPipelines.WIREFRAME : layer.pipeline());
-+            Int2ObjectOpenHashMap<List<RenderPass.Draw<GpuBufferSlice[]>>> drawGroup = this.drawGroupsPerLayer.get(layer);
- 
--                for (List<RenderPass.Draw<GpuBufferSlice[]>> draws : drawGroup.values()) {
--                    if (!draws.isEmpty()) {
--                        if (layer == ChunkSectionLayer.TRANSLUCENT) {
--                            draws = draws.reversed();
--                        }
-+            for (List<RenderPass.Draw<GpuBufferSlice[]>> draws : drawGroup.values()) {
-+               if (!draws.isEmpty()) {
+                 for (List<RenderPass.Draw<GpuBufferSlice[]>> draws : drawGroup.values()) {
+                     if (!draws.isEmpty()) {
 +                  if (shaders) {
 +                     ShadersRender.preRenderChunkLayer(layer);
 +                  }
- 
--                        renderPass.drawMultipleIndexed(draws, defaultIndexBuffer, defaultIndexType, List.of("ChunkSection"), this.chunkSectionInfos);
--                    }
--                }
-+                  if (layer == ChunkSectionLayer.TRANSLUCENT) {
-+                     draws = draws.reversed();
-+                  }
 +
-+                  renderPass.drawMultipleIndexed(draws, defaultIndexBuffer, defaultIndexType, List.of("ChunkSection"), this.chunkSectionInfos);
+                         if (layer == ChunkSectionLayer.TRANSLUCENT) {
+                             draws = draws.reversed();
+                         }
+ 
+                         renderPass.drawMultipleIndexed(draws, defaultIndexBuffer, defaultIndexType, List.of("ChunkSection"), this.chunkSectionInfos);
 +                  if (shaders) {
 +                     ShadersRender.postRenderChunkLayer(layer);
-+                  }
-+               }
+                     }
+                 }
              }
--        }
--    }
+         }
+     }
 -}
 \ No newline at end of file
-+         }
-+      }
 +   }
 +}

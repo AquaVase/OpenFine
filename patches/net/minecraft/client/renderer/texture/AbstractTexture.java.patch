@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/texture/AbstractTexture.java
 +++ b/net/minecraft/client/renderer/texture/AbstractTexture.java
-@@ -1,56 +1,86 @@
+@@ -1,19 +1,17 @@
  package net.minecraft.client.renderer.texture;
  
 +import com.mojang.blaze3d.opengl.GlTexture;
@@ -19,83 +19,25 @@
  public abstract class AbstractTexture implements AutoCloseable {
 -    protected @Nullable GpuTexture texture;
 -    protected @Nullable GpuTextureView textureView;
--    protected GpuSampler sampler = RenderSystem.getSamplerCache()
--        .getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, false);
 +   protected GpuTexture texture;
 +   protected GpuTextureView textureView;
-+   protected GpuSampler sampler = RenderSystem.getSamplerCache()
-+      .getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, false);
+     protected GpuSampler sampler = RenderSystem.getSamplerCache()
+         .getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, false);
  
--    @Override
--    public void close() {
--        this.releaseTextures();
--    }
-+   @Override
-+   public void close() {
-+      this.releaseTextures();
-+   }
- 
--    protected void releaseTextures() {
--        if (this.texture != null) {
--            this.texture.close();
--            this.texture = null;
--        }
-+   protected void releaseTextures() {
-+      if (this.texture != null) {
-+         this.texture.close();
+@@ -25,6 +23,7 @@
+     protected void releaseTextures() {
+         if (this.texture != null) {
+             this.texture.close();
 +         this.texture.setParentTexture(null);
-+         this.texture = null;
-+      }
+             this.texture = null;
+         }
  
--        if (this.textureView != null) {
--            this.textureView.close();
--            this.textureView = null;
--        }
--    }
-+      if (this.textureView != null) {
-+         this.textureView.close();
-+         this.textureView = null;
-+      }
-+   }
- 
--    public GpuTexture getTexture() {
--        if (this.texture == null) {
--            throw new IllegalStateException("Texture does not exist, can't get it before something initializes it");
--        } else {
--            return this.texture;
--        }
--    }
-+   public GpuTexture getTexture() {
-+      if (this.texture == null) {
-+         throw new IllegalStateException("Texture does not exist, can't get it before something initializes it");
-+      } else {
-+         return this.texture;
-+      }
-+   }
- 
--    public GpuTextureView getTextureView() {
--        if (this.textureView == null) {
--            throw new IllegalStateException("Texture view does not exist, can't get it before something initializes it");
--        } else {
--            return this.textureView;
--        }
--    }
-+   public GpuTextureView getTextureView() {
-+      if (this.textureView == null) {
-+         throw new IllegalStateException("Texture view does not exist, can't get it before something initializes it");
-+      } else {
-+         return this.textureView;
-+      }
-+   }
- 
--    public GpuSampler getSampler() {
--        return this.sampler;
--    }
+@@ -53,4 +52,35 @@
+     public GpuSampler getSampler() {
+         return this.sampler;
+     }
 -}
 \ No newline at end of file
-+   public GpuSampler getSampler() {
-+      return this.sampler;
-+   }
 +
 +   public MultiTexID getMultiTexID() {
 +      return this.texture.getMultiTexID();

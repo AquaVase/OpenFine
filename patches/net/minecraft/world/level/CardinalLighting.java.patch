@@ -1,76 +1,29 @@
 --- a/net/minecraft/world/level/CardinalLighting.java
 +++ b/net/minecraft/world/level/CardinalLighting.java
-@@ -5,40 +5,41 @@
- import net.minecraft.util.StringRepresentable;
- 
+@@ -7,8 +7,9 @@
  public record CardinalLighting(float down, float up, float north, float south, float west, float east) {
--    public static final CardinalLighting DEFAULT = new CardinalLighting(0.5F, 1.0F, 0.8F, 0.8F, 0.6F, 0.6F);
--    public static final CardinalLighting NETHER = new CardinalLighting(0.9F, 0.9F, 0.8F, 0.8F, 0.6F, 0.6F);
-+   public static final CardinalLighting DEFAULT = new CardinalLighting(0.5F, 1.0F, 0.8F, 0.8F, 0.6F, 0.6F);
-+   public static final CardinalLighting NETHER = new CardinalLighting(0.9F, 0.9F, 0.8F, 0.8F, 0.6F, 0.6F);
+     public static final CardinalLighting DEFAULT = new CardinalLighting(0.5F, 1.0F, 0.8F, 0.8F, 0.6F, 0.6F);
+     public static final CardinalLighting NETHER = new CardinalLighting(0.9F, 0.9F, 0.8F, 0.8F, 0.6F, 0.6F);
 +   public static final CardinalLighting WHITE = new CardinalLighting(1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
  
 -    public float byFace(final Direction direction) {
--        return switch (direction) {
--            case DOWN -> this.down;
--            case UP -> this.up;
--            case NORTH -> this.north;
--            case SOUTH -> this.south;
--            case WEST -> this.west;
--            case EAST -> this.east;
--        };
--    }
 +   public float byFace(Direction direction) {
-+      return switch (direction) {
-+         case DOWN -> this.down;
-+         case UP -> this.up;
-+         case NORTH -> this.north;
-+         case SOUTH -> this.south;
-+         case WEST -> this.west;
-+         case EAST -> this.east;
-+      };
-+   }
- 
--    public enum Type implements StringRepresentable {
--        DEFAULT("default", CardinalLighting.DEFAULT),
--        NETHER("nether", CardinalLighting.NETHER);
-+   public enum Type implements StringRepresentable {
-+      DEFAULT("default", CardinalLighting.DEFAULT),
-+      NETHER("nether", CardinalLighting.NETHER);
- 
--        public static final Codec<CardinalLighting.Type> CODEC = StringRepresentable.fromEnum(CardinalLighting.Type::values);
--        private final String name;
--        private final CardinalLighting lighting;
-+      public static final Codec<CardinalLighting.Type> CODEC = StringRepresentable.fromEnum(CardinalLighting.Type::values);
-+      private final String name;
-+      private final CardinalLighting lighting;
+         return switch (direction) {
+             case DOWN -> this.down;
+             case UP -> this.up;
+@@ -27,7 +28,7 @@
+         private final String name;
+         private final CardinalLighting lighting;
  
 -        Type(final String name, final CardinalLighting lighting) {
--            this.name = name;
--            this.lighting = lighting;
--        }
 +      Type(String name, CardinalLighting lighting) {
-+         this.name = name;
-+         this.lighting = lighting;
-+      }
- 
--        public CardinalLighting get() {
--            return this.lighting;
--        }
-+      public CardinalLighting get() {
-+         return this.lighting;
-+      }
- 
--        @Override
--        public String getSerializedName() {
--            return this.name;
--        }
--    }
+             this.name = name;
+             this.lighting = lighting;
+         }
+@@ -41,4 +42,4 @@
+             return this.name;
+         }
+     }
 -}
 \ No newline at end of file
-+      @Override
-+      public String getSerializedName() {
-+         return this.name;
-+      }
-+   }
 +}

@@ -1,6 +1,6 @@
 --- a/com/mojang/blaze3d/textures/GpuTexture.java
 +++ b/com/mojang/blaze3d/textures/GpuTexture.java
-@@ -1,82 +1,116 @@
+@@ -1,15 +1,16 @@
  package com.mojang.blaze3d.textures;
  
  import com.mojang.blaze3d.GpuFormat;
@@ -17,31 +17,17 @@
  
 -@OnlyIn(Dist.CLIENT)
 -public abstract class GpuTexture implements AutoCloseable {
--    public static final int USAGE_COPY_DST = 1;
--    public static final int USAGE_COPY_SRC = 2;
--    public static final int USAGE_TEXTURE_BINDING = 4;
--    public static final int USAGE_RENDER_ATTACHMENT = 8;
--    public static final int USAGE_CUBEMAP_COMPATIBLE = 16;
--    private final GpuFormat format;
--    private final int width;
--    private final int height;
--    private final int depthOrLayers;
--    private final int mipLevels;
--    private final @GpuTexture.Usage int usage;
--    private final String label;
 +public abstract class GpuTexture implements AutoCloseable, IForgeGpuTexture {
-+   public static final int USAGE_COPY_DST = 1;
-+   public static final int USAGE_COPY_SRC = 2;
-+   public static final int USAGE_TEXTURE_BINDING = 4;
-+   public static final int USAGE_RENDER_ATTACHMENT = 8;
-+   public static final int USAGE_CUBEMAP_COMPATIBLE = 16;
-+   private final GpuFormat format;
-+   private final int width;
-+   private final int height;
-+   private final int depthOrLayers;
-+   private final int mipLevels;
+     public static final int USAGE_COPY_DST = 1;
+     public static final int USAGE_COPY_SRC = 2;
+     public static final int USAGE_TEXTURE_BINDING = 4;
+@@ -20,18 +21,11 @@
+     private final int height;
+     private final int depthOrLayers;
+     private final int mipLevels;
+-    private final @GpuTexture.Usage int usage;
 +   private @GpuTexture.Usage int usage;
-+   private final String label;
+     private final String label;
 +   private AbstractTexture parentTexture;
  
 -    public GpuTexture(
@@ -53,88 +39,28 @@
 -        final int depthOrLayers,
 -        final int mipLevels
 -    ) {
--        this.usage = usage;
--        this.label = label;
--        this.format = format;
--        this.width = width;
--        this.height = height;
--        this.depthOrLayers = depthOrLayers;
--        this.mipLevels = mipLevels;
--    }
 +   public GpuTexture(@GpuTexture.Usage int usage, String label, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels) {
-+      this.usage = usage;
-+      this.label = label;
-+      this.format = format;
-+      this.width = width;
-+      this.height = height;
-+      this.depthOrLayers = depthOrLayers;
-+      this.mipLevels = mipLevels;
-+   }
+         this.usage = usage;
+         this.label = label;
+         this.format = format;
+@@ -41,11 +35,11 @@
+         this.mipLevels = mipLevels;
+     }
  
 -    public int getWidth(final int mipLevel) {
--        return this.width >> mipLevel;
--    }
 +   public int getWidth(int mipLevel) {
-+      return this.width >> mipLevel;
-+   }
+         return this.width >> mipLevel;
+     }
  
 -    public int getHeight(final int mipLevel) {
--        return this.height >> mipLevel;
--    }
 +   public int getHeight(int mipLevel) {
-+      return this.height >> mipLevel;
-+   }
+         return this.height >> mipLevel;
+     }
  
--    public int getDepthOrLayers() {
--        return this.depthOrLayers;
--    }
-+   public int getDepthOrLayers() {
-+      return this.depthOrLayers;
-+   }
+@@ -74,9 +68,49 @@
  
--    public int getMipLevels() {
--        return this.mipLevels;
--    }
-+   public int getMipLevels() {
-+      return this.mipLevels;
-+   }
+     public abstract boolean isClosed();
  
--    public GpuFormat getFormat() {
--        return this.format;
--    }
-+   public GpuFormat getFormat() {
-+      return this.format;
-+   }
- 
--    public @GpuTexture.Usage int usage() {
--        return this.usage;
--    }
-+   public @GpuTexture.Usage int usage() {
-+      return this.usage;
-+   }
- 
--    public String getLabel() {
--        return this.label;
--    }
-+   public String getLabel() {
-+      return this.label;
-+   }
- 
--    @Override
--    public abstract void close();
-+   @Override
-+   public abstract void close();
- 
--    public abstract boolean isClosed();
-+   public abstract boolean isClosed();
- 
--    @Retention(RetentionPolicy.CLASS)
--    @Target(ElementType.TYPE_USE)
--    @OnlyIn(Dist.CLIENT)
--    public @interface Usage {
--    }
--}
-\ No newline at end of file
 +   public int getWidth() {
 +      return this.width;
 +   }
@@ -176,8 +102,11 @@
 +      return (GlTexture)this;
 +   }
 +
-+   @Retention(RetentionPolicy.CLASS)
-+   @Target(ElementType.TYPE_USE)
-+   public @interface Usage {
-+   }
+     @Retention(RetentionPolicy.CLASS)
+     @Target(ElementType.TYPE_USE)
+-    @OnlyIn(Dist.CLIENT)
+     public @interface Usage {
+     }
+-}
+\ No newline at end of file
 +}

@@ -1,6 +1,6 @@
 --- a/com/mojang/blaze3d/opengl/GlHeuristics.java
 +++ b/com/mojang/blaze3d/opengl/GlHeuristics.java
-@@ -11,101 +11,104 @@
+@@ -11,13 +11,11 @@
  import java.util.Locale;
  import java.util.Set;
  import net.minecraft.util.Util;
@@ -13,176 +13,63 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class GlHeuristics {
--    private static final Logger LOGGER = LogUtils.getLogger();
--    private static final List<String> DEVICE_NAMES_THAT_IMPLY_CPU = List.of("mesa offscreen", "llvmpipe");
--    private static final List<String> DEVICE_NAMES_THAT_IMPLY_VIRTUAL = List.of("virtgl");
--    private final boolean isGlOnDx12;
--    private final boolean isAmd;
-+   private static final Logger LOGGER = LogUtils.getLogger();
-+   private static final List<String> DEVICE_NAMES_THAT_IMPLY_CPU = List.of("mesa offscreen", "llvmpipe");
-+   private static final List<String> DEVICE_NAMES_THAT_IMPLY_VIRTUAL = List.of("virtgl");
-+   private final boolean isGlOnDx12;
-+   private final boolean isAmd;
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private static final List<String> DEVICE_NAMES_THAT_IMPLY_CPU = List.of("mesa offscreen", "llvmpipe");
+@@ -25,7 +23,7 @@
+     private final boolean isGlOnDx12;
+     private final boolean isAmd;
  
 -    GlHeuristics(final String deviceName) {
--        this.isGlOnDx12 = isGlOnDx12(deviceName);
--        this.isAmd = isAmd(deviceName);
--    }
 +   GlHeuristics(String deviceName) {
-+      this.isGlOnDx12 = isGlOnDx12(deviceName);
-+      this.isAmd = isAmd(deviceName);
-+   }
- 
--    public boolean isGlOnDx12() {
--        return this.isGlOnDx12;
--    }
-+   public boolean isGlOnDx12() {
-+      return this.isGlOnDx12;
-+   }
- 
--    public boolean isAmd() {
--        return this.isAmd;
--    }
-+   public boolean isAmd() {
-+      return this.isAmd;
-+   }
+         this.isGlOnDx12 = isGlOnDx12(deviceName);
+         this.isAmd = isAmd(deviceName);
+     }
+@@ -38,16 +36,21 @@
+         return this.isAmd;
+     }
  
 -    private static boolean isGlOnDx12(final String deviceName) {
--        boolean isWindowsArm64 = Util.getPlatform() == Util.OS.WINDOWS && Util.isAarch64();
--        return isWindowsArm64 || deviceName.startsWith("D3D12");
--    }
 +   private static boolean isGlOnDx12(String deviceName) {
-+      boolean isWindowsArm64 = Util.getPlatform() == Util.OS.WINDOWS && Util.isAarch64();
-+      return isWindowsArm64 || deviceName.startsWith("D3D12");
-+   }
+         boolean isWindowsArm64 = Util.getPlatform() == Util.OS.WINDOWS && Util.isAarch64();
+         return isWindowsArm64 || deviceName.startsWith("D3D12");
+     }
  
 -    private static boolean isAmd(final String deviceName) {
--        return deviceName.contains("AMD");
--    }
 +   private static boolean isAmd(String deviceName) {
-+      return deviceName.contains("AMD");
-+   }
+         return deviceName.contains("AMD");
+     }
  
--    private static int getMaxSupportedTextureSize() {
--        int maxReported = GlStateManager._getInteger(3379);
-+   private static int getMaxSupportedTextureSize() {
+     private static int getMaxSupportedTextureSize() {
 +      int maxSize = TextureUtils.getGLMaximumTextureSize();
 +      if (maxSize > 0) {
 +         return maxSize;
 +      }
++
+         int maxReported = GlStateManager._getInteger(3379);
  
--        for (int texSize = Math.max(32768, maxReported); texSize >= 1024; texSize >>= 1) {
--            GlStateManager._texImage2D(32868, 0, 6408, texSize, texSize, 0, 6408, 5121, null);
--            int width = GlStateManager._getTexLevelParameter(32868, 0, 4096);
--            if (width != 0) {
--                return texSize;
--            }
--        }
-+      int maxReported = GlStateManager._getInteger(3379);
- 
--        int maxSupportedTextureSize = Math.max(maxReported, 1024);
--        LOGGER.info("Failed to determine maximum texture size by probing, trying GL_MAX_TEXTURE_SIZE = {}", maxSupportedTextureSize);
--        return maxSupportedTextureSize;
--    }
-+      for (int texSize = Math.max(32768, maxReported); texSize >= 1024; texSize >>= 1) {
-+         GlStateManager._texImage2D(32868, 0, 6408, texSize, texSize, 0, 6408, 5121, null);
-+         int width = GlStateManager._getTexLevelParameter(32868, 0, 4096);
-+         if (width != 0) {
-+            return texSize;
-+         }
-+      }
+         for (int texSize = Math.max(32768, maxReported); texSize >= 1024; texSize >>= 1) {
+@@ -63,7 +66,7 @@
+         return maxSupportedTextureSize;
+     }
  
 -    public DeviceInfo createDeviceInfo(final GLCapabilities capabilities, final int maxSupportedAnisotropy, final Set<String> enabledExtensions) {
--        String renderer = GlStateManager._getString(7937);
--        String vendor = GlStateManager._getString(7936);
--        return new DeviceInfo(
--            renderer,
--            vendor,
--            GlStateManager._getString(7938),
--            capabilities.GL_ARB_clip_control,
--            "OpenGL",
--            1.0F,
--            new DeviceLimits(maxSupportedAnisotropy, GL33C.glGetInteger(35380), getMaxSupportedTextureSize(), Long.MAX_VALUE, 0, GL33C.glGetInteger(34852)),
--            new DeviceFeatures(
--                enabledExtensions.contains("GL_ARB_shader_draw_parameters"),
--                false,
--                true,
--                enabledExtensions.contains("GL_ARB_multi_draw_indirect"),
--                enabledExtensions.contains("GL_ARB_draw_indirect"),
--                enabledExtensions.contains("GL_ARB_base_instance"),
--                enabledExtensions.contains("GL_ARB_buffer_storage")
--            ),
--            Collections.unmodifiableSet(enabledExtensions),
--            new HintsAndWorkarounds(this.isGlOnDx12(), this.isAmd()),
--            this.guessDeviceType(renderer.toLowerCase(Locale.ROOT), vendor.toLowerCase(Locale.ROOT))
--        );
--    }
-+      int maxSupportedTextureSize = Math.max(maxReported, 1024);
-+      LOGGER.info("Failed to determine maximum texture size by probing, trying GL_MAX_TEXTURE_SIZE = {}", maxSupportedTextureSize);
-+      return maxSupportedTextureSize;
-+   }
++   public DeviceInfo createDeviceInfo(GLCapabilities capabilities, int maxSupportedAnisotropy, Set<String> enabledExtensions) {
+         String renderer = GlStateManager._getString(7937);
+         String vendor = GlStateManager._getString(7936);
+         return new DeviceInfo(
+@@ -89,7 +92,7 @@
+         );
+     }
  
 -    private DeviceType guessDeviceType(final String renderer, final String vendor) {
--        if (vendor.contains("intel")) {
--            return renderer.contains("arc") ? DeviceType.DISCRETE : DeviceType.INTEGRATED;
--        }
-+   public DeviceInfo createDeviceInfo(GLCapabilities capabilities, int maxSupportedAnisotropy, Set<String> enabledExtensions) {
-+      String renderer = GlStateManager._getString(7937);
-+      String vendor = GlStateManager._getString(7936);
-+      return new DeviceInfo(
-+         renderer,
-+         vendor,
-+         GlStateManager._getString(7938),
-+         capabilities.GL_ARB_clip_control,
-+         "OpenGL",
-+         1.0F,
-+         new DeviceLimits(maxSupportedAnisotropy, GL33C.glGetInteger(35380), getMaxSupportedTextureSize(), Long.MAX_VALUE, 0, GL33C.glGetInteger(34852)),
-+         new DeviceFeatures(
-+            enabledExtensions.contains("GL_ARB_shader_draw_parameters"),
-+            false,
-+            true,
-+            enabledExtensions.contains("GL_ARB_multi_draw_indirect"),
-+            enabledExtensions.contains("GL_ARB_draw_indirect"),
-+            enabledExtensions.contains("GL_ARB_base_instance"),
-+            enabledExtensions.contains("GL_ARB_buffer_storage")
-+         ),
-+         Collections.unmodifiableSet(enabledExtensions),
-+         new HintsAndWorkarounds(this.isGlOnDx12(), this.isAmd()),
-+         this.guessDeviceType(renderer.toLowerCase(Locale.ROOT), vendor.toLowerCase(Locale.ROOT))
-+      );
-+   }
- 
--        for (String string : DEVICE_NAMES_THAT_IMPLY_CPU) {
--            if (renderer.contains(string)) {
--                return DeviceType.CPU;
--            }
--        }
 +   private DeviceType guessDeviceType(String renderer, String vendor) {
-+      if (vendor.contains("intel")) {
-+         return renderer.contains("arc") ? DeviceType.DISCRETE : DeviceType.INTEGRATED;
-+      }
+         if (vendor.contains("intel")) {
+             return renderer.contains("arc") ? DeviceType.DISCRETE : DeviceType.INTEGRATED;
+         }
+@@ -108,4 +111,4 @@
  
--        for (String string : DEVICE_NAMES_THAT_IMPLY_VIRTUAL) {
--            if (renderer.contains(string)) {
--                return DeviceType.VIRTUAL;
--            }
--        }
-+      for (String string : DEVICE_NAMES_THAT_IMPLY_CPU) {
-+         if (renderer.contains(string)) {
-+            return DeviceType.CPU;
-+         }
-+      }
- 
--        return DeviceType.OTHER;
--    }
+         return DeviceType.OTHER;
+     }
 -}
 \ No newline at end of file
-+      for (String string : DEVICE_NAMES_THAT_IMPLY_VIRTUAL) {
-+         if (renderer.contains(string)) {
-+            return DeviceType.VIRTUAL;
-+         }
-+      }
-+
-+      return DeviceType.OTHER;
-+   }
 +}

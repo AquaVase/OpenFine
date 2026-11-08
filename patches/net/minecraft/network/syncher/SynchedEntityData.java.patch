@@ -1,6 +1,6 @@
 --- a/net/minecraft/network/syncher/SynchedEntityData.java
 +++ b/net/minecraft/network/syncher/SynchedEntityData.java
-@@ -6,242 +6,257 @@
+@@ -6,11 +6,17 @@
  import java.util.ArrayList;
  import java.util.List;
  import java.util.Locale;
@@ -19,18 +19,10 @@
  import org.slf4j.Logger;
  
  public class SynchedEntityData {
--    private static final Logger LOGGER = LogUtils.getLogger();
--    private static final int MAX_ID_VALUE = 254;
--    private static final ClassTreeIdRegistry ID_REGISTRY = new ClassTreeIdRegistry();
--    private final SyncedDataHolder entity;
--    private final SynchedEntityData.DataItem<?>[] itemsById;
--    private boolean isDirty;
-+   private static final Logger LOGGER = LogUtils.getLogger();
-+   private static final int MAX_ID_VALUE = 254;
-+   private static final ClassTreeIdRegistry ID_REGISTRY = new ClassTreeIdRegistry();
-+   private final SyncedDataHolder entity;
-+   private final SynchedEntityData.DataItem<?>[] itemsById;
-+   private boolean isDirty;
+@@ -20,13 +26,20 @@
+     private final SyncedDataHolder entity;
+     private final SynchedEntityData.DataItem<?>[] itemsById;
+     private boolean isDirty;
 +   public Biome spawnBiome = BiomeUtils.PLAINS;
 +   public BlockPos spawnPosition = BlockPos.ZERO;
 +   public BlockState blockStateOn = Blocks.AIR.defaultBlockState();
@@ -40,410 +32,164 @@
 +   public long nbtTagUpdateMs = 0L;
  
 -    private SynchedEntityData(final SyncedDataHolder entity, final SynchedEntityData.DataItem<?>[] itemsById) {
--        this.entity = entity;
--        this.itemsById = itemsById;
--    }
 +   private SynchedEntityData(SyncedDataHolder entity, SynchedEntityData.DataItem<?>[] itemsById) {
-+      this.entity = entity;
-+      this.itemsById = itemsById;
-+   }
+         this.entity = entity;
+         this.itemsById = itemsById;
+     }
  
 -    public static <T> EntityDataAccessor<T> defineId(final Class<? extends SyncedDataHolder> clazz, final EntityDataSerializer<T> type) {
--        if (LOGGER.isDebugEnabled()) {
--            try {
--                Class<?> aClass = Class.forName(Thread.currentThread().getStackTrace()[2].getClassName());
--                if (!aClass.equals(clazz)) {
--                    LOGGER.debug("defineId called for: {} from {}", clazz, aClass, new RuntimeException());
--                }
--            } catch (ClassNotFoundException var3) {
 +   public static <T> EntityDataAccessor<T> defineId(Class<? extends SyncedDataHolder> clazz, EntityDataSerializer<T> type) {
-+      if (LOGGER.isDebugEnabled()) {
-+         try {
-+            Class<?> aClass = Class.forName(Thread.currentThread().getStackTrace()[2].getClassName());
-+            if (!aClass.equals(clazz)) {
-+               LOGGER.debug("defineId called for: {} from {}", clazz, aClass, new RuntimeException());
-             }
--        }
-+         } catch (ClassNotFoundException var3) {
-+         }
-+      }
- 
--        int id = ID_REGISTRY.define(clazz);
--        if (id > 254) {
--            throw new IllegalArgumentException("Data value id is too big with " + id + "! (Max is 254)");
--        } else {
--            return type.createAccessor(id);
--        }
--    }
-+      int id = ID_REGISTRY.define(clazz);
-+      if (id > 254) {
-+         throw new IllegalArgumentException("Data value id is too big with " + id + "! (Max is 254)");
-+      } else {
-+         return type.createAccessor(id);
-+      }
-+   }
+         if (LOGGER.isDebugEnabled()) {
+             try {
+                 Class<?> aClass = Class.forName(Thread.currentThread().getStackTrace()[2].getClassName());
+@@ -45,25 +58,26 @@
+         }
+     }
  
 -    private <T> SynchedEntityData.DataItem<T> getItem(final EntityDataAccessor<T> accessor) {
--        return (SynchedEntityData.DataItem<T>)this.itemsById[accessor.id()];
--    }
 +   private <T> SynchedEntityData.DataItem<T> getItem(EntityDataAccessor<T> accessor) {
-+      return (SynchedEntityData.DataItem<T>)this.itemsById[accessor.id()];
-+   }
+         return (SynchedEntityData.DataItem<T>)this.itemsById[accessor.id()];
+     }
  
 -    public <T> T get(final EntityDataAccessor<T> accessor) {
--        return this.getItem(accessor).getValue();
--    }
 +   public <T> T get(EntityDataAccessor<T> accessor) {
-+      return this.getItem(accessor).getValue();
-+   }
+         return this.getItem(accessor).getValue();
+     }
  
 -    public <T> void set(final EntityDataAccessor<T> accessor, final T value) {
--        this.set(accessor, value, false);
--    }
 +   public <T> void set(EntityDataAccessor<T> accessor, T value) {
-+      this.set(accessor, value, false);
-+   }
+         this.set(accessor, value, false);
+     }
  
 -    public <T> void set(final EntityDataAccessor<T> accessor, final T value, final boolean forceDirty) {
--        SynchedEntityData.DataItem<T> dataItem = this.getItem(accessor);
--        if (forceDirty || ObjectUtils.notEqual(value, dataItem.getValue())) {
--            dataItem.setValue(value);
--            this.entity.onSyncedDataUpdated(accessor);
--            dataItem.setDirty(true);
--            this.isDirty = true;
--        }
--    }
 +   public <T> void set(EntityDataAccessor<T> accessor, T value, boolean forceDirty) {
-+      SynchedEntityData.DataItem<T> dataItem = this.getItem(accessor);
-+      if (forceDirty || ObjectUtils.notEqual(value, dataItem.getValue())) {
-+         dataItem.setValue(value);
-+         this.entity.onSyncedDataUpdated(accessor);
-+         dataItem.setDirty(true);
-+         this.isDirty = true;
+         SynchedEntityData.DataItem<T> dataItem = this.getItem(accessor);
+         if (forceDirty || ObjectUtils.notEqual(value, dataItem.getValue())) {
+             dataItem.setValue(value);
+             this.entity.onSyncedDataUpdated(accessor);
+             dataItem.setDirty(true);
+             this.isDirty = true;
 +         this.nbtTag = null;
-+      }
-+   }
+         }
+     }
  
--    public boolean isDirty() {
--        return this.isDirty;
--    }
-+   public boolean isDirty() {
-+      return this.isDirty;
-+   }
+@@ -71,7 +85,7 @@
+         return this.isDirty;
+     }
  
 -    public @Nullable List<SynchedEntityData.DataValue<?>> packDirty() {
--        if (!this.isDirty) {
--            return null;
--        }
 +   public List<SynchedEntityData.DataValue<?>> packDirty() {
-+      if (!this.isDirty) {
-+         return null;
-+      }
- 
--        this.isDirty = false;
--        List<SynchedEntityData.DataValue<?>> result = new ArrayList<>();
-+      this.isDirty = false;
-+      List<SynchedEntityData.DataValue<?>> result = new ArrayList<>();
- 
--        for (SynchedEntityData.DataItem<?> dataItem : this.itemsById) {
--            if (dataItem.isDirty()) {
--                dataItem.setDirty(false);
--                result.add(dataItem.value());
--            }
--        }
-+      for (SynchedEntityData.DataItem<?> dataItem : this.itemsById) {
-+         if (dataItem.isDirty()) {
-+            dataItem.setDirty(false);
-+            result.add(dataItem.value());
-+         }
-+      }
- 
--        return result;
--    }
-+      return result;
-+   }
+         if (!this.isDirty) {
+             return null;
+         }
+@@ -89,7 +103,7 @@
+         return result;
+     }
  
 -    public @Nullable List<SynchedEntityData.DataValue<?>> getNonDefaultValues() {
--        List<SynchedEntityData.DataValue<?>> result = null;
 +   public List<SynchedEntityData.DataValue<?>> getNonDefaultValues() {
-+      List<SynchedEntityData.DataValue<?>> result = null;
+         List<SynchedEntityData.DataValue<?>> result = null;
  
--        for (SynchedEntityData.DataItem<?> dataItem : this.itemsById) {
--            if (!dataItem.isSetToDefault()) {
--                if (result == null) {
--                    result = new ArrayList<>();
--                }
--
--                result.add(dataItem.value());
-+      for (SynchedEntityData.DataItem<?> dataItem : this.itemsById) {
-+         if (!dataItem.isSetToDefault()) {
-+            if (result == null) {
-+               result = new ArrayList<>();
-             }
--        }
- 
--        return result;
--    }
-+            result.add(dataItem.value());
-+         }
-+      }
+         for (SynchedEntityData.DataItem<?> dataItem : this.itemsById) {
+@@ -105,17 +119,18 @@
+         return result;
+     }
  
 -    public void assignValues(final List<SynchedEntityData.DataValue<?>> items) {
--        for (SynchedEntityData.DataValue<?> item : items) {
--            SynchedEntityData.DataItem<?> dataItem = this.itemsById[item.id];
--            this.assignValue(dataItem, item);
--            this.entity.onSyncedDataUpdated(dataItem.getAccessor());
--        }
-+      return result;
-+   }
- 
--        this.entity.onSyncedDataUpdated(items);
--    }
 +   public void assignValues(List<SynchedEntityData.DataValue<?>> items) {
-+      for (SynchedEntityData.DataValue<?> item : items) {
-+         SynchedEntityData.DataItem<?> dataItem = this.itemsById[item.id];
-+         this.assignValue(dataItem, item);
-+         this.entity.onSyncedDataUpdated(dataItem.getAccessor());
+         for (SynchedEntityData.DataValue<?> item : items) {
+             SynchedEntityData.DataItem<?> dataItem = this.itemsById[item.id];
+             this.assignValue(dataItem, item);
+             this.entity.onSyncedDataUpdated(dataItem.getAccessor());
 +         this.nbtTag = null;
-+      }
+         }
+ 
+         this.entity.onSyncedDataUpdated(items);
+     }
  
 -    private <T> void assignValue(final SynchedEntityData.DataItem<T> dataItem, final SynchedEntityData.DataValue<?> item) {
--        if (!Objects.equals(item.serializer(), dataItem.accessor.serializer())) {
--            throw new IllegalStateException(
--                String.format(
--                    Locale.ROOT,
--                    "Invalid entity data item type for field %d on entity %s: old=%s(%s), new=%s(%s)",
--                    dataItem.accessor.id(),
--                    this.entity,
--                    dataItem.value,
--                    dataItem.value.getClass(),
--                    item.value,
--                    item.value.getClass()
--                )
--            );
--        }
-+      this.entity.onSyncedDataUpdated(items);
-+   }
- 
--        dataItem.setValue((T)item.value);
--    }
 +   private <T> void assignValue(SynchedEntityData.DataItem<T> dataItem, SynchedEntityData.DataValue<?> item) {
-+      if (!Objects.equals(item.serializer(), dataItem.accessor.serializer())) {
-+         throw new IllegalStateException(
-+            String.format(
-+               Locale.ROOT,
-+               "Invalid entity data item type for field %d on entity %s: old=%s(%s), new=%s(%s)",
-+               dataItem.accessor.id(),
-+               this.entity,
-+               dataItem.value,
-+               dataItem.value.getClass(),
-+               item.value,
-+               item.value.getClass()
-+            )
-+         );
-+      }
+         if (!Objects.equals(item.serializer(), dataItem.accessor.serializer())) {
+             throw new IllegalStateException(
+                 String.format(
+@@ -136,14 +151,14 @@
  
--    public static class Builder {
--        private final SyncedDataHolder entity;
+     public static class Builder {
+         private final SyncedDataHolder entity;
 -        private final SynchedEntityData.@Nullable DataItem<?>[] itemsById;
-+      dataItem.setValue((T)item.value);
-+   }
- 
--        public Builder(final SyncedDataHolder entity) {
--            this.entity = entity;
--            this.itemsById = new SynchedEntityData.DataItem[SynchedEntityData.ID_REGISTRY.getCount(entity.getClass())];
--        }
-+   public static class Builder {
-+      private final SyncedDataHolder entity;
 +      private final SynchedEntityData.DataItem<?>[] itemsById;
  
--        public <T> SynchedEntityData.Builder define(final EntityDataAccessor<T> accessor, final T value) {
--            int id = accessor.id();
--            if (id > this.itemsById.length) {
--                throw new IllegalArgumentException("Data value id is too big with " + id + "! (Max is " + this.itemsById.length + ")");
--            }
+-        public Builder(final SyncedDataHolder entity) {
 +      public Builder(SyncedDataHolder entity) {
-+         this.entity = entity;
-+         this.itemsById = new SynchedEntityData.DataItem[SynchedEntityData.ID_REGISTRY.getCount(entity.getClass())];
-+      }
+             this.entity = entity;
+             this.itemsById = new SynchedEntityData.DataItem[SynchedEntityData.ID_REGISTRY.getCount(entity.getClass())];
+         }
  
--            if (this.itemsById[id] != null) {
--                throw new IllegalArgumentException("Duplicate id value for " + id + "!");
--            }
+-        public <T> SynchedEntityData.Builder define(final EntityDataAccessor<T> accessor, final T value) {
 +      public <T> SynchedEntityData.Builder define(EntityDataAccessor<T> accessor, T value) {
-+         int id = accessor.id();
-+         if (id > this.itemsById.length) {
-+            throw new IllegalArgumentException("Data value id is too big with " + id + "! (Max is " + this.itemsById.length + ")");
-+         }
- 
--            if (EntityDataSerializers.getSerializedId(accessor.serializer()) < 0) {
--                throw new IllegalArgumentException("Unregistered serializer " + accessor.serializer() + " for " + id + "!");
--            }
-+         if (this.itemsById[id] != null) {
-+            throw new IllegalArgumentException("Duplicate id value for " + id + "!");
-+         }
- 
--            this.itemsById[accessor.id()] = new SynchedEntityData.DataItem<>(accessor, value);
--            return this;
--        }
-+         if (EntityDataSerializers.getSerializedId(accessor.serializer()) < 0) {
-+            throw new IllegalArgumentException("Unregistered serializer " + accessor.serializer() + " for " + id + "!");
-+         }
- 
--        public SynchedEntityData build() {
--            for (int i = 0; i < this.itemsById.length; i++) {
--                if (this.itemsById[i] == null) {
--                    throw new IllegalStateException("Entity " + this.entity.getClass() + " has not defined synched data value " + i);
--                }
-+         this.itemsById[accessor.id()] = new SynchedEntityData.DataItem<>(accessor, value);
-+         return this;
-+      }
-+
-+      public SynchedEntityData build() {
-+         for (int i = 0; i < this.itemsById.length; i++) {
-+            if (this.itemsById[i] == null) {
-+               throw new IllegalStateException("Entity " + this.entity.getClass() + " has not defined synched data value " + i);
-             }
-+         }
- 
--            return new SynchedEntityData(this.entity, this.itemsById);
--        }
--    }
-+         return new SynchedEntityData(this.entity, this.itemsById);
-+      }
-+   }
- 
--    public static class DataItem<T> {
--        private final EntityDataAccessor<T> accessor;
--        private T value;
--        private final T initialValue;
--        private boolean dirty;
-+   public static class DataItem<T> {
-+      private final EntityDataAccessor<T> accessor;
-+      private T value;
-+      private final T initialValue;
-+      private boolean dirty;
+             int id = accessor.id();
+             if (id > this.itemsById.length) {
+                 throw new IllegalArgumentException("Data value id is too big with " + id + "! (Max is " + this.itemsById.length + ")");
+@@ -178,7 +193,7 @@
+         private final T initialValue;
+         private boolean dirty;
  
 -        public DataItem(final EntityDataAccessor<T> accessor, final T initialValue) {
--            this.accessor = accessor;
--            this.initialValue = initialValue;
--            this.value = initialValue;
--        }
 +      public DataItem(EntityDataAccessor<T> accessor, T initialValue) {
-+         this.accessor = accessor;
-+         this.initialValue = initialValue;
-+         this.value = initialValue;
-+      }
- 
--        public EntityDataAccessor<T> getAccessor() {
--            return this.accessor;
--        }
-+      public EntityDataAccessor<T> getAccessor() {
-+         return this.accessor;
-+      }
+             this.accessor = accessor;
+             this.initialValue = initialValue;
+             this.value = initialValue;
+@@ -188,7 +203,7 @@
+             return this.accessor;
+         }
  
 -        public void setValue(final T value) {
--            this.value = value;
--        }
 +      public void setValue(T value) {
-+         this.value = value;
-+      }
+             this.value = value;
+         }
  
--        public T getValue() {
--            return this.value;
--        }
-+      public T getValue() {
-+         return this.value;
-+      }
- 
--        public boolean isDirty() {
--            return this.dirty;
--        }
-+      public boolean isDirty() {
-+         return this.dirty;
-+      }
+@@ -200,7 +215,7 @@
+             return this.dirty;
+         }
  
 -        public void setDirty(final boolean dirty) {
--            this.dirty = dirty;
--        }
 +      public void setDirty(boolean dirty) {
-+         this.dirty = dirty;
-+      }
+             this.dirty = dirty;
+         }
  
--        public boolean isSetToDefault() {
--            return this.initialValue.equals(this.value);
--        }
-+      public boolean isSetToDefault() {
-+         return this.initialValue.equals(this.value);
-+      }
+@@ -214,12 +229,12 @@
+     }
  
--        public SynchedEntityData.DataValue<T> value() {
--            return SynchedEntityData.DataValue.create(this.accessor, this.value);
--        }
--    }
-+      public SynchedEntityData.DataValue<T> value() {
-+         return SynchedEntityData.DataValue.create(this.accessor, this.value);
-+      }
-+   }
- 
--    public record DataValue<T>(int id, EntityDataSerializer<T> serializer, T value) {
+     public record DataValue<T>(int id, EntityDataSerializer<T> serializer, T value) {
 -        public static <T> SynchedEntityData.DataValue<T> create(final EntityDataAccessor<T> accessor, final T value) {
--            EntityDataSerializer<T> serializer = accessor.serializer();
--            return new SynchedEntityData.DataValue<>(accessor.id(), serializer, serializer.copy(value));
--        }
-+   public record DataValue<T>(int id, EntityDataSerializer<T> serializer, T value) {
 +      public static <T> SynchedEntityData.DataValue<T> create(EntityDataAccessor<T> accessor, T value) {
-+         EntityDataSerializer<T> serializer = accessor.serializer();
-+         return new SynchedEntityData.DataValue<>(accessor.id(), serializer, serializer.copy(value));
-+      }
+             EntityDataSerializer<T> serializer = accessor.serializer();
+             return new SynchedEntityData.DataValue<>(accessor.id(), serializer, serializer.copy(value));
+         }
  
 -        public void write(final RegistryFriendlyByteBuf output) {
--            int serializerId = EntityDataSerializers.getSerializedId(this.serializer);
--            if (serializerId < 0) {
--                throw new EncoderException("Unknown serializer type " + this.serializer);
--            }
 +      public void write(RegistryFriendlyByteBuf output) {
-+         int serializerId = EntityDataSerializers.getSerializedId(this.serializer);
-+         if (serializerId < 0) {
-+            throw new EncoderException("Unknown serializer type " + this.serializer);
-+         }
- 
--            output.writeByte(this.id);
--            output.writeVarInt(serializerId);
--            this.serializer.codec().encode(output, this.value);
--        }
-+         output.writeByte(this.id);
-+         output.writeVarInt(serializerId);
-+         this.serializer.codec().encode(output, this.value);
-+      }
+             int serializerId = EntityDataSerializers.getSerializedId(this.serializer);
+             if (serializerId < 0) {
+                 throw new EncoderException("Unknown serializer type " + this.serializer);
+@@ -230,7 +245,7 @@
+             this.serializer.codec().encode(output, this.value);
+         }
  
 -        public static SynchedEntityData.DataValue<?> read(final RegistryFriendlyByteBuf input, final int id) {
--            int type = input.readVarInt();
--            EntityDataSerializer<?> serializer = EntityDataSerializers.getSerializer(type);
--            if (serializer == null) {
--                throw new DecoderException("Unknown serializer type " + type);
--            } else {
--                return read(input, id, serializer);
--            }
--        }
 +      public static SynchedEntityData.DataValue<?> read(RegistryFriendlyByteBuf input, int id) {
-+         int type = input.readVarInt();
-+         EntityDataSerializer<?> serializer = EntityDataSerializers.getSerializer(type);
-+         if (serializer == null) {
-+            throw new DecoderException("Unknown serializer type " + type);
-+         } else {
-+            return read(input, id, serializer);
-+         }
-+      }
+             int type = input.readVarInt();
+             EntityDataSerializer<?> serializer = EntityDataSerializers.getSerializer(type);
+             if (serializer == null) {
+@@ -240,8 +255,8 @@
+             }
+         }
  
 -        private static <T> SynchedEntityData.DataValue<T> read(final RegistryFriendlyByteBuf input, final int id, final EntityDataSerializer<T> serializer) {
--            return new SynchedEntityData.DataValue<>(id, serializer, serializer.codec().decode(input));
--        }
--    }
++      private static <T> SynchedEntityData.DataValue<T> read(RegistryFriendlyByteBuf input, int id, EntityDataSerializer<T> serializer) {
+             return new SynchedEntityData.DataValue<>(id, serializer, serializer.codec().decode(input));
+         }
+     }
 -}
 \ No newline at end of file
-+      private static <T> SynchedEntityData.DataValue<T> read(RegistryFriendlyByteBuf input, int id, EntityDataSerializer<T> serializer) {
-+         return new SynchedEntityData.DataValue<>(id, serializer, serializer.codec().decode(input));
-+      }
-+   }
 +}

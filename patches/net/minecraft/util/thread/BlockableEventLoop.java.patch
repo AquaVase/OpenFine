@@ -1,6 +1,6 @@
 --- a/net/minecraft/util/thread/BlockableEventLoop.java
 +++ b/net/minecraft/util/thread/BlockableEventLoop.java
-@@ -16,184 +16,262 @@
+@@ -16,29 +16,38 @@
  import net.minecraft.CrashReport;
  import net.minecraft.ReportedException;
  import net.minecraft.SharedConstants;
@@ -19,332 +19,152 @@
  import org.slf4j.Logger;
  
  public abstract class BlockableEventLoop<R extends Runnable> implements Executor, TaskScheduler<R>, ProfilerMeasured {
--    public static final long BLOCK_TIME_NANOS = 100000L;
+     public static final long BLOCK_TIME_NANOS = 100000L;
 -    private static volatile @Nullable Supplier<CrashReport> delayedCrash;
--    private final boolean propagatesCrashes;
--    private final String name;
--    private static final Logger LOGGER = LogUtils.getLogger();
--    private final Queue<R> pendingRunnables = Queues.newConcurrentLinkedQueue();
--    private int blockingCount;
-+   public static final long BLOCK_TIME_NANOS = 100000L;
 +   private static volatile Supplier<CrashReport> delayedCrash;
-+   private final boolean propagatesCrashes;
-+   private final String name;
-+   private static final Logger LOGGER = LogUtils.getLogger();
-+   private final Queue<R> pendingRunnables = Queues.newConcurrentLinkedQueue();
-+   private int blockingCount;
+     private final boolean propagatesCrashes;
+     private final String name;
+     private static final Logger LOGGER = LogUtils.getLogger();
+     private final Queue<R> pendingRunnables = Queues.newConcurrentLinkedQueue();
+     private int blockingCount;
  
 -    protected BlockableEventLoop(final String name, final boolean propagatesCrashes) {
--        this.propagatesCrashes = propagatesCrashes;
--        this.name = name;
--        MetricsRegistry.INSTANCE.add(this);
--    }
 +   protected BlockableEventLoop(String name, boolean propagatesCrashes) {
-+      this.propagatesCrashes = propagatesCrashes;
-+      this.name = name;
-+      MetricsRegistry.INSTANCE.add(this);
+         this.propagatesCrashes = propagatesCrashes;
+         this.name = name;
+         MetricsRegistry.INSTANCE.add(this);
 +      if (this instanceof Minecraft mc) {
 +         Config.initMinecraft(mc);
-+      }
+     }
 +   }
  
 -    protected abstract boolean shouldRun(final R task);
 +   protected abstract boolean shouldRun(R var1);
  
--    public boolean isSameThread() {
--        return Thread.currentThread() == this.getRunningThread();
--    }
-+   public boolean isSameThread() {
-+      return Thread.currentThread() == this.getRunningThread();
-+   }
- 
--    protected abstract Thread getRunningThread();
-+   protected abstract Thread getRunningThread();
- 
--    protected boolean scheduleExecutables() {
--        return !this.isSameThread();
--    }
-+   protected boolean scheduleExecutables() {
-+      return !this.isSameThread();
-+   }
- 
--    public int getPendingTasksCount() {
--        return this.pendingRunnables.size();
--    }
-+   public int getPendingTasksCount() {
-+      return this.pendingRunnables.size();
-+   }
- 
--    @Override
--    public String name() {
--        return this.name;
--    }
-+   @Override
-+   public String name() {
-+      return this.name;
-+   }
+     public boolean isSameThread() {
+         return Thread.currentThread() == this.getRunningThread();
+@@ -59,11 +68,11 @@
+         return this.name;
+     }
  
 -    public <V> CompletableFuture<V> submit(final Supplier<V> supplier) {
--        return this.scheduleExecutables() ? CompletableFuture.supplyAsync(supplier, this) : CompletableFuture.completedFuture(supplier.get());
--    }
 +   public <V> CompletableFuture<V> submit(Supplier<V> supplier) {
-+      return this.scheduleExecutables() ? CompletableFuture.supplyAsync(supplier, this) : CompletableFuture.completedFuture(supplier.get());
-+   }
+         return this.scheduleExecutables() ? CompletableFuture.supplyAsync(supplier, this) : CompletableFuture.completedFuture(supplier.get());
+     }
  
 -    private CompletableFuture<Void> submitAsync(final Runnable runnable) {
--        return CompletableFuture.supplyAsync(() -> {
--            runnable.run();
--            return null;
--        }, this);
--    }
 +   private CompletableFuture<Void> submitAsync(Runnable runnable) {
-+      return CompletableFuture.supplyAsync(() -> {
-+         runnable.run();
-+         return null;
-+      }, this);
-+   }
+         return CompletableFuture.supplyAsync(() -> {
+             runnable.run();
+             return null;
+@@ -71,7 +80,7 @@
+     }
  
--    @CheckReturnValue
+     @CheckReturnValue
 -    public CompletableFuture<Void> submit(final Runnable runnable) {
--        if (this.scheduleExecutables()) {
--            return this.submitAsync(runnable);
--        }
-+   @CheckReturnValue
 +   public CompletableFuture<Void> submit(Runnable runnable) {
-+      if (this.scheduleExecutables()) {
-+         return this.submitAsync(runnable);
-+      }
- 
--        runnable.run();
--        return CompletableFuture.completedFuture(null);
--    }
-+      runnable.run();
-+      return CompletableFuture.completedFuture(null);
-+   }
+         if (this.scheduleExecutables()) {
+             return this.submitAsync(runnable);
+         }
+@@ -80,7 +89,7 @@
+         return CompletableFuture.completedFuture(null);
+     }
  
 -    public void executeBlocking(final Runnable runnable) {
--        if (!this.isSameThread()) {
--            this.submitAsync(runnable).join();
--        } else {
--            runnable.run();
--        }
--    }
 +   public void executeBlocking(Runnable runnable) {
-+      if (!this.isSameThread()) {
-+         this.submitAsync(runnable).join();
-+      } else {
-+         runnable.run();
-+      }
-+   }
+         if (!this.isSameThread()) {
+             this.submitAsync(runnable).join();
+         } else {
+@@ -89,13 +98,13 @@
+     }
  
--    @Override
+     @Override
 -    public void schedule(final R r) {
--        this.pendingRunnables.add(r);
--        LockSupport.unpark(this.getRunningThread());
--    }
-+   @Override
 +   public void schedule(R r) {
-+      this.pendingRunnables.add(r);
-+      LockSupport.unpark(this.getRunningThread());
-+   }
+         this.pendingRunnables.add(r);
+         LockSupport.unpark(this.getRunningThread());
+     }
  
--    @Override
+     @Override
 -    public void execute(final Runnable command) {
--        R task = this.wrapRunnable(command);
--        if (this.scheduleExecutables()) {
--            this.schedule(task);
--        } else {
--            this.doRunTask(task);
--        }
--    }
-+   @Override
 +   public void execute(Runnable command) {
-+      R task = this.wrapRunnable(command);
-+      if (this.scheduleExecutables()) {
-+         this.schedule(task);
-+      } else {
-+         this.doRunTask(task);
-+      }
-+   }
+         R task = this.wrapRunnable(command);
+         if (this.scheduleExecutables()) {
+             this.schedule(task);
+@@ -104,7 +113,7 @@
+         }
+     }
  
 -    public void executeIfPossible(final Runnable command) {
--        this.execute(command);
--    }
 +   public void executeIfPossible(Runnable command) {
-+      this.execute(command);
-+   }
+         this.execute(command);
+     }
  
--    protected void dropAllTasks() {
--        this.pendingRunnables.clear();
--    }
-+   protected void dropAllTasks() {
-+      this.pendingRunnables.clear();
-+   }
+@@ -113,9 +122,17 @@
+     }
  
--    protected void runAllTasks() {
--        while (this.pollTask()) {
--        }
--    }
-+   protected void runAllTasks() {
+     protected void runAllTasks() {
 +      int count = Integer.MAX_VALUE;
 +      if (Config.isLazyChunkLoading() && this == Minecraft.getInstance()) {
 +         count = this.getTaskCount();
 +      }
- 
--    protected boolean shouldRunAllTasks() {
--        return this.blockingCount > 0;
--    }
-+      while (this.pollTask()) {
++
+         while (this.pollTask()) {
 +         if (--count <= 0) {
 +            break;
-+         }
-+      }
+         }
+     }
 +   }
  
--    protected boolean pollTask() {
--        this.throwDelayedException();
--        R task = this.pendingRunnables.peek();
--        if (task == null) {
--            return false;
--        }
-+   protected boolean shouldRunAllTasks() {
-+      return this.blockingCount > 0;
-+   }
- 
--        if (!this.shouldRunAllTasks() && !this.shouldRun(task)) {
--            return false;
--        }
-+   protected boolean pollTask() {
-+      this.throwDelayedException();
-+      R task = this.pendingRunnables.peek();
-+      if (task == null) {
-+         return false;
-+      }
- 
--        this.doRunTask(this.pendingRunnables.remove());
--        return true;
--    }
-+      if (!this.shouldRunAllTasks() && !this.shouldRun(task)) {
-+         return false;
-+      }
+     protected boolean shouldRunAllTasks() {
+         return this.blockingCount > 0;
+@@ -136,7 +153,7 @@
+         return true;
+     }
  
 -    public void managedBlock(final BooleanSupplier condition) {
--        this.blockingCount++;
-+      this.doRunTask(this.pendingRunnables.remove());
-+      return true;
-+   }
- 
--        try {
--            while (!condition.getAsBoolean()) {
--                if (!this.pollTask()) {
--                    this.waitForTasks();
--                }
 +   public void managedBlock(BooleanSupplier condition) {
-+      this.blockingCount++;
-+
-+      try {
-+         while (!condition.getAsBoolean()) {
-+            if (!this.pollTask()) {
-+               this.waitForTasks();
-             }
--        } finally {
--            this.blockingCount--;
--        }
--    }
-+         }
-+      } finally {
-+         this.blockingCount--;
-+      }
-+   }
+         this.blockingCount++;
  
--    protected void waitForTasks() {
--        Thread.yield();
--        LockSupport.parkNanos("waiting for tasks", 100000L);
--    }
-+   protected void waitForTasks() {
-+      Thread.yield();
-+      LockSupport.parkNanos("waiting for tasks", 100000L);
-+   }
+         try {
+@@ -155,7 +172,7 @@
+         LockSupport.parkNanos("waiting for tasks", 100000L);
+     }
  
 -    protected void doRunTask(final R task) {
--        try (Zone ignored = TracyClient.beginZone("Task", SharedConstants.IS_RUNNING_IN_IDE)) {
--            task.run();
--        } catch (Exception e) {
--            LOGGER.error(LogUtils.FATAL_MARKER, "Error executing task on {}", this.name(), e);
--            if (isNonRecoverable(e)) {
--                throw e;
--            }
--        }
--    }
 +   protected void doRunTask(R task) {
-+      try (Zone ignored = TracyClient.beginZone("Task", SharedConstants.IS_RUNNING_IN_IDE)) {
-+         task.run();
-+      } catch (Exception e) {
-+         LOGGER.error(LogUtils.FATAL_MARKER, "Error executing task on {}", this.name(), e);
-+         if (isNonRecoverable(e)) {
-+            throw e;
-+         }
-+      }
-+   }
- 
--    @Override
--    public List<MetricSampler> profiledMetrics() {
--        return ImmutableList.of(MetricSampler.create(this.name + "-pending-tasks", MetricCategory.EVENT_LOOPS, this::getPendingTasksCount));
--    }
-+   @Override
-+   public List<MetricSampler> profiledMetrics() {
-+      return ImmutableList.of(MetricSampler.create(this.name + "-pending-tasks", MetricCategory.EVENT_LOOPS, this::getPendingTasksCount));
-+   }
+         try (Zone ignored = TracyClient.beginZone("Task", SharedConstants.IS_RUNNING_IN_IDE)) {
+             task.run();
+         } catch (Exception e) {
+@@ -171,7 +188,7 @@
+         return ImmutableList.of(MetricSampler.create(this.name + "-pending-tasks", MetricCategory.EVENT_LOOPS, this::getPendingTasksCount));
+     }
  
 -    public static boolean isNonRecoverable(final Throwable t) {
--        return t instanceof ReportedException r ? isNonRecoverable(r.getCause()) : t instanceof OutOfMemoryError || t instanceof StackOverflowError;
--    }
 +   public static boolean isNonRecoverable(Throwable t) {
-+      return t instanceof ReportedException r ? isNonRecoverable(r.getCause()) : t instanceof OutOfMemoryError || t instanceof StackOverflowError;
-+   }
+         return t instanceof ReportedException r ? isNonRecoverable(r.getCause()) : t instanceof OutOfMemoryError || t instanceof StackOverflowError;
+     }
  
--    private void throwDelayedException() {
--        if (this.propagatesCrashes) {
--            Supplier<CrashReport> delayedCrash = BlockableEventLoop.delayedCrash;
--            if (delayedCrash != null) {
--                throw new ReportedException(delayedCrash.get());
--            }
--        }
--    }
-+   private void throwDelayedException() {
-+      if (this.propagatesCrashes) {
-+         Supplier<CrashReport> delayedCrash = BlockableEventLoop.delayedCrash;
-+         if (delayedCrash != null) {
-+            throw new ReportedException(delayedCrash.get());
-+         }
-+      }
-+   }
+@@ -184,11 +201,11 @@
+         }
+     }
  
 -    public void delayCrash(final CrashReport crashReport) {
--        delayedCrash = () -> crashReport;
--    }
 +   public void delayCrash(CrashReport crashReport) {
-+      delayedCrash = () -> crashReport;
-+   }
+         delayedCrash = () -> crashReport;
+     }
  
 -    public static synchronized void relayDelayCrash(final CrashReport crashReport) {
--        Supplier<CrashReport> delayedCrash = BlockableEventLoop.delayedCrash;
--        if (delayedCrash == null) {
--            BlockableEventLoop.delayedCrash = () -> crashReport;
--        } else {
--            delayedCrash.get().getException().addSuppressed(crashReport.getException());
--        }
--    }
++   public static synchronized void relayDelayCrash(CrashReport crashReport) {
+         Supplier<CrashReport> delayedCrash = BlockableEventLoop.delayedCrash;
+         if (delayedCrash == null) {
+             BlockableEventLoop.delayedCrash = () -> crashReport;
+@@ -196,4 +213,65 @@
+             delayedCrash.get().getException().addSuppressed(crashReport.getException());
+         }
+     }
 -}
 \ No newline at end of file
-+   public static synchronized void relayDelayCrash(CrashReport crashReport) {
-+      Supplier<CrashReport> delayedCrash = BlockableEventLoop.delayedCrash;
-+      if (delayedCrash == null) {
-+         BlockableEventLoop.delayedCrash = () -> crashReport;
-+      } else {
-+         delayedCrash.get().getException().addSuppressed(crashReport.getException());
-+      }
-+   }
 +
 +   private int getTaskCount() {
 +      if (this.pendingRunnables.isEmpty()) {

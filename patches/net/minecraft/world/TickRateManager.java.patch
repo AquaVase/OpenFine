@@ -1,120 +1,50 @@
 --- a/net/minecraft/world/TickRateManager.java
 +++ b/net/minecraft/world/TickRateManager.java
-@@ -1,66 +1,84 @@
+@@ -1,5 +1,6 @@
  package net.minecraft.world;
  
 +import java.util.List;
  import net.minecraft.util.TimeUtil;
  import net.minecraft.world.entity.Entity;
  import net.minecraft.world.entity.player.Player;
- 
- public class TickRateManager {
--    public static final float MIN_TICKRATE = 1.0F;
--    protected float tickrate = 20.0F;
--    protected long nanosecondsPerTick = TimeUtil.NANOSECONDS_PER_SECOND / 20L;
--    protected int frozenTicksToRun = 0;
--    protected boolean runGameElements = true;
--    protected boolean isFrozen = false;
-+   public static final float MIN_TICKRATE = 1.0F;
-+   protected float tickrate = 20.0F;
-+   protected long nanosecondsPerTick = TimeUtil.NANOSECONDS_PER_SECOND / 20L;
-+   protected int frozenTicksToRun = 0;
-+   protected boolean runGameElements = true;
-+   protected boolean isFrozen = false;
+@@ -12,7 +13,7 @@
+     protected boolean runGameElements = true;
+     protected boolean isFrozen = false;
  
 -    public void setTickRate(final float rate) {
--        this.tickrate = Math.max(rate, 1.0F);
--        this.nanosecondsPerTick = (long)((double)TimeUtil.NANOSECONDS_PER_SECOND / this.tickrate);
--    }
 +   public void setTickRate(float rate) {
-+      this.tickrate = Math.max(rate, 1.0F);
-+      this.nanosecondsPerTick = (long)((double)TimeUtil.NANOSECONDS_PER_SECOND / this.tickrate);
-+   }
- 
--    public float tickrate() {
--        return this.tickrate;
--    }
-+   public float tickrate() {
-+      return this.tickrate;
-+   }
- 
--    public float millisecondsPerTick() {
--        return (float)this.nanosecondsPerTick / (float)TimeUtil.NANOSECONDS_PER_MILLISECOND;
--    }
-+   public float millisecondsPerTick() {
-+      return (float)this.nanosecondsPerTick / (float)TimeUtil.NANOSECONDS_PER_MILLISECOND;
-+   }
- 
--    public long nanosecondsPerTick() {
--        return this.nanosecondsPerTick;
--    }
-+   public long nanosecondsPerTick() {
-+      return this.nanosecondsPerTick;
-+   }
- 
--    public boolean runsNormally() {
--        return this.runGameElements;
--    }
-+   public boolean runsNormally() {
-+      return this.runGameElements;
-+   }
- 
--    public boolean isSteppingForward() {
--        return this.frozenTicksToRun > 0;
--    }
-+   public boolean isSteppingForward() {
-+      return this.frozenTicksToRun > 0;
-+   }
+         this.tickrate = Math.max(rate, 1.0F);
+         this.nanosecondsPerTick = (long)((double)TimeUtil.NANOSECONDS_PER_SECOND / this.tickrate);
+     }
+@@ -37,7 +38,7 @@
+         return this.frozenTicksToRun > 0;
+     }
  
 -    public void setFrozenTicksToRun(final int timeout) {
--        this.frozenTicksToRun = timeout;
--    }
 +   public void setFrozenTicksToRun(int timeout) {
-+      this.frozenTicksToRun = timeout;
-+   }
+         this.frozenTicksToRun = timeout;
+     }
  
--    public int frozenTicksToRun() {
--        return this.frozenTicksToRun;
--    }
-+   public int frozenTicksToRun() {
-+      return this.frozenTicksToRun;
-+   }
+@@ -45,7 +46,7 @@
+         return this.frozenTicksToRun;
+     }
  
 -    public void setFrozen(final boolean state) {
--        this.isFrozen = state;
--    }
 +   public void setFrozen(boolean state) {
-+      this.isFrozen = state;
-+   }
+         this.isFrozen = state;
+     }
  
--    public boolean isFrozen() {
--        return this.isFrozen;
--    }
-+   public boolean isFrozen() {
-+      return this.isFrozen;
-+   }
- 
--    public void tick() {
--        this.runGameElements = !this.isFrozen || this.frozenTicksToRun > 0;
--        if (this.frozenTicksToRun > 0) {
--            this.frozenTicksToRun--;
--        }
--    }
-+   public void tick() {
-+      this.runGameElements = !this.isFrozen || this.frozenTicksToRun > 0;
-+      if (this.frozenTicksToRun > 0) {
-+         this.frozenTicksToRun--;
-+      }
-+   }
+@@ -60,7 +61,24 @@
+         }
+     }
  
 -    public boolean isEntityFrozen(final Entity entity) {
 -        return !this.runsNormally() && !(entity instanceof Player) && entity.countPlayerPassengers() <= 0;
--    }
--}
-\ No newline at end of file
 +   public boolean isEntityFrozen(Entity entity) {
 +      return !this.runsNormally() && !(entity instanceof Player) && !this.hasPlayerPassengers(entity);
-+   }
+     }
+-}
+\ No newline at end of file
 +
 +   private boolean hasPlayerPassengers(Entity entity) {
 +      List<Entity> passengers = entity.getPassengers();

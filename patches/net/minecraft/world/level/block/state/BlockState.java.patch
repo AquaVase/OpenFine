@@ -21,9 +21,8 @@
 +import net.optifine.util.BlockUtils;
  
 -public class BlockState extends BlockBehaviour.BlockStateBase {
--    public static final Codec<BlockState> CODEC = codec(BuiltInRegistries.BLOCK.byNameCodec(), Block::defaultBlockState, Block::getStateDefinition).stable();
 +public class BlockState extends BlockStateBase implements IForgeBlockState {
-+   public static final Codec<BlockState> CODEC = codec(BuiltInRegistries.BLOCK.byNameCodec(), Block::defaultBlockState, Block::getStateDefinition).stable();
+     public static final Codec<BlockState> CODEC = codec(BuiltInRegistries.BLOCK.byNameCodec(), Block::defaultBlockState, Block::getStateDefinition).stable();
 +   private int blockId = -1;
 +   private int metadata = -1;
 +   private Identifier blockLocation;
@@ -33,19 +32,11 @@
 +   private static final AtomicInteger blockStateIdCounter = new AtomicInteger(0);
  
 -    public BlockState(final Block owner, final Property<?>[] propertyKeys, final Comparable<?>[] propertyValues) {
--        super(owner, propertyKeys, propertyValues);
--    }
 +   public int getBlockId() {
 +      if (this.blockId < 0) {
 +         this.blockId = BuiltInRegistries.BLOCK.getId(this.getBlock());
 +      }
- 
--    @Override
--    protected BlockState asState() {
--        return this;
--    }
--}
-\ No newline at end of file
++
 +      return this.blockId;
 +   }
 +
@@ -97,7 +88,7 @@
 +   }
 +
 +   public BlockState(Block owner, Property<?>[] propertyKeys, Comparable<?>[] propertyValues) {
-+      super(owner, propertyKeys, propertyValues);
+         super(owner, propertyKeys, propertyValues);
 +      if (Blocks.AIR != null && Reflector.BlockBehaviour_Properties_emissiveRendering.exists()) {
 +         Predicate<BlockState> emissiveOwner = (Predicate<BlockState>)Reflector.getFieldValue(
 +            owner.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
@@ -106,11 +97,13 @@
 +            Blocks.AIR.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
 +         );
 +         this.hasEmissive = emissiveOwner != emissiveAir;
-+      }
+     }
 +   }
-+
-+   @Override
-+   protected BlockState asState() {
-+      return this;
-+   }
+ 
+     @Override
+     protected BlockState asState() {
+         return this;
+     }
+-}
+\ No newline at end of file
 +}

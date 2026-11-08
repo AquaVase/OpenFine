@@ -16,7 +16,7 @@
  import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
  import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
  import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
-@@ -23,106 +25,124 @@
+@@ -23,11 +25,9 @@
  import net.minecraft.world.level.block.entity.BlockEntity;
  import net.minecraft.world.level.block.entity.BlockEntityType;
  import net.minecraft.world.phys.Vec3;
@@ -28,27 +28,15 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class BlockEntityRenderDispatcher implements ResourceManagerReloadListener {
--    private Map<BlockEntityType<?>, BlockEntityRenderer<?, ?>> renderers = ImmutableMap.of();
--    private final Font font;
--    private final Supplier<EntityModelSet> entityModelSet;
--    private Vec3 cameraPos;
--    private final BlockModelResolver blockModelResolver;
--    private final ItemModelResolver itemModelResolver;
--    private final EntityRenderDispatcher entityRenderer;
--    private final SpriteGetter sprites;
--    private final PlayerSkinRenderCache playerSkinRenderCache;
-+   private Map<BlockEntityType<?>, BlockEntityRenderer<?, ?>> renderers = ImmutableMap.of();
-+   private final Font font;
-+   private final Supplier<EntityModelSet> entityModelSet;
-+   private Vec3 cameraPos;
-+   private final BlockModelResolver blockModelResolver;
-+   private final ItemModelResolver itemModelResolver;
-+   private final EntityRenderDispatcher entityRenderer;
-+   private final SpriteGetter sprites;
-+   private final PlayerSkinRenderCache playerSkinRenderCache;
+     private Map<BlockEntityType<?>, BlockEntityRenderer<?, ?>> renderers = ImmutableMap.of();
+     private final Font font;
+@@ -38,15 +38,16 @@
+     private final EntityRenderDispatcher entityRenderer;
+     private final SpriteGetter sprites;
+     private final PlayerSkinRenderCache playerSkinRenderCache;
 +   private Context context;
  
--    public BlockEntityRenderDispatcher(
+     public BlockEntityRenderDispatcher(
 -        final Font font,
 -        final Supplier<EntityModelSet> entityModelSet,
 -        final BlockModelResolver blockModelResolver,
@@ -56,16 +44,6 @@
 -        final EntityRenderDispatcher entityRenderer,
 -        final SpriteGetter sprites,
 -        final PlayerSkinRenderCache playerSkinRenderCache
--    ) {
--        this.blockModelResolver = blockModelResolver;
--        this.itemModelResolver = itemModelResolver;
--        this.entityRenderer = entityRenderer;
--        this.font = font;
--        this.entityModelSet = entityModelSet;
--        this.sprites = sprites;
--        this.playerSkinRenderCache = playerSkinRenderCache;
--    }
-+   public BlockEntityRenderDispatcher(
 +      Font font,
 +      Supplier<EntityModelSet> entityModelSet,
 +      BlockModelResolver blockModelResolver,
@@ -73,148 +51,74 @@
 +      EntityRenderDispatcher entityRenderer,
 +      SpriteGetter sprites,
 +      PlayerSkinRenderCache playerSkinRenderCache
-+   ) {
-+      this.blockModelResolver = blockModelResolver;
-+      this.itemModelResolver = itemModelResolver;
-+      this.entityRenderer = entityRenderer;
-+      this.font = font;
-+      this.entityModelSet = entityModelSet;
-+      this.sprites = sprites;
-+      this.playerSkinRenderCache = playerSkinRenderCache;
-+   }
+     ) {
+         this.blockModelResolver = blockModelResolver;
+         this.itemModelResolver = itemModelResolver;
+@@ -57,20 +58,20 @@
+         this.playerSkinRenderCache = playerSkinRenderCache;
+     }
  
 -    public <E extends BlockEntity, S extends BlockEntityRenderState> @Nullable BlockEntityRenderer<E, S> getRenderer(final E blockEntity) {
--        return (BlockEntityRenderer<E, S>)this.renderers.get(blockEntity.getType());
--    }
 +   public <E extends BlockEntity, S extends BlockEntityRenderState> BlockEntityRenderer<E, S> getRenderer(E blockEntity) {
-+      return (BlockEntityRenderer<E, S>)this.renderers.get(blockEntity.getType());
-+   }
+         return (BlockEntityRenderer<E, S>)this.renderers.get(blockEntity.getType());
+     }
  
 -    public <E extends BlockEntity, S extends BlockEntityRenderState> @Nullable BlockEntityRenderer<E, S> getRenderer(final S state) {
--        return (BlockEntityRenderer<E, S>)this.renderers.get(state.blockEntityType);
--    }
 +   public <E extends BlockEntity, S extends BlockEntityRenderState> BlockEntityRenderer<E, S> getRenderer(S state) {
-+      return (BlockEntityRenderer<E, S>)this.renderers.get(state.blockEntityType);
-+   }
+         return (BlockEntityRenderer<E, S>)this.renderers.get(state.blockEntityType);
+     }
  
 -    public void prepare(final Vec3 cameraPos) {
--        this.cameraPos = cameraPos;
--    }
 +   public void prepare(Vec3 cameraPos) {
-+      this.cameraPos = cameraPos;
-+   }
+         this.cameraPos = cameraPos;
+     }
  
 -    public <E extends BlockEntity, S extends BlockEntityRenderState> @Nullable S tryExtractRenderState(
 -        final E blockEntity, final float partialTicks, final ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress, final boolean isGloballyRendered
--    ) {
--        BlockEntityRenderer<E, S> renderer = this.getRenderer(blockEntity);
--        if (renderer == null) {
--            return null;
--        }
 +   public <E extends BlockEntity, S extends BlockEntityRenderState> S tryExtractRenderState(
 +      E blockEntity, float partialTicks, ModelFeatureRenderer.CrumblingOverlay breakProgress, boolean isGloballyRendered
-+   ) {
-+      BlockEntityRenderer<E, S> renderer = this.getRenderer(blockEntity);
-+      if (renderer == null) {
-+         return null;
-+      }
- 
--        if (!blockEntity.hasLevel() || !blockEntity.getType().isValid(blockEntity.getBlockState())) {
--            return null;
--        }
-+      if (!blockEntity.hasLevel() || !blockEntity.getType().isValid(blockEntity.getBlockState())) {
-+         return null;
-+      }
- 
--        if (isGloballyRendered != renderer.shouldRenderOffScreen()) {
--            return null;
--        }
-+      if (isGloballyRendered != renderer.shouldRenderOffScreen()) {
-+         return null;
-+      }
- 
--        if (!renderer.shouldRender(blockEntity, this.cameraPos)) {
--            return null;
--        }
-+      if (!renderer.shouldRender(blockEntity, this.cameraPos)) {
-+         return null;
-+      }
- 
--        Vec3 cameraPosition = this.cameraPos;
--        S state = renderer.createRenderState();
--        renderer.extractRenderState(blockEntity, state, partialTicks, cameraPosition, breakProgress);
--        return state;
--    }
-+      Vec3 cameraPosition = this.cameraPos;
-+      S state = renderer.createRenderState();
-+      renderer.extractRenderState(blockEntity, state, partialTicks, cameraPosition, breakProgress);
-+      return state;
-+   }
+     ) {
+         BlockEntityRenderer<E, S> renderer = this.getRenderer(blockEntity);
+         if (renderer == null) {
+@@ -95,13 +96,15 @@
+         return state;
+     }
  
 -    public <S extends BlockEntityRenderState> void submit(
 -        final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera
 -    ) {
--        BlockEntityRenderer<?, S> renderer = this.getRenderer(state);
--        if (renderer != null) {
--            try {
--                renderer.submit(state, poseStack, submitNodeCollector, camera);
--            } catch (Throwable t) {
--                CrashReport report = CrashReport.forThrowable(t, "Rendering Block Entity");
--                CrashReportCategory category = report.addCategory("Block Entity Details");
--                state.fillCrashReportCategory(category);
--                throw new ReportedException(report);
--            }
--        }
--    }
 +   public <S extends BlockEntityRenderState> void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
-+      BlockEntityRenderer<?, S> renderer = this.getRenderer(state);
-+      if (renderer != null) {
-+         try {
+         BlockEntityRenderer<?, S> renderer = this.getRenderer(state);
+         if (renderer != null) {
+             try {
 +            renderer = CustomEntityModels.getBlockEntityRenderer(state.blockEntity, renderer);
 +            state.blockEntityRenderer = renderer;
 +            BlockEntityRenderState statePrev = RenderState.setBlockEntityRenderState(state);
-+            renderer.submit(state, poseStack, submitNodeCollector, camera);
+                 renderer.submit(state, poseStack, submitNodeCollector, camera);
 +            RenderState.setBlockEntityRenderState(statePrev);
-+         } catch (Throwable t) {
-+            CrashReport report = CrashReport.forThrowable(t, "Rendering Block Entity");
-+            CrashReportCategory category = report.addCategory("Block Entity Details");
-+            state.fillCrashReportCategory(category);
-+            throw new ReportedException(report);
-+         }
-+      }
-+   }
+             } catch (Throwable t) {
+                 CrashReport report = CrashReport.forThrowable(t, "Rendering Block Entity");
+                 CrashReportCategory category = report.addCategory("Block Entity Details");
+@@ -112,8 +115,8 @@
+     }
  
--    @Override
+     @Override
 -    public void onResourceManagerReload(final ResourceManager resourceManager) {
 -        BlockEntityRendererProvider.Context context = new BlockEntityRendererProvider.Context(
--            this,
--            this.blockModelResolver,
--            this.itemModelResolver,
--            this.entityRenderer,
--            this.entityModelSet.get(),
--            this.font,
--            this.sprites,
--            this.playerSkinRenderCache
--        );
--        this.renderers = BlockEntityRenderers.createEntityRenderers(context);
--    }
--}
-\ No newline at end of file
-+   @Override
 +   public void onResourceManagerReload(ResourceManager resourceManager) {
 +      Context context = new Context(
-+         this,
-+         this.blockModelResolver,
-+         this.itemModelResolver,
-+         this.entityRenderer,
-+         this.entityModelSet.get(),
-+         this.font,
-+         this.sprites,
-+         this.playerSkinRenderCache
-+      );
+             this,
+             this.blockModelResolver,
+             this.itemModelResolver,
+@@ -123,6 +126,23 @@
+             this.sprites,
+             this.playerSkinRenderCache
+         );
 +      this.context = context;
-+      this.renderers = BlockEntityRenderers.createEntityRenderers(context);
-+   }
+         this.renderers = BlockEntityRenderers.createEntityRenderers(context);
+     }
+-}
+\ No newline at end of file
 +
 +   public BlockEntityRenderer getRenderer(BlockEntityType type) {
 +      return this.renderers.get(type);

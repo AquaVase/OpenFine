@@ -9,12 +9,6 @@
  
 -@OnlyIn(Dist.CLIENT)
 -public record VertexFormatElement(String name, int offset, GpuFormat format) {
--    @Override
--    public String toString() {
--        return String.format(Locale.ROOT, "%s %s offset:%d", this.name, this.format, this.offset);
--    }
--}
-\ No newline at end of file
 +public record VertexFormatElement(String name, int offset, GpuFormat format, int attributeIndex) {
 +   VertexFormatElement(String name, int offset, GpuFormat format) {
 +      int attrIndex = makeAttributeIndex(name);
@@ -39,8 +33,10 @@
 +      }
 +   }
 +
-+   @Override
-+   public String toString() {
-+      return String.format(Locale.ROOT, "%s %s offset:%d", this.name, this.format, this.offset);
-+   }
+     @Override
+     public String toString() {
+         return String.format(Locale.ROOT, "%s %s offset:%d", this.name, this.format, this.offset);
+     }
+-}
+\ No newline at end of file
 +}

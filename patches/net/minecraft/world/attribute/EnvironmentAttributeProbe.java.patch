@@ -1,145 +1,78 @@
 --- a/net/minecraft/world/attribute/EnvironmentAttributeProbe.java
 +++ b/net/minecraft/world/attribute/EnvironmentAttributeProbe.java
-@@ -5,76 +5,80 @@
+@@ -5,15 +5,14 @@
  import java.util.function.Function;
  import net.minecraft.world.level.Level;
  import net.minecraft.world.phys.Vec3;
 -import org.jspecify.annotations.Nullable;
  
  public class EnvironmentAttributeProbe {
--    private final Map<EnvironmentAttribute<?>, EnvironmentAttributeProbe.ValueProbe<?>> valueProbes = new Reference2ObjectOpenHashMap<>();
--    private final Function<EnvironmentAttribute<?>, EnvironmentAttributeProbe.ValueProbe<?>> valueProbeFactory = x$0 -> new EnvironmentAttributeProbe.ValueProbe<>(
--        x$0
--    );
+     private final Map<EnvironmentAttribute<?>, EnvironmentAttributeProbe.ValueProbe<?>> valueProbes = new Reference2ObjectOpenHashMap<>();
+     private final Function<EnvironmentAttribute<?>, EnvironmentAttributeProbe.ValueProbe<?>> valueProbeFactory = x$0 -> new EnvironmentAttributeProbe.ValueProbe<>(
+         x$0
+     );
 -    private @Nullable Level level;
 -    private @Nullable Vec3 position;
--    private final SpatialAttributeInterpolator biomeInterpolator = new SpatialAttributeInterpolator();
-+   private final Map<EnvironmentAttribute<?>, EnvironmentAttributeProbe.ValueProbe<?>> valueProbes = new Reference2ObjectOpenHashMap<>();
-+   private final Function<EnvironmentAttribute<?>, EnvironmentAttributeProbe.ValueProbe<?>> valueProbeFactory = x$0 -> new EnvironmentAttributeProbe.ValueProbe<>(
-+      x$0
-+   );
 +   private Level level;
 +   private Vec3 position;
-+   private final SpatialAttributeInterpolator biomeInterpolator = new SpatialAttributeInterpolator();
+     private final SpatialAttributeInterpolator biomeInterpolator = new SpatialAttributeInterpolator();
  
--    public void reset() {
--        this.level = null;
--        this.position = null;
--        this.biomeInterpolator.clear();
--        this.valueProbes.clear();
--    }
-+   public void reset() {
-+      this.level = null;
-+      this.position = null;
-+      this.biomeInterpolator.clear();
-+      this.valueProbes.clear();
-+   }
+     public void reset() {
+@@ -23,7 +22,7 @@
+         this.valueProbes.clear();
+     }
  
 -    public void tick(final Level level, final Vec3 position) {
--        this.level = level;
--        this.position = position;
--        this.valueProbes.values().removeIf(EnvironmentAttributeProbe.ValueProbe::tick);
--        this.biomeInterpolator.clear();
--        GaussianSampler.sample(
--            position.scale(0.25),
--            level.getBiomeManager()::getNoiseBiomeAtQuart,
--            (weight, biome) -> this.biomeInterpolator.accumulate(weight, biome.value().getAttributes())
--        );
--    }
 +   public void tick(Level level, Vec3 position) {
-+      this.level = level;
-+      this.position = position;
-+      this.valueProbes.values().removeIf(EnvironmentAttributeProbe.ValueProbe::tick);
-+      this.biomeInterpolator.clear();
-+      GaussianSampler.sample(
-+         position.scale(0.25),
-+         level.getBiomeManager()::getNoiseBiomeAtQuart,
-+         (weight, biome) -> this.biomeInterpolator.accumulate(weight, biome.value().getAttributes())
-+      );
-+   }
+         this.level = level;
+         this.position = position;
+         this.valueProbes.values().removeIf(EnvironmentAttributeProbe.ValueProbe::tick);
+@@ -35,7 +34,7 @@
+         );
+     }
  
 -    public <Value> Value getValue(final EnvironmentAttribute<Value> attribute, final float partialTicks) {
--        EnvironmentAttributeProbe.ValueProbe<Value> valueProbe = (EnvironmentAttributeProbe.ValueProbe<Value>)this.valueProbes
--            .computeIfAbsent(attribute, this.valueProbeFactory);
--        return valueProbe.get(attribute, partialTicks);
--    }
 +   public <Value> Value getValue(EnvironmentAttribute<Value> attribute, float partialTicks) {
-+      EnvironmentAttributeProbe.ValueProbe<Value> valueProbe = (EnvironmentAttributeProbe.ValueProbe<Value>)this.valueProbes
-+         .computeIfAbsent(attribute, this.valueProbeFactory);
-+      return valueProbe.get(attribute, partialTicks);
-+   }
+         EnvironmentAttributeProbe.ValueProbe<Value> valueProbe = (EnvironmentAttributeProbe.ValueProbe<Value>)this.valueProbes
+             .computeIfAbsent(attribute, this.valueProbeFactory);
+         return valueProbe.get(attribute, partialTicks);
+@@ -43,15 +42,15 @@
  
--    private class ValueProbe<Value> {
--        private Value lastValue;
+     private class ValueProbe<Value> {
+         private Value lastValue;
 -        private @Nullable Value newValue;
-+   private class ValueProbe<Value> {
-+      private Value lastValue;
 +      private Value newValue;
  
 -        public ValueProbe(final EnvironmentAttribute<Value> attribute) {
--            Value value = this.getValueFromLevel(attribute);
--            this.lastValue = value;
--            this.newValue = value;
--        }
 +      public ValueProbe(EnvironmentAttribute<Value> attribute) {
-+         Value value = this.getValueFromLevel(attribute);
-+         this.lastValue = value;
-+         this.newValue = value;
-+      }
+             Value value = this.getValueFromLevel(attribute);
+             this.lastValue = value;
+             this.newValue = value;
+         }
  
 -        private Value getValueFromLevel(final EnvironmentAttribute<Value> attribute) {
--            return EnvironmentAttributeProbe.this.level != null && EnvironmentAttributeProbe.this.position != null
--                ? EnvironmentAttributeProbe.this.level
--                    .environmentAttributes()
--                    .getValue(attribute, EnvironmentAttributeProbe.this.position, EnvironmentAttributeProbe.this.biomeInterpolator)
--                : attribute.defaultValue();
--        }
 +      private Value getValueFromLevel(EnvironmentAttribute<Value> attribute) {
-+         return EnvironmentAttributeProbe.this.level != null && EnvironmentAttributeProbe.this.position != null
-+            ? EnvironmentAttributeProbe.this.level
-+               .environmentAttributes()
-+               .getValue(attribute, EnvironmentAttributeProbe.this.position, EnvironmentAttributeProbe.this.biomeInterpolator)
-+            : attribute.defaultValue();
-+      }
- 
--        public boolean tick() {
--            if (this.newValue == null) {
--                return true;
--            }
-+      public boolean tick() {
-+         if (this.newValue == null) {
-+            return true;
-+         }
- 
--            this.lastValue = this.newValue;
--            this.newValue = null;
--            return false;
--        }
-+         this.lastValue = this.newValue;
-+         this.newValue = null;
-+         return false;
-+      }
+             return EnvironmentAttributeProbe.this.level != null && EnvironmentAttributeProbe.this.position != null
+                 ? EnvironmentAttributeProbe.this.level
+                     .environmentAttributes()
+@@ -69,12 +68,17 @@
+             return false;
+         }
  
 -        public Value get(final EnvironmentAttribute<Value> attribute, final float partialTicks) {
--            if (this.newValue == null) {
--                this.newValue = this.getValueFromLevel(attribute);
--            }
 +      public Value get(EnvironmentAttribute<Value> attribute, float partialTicks) {
-+         if (this.newValue == null) {
-+            this.newValue = this.getValueFromLevel(attribute);
-+         }
+             if (this.newValue == null) {
+                 this.newValue = this.getValueFromLevel(attribute);
+             }
  
--            return attribute.type().partialTickLerp().apply(partialTicks, this.lastValue, this.newValue);
--        }
--    }
--}
-\ No newline at end of file
-+         return attribute.type().partialTickLerp().apply(partialTicks, this.lastValue, this.newValue);
-+      }
+             return attribute.type().partialTickLerp().apply(partialTicks, this.lastValue, this.newValue);
+         }
 +
 +      @Override
 +      public String toString() {
 +         return "last: " + this.lastValue + ", new: " + this.newValue;
-+      }
+     }
+-}
+\ No newline at end of file
 +   }
 +}

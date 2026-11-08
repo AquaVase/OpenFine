@@ -1,119 +1,77 @@
 --- a/net/minecraft/server/level/ChunkLevel.java
 +++ b/net/minecraft/server/level/ChunkLevel.java
-@@ -4,65 +4,64 @@
+@@ -4,7 +4,6 @@
  import net.minecraft.world.level.chunk.status.ChunkStatus;
  import net.minecraft.world.level.chunk.status.ChunkStep;
  import org.jetbrains.annotations.Contract;
 -import org.jspecify.annotations.Nullable;
  
  public class ChunkLevel {
--    private static final int FULL_CHUNK_LEVEL = 33;
--    private static final int BLOCK_TICKING_LEVEL = 32;
--    private static final int ENTITY_TICKING_LEVEL = 31;
--    private static final ChunkStep FULL_CHUNK_STEP = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FULL);
--    public static final int RADIUS_AROUND_FULL_CHUNK = FULL_CHUNK_STEP.accumulatedDependencies().getRadius();
+     private static final int FULL_CHUNK_LEVEL = 33;
+@@ -12,14 +11,14 @@
+     private static final int ENTITY_TICKING_LEVEL = 31;
+     private static final ChunkStep FULL_CHUNK_STEP = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FULL);
+     public static final int RADIUS_AROUND_FULL_CHUNK = FULL_CHUNK_STEP.accumulatedDependencies().getRadius();
 -    public static final int MAX_LEVEL = 33 + RADIUS_AROUND_FULL_CHUNK;
-+   private static final int FULL_CHUNK_LEVEL = 33;
-+   private static final int BLOCK_TICKING_LEVEL = 32;
-+   private static final int ENTITY_TICKING_LEVEL = 31;
-+   private static final ChunkStep FULL_CHUNK_STEP = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FULL);
-+   public static final int RADIUS_AROUND_FULL_CHUNK = FULL_CHUNK_STEP.accumulatedDependencies().getRadius();
 +   public static final int MAX_LEVEL = 33 + RADIUS_AROUND_FULL_CHUNK + 32;
  
 -    public static @Nullable ChunkStatus generationStatus(final int level) {
--        return getStatusAroundFullChunk(level - 33, null);
--    }
 +   public static ChunkStatus generationStatus(int level) {
-+      return getStatusAroundFullChunk(level - 33, null);
-+   }
+         return getStatusAroundFullChunk(level - 33, null);
+     }
  
--    @Contract("_,!null->!null;_,_->_")
+     @Contract("_,!null->!null;_,_->_")
 -    public static @Nullable ChunkStatus getStatusAroundFullChunk(final int distanceToFullChunk, final @Nullable ChunkStatus defaultValue) {
--        if (distanceToFullChunk > RADIUS_AROUND_FULL_CHUNK) {
--            return defaultValue;
--        } else {
--            return distanceToFullChunk <= 0 ? ChunkStatus.FULL : FULL_CHUNK_STEP.accumulatedDependencies().get(distanceToFullChunk);
--        }
--    }
-+   @Contract("_,!null->!null;_,_->_")
 +   public static ChunkStatus getStatusAroundFullChunk(int distanceToFullChunk, ChunkStatus defaultValue) {
-+      if (distanceToFullChunk > RADIUS_AROUND_FULL_CHUNK) {
-+         return defaultValue;
-+      } else {
-+         return distanceToFullChunk <= 0 ? ChunkStatus.FULL : FULL_CHUNK_STEP.accumulatedDependencies().get(distanceToFullChunk);
-+      }
-+   }
+         if (distanceToFullChunk > RADIUS_AROUND_FULL_CHUNK) {
+             return defaultValue;
+         } else {
+@@ -27,15 +26,15 @@
+         }
+     }
  
 -    public static ChunkStatus getStatusAroundFullChunk(final int distanceToFullChunk) {
--        return getStatusAroundFullChunk(distanceToFullChunk, ChunkStatus.EMPTY);
--    }
 +   public static ChunkStatus getStatusAroundFullChunk(int distanceToFullChunk) {
-+      return getStatusAroundFullChunk(distanceToFullChunk, ChunkStatus.EMPTY);
-+   }
+         return getStatusAroundFullChunk(distanceToFullChunk, ChunkStatus.EMPTY);
+     }
  
 -    public static int byStatus(final ChunkStatus status) {
--        return 33 + FULL_CHUNK_STEP.getAccumulatedRadiusOf(status);
--    }
 +   public static int byStatus(ChunkStatus status) {
-+      return 33 + FULL_CHUNK_STEP.getAccumulatedRadiusOf(status);
-+   }
+         return 33 + FULL_CHUNK_STEP.getAccumulatedRadiusOf(status);
+     }
  
 -    public static FullChunkStatus fullStatus(final int level) {
--        if (level <= 31) {
--            return FullChunkStatus.ENTITY_TICKING;
--        } else if (level <= 32) {
--            return FullChunkStatus.BLOCK_TICKING;
--        } else {
--            return level <= 33 ? FullChunkStatus.FULL : FullChunkStatus.INACCESSIBLE;
--        }
--    }
 +   public static FullChunkStatus fullStatus(int level) {
-+      if (level <= 31) {
-+         return FullChunkStatus.ENTITY_TICKING;
-+      } else if (level <= 32) {
-+         return FullChunkStatus.BLOCK_TICKING;
-+      } else {
-+         return level <= 33 ? FullChunkStatus.FULL : FullChunkStatus.INACCESSIBLE;
-+      }
-+   }
+         if (level <= 31) {
+             return FullChunkStatus.ENTITY_TICKING;
+         } else if (level <= 32) {
+@@ -45,7 +44,7 @@
+         }
+     }
  
 -    public static int byStatus(final FullChunkStatus status) {
--        return switch (status) {
--            case INACCESSIBLE -> MAX_LEVEL;
--            case FULL -> 33;
--            case BLOCK_TICKING -> 32;
--            case ENTITY_TICKING -> 31;
--        };
--    }
 +   public static int byStatus(FullChunkStatus status) {
-+      return switch (status) {
-+         case INACCESSIBLE -> MAX_LEVEL;
-+         case FULL -> 33;
-+         case BLOCK_TICKING -> 32;
-+         case ENTITY_TICKING -> 31;
-+      };
-+   }
+         return switch (status) {
+             case INACCESSIBLE -> MAX_LEVEL;
+             case FULL -> 33;
+@@ -54,15 +53,15 @@
+         };
+     }
  
 -    public static boolean isEntityTicking(final int level) {
--        return level <= 31;
--    }
 +   public static boolean isEntityTicking(int level) {
-+      return level <= 31;
-+   }
+         return level <= 31;
+     }
  
 -    public static boolean isBlockTicking(final int level) {
--        return level <= 32;
--    }
 +   public static boolean isBlockTicking(int level) {
-+      return level <= 32;
-+   }
+         return level <= 32;
+     }
  
 -    public static boolean isLoaded(final int level) {
--        return level <= MAX_LEVEL;
--    }
++   public static boolean isLoaded(int level) {
+         return level <= MAX_LEVEL;
+     }
 -}
 \ No newline at end of file
-+   public static boolean isLoaded(int level) {
-+      return level <= MAX_LEVEL;
-+   }
 +}

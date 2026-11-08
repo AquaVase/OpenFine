@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/entity/layers/ParrotOnShoulderLayer.java
 +++ b/net/minecraft/client/renderer/entity/layers/ParrotOnShoulderLayer.java
-@@ -1,77 +1,142 @@
+@@ -1,67 +1,109 @@
  package net.minecraft.client.renderer.entity.layers;
  
  import com.mojang.blaze3d.vertex.PoseStack;
@@ -44,14 +44,11 @@
 +   private ParrotModel parrotModelOriginal;
  
 -    public ParrotOnShoulderLayer(final RenderLayerParent<AvatarRenderState, PlayerModel> renderer, final EntityModelSet modelSet) {
--        super(renderer);
--        this.model = new ParrotModel(modelSet.bakeLayer(ModelLayers.PARROT));
--    }
 +   public ParrotOnShoulderLayer(RenderLayerParent<AvatarRenderState, PlayerModel> renderer, EntityModelSet modelSet) {
-+      super(renderer);
-+      this.model = new ParrotModel(modelSet.bakeLayer(ModelLayers.PARROT));
+         super(renderer);
+         this.model = new ParrotModel(modelSet.bakeLayer(ModelLayers.PARROT));
 +      this.parrotModelOriginal = this.model;
-+   }
+     }
  
 -    public void submit(
 -        final PoseStack poseStack,
@@ -62,27 +59,20 @@
 -        final float xRot
 -    ) {
 -        Parrot.Variant parrotOnLeftShoulder = state.parrotOnLeftShoulder;
--        if (parrotOnLeftShoulder != null) {
--            this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnLeftShoulder, yRot, xRot, true);
--        }
 +   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, AvatarRenderState state, float yRot, float xRot) {
 +      Variant parrotOnLeftShoulder = state.parrotOnLeftShoulder;
-+      if (parrotOnLeftShoulder != null) {
-+         this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnLeftShoulder, yRot, xRot, true);
-+      }
+         if (parrotOnLeftShoulder != null) {
+             this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnLeftShoulder, yRot, xRot, true);
+         }
  
 -        Parrot.Variant parrotOnRightShoulder = state.parrotOnRightShoulder;
--        if (parrotOnRightShoulder != null) {
--            this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnRightShoulder, yRot, xRot, false);
--        }
--    }
 +      Variant parrotOnRightShoulder = state.parrotOnRightShoulder;
-+      if (parrotOnRightShoulder != null) {
-+         this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnRightShoulder, yRot, xRot, false);
-+      }
-+   }
+         if (parrotOnRightShoulder != null) {
+             this.submitOnShoulder(poseStack, submitNodeCollector, lightCoords, state, parrotOnRightShoulder, yRot, xRot, false);
+         }
+     }
  
--    private void submitOnShoulder(
+     private void submitOnShoulder(
 -        final PoseStack poseStack,
 -        final SubmitNodeCollector submitNodeCollector,
 -        final int lightCoords,
@@ -91,31 +81,6 @@
 -        final float yRot,
 -        final float xRot,
 -        final boolean isLeft
--    ) {
--        poseStack.pushPose();
--        poseStack.translate(isLeft ? 0.4F : -0.4F, playerState.isCrouching ? -1.3F : -1.5F, 0.0F);
--        ParrotRenderState parrotState = new ParrotRenderState();
--        parrotState.pose = ParrotModel.Pose.ON_SHOULDER;
--        parrotState.ageInTicks = playerState.ageInTicks;
--        parrotState.walkAnimationPos = playerState.walkAnimationPos;
--        parrotState.walkAnimationSpeed = playerState.walkAnimationSpeed;
--        parrotState.yRot = yRot;
--        parrotState.xRot = xRot;
--        submitNodeCollector.submitModel(
--            this.model,
--            parrotState,
--            poseStack,
--            ParrotRenderer.getVariantTexture(parrotVariant),
--            lightCoords,
--            OverlayTexture.NO_OVERLAY,
--            playerState.outlineColor,
--            null
--        );
--        poseStack.popPose();
--    }
--}
-\ No newline at end of file
-+   private void submitOnShoulder(
 +      PoseStack poseStack,
 +      SubmitNodeCollector submitNodeCollector,
 +      int lightCoords,
@@ -124,7 +89,7 @@
 +      float yRot,
 +      float xRot,
 +      boolean isLeft
-+   ) {
+     ) {
 +      Entity entitylivingbaseIn = playerState.entity;
 +      Entity renderedEntityOld = RenderState.getEntity();
 +      Entity entityShoulder = null;
@@ -155,30 +120,30 @@
 +      }
 +
 +      this.model = ArrayUtils.firstNonNull(CustomStaticModels.getParrotModel(), this.parrotModelOriginal);
-+      poseStack.pushPose();
-+      poseStack.translate(isLeft ? 0.4F : -0.4F, playerState.isCrouching ? -1.3F : -1.5F, 0.0F);
-+      ParrotRenderState parrotState = new ParrotRenderState();
+         poseStack.pushPose();
+         poseStack.translate(isLeft ? 0.4F : -0.4F, playerState.isCrouching ? -1.3F : -1.5F, 0.0F);
+         ParrotRenderState parrotState = new ParrotRenderState();
+-        parrotState.pose = ParrotModel.Pose.ON_SHOULDER;
 +      parrotState.pose = Pose.ON_SHOULDER;
-+      parrotState.ageInTicks = playerState.ageInTicks;
-+      parrotState.walkAnimationPos = playerState.walkAnimationPos;
-+      parrotState.walkAnimationSpeed = playerState.walkAnimationSpeed;
-+      parrotState.yRot = yRot;
-+      parrotState.xRot = xRot;
+         parrotState.ageInTicks = playerState.ageInTicks;
+         parrotState.walkAnimationPos = playerState.walkAnimationPos;
+         parrotState.walkAnimationSpeed = playerState.walkAnimationSpeed;
+         parrotState.yRot = yRot;
+         parrotState.xRot = xRot;
 +      parrotState.entity = entityShoulder;
 +      EntityRenderState statePrev = RenderState.setEntityRenderState(parrotState);
-+      submitNodeCollector.submitModel(
-+         this.model,
-+         parrotState,
-+         poseStack,
-+         ParrotRenderer.getVariantTexture(parrotVariant),
-+         lightCoords,
-+         OverlayTexture.NO_OVERLAY,
-+         playerState.outlineColor,
-+         null
-+      );
+         submitNodeCollector.submitModel(
+             this.model,
+             parrotState,
+@@ -72,6 +114,29 @@
+             playerState.outlineColor,
+             null
+         );
 +      RenderState.setEntityRenderState(statePrev);
-+      poseStack.popPose();
-+   }
+         poseStack.popPose();
+     }
+-}
+\ No newline at end of file
 +
 +   private Entity makeEntity(CompoundTag compoundtag, Player player) {
 +      ValueInput tvi = TagValueInput.create(ProblemReporter.DISCARDING, player.registryAccess(), compoundtag);

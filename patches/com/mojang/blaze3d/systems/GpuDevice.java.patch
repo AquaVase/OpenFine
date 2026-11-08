@@ -8,7 +8,7 @@
  import com.mojang.blaze3d.pipeline.CompiledRenderPipeline;
  import com.mojang.blaze3d.pipeline.RenderPipeline;
  import com.mojang.blaze3d.shaders.ShaderSource;
-@@ -16,197 +17,173 @@
+@@ -16,17 +17,13 @@
  import java.util.OptionalDouble;
  import java.util.function.Supplier;
  import net.minecraft.util.Mth;
@@ -18,73 +18,43 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class GpuDevice {
--    private final GpuDeviceBackend backend;
--    private final Runnable criticalShaderLoader;
+     private final GpuDeviceBackend backend;
+     private final Runnable criticalShaderLoader;
 -    private final @Nullable TracyGpuProfiler profiler;
-+   private final GpuDeviceBackend backend;
-+   private final Runnable criticalShaderLoader;
 +   private final TracyGpuProfiler profiler;
  
 -    public GpuDevice(final GpuDeviceBackend backend, final Runnable criticalShaderLoader) {
--        this.backend = backend;
--        this.criticalShaderLoader = criticalShaderLoader;
--        if (TracyClient.isAvailable()) {
--            this.profiler = new TracyGpuProfiler(this);
--        } else {
--            this.profiler = null;
--        }
--    }
 +   public GpuDevice(GpuDeviceBackend backend, Runnable criticalShaderLoader) {
-+      this.backend = backend;
-+      this.criticalShaderLoader = criticalShaderLoader;
-+      if (TracyClient.isAvailable()) {
-+         this.profiler = new TracyGpuProfiler(this);
-+      } else {
-+         this.profiler = null;
-+      }
-+   }
+         this.backend = backend;
+         this.criticalShaderLoader = criticalShaderLoader;
+         if (TracyClient.isAvailable()) {
+@@ -36,7 +33,7 @@
+         }
+     }
  
 -    public GpuSurface createSurface(final long windowHandle) {
--        return new GpuSurface(this.backend.createSurface(windowHandle));
--    }
 +   public GpuSurface createSurface(long windowHandle) {
-+      return new GpuSurface(this.backend.createSurface(windowHandle));
-+   }
+         return new GpuSurface(this.backend.createSurface(windowHandle));
+     }
  
--    public CommandEncoder createCommandEncoder() {
--        return new CommandEncoder(this.profiler, this.backend, this.backend.createCommandEncoder());
--    }
-+   public CommandEncoder createCommandEncoder() {
-+      return new CommandEncoder(this.profiler, this.backend, this.backend.createCommandEncoder());
-+   }
+@@ -45,12 +42,7 @@
+     }
  
--    public GpuSampler createSampler(
+     public GpuSampler createSampler(
 -        final AddressMode addressModeU,
 -        final AddressMode addressModeV,
 -        final FilterMode minFilter,
 -        final FilterMode magFilter,
 -        final int maxAnisotropy,
 -        final OptionalDouble maxLod
--    ) {
--        int maxSupportedAnisotropy = this.getDeviceInfo().limits().maxAnisotropy();
--        if (maxAnisotropy >= 1 && maxAnisotropy <= maxSupportedAnisotropy) {
--            return this.backend.createSampler(addressModeU, addressModeV, minFilter, magFilter, maxAnisotropy, maxLod);
--        } else {
--            throw new IllegalArgumentException("maxAnisotropy out of range; must be >= 1 and <= " + maxSupportedAnisotropy + ", but was " + maxAnisotropy);
--        }
--    }
-+   public GpuSampler createSampler(
 +      AddressMode addressModeU, AddressMode addressModeV, FilterMode minFilter, FilterMode magFilter, int maxAnisotropy, OptionalDouble maxLod
-+   ) {
-+      int maxSupportedAnisotropy = this.getDeviceInfo().limits().maxAnisotropy();
-+      if (maxAnisotropy >= 1 && maxAnisotropy <= maxSupportedAnisotropy) {
-+         return this.backend.createSampler(addressModeU, addressModeV, minFilter, magFilter, maxAnisotropy, maxLod);
-+      } else {
-+         throw new IllegalArgumentException("maxAnisotropy out of range; must be >= 1 and <= " + maxSupportedAnisotropy + ", but was " + maxAnisotropy);
-+      }
-+   }
+     ) {
+         int maxSupportedAnisotropy = this.getDeviceInfo().limits().maxAnisotropy();
+         if (maxAnisotropy >= 1 && maxAnisotropy <= maxSupportedAnisotropy) {
+@@ -61,32 +53,18 @@
+     }
  
--    public GpuTexture createTexture(
+     public GpuTexture createTexture(
 -        final @Nullable Supplier<String> label,
 -        final @GpuTexture.Usage int usage,
 -        final GpuFormat format,
@@ -92,16 +62,11 @@
 -        final int height,
 -        final int depthOrLayers,
 -        final int mipLevels
--    ) {
--        this.verifyTextureCreationArgs(usage, width, height, depthOrLayers, mipLevels);
--        return this.backend.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels);
--    }
-+   public GpuTexture createTexture(
 +      Supplier<String> label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels
-+   ) {
-+      this.verifyTextureCreationArgs(usage, width, height, depthOrLayers, mipLevels);
-+      return this.backend.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels);
-+   }
+     ) {
+         this.verifyTextureCreationArgs(usage, width, height, depthOrLayers, mipLevels);
+         return this.backend.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels);
+     }
  
 -    public GpuTexture createTexture(
 -        final @Nullable String label,
@@ -112,237 +77,92 @@
 -        final int depthOrLayers,
 -        final int mipLevels
 -    ) {
--        this.verifyTextureCreationArgs(usage, width, height, depthOrLayers, mipLevels);
--        return this.backend.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels);
--    }
 +   public GpuTexture createTexture(String label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels) {
-+      this.verifyTextureCreationArgs(usage, width, height, depthOrLayers, mipLevels);
-+      return this.backend.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels);
-+   }
+         this.verifyTextureCreationArgs(usage, width, height, depthOrLayers, mipLevels);
+         return this.backend.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels);
+     }
  
 -    private void verifyTextureCreationArgs(final @GpuTexture.Usage int usage, final int width, final int height, final int depthOrLayers, final int mipLevels) {
--        if (mipLevels < 1) {
--            throw new IllegalArgumentException("mipLevels must be at least 1");
--        }
 +   private void verifyTextureCreationArgs(@GpuTexture.Usage int usage, int width, int height, int depthOrLayers, int mipLevels) {
-+      if (mipLevels < 1) {
-+         throw new IllegalArgumentException("mipLevels must be at least 1");
-+      }
- 
--        int maxDimension = Math.max(width, height);
--        int maxMipSupported = Mth.log2(maxDimension) + 1;
--        if (mipLevels > maxMipSupported) {
--            throw new IllegalArgumentException(
--                "mipLevels must be at most "
--                    + maxMipSupported
--                    + " for a texture of width "
--                    + width
--                    + " and height "
--                    + height
--                    + " (asked for "
--                    + mipLevels
--                    + " mipLevels)"
--            );
--        }
-+      int maxDimension = Math.max(width, height);
-+      int maxMipSupported = Mth.log2(maxDimension) + 1;
-+      if (mipLevels > maxMipSupported) {
-+         throw new IllegalArgumentException(
-+            "mipLevels must be at most "
-+               + maxMipSupported
-+               + " for a texture of width "
-+               + width
-+               + " and height "
-+               + height
-+               + " (asked for "
-+               + mipLevels
-+               + " mipLevels)"
-+         );
-+      }
- 
--        if (depthOrLayers < 1) {
--            throw new IllegalArgumentException("depthOrLayers must be at least 1");
--        }
-+      if (depthOrLayers < 1) {
-+         throw new IllegalArgumentException("depthOrLayers must be at least 1");
-+      }
- 
--        boolean isCubemap = (usage & 16) != 0;
--        if (isCubemap) {
--            if (width != height) {
--                throw new IllegalArgumentException("Cubemap compatible textures must be square, but size is " + width + "x" + height);
--            }
-+      boolean isCubemap = (usage & 16) != 0;
-+      if (isCubemap) {
-+         if (width != height) {
-+            throw new IllegalArgumentException("Cubemap compatible textures must be square, but size is " + width + "x" + height);
-+         }
- 
--            if (depthOrLayers % 6 != 0) {
--                throw new IllegalArgumentException("Cubemap compatible textures must have a layer count with a multiple of 6, was " + depthOrLayers);
--            }
-+         if (depthOrLayers % 6 != 0) {
-+            throw new IllegalArgumentException("Cubemap compatible textures must have a layer count with a multiple of 6, was " + depthOrLayers);
-+         }
- 
--            if (depthOrLayers > 6) {
--                throw new UnsupportedOperationException("Array textures are not yet supported");
--            }
--        } else if (depthOrLayers > 1) {
--            throw new UnsupportedOperationException("Array or 3D textures are not yet supported");
--        }
--    }
-+         if (depthOrLayers > 6) {
-+            throw new UnsupportedOperationException("Array textures are not yet supported");
-+         }
-+      } else if (depthOrLayers > 1) {
-+         throw new UnsupportedOperationException("Array or 3D textures are not yet supported");
-+      }
-+   }
+         if (mipLevels < 1) {
+             throw new IllegalArgumentException("mipLevels must be at least 1");
+         }
+@@ -129,32 +107,27 @@
+         }
+     }
  
 -    public GpuTextureView createTextureView(final GpuTexture texture) {
--        this.verifyTextureViewCreationArgs(texture, 0, texture.getMipLevels());
--        return this.backend.createTextureView(texture, 0, texture.getMipLevels());
--    }
 +   public GpuTextureView createTextureView(GpuTexture texture) {
-+      this.verifyTextureViewCreationArgs(texture, 0, texture.getMipLevels());
-+      return this.backend.createTextureView(texture, 0, texture.getMipLevels());
-+   }
+         this.verifyTextureViewCreationArgs(texture, 0, texture.getMipLevels());
+         return this.backend.createTextureView(texture, 0, texture.getMipLevels());
+     }
  
 -    public GpuTextureView createTextureView(final GpuTexture texture, final int baseMipLevel, final int mipLevels) {
--        this.verifyTextureViewCreationArgs(texture, baseMipLevel, mipLevels);
--        return this.backend.createTextureView(texture, baseMipLevel, mipLevels);
--    }
 +   public GpuTextureView createTextureView(GpuTexture texture, int baseMipLevel, int mipLevels) {
-+      this.verifyTextureViewCreationArgs(texture, baseMipLevel, mipLevels);
-+      return this.backend.createTextureView(texture, baseMipLevel, mipLevels);
-+   }
+         this.verifyTextureViewCreationArgs(texture, baseMipLevel, mipLevels);
+         return this.backend.createTextureView(texture, baseMipLevel, mipLevels);
+     }
  
 -    private void verifyTextureViewCreationArgs(final GpuTexture texture, final int baseMipLevel, final int mipLevels) {
--        if (texture.isClosed()) {
--            throw new IllegalArgumentException("Can't create texture view with closed texture");
--        } else if (baseMipLevel < 0 || baseMipLevel + mipLevels > texture.getMipLevels()) {
--            throw new IllegalArgumentException(
++   private void verifyTextureViewCreationArgs(GpuTexture texture, int baseMipLevel, int mipLevels) {
+         if (texture.isClosed()) {
+             throw new IllegalArgumentException("Can't create texture view with closed texture");
+         } else if (baseMipLevel < 0 || baseMipLevel + mipLevels > texture.getMipLevels()) {
+             throw new IllegalArgumentException(
 -                mipLevels
 -                    + " mip levels starting from "
 -                    + baseMipLevel
 -                    + " would be out of range for texture with only "
 -                    + texture.getMipLevels()
 -                    + " mip levels"
--            );
--        }
--    }
-+   private void verifyTextureViewCreationArgs(GpuTexture texture, int baseMipLevel, int mipLevels) {
-+      if (texture.isClosed()) {
-+         throw new IllegalArgumentException("Can't create texture view with closed texture");
-+      } else if (baseMipLevel < 0 || baseMipLevel + mipLevels > texture.getMipLevels()) {
-+         throw new IllegalArgumentException(
 +            mipLevels + " mip levels starting from " + baseMipLevel + " would be out of range for texture with only " + texture.getMipLevels() + " mip levels"
-+         );
-+      }
-+   }
+             );
+         }
+     }
  
 -    public GpuBuffer createBuffer(final @Nullable Supplier<String> label, final @GpuBuffer.Usage int usage, final long size) {
--        if (size <= 0L) {
--            throw new IllegalArgumentException("Buffer size must be greater than zero");
--        } else {
--            return this.backend.createBuffer(label, usage, size);
--        }
--    }
 +   public GpuBuffer createBuffer(Supplier<String> label, @GpuBuffer.Usage int usage, long size) {
-+      if (size <= 0L) {
-+         throw new IllegalArgumentException("Buffer size must be greater than zero");
-+      } else {
-+         return this.backend.createBuffer(label, usage, size);
-+      }
-+   }
+         if (size <= 0L) {
+             throw new IllegalArgumentException("Buffer size must be greater than zero");
+         } else {
+@@ -162,7 +135,7 @@
+         }
+     }
  
 -    public GpuBuffer createBuffer(final @Nullable Supplier<String> label, final @GpuBuffer.Usage int usage, final ByteBuffer data) {
--        if (!data.hasRemaining()) {
--            throw new IllegalArgumentException("Buffer source must not be empty");
--        } else {
--            return this.backend.createBuffer(label, usage, data);
--        }
--    }
 +   public GpuBuffer createBuffer(Supplier<String> label, @GpuBuffer.Usage int usage, ByteBuffer data) {
-+      if (!data.hasRemaining()) {
-+         throw new IllegalArgumentException("Buffer source must not be empty");
-+      } else {
-+         return this.backend.createBuffer(label, usage, data);
-+      }
-+   }
- 
--    public List<String> getLastDebugMessages() {
--        return this.backend.getLastDebugMessages();
--    }
-+   public List<String> getLastDebugMessages() {
-+      return this.backend.getLastDebugMessages();
-+   }
- 
--    public boolean isDebuggingEnabled() {
--        return this.backend.isDebuggingEnabled();
--    }
-+   public boolean isDebuggingEnabled() {
-+      return this.backend.isDebuggingEnabled();
-+   }
+         if (!data.hasRemaining()) {
+             throw new IllegalArgumentException("Buffer source must not be empty");
+         } else {
+@@ -178,11 +151,11 @@
+         return this.backend.isDebuggingEnabled();
+     }
  
 -    public CompiledRenderPipeline precompilePipeline(final RenderPipeline pipeline) {
--        return this.precompilePipeline(pipeline, null);
--    }
 +   public CompiledRenderPipeline precompilePipeline(RenderPipeline pipeline) {
-+      return this.precompilePipeline(pipeline, null);
-+   }
+         return this.precompilePipeline(pipeline, null);
+     }
  
 -    public CompiledRenderPipeline precompilePipeline(final RenderPipeline pipeline, final @Nullable ShaderSource shaderSource) {
--        return this.backend.precompilePipeline(pipeline, shaderSource);
--    }
 +   public CompiledRenderPipeline precompilePipeline(RenderPipeline pipeline, ShaderSource shaderSource) {
-+      return this.backend.precompilePipeline(pipeline, shaderSource);
-+   }
+         return this.backend.precompilePipeline(pipeline, shaderSource);
+     }
  
--    public void clearPipelineCache() {
--        this.backend.clearPipelineCache();
--    }
-+   public void clearPipelineCache() {
-+      this.backend.clearPipelineCache();
-+   }
- 
--    public void loadCriticalShaders() {
--        this.criticalShaderLoader.run();
--    }
-+   public void loadCriticalShaders() {
-+      this.criticalShaderLoader.run();
-+   }
- 
--    public void close() {
--        this.backend.close();
--    }
-+   public void close() {
-+      this.backend.close();
-+   }
+@@ -198,7 +171,7 @@
+         this.backend.close();
+     }
  
 -    public GpuQueryPool createTimestampQueryPool(final int size) {
--        return this.backend.createTimestampQueryPool(size);
--    }
 +   public GpuQueryPool createTimestampQueryPool(int size) {
-+      return this.backend.createTimestampQueryPool(size);
-+   }
+         return this.backend.createTimestampQueryPool(size);
+     }
  
--    protected long getTimestampNow() {
--        return this.backend.getTimestampNow();
--    }
-+   protected long getTimestampNow() {
-+      return this.backend.getTimestampNow();
-+   }
- 
--    public DeviceInfo getDeviceInfo() {
--        return this.backend.getDeviceInfo();
--    }
+@@ -209,4 +182,8 @@
+     public DeviceInfo getDeviceInfo() {
+         return this.backend.getDeviceInfo();
+     }
 -}
 \ No newline at end of file
-+   public DeviceInfo getDeviceInfo() {
-+      return this.backend.getDeviceInfo();
-+   }
 +
 +   public GlDevice getGlDevice() {
 +      return (GlDevice)this.backend;

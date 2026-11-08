@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/particle/Particle.java
 +++ b/net/minecraft/client/particle/Particle.java
-@@ -9,220 +9,267 @@
+@@ -9,13 +9,14 @@
  import net.minecraft.util.Mth;
  import net.minecraft.util.RandomSource;
  import net.minecraft.world.entity.Entity;
@@ -16,376 +16,123 @@
  
 -@OnlyIn(Dist.CLIENT)
  public abstract class Particle {
--    private static final AABB INITIAL_AABB = new AABB(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
--    private static final double MAXIMUM_COLLISION_VELOCITY_SQUARED = Mth.square(100.0);
--    protected final ClientLevel level;
--    protected double xo;
--    protected double yo;
--    protected double zo;
--    protected double x;
--    protected double y;
--    protected double z;
--    protected double xd;
--    protected double yd;
--    protected double zd;
--    private AABB bb = INITIAL_AABB;
--    protected boolean onGround;
--    protected boolean hasPhysics = true;
--    private boolean stoppedByCollision;
--    protected boolean removed;
--    protected float bbWidth = 0.6F;
--    protected float bbHeight = 1.8F;
--    protected final RandomSource random = RandomSource.create();
--    protected int age;
--    protected int lifetime;
--    protected float gravity;
--    protected float friction = 0.98F;
--    protected boolean speedUpWhenYMotionIsBlocked = false;
-+   private static final AABB INITIAL_AABB = new AABB(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-+   private static final double MAXIMUM_COLLISION_VELOCITY_SQUARED = Mth.square(100.0);
-+   protected final ClientLevel level;
-+   protected double xo;
-+   protected double yo;
-+   protected double zo;
-+   protected double x;
-+   protected double y;
-+   protected double z;
-+   protected double xd;
-+   protected double yd;
-+   protected double zd;
-+   private AABB bb = INITIAL_AABB;
-+   protected boolean onGround;
-+   protected boolean hasPhysics = true;
-+   private boolean stoppedByCollision;
-+   protected boolean removed;
-+   protected float bbWidth = 0.6F;
-+   protected float bbHeight = 1.8F;
-+   protected final RandomSource random = RandomSource.create();
-+   protected int age;
-+   protected int lifetime;
-+   protected float gravity;
-+   protected float friction = 0.98F;
-+   protected boolean speedUpWhenYMotionIsBlocked = false;
+     private static final AABB INITIAL_AABB = new AABB(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+     private static final double MAXIMUM_COLLISION_VELOCITY_SQUARED = Mth.square(100.0);
+@@ -42,8 +43,9 @@
+     protected float gravity;
+     protected float friction = 0.98F;
+     protected boolean speedUpWhenYMotionIsBlocked = false;
 +   private BlockPosM blockPosM = new BlockPosM();
  
 -    protected Particle(final ClientLevel level, final double x, final double y, final double z) {
--        this.level = level;
--        this.setSize(0.2F, 0.2F);
--        this.setPos(x, y, z);
--        this.xo = x;
--        this.yo = y;
--        this.zo = z;
--        this.lifetime = (int)(4.0F / (this.random.nextFloat() * 0.9F + 0.1F));
--    }
 +   protected Particle(ClientLevel level, double x, double y, double z) {
-+      this.level = level;
-+      this.setSize(0.2F, 0.2F);
-+      this.setPos(x, y, z);
-+      this.xo = x;
-+      this.yo = y;
-+      this.zo = z;
-+      this.lifetime = (int)(4.0F / (this.random.nextFloat() * 0.9F + 0.1F));
-+   }
+         this.level = level;
+         this.setSize(0.2F, 0.2F);
+         this.setPos(x, y, z);
+@@ -53,7 +55,7 @@
+         this.lifetime = (int)(4.0F / (this.random.nextFloat() * 0.9F + 0.1F));
+     }
  
 -    public Particle(final ClientLevel level, final double x, final double y, final double z, final double xa, final double ya, final double za) {
--        this(level, x, y, z);
--        this.xd = xa + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
--        this.yd = ya + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
--        this.zd = za + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
--        double speed = (this.random.nextFloat() + this.random.nextFloat() + 1.0F) * 0.15F;
--        double dd = Math.sqrt(this.xd * this.xd + this.yd * this.yd + this.zd * this.zd);
--        this.xd = this.xd / dd * speed * 0.4F;
--        this.yd = this.yd / dd * speed * 0.4F + 0.1F;
--        this.zd = this.zd / dd * speed * 0.4F;
--    }
 +   public Particle(ClientLevel level, double x, double y, double z, double xa, double ya, double za) {
-+      this(level, x, y, z);
-+      this.xd = xa + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
-+      this.yd = ya + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
-+      this.zd = za + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
-+      double speed = (this.random.nextFloat() + this.random.nextFloat() + 1.0F) * 0.15F;
-+      double dd = Math.sqrt(this.xd * this.xd + this.yd * this.yd + this.zd * this.zd);
-+      this.xd = this.xd / dd * speed * 0.4F;
-+      this.yd = this.yd / dd * speed * 0.4F + 0.1F;
-+      this.zd = this.zd / dd * speed * 0.4F;
-+   }
+         this(level, x, y, z);
+         this.xd = xa + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
+         this.yd = ya + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
+@@ -65,25 +67,25 @@
+         this.zd = this.zd / dd * speed * 0.4F;
+     }
  
 -    public Particle setPower(final float power) {
--        this.xd *= power;
--        this.yd = (this.yd - 0.1F) * power + 0.1F;
--        this.zd *= power;
--        return this;
--    }
 +   public Particle setPower(float power) {
-+      this.xd *= power;
-+      this.yd = (this.yd - 0.1F) * power + 0.1F;
-+      this.zd *= power;
-+      return this;
-+   }
+         this.xd *= power;
+         this.yd = (this.yd - 0.1F) * power + 0.1F;
+         this.zd *= power;
+         return this;
+     }
  
 -    public void setParticleSpeed(final double xd, final double yd, final double zd) {
--        this.xd = xd;
--        this.yd = yd;
--        this.zd = zd;
--    }
 +   public void setParticleSpeed(double xd, double yd, double zd) {
-+      this.xd = xd;
-+      this.yd = yd;
-+      this.zd = zd;
-+   }
+         this.xd = xd;
+         this.yd = yd;
+         this.zd = zd;
+     }
  
 -    public Particle scale(final float scale) {
--        this.setSize(0.2F * scale, 0.2F * scale);
--        return this;
--    }
 +   public Particle scale(float scale) {
-+      this.setSize(0.2F * scale, 0.2F * scale);
-+      return this;
-+   }
+         this.setSize(0.2F * scale, 0.2F * scale);
+         return this;
+     }
  
 -    public void setLifetime(final int lifetime) {
--        this.lifetime = lifetime;
--    }
 +   public void setLifetime(int lifetime) {
-+      this.lifetime = lifetime;
-+   }
+         this.lifetime = lifetime;
+     }
  
--    public int getLifetime() {
--        return this.lifetime;
--    }
-+   public int getLifetime() {
-+      return this.lifetime;
-+   }
- 
--    public void tick() {
--        this.xo = this.x;
--        this.yo = this.y;
--        this.zo = this.z;
--        if (this.age++ >= this.lifetime) {
--            this.remove();
--        } else {
--            this.yd = this.yd - 0.04 * this.gravity;
--            this.move(this.xd, this.yd, this.zd);
--            if (this.speedUpWhenYMotionIsBlocked && this.y == this.yo) {
--                this.xd *= 1.1;
--                this.zd *= 1.1;
--            }
-+   public void tick() {
-+      this.xo = this.x;
-+      this.yo = this.y;
-+      this.zo = this.z;
-+      if (this.age++ >= this.lifetime) {
-+         this.remove();
-+      } else {
-+         this.yd = this.yd - 0.04 * this.gravity;
-+         this.move(this.xd, this.yd, this.zd);
-+         if (this.speedUpWhenYMotionIsBlocked && this.y == this.yo) {
-+            this.xd *= 1.1;
-+            this.zd *= 1.1;
-+         }
- 
--            this.xd = this.xd * this.friction;
--            this.yd = this.yd * this.friction;
--            this.zd = this.zd * this.friction;
--            if (this.onGround) {
--                this.xd *= 0.7F;
--                this.zd *= 0.7F;
--            }
--        }
--    }
-+         this.xd = this.xd * this.friction;
-+         this.yd = this.yd * this.friction;
-+         this.zd = this.zd * this.friction;
-+         if (this.onGround) {
-+            this.xd *= 0.7F;
-+            this.zd *= 0.7F;
-+         }
-+      }
- 
--    public abstract ParticleRenderType getGroup();
+@@ -113,7 +115,11 @@
+                 this.zd *= 0.7F;
+             }
+         }
++
 +      if (Config.isCustomColors() && this instanceof LavaParticle) {
 +         CustomColors.updateLavaFX(this);
-+      }
+     }
 +   }
  
--    @Override
--    public String toString() {
--        return this.getClass().getSimpleName() + ", Pos (" + this.x + "," + this.y + "," + this.z + "), Age " + this.age;
--    }
-+   public abstract ParticleRenderType getGroup();
+     public abstract ParticleRenderType getGroup();
  
--    public void remove() {
--        this.removed = true;
--    }
-+   @Override
-+   public String toString() {
-+      return this.getClass().getSimpleName() + ", Pos (" + this.x + "," + this.y + "," + this.z + "), Age " + this.age;
-+   }
+@@ -126,7 +132,7 @@
+         this.removed = true;
+     }
  
 -    protected void setSize(final float w, final float h) {
--        if (w != this.bbWidth || h != this.bbHeight) {
--            this.bbWidth = w;
--            this.bbHeight = h;
--            AABB aabb = this.getBoundingBox();
--            double newMinX = (aabb.minX + aabb.maxX - w) / 2.0;
--            double newMinZ = (aabb.minZ + aabb.maxZ - w) / 2.0;
--            this.setBoundingBox(new AABB(newMinX, aabb.minY, newMinZ, newMinX + this.bbWidth, aabb.minY + this.bbHeight, newMinZ + this.bbWidth));
--        }
--    }
-+   public void remove() {
-+      this.removed = true;
-+   }
++   protected void setSize(float w, float h) {
+         if (w != this.bbWidth || h != this.bbHeight) {
+             this.bbWidth = w;
+             this.bbHeight = h;
+@@ -137,7 +143,7 @@
+         }
+     }
  
 -    public void setPos(final double x, final double y, final double z) {
--        this.x = x;
--        this.y = y;
--        this.z = z;
--        float w = this.bbWidth / 2.0F;
--        float h = this.bbHeight;
--        this.setBoundingBox(new AABB(x - w, y, z - w, x + w, y + h, z + w));
--    }
-+   protected void setSize(float w, float h) {
-+      if (w != this.bbWidth || h != this.bbHeight) {
-+         this.bbWidth = w;
-+         this.bbHeight = h;
-+         AABB aabb = this.getBoundingBox();
-+         double newMinX = (aabb.minX + aabb.maxX - w) / 2.0;
-+         double newMinZ = (aabb.minZ + aabb.maxZ - w) / 2.0;
-+         this.setBoundingBox(new AABB(newMinX, aabb.minY, newMinZ, newMinX + this.bbWidth, aabb.minY + this.bbHeight, newMinZ + this.bbWidth));
-+      }
-+   }
- 
--    public void move(double xa, double ya, double za) {
--        if (!this.stoppedByCollision) {
--            double originalXa = xa;
--            double originalYa = ya;
--            double originalZa = za;
--            if (this.hasPhysics && (xa != 0.0 || ya != 0.0 || za != 0.0) && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
--                Vec3 movement = Entity.collideBoundingBox(
--                    CollisionContext.positionContext(this.y), new Vec3(xa, ya, za), this.getBoundingBox(), this.level, List.of()
--                );
--                xa = movement.x;
--                ya = movement.y;
--                za = movement.z;
--            }
 +   public void setPos(double x, double y, double z) {
-+      this.x = x;
-+      this.y = y;
-+      this.z = z;
-+      float w = this.bbWidth / 2.0F;
-+      float h = this.bbHeight;
-+      this.setBoundingBox(new AABB(x - w, y, z - w, x + w, y + h, z + w));
-+   }
- 
--            if (xa != 0.0 || ya != 0.0 || za != 0.0) {
--                this.setBoundingBox(this.getBoundingBox().move(xa, ya, za));
--                this.setLocationFromBoundingbox();
--            }
-+   public void move(double xa, double ya, double za) {
-+      if (!this.stoppedByCollision) {
-+         double originalXa = xa;
-+         double originalYa = ya;
-+         double originalZa = za;
+         this.x = x;
+         this.y = y;
+         this.z = z;
+@@ -151,7 +157,10 @@
+             double originalXa = xa;
+             double originalYa = ya;
+             double originalZa = za;
+-            if (this.hasPhysics && (xa != 0.0 || ya != 0.0 || za != 0.0) && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
 +         if (this.hasPhysics
 +            && (xa != 0.0 || ya != 0.0 || za != 0.0)
 +            && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED
 +            && this.hasNearBlocks(this.x, this.y, this.z)) {
-+            Vec3 movement = Entity.collideBoundingBox(
-+               CollisionContext.positionContext(this.y), new Vec3(xa, ya, za), this.getBoundingBox(), this.level, List.of()
-+            );
-+            xa = movement.x;
-+            ya = movement.y;
-+            za = movement.z;
-+         }
- 
--            if (Math.abs(originalYa) >= 1.0E-5F && Math.abs(ya) < 1.0E-5F) {
--                this.stoppedByCollision = true;
--            }
-+         if (xa != 0.0 || ya != 0.0 || za != 0.0) {
-+            this.setBoundingBox(this.getBoundingBox().move(xa, ya, za));
-+            this.setLocationFromBoundingbox();
-+         }
- 
--            this.onGround = originalYa != ya && originalYa < 0.0;
--            if (originalXa != xa) {
--                this.xd = 0.0;
--            }
-+         if (Math.abs(originalYa) >= 1.0E-5F && Math.abs(ya) < 1.0E-5F) {
-+            this.stoppedByCollision = true;
-+         }
- 
--            if (originalZa != za) {
--                this.zd = 0.0;
--            }
--        }
--    }
-+         this.onGround = originalYa != ya && originalYa < 0.0;
-+         if (originalXa != xa) {
-+            this.xd = 0.0;
-+         }
- 
--    protected void setLocationFromBoundingbox() {
--        AABB aabb = this.getBoundingBox();
--        this.x = (aabb.minX + aabb.maxX) / 2.0;
--        this.y = aabb.minY;
--        this.z = (aabb.minZ + aabb.maxZ) / 2.0;
--    }
-+         if (originalZa != za) {
-+            this.zd = 0.0;
-+         }
-+      }
-+   }
+                 Vec3 movement = Entity.collideBoundingBox(
+                     CollisionContext.positionContext(this.y), new Vec3(xa, ya, za), this.getBoundingBox(), this.level, List.of()
+                 );
+@@ -187,7 +196,7 @@
+         this.z = (aabb.minZ + aabb.maxZ) / 2.0;
+     }
  
 -    protected int getLightCoords(final float a) {
--        BlockPos pos = BlockPos.containing(this.x, this.y, this.z);
--        return this.level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(this.level, pos) : 15728640;
--    }
-+   protected void setLocationFromBoundingbox() {
-+      AABB aabb = this.getBoundingBox();
-+      this.x = (aabb.minX + aabb.maxX) / 2.0;
-+      this.y = aabb.minY;
-+      this.z = (aabb.minZ + aabb.maxZ) / 2.0;
-+   }
- 
--    public boolean isAlive() {
--        return !this.removed;
--    }
 +   protected int getLightCoords(float a) {
-+      BlockPos pos = BlockPos.containing(this.x, this.y, this.z);
-+      return this.level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(this.level, pos) : 15728640;
-+   }
- 
--    public AABB getBoundingBox() {
--        return this.bb;
--    }
-+   public boolean isAlive() {
-+      return !this.removed;
-+   }
+         BlockPos pos = BlockPos.containing(this.x, this.y, this.z);
+         return this.level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(this.level, pos) : 15728640;
+     }
+@@ -200,7 +209,7 @@
+         return this.bb;
+     }
  
 -    public void setBoundingBox(final AABB bb) {
--        this.bb = bb;
--    }
-+   public AABB getBoundingBox() {
-+      return this.bb;
-+   }
- 
--    public Optional<ParticleLimit> getParticleLimit() {
--        return Optional.empty();
--    }
 +   public void setBoundingBox(AABB bb) {
-+      this.bb = bb;
-+   }
+         this.bb = bb;
+     }
+ 
+@@ -208,7 +217,45 @@
+         return Optional.empty();
+     }
  
 -    @OnlyIn(Dist.CLIENT)
--    public record LifetimeAlpha(float startAlpha, float endAlpha, float startAtNormalizedAge, float endAtNormalizedAge) {
--        public static final Particle.LifetimeAlpha ALWAYS_OPAQUE = new Particle.LifetimeAlpha(1.0F, 1.0F, 0.0F, 1.0F);
-+   public Optional<ParticleLimit> getParticleLimit() {
-+      return Optional.empty();
-+   }
- 
--        public boolean isOpaque() {
--            return this.startAlpha >= 1.0F && this.endAlpha >= 1.0F;
--        }
 +   private boolean hasNearBlocks(double dx, double dy, double dz) {
 +      if (!(this.bbWidth > 1.0F) && !(this.bbHeight > 1.0F)) {
 +         int posXi = Mth.floor(this.x);
@@ -396,10 +143,7 @@
 +         if (!bs.isAir()) {
 +            return true;
 +         }
- 
--        public float currentAlphaForAge(final int age, final int lifetime, final float partialTickTime) {
--            if (Mth.equal(this.startAlpha, this.endAlpha)) {
--                return this.startAlpha;
++
 +         double posX2 = dx > 0.0 ? this.bb.maxX : (dx < 0.0 ? this.bb.minX : this.x);
 +         double posY2 = dy > 0.0 ? this.bb.maxY : (dy < 0.0 ? this.bb.minY : this.y);
 +         double posZ2 = dz > 0.0 ? this.bb.maxZ : (dz < 0.0 ? this.bb.minZ : this.z);
@@ -411,15 +155,9 @@
 +            BlockState bs2 = this.level.getBlockState(this.blockPosM);
 +            if (!bs2.isAir()) {
 +               return true;
-             }
++            }
 +         }
- 
--            float timeNormalized = Mth.inverseLerp((age + partialTickTime) / lifetime, this.startAtNormalizedAge, this.endAtNormalizedAge);
--            return Mth.clampedLerp(timeNormalized, this.startAlpha, this.endAlpha);
--        }
--    }
--}
-\ No newline at end of file
++
 +         return false;
 +      } else {
 +         return true;
@@ -434,20 +172,22 @@
 +      return new Vec3(this.x, this.y, this.z);
 +   }
 +
-+   public record LifetimeAlpha(float startAlpha, float endAlpha, float startAtNormalizedAge, float endAtNormalizedAge) {
-+      public static final Particle.LifetimeAlpha ALWAYS_OPAQUE = new Particle.LifetimeAlpha(1.0F, 1.0F, 0.0F, 1.0F);
-+
-+      public boolean isOpaque() {
-+         return this.startAlpha >= 1.0F && this.endAlpha >= 1.0F;
-+      }
-+
+     public record LifetimeAlpha(float startAlpha, float endAlpha, float startAtNormalizedAge, float endAtNormalizedAge) {
+         public static final Particle.LifetimeAlpha ALWAYS_OPAQUE = new Particle.LifetimeAlpha(1.0F, 1.0F, 0.0F, 1.0F);
+ 
+@@ -216,7 +263,7 @@
+             return this.startAlpha >= 1.0F && this.endAlpha >= 1.0F;
+         }
+ 
+-        public float currentAlphaForAge(final int age, final int lifetime, final float partialTickTime) {
 +      public float currentAlphaForAge(int age, int lifetime, float partialTickTime) {
-+         if (Mth.equal(this.startAlpha, this.endAlpha)) {
-+            return this.startAlpha;
-+         }
-+
-+         float timeNormalized = Mth.inverseLerp((age + partialTickTime) / lifetime, this.startAtNormalizedAge, this.endAtNormalizedAge);
-+         return Mth.clampedLerp(timeNormalized, this.startAlpha, this.endAlpha);
-+      }
-+   }
+             if (Mth.equal(this.startAlpha, this.endAlpha)) {
+                 return this.startAlpha;
+             }
+@@ -225,4 +272,4 @@
+             return Mth.clampedLerp(timeNormalized, this.startAlpha, this.endAlpha);
+         }
+     }
+-}
+\ No newline at end of file
 +}

@@ -1,124 +1,50 @@
 --- a/net/minecraft/util/ClassInstanceMultiMap.java
 +++ b/net/minecraft/util/ClassInstanceMultiMap.java
-@@ -13,67 +13,71 @@
- import java.util.Map.Entry;
- 
- public class ClassInstanceMultiMap<T> extends AbstractCollection<T> {
--    private final Map<Class<?>, List<T>> byClass = Maps.newHashMap();
--    private final Class<T> baseClass;
--    private final List<T> allInstances = Lists.newArrayList();
-+   private final Map<Class<?>, List<T>> byClass = Maps.newHashMap();
-+   private final Class<T> baseClass;
-+   private final List<T> allInstances = Lists.newArrayList();
+@@ -17,13 +17,13 @@
+     private final Class<T> baseClass;
+     private final List<T> allInstances = Lists.newArrayList();
  
 -    public ClassInstanceMultiMap(final Class<T> baseClass) {
--        this.baseClass = baseClass;
--        this.byClass.put(baseClass, this.allInstances);
--    }
 +   public ClassInstanceMultiMap(Class<T> baseClass) {
-+      this.baseClass = baseClass;
-+      this.byClass.put(baseClass, this.allInstances);
-+   }
+         this.baseClass = baseClass;
+         this.byClass.put(baseClass, this.allInstances);
+     }
  
--    @Override
+     @Override
 -    public boolean add(final T instance) {
--        boolean success = false;
-+   @Override
 +   public boolean add(T instance) {
-+      boolean success = false;
+         boolean success = false;
  
--        for (Entry<Class<?>, List<T>> entry : this.byClass.entrySet()) {
--            if (entry.getKey().isInstance(instance)) {
--                success |= entry.getValue().add(instance);
--            }
--        }
-+      for (Entry<Class<?>, List<T>> entry : this.byClass.entrySet()) {
-+         if (entry.getKey().isInstance(instance)) {
-+            success |= entry.getValue().add(instance);
-+         }
-+      }
+         for (Entry<Class<?>, List<T>> entry : this.byClass.entrySet()) {
+@@ -36,7 +36,7 @@
+     }
  
--        return success;
--    }
-+      return success;
-+   }
- 
--    @Override
+     @Override
 -    public boolean remove(final Object object) {
--        boolean success = false;
-+   @Override
 +   public boolean remove(Object object) {
-+      boolean success = false;
+         boolean success = false;
  
--        for (Entry<Class<?>, List<T>> entry : this.byClass.entrySet()) {
--            if (entry.getKey().isInstance(object)) {
--                List<T> list = entry.getValue();
--                success |= list.remove(object);
--            }
--        }
-+      for (Entry<Class<?>, List<T>> entry : this.byClass.entrySet()) {
-+         if (entry.getKey().isInstance(object)) {
-+            List<T> list = entry.getValue();
-+            success |= list.remove(object);
-+         }
-+      }
+         for (Entry<Class<?>, List<T>> entry : this.byClass.entrySet()) {
+@@ -50,11 +50,11 @@
+     }
  
--        return success;
--    }
-+      return success;
-+   }
- 
--    @Override
+     @Override
 -    public boolean contains(final Object o) {
--        return this.find(o.getClass()).contains(o);
--    }
-+   @Override
 +   public boolean contains(Object o) {
-+      return this.find(o.getClass()).contains(o);
-+   }
+         return this.find(o.getClass()).contains(o);
+     }
  
 -    public <S> Collection<S> find(final Class<S> index) {
--        if (!this.baseClass.isAssignableFrom(index)) {
--            throw new IllegalArgumentException("Don't know how to search for " + index);
--        }
 +   public <S> Collection<S> find(Class<S> index) {
-+      if (!this.baseClass.isAssignableFrom(index)) {
-+         throw new IllegalArgumentException("Don't know how to search for " + index);
-+      }
- 
--        List<? extends T> instances = this.byClass.computeIfAbsent(index, k -> this.allInstances.stream().filter(k::isInstance).collect(Util.toMutableList()));
--        return (Collection<S>)Collections.unmodifiableCollection(instances);
--    }
-+      List<? extends T> instances = this.byClass.computeIfAbsent(index, k -> this.allInstances.stream().filter(k::isInstance).collect(Util.toMutableList()));
-+      return (Collection<S>)Collections.unmodifiableCollection(instances);
-+   }
- 
--    @Override
--    public Iterator<T> iterator() {
--        return this.allInstances.isEmpty() ? Collections.emptyIterator() : Iterators.unmodifiableIterator(this.allInstances.iterator());
--    }
-+   @Override
-+   public Iterator<T> iterator() {
-+      return this.allInstances.isEmpty() ? Collections.emptyIterator() : Iterators.unmodifiableIterator(this.allInstances.iterator());
-+   }
- 
--    public List<T> getAllInstances() {
--        return ImmutableList.copyOf(this.allInstances);
--    }
-+   public List<T> getAllInstances() {
-+      return ImmutableList.copyOf(this.allInstances);
-+   }
- 
--    @Override
--    public int size() {
--        return this.allInstances.size();
--    }
+         if (!this.baseClass.isAssignableFrom(index)) {
+             throw new IllegalArgumentException("Don't know how to search for " + index);
+         }
+@@ -76,4 +76,8 @@
+     public int size() {
+         return this.allInstances.size();
+     }
 -}
 \ No newline at end of file
-+   @Override
-+   public int size() {
-+      return this.allInstances.size();
-+   }
 +
 +   public List<T> getValues() {
 +      return this.allInstances;

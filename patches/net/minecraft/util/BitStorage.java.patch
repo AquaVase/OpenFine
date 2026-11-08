@@ -1,6 +1,6 @@
 --- a/net/minecraft/util/BitStorage.java
 +++ b/net/minecraft/util/BitStorage.java
-@@ -3,21 +3,24 @@
+@@ -3,11 +3,11 @@
  import java.util.function.IntConsumer;
  
  public interface BitStorage {
@@ -13,14 +13,11 @@
 -    int get(int index);
 +   int get(int var1);
  
--    long[] getRaw();
-+   long[] getRaw();
+     long[] getRaw();
  
--    int getSize();
-+   int getSize();
+@@ -15,9 +15,12 @@
  
--    int getBits();
-+   int getBits();
+     int getBits();
  
 -    void getAll(IntConsumer output);
 +   void getAll(IntConsumer var1);
@@ -28,10 +25,9 @@
 -    void unpack(int[] output);
 +   void unpack(int[] var1);
  
--    BitStorage copy();
+     BitStorage copy();
 -}
 \ No newline at end of file
-+   BitStorage copy();
 +
 +   default void finish() {
 +   }

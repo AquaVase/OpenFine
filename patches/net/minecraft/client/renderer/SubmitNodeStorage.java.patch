@@ -15,7 +15,7 @@
  import net.minecraft.client.renderer.item.ItemStackRenderState;
  import net.minecraft.client.renderer.rendertype.RenderType;
  import net.minecraft.client.renderer.state.level.CameraRenderState;
-@@ -23,156 +24,141 @@
+@@ -23,137 +24,117 @@
  import net.minecraft.world.item.ItemDisplayContext;
  import net.minecraft.world.phys.Vec3;
  import net.minecraft.world.phys.shapes.VoxelShape;
@@ -26,27 +26,21 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class SubmitNodeStorage implements SubmitNodeCollector {
--    private final Int2ObjectAVLTreeMap<SubmitNodeCollection> submitsPerOrder = new Int2ObjectAVLTreeMap<>();
-+   private final Int2ObjectAVLTreeMap<SubmitNodeCollection> submitsPerOrder = new Int2ObjectAVLTreeMap<>();
+     private final Int2ObjectAVLTreeMap<SubmitNodeCollection> submitsPerOrder = new Int2ObjectAVLTreeMap<>();
  
 -    public SubmitNodeCollection order(final int order) {
--        return this.submitsPerOrder.computeIfAbsent(order, var0 -> new SubmitNodeCollection());
--    }
 +   public SubmitNodeCollection order(int order) {
-+      return this.submitsPerOrder.computeIfAbsent(order, var0 -> new SubmitNodeCollection());
-+   }
+         return this.submitsPerOrder.computeIfAbsent(order, var0 -> new SubmitNodeCollection());
+     }
  
--    @Override
+     @Override
 -    public void submitShadow(final PoseStack poseStack, final float radius, final List<EntityRenderState.ShadowPiece> pieces) {
--        this.order(0).submitShadow(poseStack, radius, pieces);
--    }
-+   @Override
 +   public void submitShadow(PoseStack poseStack, float radius, List<EntityRenderState.ShadowPiece> pieces) {
-+      this.order(0).submitShadow(poseStack, radius, pieces);
-+   }
+         this.order(0).submitShadow(poseStack, radius, pieces);
+     }
  
--    @Override
--    public void submitNameTag(
+     @Override
+     public void submitNameTag(
 -        final PoseStack poseStack,
 -        final @Nullable Vec3 nameTagAttachment,
 -        final int offset,
@@ -54,18 +48,13 @@
 -        final boolean seeThrough,
 -        final int lightCoords,
 -        final CameraRenderState camera
--    ) {
--        this.order(0).submitNameTag(poseStack, nameTagAttachment, offset, name, seeThrough, lightCoords, camera);
--    }
-+   @Override
-+   public void submitNameTag(
 +      PoseStack poseStack, Vec3 nameTagAttachment, int offset, Component name, boolean seeThrough, int lightCoords, CameraRenderState camera
-+   ) {
-+      this.order(0).submitNameTag(poseStack, nameTagAttachment, offset, name, seeThrough, lightCoords, camera);
-+   }
+     ) {
+         this.order(0).submitNameTag(poseStack, nameTagAttachment, offset, name, seeThrough, lightCoords, camera);
+     }
  
--    @Override
--    public void submitText(
+     @Override
+     public void submitText(
 -        final PoseStack poseStack,
 -        final float x,
 -        final float y,
@@ -76,11 +65,6 @@
 -        final int color,
 -        final int backgroundColor,
 -        final int outlineColor
--    ) {
--        this.order(0).submitText(poseStack, x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor);
--    }
-+   @Override
-+   public void submitText(
 +      PoseStack poseStack,
 +      float x,
 +      float y,
@@ -91,30 +75,24 @@
 +      int color,
 +      int backgroundColor,
 +      int outlineColor
-+   ) {
-+      this.order(0).submitText(poseStack, x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor);
-+   }
+     ) {
+         this.order(0).submitText(poseStack, x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor);
+     }
  
--    @Override
+     @Override
 -    public void submitFlame(final PoseStack poseStack, final EntityRenderState renderState, final Quaternionf rotation) {
--        this.order(0).submitFlame(poseStack, renderState, rotation);
--    }
-+   @Override
 +   public void submitFlame(PoseStack poseStack, EntityRenderState renderState, Quaternionf rotation) {
-+      this.order(0).submitFlame(poseStack, renderState, rotation);
-+   }
+         this.order(0).submitFlame(poseStack, renderState, rotation);
+     }
  
--    @Override
+     @Override
 -    public void submitLeash(final PoseStack poseStack, final EntityRenderState.LeashState leashState) {
--        this.order(0).submitLeash(poseStack, leashState);
--    }
-+   @Override
 +   public void submitLeash(PoseStack poseStack, EntityRenderState.LeashState leashState) {
-+      this.order(0).submitLeash(poseStack, leashState);
-+   }
+         this.order(0).submitLeash(poseStack, leashState);
+     }
  
--    @Override
--    public <S> void submitModel(
+     @Override
+     public <S> void submitModel(
 -        final Model<? super S> model,
 -        final S state,
 -        final PoseStack poseStack,
@@ -125,11 +103,6 @@
 -        final @Nullable TextureAtlasSprite sprite,
 -        final int outlineColor,
 -        final ModelFeatureRenderer.@Nullable CrumblingOverlay crumblingOverlay
--    ) {
--        this.order(0).submitModel(model, state, poseStack, renderType, lightCoords, overlayCoords, tintedColor, sprite, outlineColor, crumblingOverlay);
--    }
-+   @Override
-+   public <S> void submitModel(
 +      Model<? super S> model,
 +      S state,
 +      PoseStack poseStack,
@@ -140,21 +113,18 @@
 +      TextureAtlasSprite sprite,
 +      int outlineColor,
 +      ModelFeatureRenderer.CrumblingOverlay crumblingOverlay
-+   ) {
-+      this.order(0).submitModel(model, state, poseStack, renderType, lightCoords, overlayCoords, tintedColor, sprite, outlineColor, crumblingOverlay);
-+   }
+     ) {
+         this.order(0).submitModel(model, state, poseStack, renderType, lightCoords, overlayCoords, tintedColor, sprite, outlineColor, crumblingOverlay);
+     }
  
--    @Override
+     @Override
 -    public void submitMovingBlock(final PoseStack poseStack, final MovingBlockRenderState movingBlockRenderState, final int outlineColor) {
--        this.order(0).submitMovingBlock(poseStack, movingBlockRenderState, outlineColor);
--    }
-+   @Override
 +   public void submitMovingBlock(PoseStack poseStack, MovingBlockRenderState movingBlockRenderState, int outlineColor) {
-+      this.order(0).submitMovingBlock(poseStack, movingBlockRenderState, outlineColor);
-+   }
+         this.order(0).submitMovingBlock(poseStack, movingBlockRenderState, outlineColor);
+     }
  
--    @Override
--    public void submitBlockModel(
+     @Override
+     public void submitBlockModel(
 -        final PoseStack poseStack,
 -        final RenderType renderType,
 -        final List<BlockStateModelPart> modelParts,
@@ -162,38 +132,27 @@
 -        final int lightCoords,
 -        final int overlayCoords,
 -        final int outlineColor
--    ) {
--        this.order(0).submitBlockModel(poseStack, renderType, modelParts, tintLayers, lightCoords, overlayCoords, outlineColor);
--    }
-+   @Override
-+   public void submitBlockModel(
 +      PoseStack poseStack, RenderType renderType, List<BlockStateModelPart> modelParts, int[] tintLayers, int lightCoords, int overlayCoords, int outlineColor
-+   ) {
-+      this.order(0).submitBlockModel(poseStack, renderType, modelParts, tintLayers, lightCoords, overlayCoords, outlineColor);
-+   }
+     ) {
+         this.order(0).submitBlockModel(poseStack, renderType, modelParts, tintLayers, lightCoords, overlayCoords, outlineColor);
+     }
  
--    @Override
+     @Override
 -    public void submitBreakingBlockModel(final PoseStack poseStack, final List<BlockStateModelPart> parts, final int progress) {
--        this.order(0).submitBreakingBlockModel(poseStack, parts, progress);
--    }
-+   @Override
 +   public void submitBreakingBlockModel(PoseStack poseStack, List<BlockStateModelPart> parts, int progress) {
-+      this.order(0).submitBreakingBlockModel(poseStack, parts, progress);
-+   }
+         this.order(0).submitBreakingBlockModel(poseStack, parts, progress);
+     }
  
--    @Override
+     @Override
 -    public void submitShapeOutline(
 -        final PoseStack poseStack, final VoxelShape shape, final RenderType renderType, final int color, final float width, final boolean afterTerrain
 -    ) {
--        this.order(0).submitShapeOutline(poseStack, shape, renderType, color, width, afterTerrain);
--    }
-+   @Override
 +   public void submitShapeOutline(PoseStack poseStack, VoxelShape shape, RenderType renderType, int color, float width, boolean afterTerrain) {
-+      this.order(0).submitShapeOutline(poseStack, shape, renderType, color, width, afterTerrain);
-+   }
+         this.order(0).submitShapeOutline(poseStack, shape, renderType, color, width, afterTerrain);
+     }
  
--    @Override
--    public void submitItem(
+     @Override
+     public void submitItem(
 -        final PoseStack poseStack,
 -        final ItemDisplayContext displayContext,
 -        final int lightCoords,
@@ -202,11 +161,6 @@
 -        final int[] tintLayers,
 -        final List<BakedQuad> quads,
 -        final ItemStackRenderState.FoilType foilType
--    ) {
--        this.order(0).submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
--    }
-+   @Override
-+   public void submitItem(
 +      PoseStack poseStack,
 +      ItemDisplayContext displayContext,
 +      int lightCoords,
@@ -215,76 +169,48 @@
 +      int[] tintLayers,
 +      List<BakedQuad> quads,
 +      ItemStackRenderState.FoilType foilType
-+   ) {
-+      this.order(0).submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
-+   }
+     ) {
+         this.order(0).submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
+     }
  
--    @Override
+     @Override
 -    public void submitCustomGeometry(
 -        final PoseStack poseStack, final RenderType renderType, final SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer
 -    ) {
--        this.order(0).submitCustomGeometry(poseStack, renderType, customGeometryRenderer);
--    }
-+   @Override
 +   public void submitCustomGeometry(PoseStack poseStack, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
-+      this.order(0).submitCustomGeometry(poseStack, renderType, customGeometryRenderer);
-+   }
+         this.order(0).submitCustomGeometry(poseStack, renderType, customGeometryRenderer);
+     }
  
--    @Override
+     @Override
 -    public void submitQuadParticleGroup(final QuadParticleRenderState particles) {
--        this.order(0).submitQuadParticleGroup(particles);
--    }
-+   @Override
 +   public void submitQuadParticleGroup(QuadParticleRenderState particles) {
-+      this.order(0).submitQuadParticleGroup(particles);
-+   }
+         this.order(0).submitQuadParticleGroup(particles);
+     }
  
--    @Override
+     @Override
 -    public void submitGizmoPrimitives(final DrawableGizmoPrimitives.Group group, final CameraRenderState camera, final boolean onTop) {
--        this.order(0).submitGizmoPrimitives(group, camera, onTop);
--    }
-+   @Override
 +   public void submitGizmoPrimitives(Group group, CameraRenderState camera, boolean onTop) {
-+      this.order(0).submitGizmoPrimitives(group, camera, onTop);
-+   }
+         this.order(0).submitGizmoPrimitives(group, camera, onTop);
+     }
  
--    public Int2ObjectAVLTreeMap<SubmitNodeCollection> getSubmitsPerOrder() {
--        return this.submitsPerOrder;
--    }
-+   public Int2ObjectAVLTreeMap<SubmitNodeCollection> getSubmitsPerOrder() {
-+      return this.submitsPerOrder;
-+   }
+@@ -161,7 +142,12 @@
+         return this.submitsPerOrder;
+     }
  
 -    public void drainPhases(final Consumer<FeatureRenderPhase<?>> consumer) {
--        this.submitsPerOrder.values().removeIf(collection -> {
--            boolean empty = true;
 +   @Override
 +   public String toString() {
 +      return this.submitsPerOrder + "";
 +   }
- 
--            for (FeatureRenderPhase<?> phase : collection.allPhases()) {
--                if (!phase.isEmpty()) {
--                    consumer.accept(phase);
--                    empty = false;
--                }
-+   public void drainPhases(Consumer<FeatureRenderPhase<?>> consumer) {
-+      this.submitsPerOrder.values().removeIf(collection -> {
-+         boolean empty = true;
 +
-+         for (FeatureRenderPhase<?> phase : collection.allPhases()) {
-+            if (!phase.isEmpty()) {
-+               consumer.accept(phase);
-+               empty = false;
-             }
-+         }
++   public void drainPhases(Consumer<FeatureRenderPhase<?>> consumer) {
+         this.submitsPerOrder.values().removeIf(collection -> {
+             boolean empty = true;
  
--            return empty;
--        });
--    }
+@@ -175,4 +161,4 @@
+             return empty;
+         });
+     }
 -}
 \ No newline at end of file
-+         return empty;
-+      });
-+   }
 +}

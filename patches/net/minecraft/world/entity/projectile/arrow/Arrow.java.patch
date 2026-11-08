@@ -1,259 +1,97 @@
 --- a/net/minecraft/world/entity/projectile/arrow/Arrow.java
 +++ b/net/minecraft/world/entity/projectile/arrow/Arrow.java
-@@ -15,139 +15,142 @@
+@@ -15,7 +15,6 @@
  import net.minecraft.world.item.Items;
  import net.minecraft.world.item.alchemy.PotionContents;
  import net.minecraft.world.level.Level;
 -import org.jspecify.annotations.Nullable;
  
  public class Arrow extends AbstractArrow {
--    private static final int EXPOSED_POTION_DECAY_TIME = 600;
--    private static final int NO_EFFECT_COLOR = -1;
--    private static final EntityDataAccessor<Integer> ID_EFFECT_COLOR = SynchedEntityData.defineId(Arrow.class, EntityDataSerializers.INT);
--    private static final byte EVENT_POTION_PUFF = 0;
-+   private static final int EXPOSED_POTION_DECAY_TIME = 600;
-+   private static final int NO_EFFECT_COLOR = -1;
-+   private static final EntityDataAccessor<Integer> ID_EFFECT_COLOR = SynchedEntityData.defineId(Arrow.class, EntityDataSerializers.INT);
-+   private static final byte EVENT_POTION_PUFF = 0;
+     private static final int EXPOSED_POTION_DECAY_TIME = 600;
+@@ -23,16 +22,16 @@
+     private static final EntityDataAccessor<Integer> ID_EFFECT_COLOR = SynchedEntityData.defineId(Arrow.class, EntityDataSerializers.INT);
+     private static final byte EVENT_POTION_PUFF = 0;
  
 -    public Arrow(final EntityType<? extends Arrow> type, final Level level) {
--        super(type, level);
--    }
 +   public Arrow(EntityType<? extends Arrow> type, Level level) {
-+      super(type, level);
-+   }
+         super(type, level);
+     }
  
 -    public Arrow(final Level level, final double x, final double y, final double z, final ItemStack pickupItemStack, final @Nullable ItemStack firedFromWeapon) {
--        super(EntityTypes.ARROW, x, y, z, level, pickupItemStack, firedFromWeapon);
--        this.updateColor();
--    }
 +   public Arrow(Level level, double x, double y, double z, ItemStack pickupItemStack, ItemStack firedFromWeapon) {
-+      super(EntityTypes.ARROW, x, y, z, level, pickupItemStack, firedFromWeapon);
-+      this.updateColor();
-+   }
+         super(EntityTypes.ARROW, x, y, z, level, pickupItemStack, firedFromWeapon);
+         this.updateColor();
+     }
  
 -    public Arrow(final Level level, final LivingEntity owner, final ItemStack pickupItemStack, final @Nullable ItemStack firedFromWeapon) {
--        super(EntityTypes.ARROW, owner, level, pickupItemStack, firedFromWeapon);
--        this.updateColor();
--    }
 +   public Arrow(Level level, LivingEntity owner, ItemStack pickupItemStack, ItemStack firedFromWeapon) {
-+      super(EntityTypes.ARROW, owner, level, pickupItemStack, firedFromWeapon);
-+      this.updateColor();
-+   }
- 
--    private PotionContents getPotionContents() {
--        return this.getPickupItemStackOrigin().getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
--    }
-+   private PotionContents getPotionContents() {
-+      return this.getPickupItemStackOrigin().getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
-+   }
- 
--    private float getPotionDurationScale() {
--        return this.getPickupItemStackOrigin().getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F);
--    }
-+   private float getPotionDurationScale() {
-+      return this.getPickupItemStackOrigin().getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F);
-+   }
+         super(EntityTypes.ARROW, owner, level, pickupItemStack, firedFromWeapon);
+         this.updateColor();
+     }
+@@ -45,13 +44,13 @@
+         return this.getPickupItemStackOrigin().getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F);
+     }
  
 -    private void setPotionContents(final PotionContents potionContents) {
--        this.getPickupItemStackOrigin().set(DataComponents.POTION_CONTENTS, potionContents);
--        this.updateColor();
--    }
 +   private void setPotionContents(PotionContents potionContents) {
-+      this.getPickupItemStackOrigin().set(DataComponents.POTION_CONTENTS, potionContents);
-+      this.updateColor();
-+   }
+         this.getPickupItemStackOrigin().set(DataComponents.POTION_CONTENTS, potionContents);
+         this.updateColor();
+     }
  
--    @Override
+     @Override
 -    protected void setPickupItemStack(final ItemStack itemStack) {
--        super.setPickupItemStack(itemStack);
--        this.updateColor();
--    }
-+   @Override
 +   protected void setPickupItemStack(ItemStack itemStack) {
-+      super.setPickupItemStack(itemStack);
-+      this.updateColor();
-+   }
- 
--    private void updateColor() {
--        PotionContents potionContents = this.getPotionContents();
--        this.entityData.set(ID_EFFECT_COLOR, potionContents.equals(PotionContents.EMPTY) ? -1 : potionContents.getColor());
--    }
-+   private void updateColor() {
-+      PotionContents potionContents = this.getPotionContents();
-+      this.entityData.set(ID_EFFECT_COLOR, potionContents.equals(PotionContents.EMPTY) ? -1 : potionContents.getColor());
-+   }
+         super.setPickupItemStack(itemStack);
+         this.updateColor();
+     }
+@@ -61,12 +60,12 @@
+         this.entityData.set(ID_EFFECT_COLOR, potionContents.equals(PotionContents.EMPTY) ? -1 : potionContents.getColor());
+     }
  
 -    public void addEffect(final MobEffectInstance effect) {
--        this.setPotionContents(this.getPotionContents().withEffectAdded(effect));
--    }
 +   public void addEffect(MobEffectInstance effect) {
-+      this.setPotionContents(this.getPotionContents().withEffectAdded(effect));
-+   }
+         this.setPotionContents(this.getPotionContents().withEffectAdded(effect));
+     }
  
--    @Override
+     @Override
 -    protected void defineSynchedData(final SynchedEntityData.Builder entityData) {
--        super.defineSynchedData(entityData);
--        entityData.define(ID_EFFECT_COLOR, -1);
--    }
-+   @Override
 +   protected void defineSynchedData(SynchedEntityData.Builder entityData) {
-+      super.defineSynchedData(entityData);
-+      entityData.define(ID_EFFECT_COLOR, -1);
-+   }
- 
--    @Override
--    public void tick() {
--        super.tick();
--        if (this.level().isClientSide()) {
--            if (this.isInGround()) {
--                if (this.inGroundTime % 5 == 0) {
--                    this.makeParticle(1);
--                }
--            } else {
--                this.makeParticle(2);
-+   @Override
-+   public void tick() {
-+      super.tick();
-+      if (this.level().isClientSide()) {
-+         if (this.isInGround()) {
-+            if (this.inGroundTime % 5 == 0) {
-+               this.makeParticle(1);
-             }
--        } else if (this.isInGround() && this.inGroundTime != 0 && !this.getPotionContents().equals(PotionContents.EMPTY) && this.inGroundTime >= 600) {
--            this.level().broadcastEntityEvent(this, (byte)0);
--            this.setPickupItemStack(new ItemStack(Items.ARROW));
--        }
--    }
-+         } else {
-+            this.makeParticle(2);
-+         }
-+      } else if (this.isInGround() && this.inGroundTime != 0 && !this.getPotionContents().equals(PotionContents.EMPTY) && this.inGroundTime >= 600) {
-+         this.level().broadcastEntityEvent(this, (byte)0);
-+         this.setPickupItemStack(new ItemStack(Items.ARROW));
-+      }
-+   }
+         super.defineSynchedData(entityData);
+         entityData.define(ID_EFFECT_COLOR, -1);
+     }
+@@ -88,7 +87,7 @@
+         }
+     }
  
 -    private void makeParticle(final int amount) {
--        int colorValue = this.getColor();
--        if (colorValue != -1 && amount > 0) {
--            for (int i = 0; i < amount; i++) {
--                this.level()
--                    .addParticle(
--                        ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, colorValue),
--                        this.getRandomX(0.5),
--                        this.getRandomY(),
--                        this.getRandomZ(0.5),
--                        0.0,
--                        0.0,
--                        0.0
--                    );
--            }
--        }
--    }
 +   private void makeParticle(int amount) {
-+      int colorValue = this.getColor();
-+      if (colorValue != -1 && amount > 0) {
-+         for (int i = 0; i < amount; i++) {
-+            this.level()
-+               .addParticle(
-+                  ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, colorValue),
-+                  this.getRandomX(0.5),
-+                  this.getRandomY(),
-+                  this.getRandomZ(0.5),
-+                  0.0,
-+                  0.0,
-+                  0.0
-+               );
-+         }
-+      }
-+   }
+         int colorValue = this.getColor();
+         if (colorValue != -1 && amount > 0) {
+             for (int i = 0; i < amount; i++) {
+@@ -111,7 +110,7 @@
+     }
  
--    public int getColor() {
--        return this.entityData.get(ID_EFFECT_COLOR);
--    }
-+   public int getColor() {
-+      return this.entityData.get(ID_EFFECT_COLOR);
-+   }
- 
--    @Override
+     @Override
 -    protected void doPostHurtEffects(final LivingEntity mob) {
--        super.doPostHurtEffects(mob);
--        Entity effectSource = this.getEffectSource();
--        PotionContents potionContents = this.getPotionContents();
--        float durationScale = this.getPotionDurationScale();
--        potionContents.forEachEffect(effect -> mob.addEffect(effect, effectSource), durationScale);
--    }
-+   @Override
 +   protected void doPostHurtEffects(LivingEntity mob) {
-+      super.doPostHurtEffects(mob);
-+      Entity effectSource = this.getEffectSource();
-+      PotionContents potionContents = this.getPotionContents();
-+      float durationScale = this.getPotionDurationScale();
-+      potionContents.forEachEffect(effect -> mob.addEffect(effect, effectSource), durationScale);
-+   }
+         super.doPostHurtEffects(mob);
+         Entity effectSource = this.getEffectSource();
+         PotionContents potionContents = this.getPotionContents();
+@@ -125,7 +124,7 @@
+     }
  
--    @Override
--    protected ItemStack getDefaultPickupItem() {
--        return new ItemStack(Items.ARROW);
--    }
-+   @Override
-+   protected ItemStack getDefaultPickupItem() {
-+      return new ItemStack(Items.ARROW);
-+   }
- 
--    @Override
+     @Override
 -    public void handleEntityEvent(final byte id) {
--        if (id == 0) {
--            int colorValue = this.getColor();
--            if (colorValue != -1) {
--                float red = (colorValue >> 16 & 0xFF) / 255.0F;
--                float green = (colorValue >> 8 & 0xFF) / 255.0F;
--                float blue = (colorValue >> 0 & 0xFF) / 255.0F;
-+   @Override
 +   public void handleEntityEvent(byte id) {
-+      if (id == 0) {
-+         int colorValue = this.getColor();
-+         if (colorValue != -1) {
-+            float red = (colorValue >> 16 & 0xFF) / 255.0F;
-+            float green = (colorValue >> 8 & 0xFF) / 255.0F;
-+            float blue = (colorValue >> 0 & 0xFF) / 255.0F;
- 
--                for (int i = 0; i < 20; i++) {
--                    this.level()
--                        .addParticle(
--                            ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, red, green, blue),
--                            this.getRandomX(0.5),
--                            this.getRandomY(),
--                            this.getRandomZ(0.5),
--                            0.0,
--                            0.0,
--                            0.0
--                        );
--                }
-+            for (int i = 0; i < 20; i++) {
-+               this.level()
-+                  .addParticle(
-+                     ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, red, green, blue),
-+                     this.getRandomX(0.5),
-+                     this.getRandomY(),
-+                     this.getRandomZ(0.5),
-+                     0.0,
-+                     0.0,
-+                     0.0
-+                  );
-             }
--        } else {
--            super.handleEntityEvent(id);
--        }
--    }
+         if (id == 0) {
+             int colorValue = this.getColor();
+             if (colorValue != -1) {
+@@ -150,4 +149,8 @@
+             super.handleEntityEvent(id);
+         }
+     }
 -}
 \ No newline at end of file
-+         }
-+      } else {
-+         super.handleEntityEvent(id);
-+      }
-+   }
 +
 +   public static boolean isInGround(AbstractArrow arrow) {
 +      return arrow.isInGround();

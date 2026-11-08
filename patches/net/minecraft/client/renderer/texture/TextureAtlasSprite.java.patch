@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/texture/TextureAtlasSprite.java
 +++ b/net/minecraft/client/renderer/texture/TextureAtlasSprite.java
-@@ -1,131 +1,709 @@
+@@ -1,33 +1,156 @@
  package net.minecraft.client.renderer.texture;
  
 +import com.mojang.blaze3d.GpuFormat;
@@ -82,19 +82,6 @@
 +   protected TextureAtlasSprite parentSprite;
 +   protected boolean usesParentAnimationTime = false;
  
--    protected TextureAtlasSprite(
--        final Identifier atlasLocation, final SpriteContents contents, final int atlasWidth, final int atlasHeight, final int x, final int y, final int padding
--    ) {
--        this.atlasLocation = atlasLocation;
--        this.contents = contents;
--        this.padding = padding;
--        this.x = x;
--        this.y = y;
--        this.u0 = (float)(x + padding) / atlasWidth;
--        this.u1 = (float)(x + padding + contents.width()) / atlasWidth;
--        this.v0 = (float)(y + padding) / atlasHeight;
--        this.v1 = (float)(y + padding + contents.height()) / atlasHeight;
--    }
 +   public TextureAtlasSprite(Identifier atlasLocation, Identifier name) {
 +      this.atlasLocation = atlasLocation;
 +      this.name = name;
@@ -109,10 +96,7 @@
 +      this.imageWidth = 0;
 +      this.imageHeight = 0;
 +   }
- 
--    public int getX() {
--        return this.x;
--    }
++
 +   private TextureAtlasSprite(TextureAtlasSprite parent) {
 +      this.atlasTexture = parent.atlasTexture;
 +      this.name = parent.getName();
@@ -149,10 +133,7 @@
 +         this.spriteContentsTicker.animationActive = parent.spriteContentsTicker.animationActive;
 +      }
 +   }
- 
--    public int getY() {
--        return this.y;
--    }
++
 +   public void init(Identifier locationIn, SpriteContents contentsIn, int atlasWidthIn, int atlasHeightIn, int xIn, int yIn, int paddingIn) {
 +      this.atlasLocation = locationIn;
 +      this.contents = contentsIn;
@@ -171,18 +152,13 @@
 +      this.baseU = Math.min(this.u0, this.u1);
 +      this.baseV = Math.min(this.v0, this.v1);
 +   }
- 
--    public float getU0() {
--        return this.u0;
--    }
++
 +   protected TextureAtlasSprite(Identifier atlasLocation, SpriteContents contents, int atlasWidth, int atlasHeight, int x, int y, int padding) {
 +      this(atlasLocation, contents, atlasWidth, atlasHeight, x, y, padding, null, null);
 +   }
- 
--    public float getU1() {
--        return this.u1;
--    }
-+   protected TextureAtlasSprite(
++
+     protected TextureAtlasSprite(
+-        final Identifier atlasLocation, final SpriteContents contents, final int atlasWidth, final int atlasHeight, final int x, final int y, final int padding
 +      Identifier atlasLocation,
 +      SpriteContents contents,
 +      int atlasWidth,
@@ -192,16 +168,13 @@
 +      int padding,
 +      TextureAtlas atlas,
 +      ShadersTextureType spriteShadersTypeIn
-+   ) {
-+      this.atlasLocation = atlasLocation;
-+      this.contents = contents;
-+      this.padding = padding;
-+      this.x = x;
-+      this.y = y;
-+      this.u0 = (float)(x + padding) / atlasWidth;
-+      this.u1 = (float)(x + padding + contents.width()) / atlasWidth;
-+      this.v0 = (float)(y + padding) / atlasHeight;
-+      this.v1 = (float)(y + padding + contents.height()) / atlasHeight;
+     ) {
+         this.atlasLocation = atlasLocation;
+         this.contents = contents;
+@@ -38,6 +161,16 @@
+         this.u1 = (float)(x + padding + contents.width()) / atlasWidth;
+         this.v0 = (float)(y + padding) / atlasHeight;
+         this.v1 = (float)(y + padding + contents.height()) / atlasHeight;
 +      this.atlasTexture = atlas;
 +      this.spriteShadersType = spriteShadersTypeIn;
 +      this.name = contents.name();
@@ -212,126 +185,47 @@
 +      this.sheetWidth = atlasWidth;
 +      this.sheetHeight = atlasHeight;
 +      this.contents.setSprite(this);
-+   }
+     }
  
--    public SpriteContents contents() {
--        return this.contents;
--    }
-+   public int getX() {
-+      return this.x;
-+   }
+     public int getX() {
+@@ -60,15 +193,20 @@
+         return this.contents;
+     }
  
 -    public SpriteContents.@Nullable AnimationState createAnimationState(final GpuBufferSlice uboSlice, final int spriteUboSize) {
 -        return this.contents.createAnimationState(uboSlice, spriteUboSize);
--    }
-+   public int getY() {
-+      return this.y;
-+   }
- 
--    public Transparency transparency() {
--        return this.contents.transparency();
--    }
-+   public float getU0() {
-+      return this.u0;
-+   }
- 
--    public float getU(final float offset) {
--        float diff = this.u1 - this.u0;
--        return this.u0 + diff * offset;
--    }
-+   public float getU1() {
-+      return this.u1;
-+   }
- 
--    public float getV0() {
--        return this.v0;
--    }
-+   public SpriteContents contents() {
-+      return this.contents;
-+   }
- 
--    public float getV1() {
--        return this.v1;
--    }
 +   public SpriteContents.AnimationState createAnimationState(GpuBufferSlice uboSlice, int spriteUboSize) {
 +      SpriteContents.AnimationState state = this.contents.createAnimationState(uboSlice, spriteUboSize);
 +      if (state != null) {
 +         state.setSprite(this);
-+      }
+     }
  
--    public float getV(final float offset) {
--        float diff = this.v1 - this.v0;
--        return this.v0 + diff * offset;
--    }
 +      return state;
 +   }
++
+     public Transparency transparency() {
+         return this.contents.transparency();
+     }
  
--    public Identifier atlasLocation() {
--        return this.atlasLocation;
--    }
-+   public Transparency transparency() {
-+      return this.contents.transparency();
-+   }
- 
--    @Override
--    public String toString() {
--        return "TextureAtlasSprite{contents='" + this.contents + "', u0=" + this.u0 + ", u1=" + this.u1 + ", v0=" + this.v0 + ", v1=" + this.v1 + "}";
--    }
+-    public float getU(final float offset) {
 +   public float getU(float offset) {
-+      float diff = this.u1 - this.u0;
-+      return this.u0 + diff * offset;
-+   }
+         float diff = this.u1 - this.u0;
+         return this.u0 + diff * offset;
+     }
+@@ -81,7 +219,7 @@
+         return this.v1;
+     }
  
--    public void uploadFirstFrame(final GpuTexture destination, final int level) {
--        this.contents.uploadFirstFrame(destination, level);
--    }
-+   public float getV0() {
-+      return this.v0;
-+   }
- 
--    public VertexConsumer wrap(final VertexConsumer buffer) {
--        return new SpriteCoordinateExpander(buffer, this);
--    }
-+   public float getV1() {
-+      return this.v1;
-+   }
- 
--    public boolean isAnimated() {
--        return this.contents.isAnimated();
--    }
+-    public float getV(final float offset) {
 +   public float getV(float offset) {
-+      float diff = this.v1 - this.v0;
-+      return this.v0 + diff * offset;
-+   }
+         float diff = this.v1 - this.v0;
+         return this.v0 + diff * offset;
+     }
+@@ -92,14 +230,26 @@
  
--    public void uploadSpriteUbo(
--        final ByteBuffer uboBuffer, final int startOffset, final int maxMipLevel, final int atlasWidth, final int atlasHeight, final int spriteUboSize
--    ) {
--        for (int level = 0; level <= maxMipLevel; level++) {
--            Std140Builder.intoBuffer(MemoryUtil.memSlice(uboBuffer, startOffset + level * spriteUboSize, spriteUboSize))
--                .putMat4f(new Matrix4f().ortho2D(0.0F, atlasWidth >> level, 0.0F, atlasHeight >> level))
--                .putMat4f(
--                    new Matrix4f()
--                        .translate(this.x >> level, this.y >> level, 0.0F)
--                        .scale(this.contents.width() + this.padding * 2 >> level, this.contents.height() + this.padding * 2 >> level, 1.0F)
--                )
--                .putFloat((float)this.padding / this.contents.width())
--                .putFloat((float)this.padding / this.contents.height())
--                .putInt(level);
--        }
--    }
-+   public Identifier atlasLocation() {
-+      return this.atlasLocation;
-+   }
- 
--    @Override
--    public void close() {
--        this.contents.close();
--    }
--}
-\ No newline at end of file
-+   @Override
-+   public String toString() {
+     @Override
+     public String toString() {
+-        return "TextureAtlasSprite{contents='" + this.contents + "', u0=" + this.u0 + ", u1=" + this.u1 + ", v0=" + this.v0 + ", v1=" + this.v1 + "}";
 +      return "TextureAtlasSprite{name="
 +         + this.name
 +         + ", contents='"
@@ -345,35 +239,33 @@
 +         + ", v1="
 +         + this.v1
 +         + "}";
-+   }
-+
+     }
+ 
+-    public void uploadFirstFrame(final GpuTexture destination, final int level) {
 +   public void uploadFirstFrame(GpuTexture destination, int level) {
-+      this.contents.uploadFirstFrame(destination, level);
-+   }
-+
+         this.contents.uploadFirstFrame(destination, level);
+     }
+ 
+-    public VertexConsumer wrap(final VertexConsumer buffer) {
 +   public VertexConsumer wrap(VertexConsumer buffer) {
-+      return new SpriteCoordinateExpander(buffer, this);
-+   }
-+
-+   public boolean isAnimated() {
-+      return this.contents.isAnimated();
-+   }
-+
+         return new SpriteCoordinateExpander(buffer, this);
+     }
+ 
+@@ -107,9 +257,7 @@
+         return this.contents.isAnimated();
+     }
+ 
+-    public void uploadSpriteUbo(
+-        final ByteBuffer uboBuffer, final int startOffset, final int maxMipLevel, final int atlasWidth, final int atlasHeight, final int spriteUboSize
+-    ) {
 +   public void uploadSpriteUbo(ByteBuffer uboBuffer, int startOffset, int maxMipLevel, int atlasWidth, int atlasHeight, int spriteUboSize) {
-+      for (int level = 0; level <= maxMipLevel; level++) {
-+         Std140Builder.intoBuffer(MemoryUtil.memSlice(uboBuffer, startOffset + level * spriteUboSize, spriteUboSize))
-+            .putMat4f(new Matrix4f().ortho2D(0.0F, atlasWidth >> level, 0.0F, atlasHeight >> level))
-+            .putMat4f(
-+               new Matrix4f()
-+                  .translate(this.x >> level, this.y >> level, 0.0F)
-+                  .scale(this.contents.width() + this.padding * 2 >> level, this.contents.height() + this.padding * 2 >> level, 1.0F)
-+            )
-+            .putFloat((float)this.padding / this.contents.width())
-+            .putFloat((float)this.padding / this.contents.height())
-+            .putInt(level);
-+      }
-+   }
-+
+         for (int level = 0; level <= maxMipLevel; level++) {
+             Std140Builder.intoBuffer(MemoryUtil.memSlice(uboBuffer, startOffset + level * spriteUboSize, spriteUboSize))
+                 .putMat4f(new Matrix4f().ortho2D(0.0F, atlasWidth >> level, 0.0F, atlasHeight >> level))
+@@ -124,8 +272,438 @@
+         }
+     }
+ 
 +   public int getIndexInMap() {
 +      return this.indexInMap;
 +   }
@@ -795,8 +687,8 @@
 +      return this.padding;
 +   }
 +
-+   @Override
-+   public void close() {
+     @Override
+     public void close() {
 +      this.deleteSpriteTexture();
 +      if (this.spriteNormal != null) {
 +         this.spriteNormal.deleteSpriteTexture();
@@ -806,6 +698,8 @@
 +         this.spriteSpecular.deleteSpriteTexture();
 +      }
 +
-+      this.contents.close();
-+   }
+         this.contents.close();
+     }
+-}
+\ No newline at end of file
 +}

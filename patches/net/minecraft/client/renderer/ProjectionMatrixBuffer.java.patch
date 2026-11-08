@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/ProjectionMatrixBuffer.java
 +++ b/net/minecraft/client/renderer/ProjectionMatrixBuffer.java
-@@ -6,56 +6,56 @@
+@@ -6,21 +6,19 @@
  import com.mojang.blaze3d.systems.GpuDevice;
  import com.mojang.blaze3d.systems.RenderSystem;
  import java.nio.ByteBuffer;
@@ -13,90 +13,59 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class ProjectionMatrixBuffer implements AutoCloseable {
--    private final GpuBuffer buffer;
--    private final GpuBufferSlice bufferSlice;
+     private final GpuBuffer buffer;
+     private final GpuBufferSlice bufferSlice;
 -    private @Nullable Projection lastUploadedProjection;
--    private long projectionMatrixVersion;
--    private final Matrix4f tempMatrix = new Matrix4f();
-+   private final GpuBuffer buffer;
-+   private final GpuBufferSlice bufferSlice;
 +   private Projection lastUploadedProjection;
-+   private long projectionMatrixVersion;
-+   private final Matrix4f tempMatrix = new Matrix4f();
+     private long projectionMatrixVersion;
+     private final Matrix4f tempMatrix = new Matrix4f();
 +   private boolean shaders;
  
 -    public ProjectionMatrixBuffer(final String name) {
--        this.lastUploadedProjection = null;
--        this.projectionMatrixVersion = -1L;
--        GpuDevice device = RenderSystem.getDevice();
--        this.buffer = device.createBuffer(() -> "Camera projection matrix UBO " + name, 136, RenderSystem.PROJECTION_MATRIX_UBO_SIZE);
--        this.bufferSlice = this.buffer.slice(0L, RenderSystem.PROJECTION_MATRIX_UBO_SIZE);
--    }
 +   public ProjectionMatrixBuffer(String name) {
-+      this.lastUploadedProjection = null;
-+      this.projectionMatrixVersion = -1L;
-+      GpuDevice device = RenderSystem.getDevice();
-+      this.buffer = device.createBuffer(() -> "Camera projection matrix UBO " + name, 136, RenderSystem.PROJECTION_MATRIX_UBO_SIZE);
-+      this.bufferSlice = this.buffer.slice(0L, RenderSystem.PROJECTION_MATRIX_UBO_SIZE);
-+   }
+         this.lastUploadedProjection = null;
+         this.projectionMatrixVersion = -1L;
+         GpuDevice device = RenderSystem.getDevice();
+@@ -28,29 +26,31 @@
+         this.bufferSlice = this.buffer.slice(0L, RenderSystem.PROJECTION_MATRIX_UBO_SIZE);
+     }
  
 -    public GpuBufferSlice getBuffer(final Projection projection) {
--        assert projection.getMatrixVersion() != -1L;
--        if (this.lastUploadedProjection == projection && projection.getMatrixVersion() == this.projectionMatrixVersion) {
--            return this.bufferSlice;
--        }
 +   public GpuBufferSlice getBuffer(Projection projection) {
-+      assert projection.getMatrixVersion() != -1L;
+         assert projection.getMatrixVersion() != -1L;
+-        if (this.lastUploadedProjection == projection && projection.getMatrixVersion() == this.projectionMatrixVersion) {
 +      if (this.lastUploadedProjection == projection && projection.getMatrixVersion() == this.projectionMatrixVersion && this.shaders != Config.isShaders()) {
-+         return this.bufferSlice;
-+      }
+             return this.bufferSlice;
+         }
  
--        this.lastUploadedProjection = projection;
--        this.projectionMatrixVersion = projection.getMatrixVersion();
--        return this.writeBuffer(projection.getMatrix(this.tempMatrix));
--    }
 +      this.shaders = Config.isShaders();
-+      this.lastUploadedProjection = projection;
-+      this.projectionMatrixVersion = projection.getMatrixVersion();
-+      return this.writeBuffer(projection.getMatrix(this.tempMatrix));
-+   }
+         this.lastUploadedProjection = projection;
+         this.projectionMatrixVersion = projection.getMatrixVersion();
+         return this.writeBuffer(projection.getMatrix(this.tempMatrix));
+     }
  
 -    public GpuBufferSlice getBuffer(final Matrix4f projectionMatrix) {
--        this.lastUploadedProjection = null;
--        this.projectionMatrixVersion = -1L;
--        return this.writeBuffer(projectionMatrix);
--    }
 +   public GpuBufferSlice getBuffer(Matrix4f projectionMatrix) {
-+      this.lastUploadedProjection = null;
-+      this.projectionMatrixVersion = -1L;
-+      return this.writeBuffer(projectionMatrix);
-+   }
+         this.lastUploadedProjection = null;
+         this.projectionMatrixVersion = -1L;
+         return this.writeBuffer(projectionMatrix);
+     }
  
 -    private GpuBufferSlice writeBuffer(final Matrix4f projectionMatrix) {
--        try (MemoryStack stack = MemoryStack.stackPush()) {
--            ByteBuffer byteBuffer = Std140Builder.onStack(stack, RenderSystem.PROJECTION_MATRIX_UBO_SIZE).putMat4f(projectionMatrix).get();
--            RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.buffer.slice(), byteBuffer);
--        }
 +   private GpuBufferSlice writeBuffer(Matrix4f projectionMatrix) {
-+      try (MemoryStack stack = MemoryStack.stackPush()) {
-+         ByteBuffer byteBuffer = Std140Builder.onStack(stack, RenderSystem.PROJECTION_MATRIX_UBO_SIZE).putMat4f(projectionMatrix).get();
-+         RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.buffer.slice(), byteBuffer);
-+      }
+         try (MemoryStack stack = MemoryStack.stackPush()) {
+             ByteBuffer byteBuffer = Std140Builder.onStack(stack, RenderSystem.PROJECTION_MATRIX_UBO_SIZE).putMat4f(projectionMatrix).get();
+             RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.buffer.slice(), byteBuffer);
+         }
  
--        return this.bufferSlice;
--    }
 +      this.bufferSlice.setData(projectionMatrix);
-+      return this.bufferSlice;
-+   }
+         return this.bufferSlice;
+     }
  
--    @Override
--    public void close() {
--        this.buffer.close();
--    }
+@@ -58,4 +58,4 @@
+     public void close() {
+         this.buffer.close();
+     }
 -}
 \ No newline at end of file
-+   @Override
-+   public void close() {
-+      this.buffer.close();
-+   }
 +}

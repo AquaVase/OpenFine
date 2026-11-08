@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/SectionBufferBuilderPool.java
 +++ b/net/minecraft/client/renderer/SectionBufferBuilderPool.java
-@@ -4,62 +4,57 @@
+@@ -4,23 +4,18 @@
  import com.mojang.logging.LogUtils;
  import java.util.ArrayList;
  import java.util.List;
@@ -13,95 +13,39 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class SectionBufferBuilderPool implements AutoCloseable {
--    private static final Logger LOGGER = LogUtils.getLogger();
+     private static final Logger LOGGER = LogUtils.getLogger();
 -    private final ArrayBlockingQueue<SectionBufferBuilderPack> freeBuffers;
-+   private static final Logger LOGGER = LogUtils.getLogger();
 +   private final Queue<SectionBufferBuilderPack> freeBuffers = Queues.newConcurrentLinkedQueue();
  
 -    private SectionBufferBuilderPool(final List<SectionBufferBuilderPack> buffers) {
 -        this.freeBuffers = Queues.newArrayBlockingQueue(buffers.size());
--        this.freeBuffers.addAll(buffers);
--    }
 +   private SectionBufferBuilderPool(List<SectionBufferBuilderPack> buffers) {
-+      this.freeBuffers.addAll(buffers);
-+   }
+         this.freeBuffers.addAll(buffers);
+     }
  
 -    public static SectionBufferBuilderPool allocate(final int maxWorkers) {
--        int maxBuffers = Math.max(1, (int)(Runtime.getRuntime().maxMemory() * 0.3) / SectionBufferBuilderPack.TOTAL_BUFFERS_SIZE);
--        int targetBufferCount = Math.max(1, Math.min(maxWorkers, maxBuffers));
--        List<SectionBufferBuilderPack> buffers = new ArrayList<>(targetBufferCount);
 +   public static SectionBufferBuilderPool allocate(int maxWorkers) {
-+      int maxBuffers = Math.max(1, (int)(Runtime.getRuntime().maxMemory() * 0.3) / SectionBufferBuilderPack.TOTAL_BUFFERS_SIZE);
-+      int targetBufferCount = Math.max(1, Math.min(maxWorkers, maxBuffers));
-+      List<SectionBufferBuilderPack> buffers = new ArrayList<>(targetBufferCount);
- 
--        try {
--            for (int i = 0; i < targetBufferCount; i++) {
--                buffers.add(new SectionBufferBuilderPack());
--            }
--        } catch (OutOfMemoryError e) {
--            LOGGER.warn("Allocated only {}/{} buffers", buffers.size(), targetBufferCount);
--            int buffersToDrop = Math.min(buffers.size() * 2 / 3, buffers.size() - 1);
-+      try {
-+         for (int i = 0; i < targetBufferCount; i++) {
-+            buffers.add(new SectionBufferBuilderPack());
-+         }
-+      } catch (OutOfMemoryError e) {
-+         LOGGER.warn("Allocated only {}/{} buffers", buffers.size(), targetBufferCount);
-+         int buffersToDrop = Math.min(buffers.size() * 2 / 3, buffers.size() - 1);
- 
--            for (int i = 0; i < buffersToDrop; i++) {
--                buffers.remove(buffers.size() - 1).close();
--            }
--        }
-+         for (int i = 0; i < buffersToDrop; i++) {
-+            buffers.remove(buffers.size() - 1).close();
-+         }
-+      }
- 
--        return new SectionBufferBuilderPool(buffers);
--    }
-+      return new SectionBufferBuilderPool(buffers);
-+   }
+         int maxBuffers = Math.max(1, (int)(Runtime.getRuntime().maxMemory() * 0.3) / SectionBufferBuilderPack.TOTAL_BUFFERS_SIZE);
+         int targetBufferCount = Math.max(1, Math.min(maxWorkers, maxBuffers));
+         List<SectionBufferBuilderPack> buffers = new ArrayList<>(targetBufferCount);
+@@ -41,11 +36,11 @@
+         return new SectionBufferBuilderPool(buffers);
+     }
  
 -    public @Nullable SectionBufferBuilderPack acquire() {
--        return this.freeBuffers.poll();
--    }
 +   public SectionBufferBuilderPack acquire() {
-+      return this.freeBuffers.poll();
-+   }
+         return this.freeBuffers.poll();
+     }
  
 -    public void release(final SectionBufferBuilderPack buffer) {
--        this.freeBuffers.offer(buffer);
--    }
 +   public void release(SectionBufferBuilderPack buffer) {
-+      this.freeBuffers.offer(buffer);
-+   }
+         this.freeBuffers.offer(buffer);
+     }
  
--    public boolean isEmpty() {
--        return this.freeBuffers.isEmpty();
--    }
-+   public boolean isEmpty() {
-+      return this.freeBuffers.isEmpty();
-+   }
- 
--    public int getFreeBufferCount() {
--        return this.freeBuffers.size();
--    }
-+   public int getFreeBufferCount() {
-+      return this.freeBuffers.size();
-+   }
- 
--    @Override
--    public void close() {
--        this.freeBuffers.forEach(SectionBufferBuilderPack::close);
--        this.freeBuffers.clear();
--    }
+@@ -62,4 +57,4 @@
+         this.freeBuffers.forEach(SectionBufferBuilderPack::close);
+         this.freeBuffers.clear();
+     }
 -}
 \ No newline at end of file
-+   @Override
-+   public void close() {
-+      this.freeBuffers.forEach(SectionBufferBuilderPack::close);
-+      this.freeBuffers.clear();
-+   }
 +}

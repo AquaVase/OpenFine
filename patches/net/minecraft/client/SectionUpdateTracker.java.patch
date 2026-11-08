@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/SectionUpdateTracker.java
 +++ b/net/minecraft/client/SectionUpdateTracker.java
-@@ -1,105 +1,103 @@
+@@ -1,20 +1,16 @@
  package net.minecraft.client;
  
  import net.minecraft.client.multiplayer.ClientLevel;
@@ -16,59 +16,38 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class SectionUpdateTracker {
--    private final RotatingSectionStorage<SectionUpdateTracker.SectionDirtyState> storage;
-+   private final RotatingSectionStorage<SectionUpdateTracker.SectionDirtyState> storage;
+     private final RotatingSectionStorage<SectionUpdateTracker.SectionDirtyState> storage;
  
 -    public SectionUpdateTracker(final LevelHeightAccessor levelHeightAccessor, final int renderDistance) {
--        this.storage = new RotatingSectionStorage<>(
--            renderDistance,
--            levelHeightAccessor.getMinSectionY(),
--            levelHeightAccessor.getMaxSectionY(),
--            (index, sectionNode) -> new SectionUpdateTracker.SectionDirtyState(true, false, sectionNode)
--        );
--    }
 +   public SectionUpdateTracker(LevelHeightAccessor levelHeightAccessor, int renderDistance) {
-+      this.storage = new RotatingSectionStorage<>(
-+         renderDistance,
-+         levelHeightAccessor.getMinSectionY(),
-+         levelHeightAccessor.getMaxSectionY(),
-+         (index, sectionNode) -> new SectionUpdateTracker.SectionDirtyState(true, false, sectionNode)
-+      );
-+   }
+         this.storage = new RotatingSectionStorage<>(
+             renderDistance,
+             levelHeightAccessor.getMinSectionY(),
+@@ -23,14 +19,14 @@
+         );
+     }
  
 -    public void setDirty(final int sectionX, final int sectionY, final int sectionZ, final boolean playerChanged) {
--        SectionUpdateTracker.SectionDirtyState section = this.storage.getValue(sectionX, sectionY, sectionZ);
--        if (section != null) {
--            section.setDirty(playerChanged);
--        }
--    }
 +   public void setDirty(int sectionX, int sectionY, int sectionZ, boolean playerChanged) {
-+      SectionUpdateTracker.SectionDirtyState section = this.storage.getValue(sectionX, sectionY, sectionZ);
-+      if (section != null) {
-+         section.setDirty(playerChanged);
-+      }
-+   }
+         SectionUpdateTracker.SectionDirtyState section = this.storage.getValue(sectionX, sectionY, sectionZ);
+         if (section != null) {
+             section.setDirty(playerChanged);
+         }
+     }
  
 -    public void repositionCamera(final SectionPos cameraSectionPos) {
--        this.storage.repositionCenter(cameraSectionPos);
--    }
 +   public void repositionCamera(SectionPos cameraSectionPos) {
-+      this.storage.repositionCenter(cameraSectionPos);
-+   }
+         this.storage.repositionCenter(cameraSectionPos);
+     }
  
--    public int size() {
--        return this.storage.size();
--    }
-+   public int size() {
-+      return this.storage.size();
-+   }
+@@ -38,50 +34,47 @@
+         return this.storage.size();
+     }
  
 -    public SectionUpdateTracker.@Nullable SectionDirtyState getDirtyState(final long sectionNode) {
--        return this.storage.getValue(sectionNode);
--    }
 +   public SectionUpdateTracker.SectionDirtyState getDirtyState(long sectionNode) {
-+      return this.storage.getValue(sectionNode);
-+   }
+         return this.storage.getValue(sectionNode);
+     }
  
 -    public boolean hasAllNeighbors(final ClientLevel level, final long sectionNode) {
 -        return this.doesChunkExistAt(level, SectionPos.offset(sectionNode, Direction.WEST))
@@ -79,109 +58,61 @@
 -            && this.doesChunkExistAt(level, SectionPos.offset(sectionNode, -1, 0, 1))
 -            && this.doesChunkExistAt(level, SectionPos.offset(sectionNode, 1, 0, -1))
 -            && this.doesChunkExistAt(level, SectionPos.offset(sectionNode, 1, 0, 1));
--    }
 +   public boolean hasAllNeighbors(ClientLevel level, long sectionNode) {
 +      return this.doesChunkExistAt(level, sectionNode);
-+   }
+     }
  
 -    private boolean doesChunkExistAt(final ClientLevel level, final long sectionNode) {
--        ChunkAccess chunk = level.getChunk(SectionPos.x(sectionNode), SectionPos.z(sectionNode), ChunkStatus.FULL, false);
--        return chunk != null && level.getLightEngine().lightOnInColumn(SectionPos.getZeroNode(sectionNode));
--    }
 +   private boolean doesChunkExistAt(ClientLevel level, long sectionNode) {
-+      ChunkAccess chunk = level.getChunk(SectionPos.x(sectionNode), SectionPos.z(sectionNode), ChunkStatus.FULL, false);
-+      return chunk != null && level.getLightEngine().lightOnInColumn(SectionPos.getZeroNode(sectionNode));
-+   }
+         ChunkAccess chunk = level.getChunk(SectionPos.x(sectionNode), SectionPos.z(sectionNode), ChunkStatus.FULL, false);
+         return chunk != null && level.getLightEngine().lightOnInColumn(SectionPos.getZeroNode(sectionNode));
+     }
  
 -    @OnlyIn(Dist.CLIENT)
--    public static class SectionDirtyState implements RotatingSectionStorage.Value {
--        private boolean isDirty;
--        private boolean isDirtyFromPlayer;
--        private long sectionNode;
-+   public static class SectionDirtyState implements RotatingSectionStorage.Value {
-+      private boolean isDirty;
-+      private boolean isDirtyFromPlayer;
-+      private long sectionNode;
+     public static class SectionDirtyState implements RotatingSectionStorage.Value {
+         private boolean isDirty;
+         private boolean isDirtyFromPlayer;
+         private long sectionNode;
 +      private boolean playerUpdate = false;
  
 -        private SectionDirtyState(final boolean isDirty, final boolean isDirtyFromPlayer, final long sectionNode) {
--            this.isDirty = isDirty;
--            this.isDirtyFromPlayer = isDirtyFromPlayer;
--        }
 +      private SectionDirtyState(boolean isDirty, boolean isDirtyFromPlayer, long sectionNode) {
-+         this.isDirty = isDirty;
-+         this.isDirtyFromPlayer = isDirtyFromPlayer;
-+      }
+             this.isDirty = isDirty;
+             this.isDirtyFromPlayer = isDirtyFromPlayer;
+         }
  
 -        public void setDirty(final boolean fromPlayer) {
--            boolean wasDirty = this.isDirty;
--            this.isDirty = true;
--            this.isDirtyFromPlayer = fromPlayer | (wasDirty && this.isDirtyFromPlayer);
--        }
 +      public void setDirty(boolean fromPlayer) {
-+         boolean wasDirty = this.isDirty;
-+         this.isDirty = true;
-+         this.isDirtyFromPlayer = fromPlayer | (wasDirty && this.isDirtyFromPlayer);
+             boolean wasDirty = this.isDirty;
+             this.isDirty = true;
+             this.isDirtyFromPlayer = fromPlayer | (wasDirty && this.isDirtyFromPlayer);
 +         if (this.isWorldPlayerUpdate()) {
 +            this.playerUpdate = true;
-+         }
+         }
 +      }
  
--        public void setNotDirty() {
--            this.isDirty = false;
-+      public void setNotDirty() {
-+         this.isDirty = false;
-+         this.isDirtyFromPlayer = false;
-+         this.playerUpdate = false;
-+      }
-+
-+      @Override
-+      public void setSectionNode(long sectionNode) {
-+         if (this.sectionNode != sectionNode) {
-+            this.sectionNode = sectionNode;
-+            this.isDirty = true;
+         public void setNotDirty() {
+             this.isDirty = false;
              this.isDirtyFromPlayer = false;
--        }
-+         }
-+      }
++         this.playerUpdate = false;
+         }
  
--        @Override
+         @Override
 -        public void setSectionNode(final long sectionNode) {
--            if (this.sectionNode != sectionNode) {
--                this.sectionNode = sectionNode;
--                this.isDirty = true;
--                this.isDirtyFromPlayer = false;
--            }
--        }
-+      @Override
-+      public long getSectionNode() {
-+         return this.sectionNode;
-+      }
- 
--        @Override
--        public long getSectionNode() {
--            return this.sectionNode;
--        }
-+      public boolean isDirty() {
-+         return this.isDirty;
-+      }
- 
--        public boolean isDirty() {
--            return this.isDirty;
--        }
-+      public boolean isDirtyFromPlayer() {
-+         return this.isDirtyFromPlayer;
-+      }
- 
--        public boolean isDirtyFromPlayer() {
--            return this.isDirtyFromPlayer;
--        }
--    }
--}
-\ No newline at end of file
++      public void setSectionNode(long sectionNode) {
+             if (this.sectionNode != sectionNode) {
+                 this.sectionNode = sectionNode;
+                 this.isDirty = true;
+@@ -101,5 +94,10 @@
+         public boolean isDirtyFromPlayer() {
+             return this.isDirtyFromPlayer;
+         }
++
 +      private boolean isWorldPlayerUpdate() {
 +         ClientLevel worldClient = Config.getMinecraft().level;
 +         return worldClient == null ? false : worldClient.isPlayerUpdate();
-+      }
+     }
+-}
+\ No newline at end of file
 +   }
 +}

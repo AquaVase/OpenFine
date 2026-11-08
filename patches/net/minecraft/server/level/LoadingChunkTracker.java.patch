@@ -1,89 +1,47 @@
 --- a/net/minecraft/server/level/LoadingChunkTracker.java
 +++ b/net/minecraft/server/level/LoadingChunkTracker.java
-@@ -3,47 +3,47 @@
- import net.minecraft.world.level.TicketStorage;
- 
- public class LoadingChunkTracker extends ChunkTracker {
--    private static final int MAX_LEVEL = ChunkLevel.MAX_LEVEL + 1;
--    private final DistanceManager distanceManager;
--    private final TicketStorage ticketStorage;
-+   private static final int MAX_LEVEL = ChunkLevel.MAX_LEVEL + 1;
-+   private final DistanceManager distanceManager;
-+   private final TicketStorage ticketStorage;
+@@ -7,20 +7,20 @@
+     private final DistanceManager distanceManager;
+     private final TicketStorage ticketStorage;
  
 -    public LoadingChunkTracker(final DistanceManager distanceManager, final TicketStorage ticketStorage) {
 -        super(MAX_LEVEL + 1, 16, 256);
--        this.distanceManager = distanceManager;
--        this.ticketStorage = ticketStorage;
--        ticketStorage.setLoadingChunkUpdatedListener(this::update);
--    }
 +   public LoadingChunkTracker(DistanceManager distanceManager, TicketStorage ticketStorage) {
 +      super(MAX_LEVEL + 1, 256, 256);
-+      this.distanceManager = distanceManager;
-+      this.ticketStorage = ticketStorage;
-+      ticketStorage.setLoadingChunkUpdatedListener(this::update);
-+   }
+         this.distanceManager = distanceManager;
+         this.ticketStorage = ticketStorage;
+         ticketStorage.setLoadingChunkUpdatedListener(this::update);
+     }
  
--    @Override
+     @Override
 -    protected int getLevelFromSource(final long to) {
--        return this.ticketStorage.getTicketLevelAt(to, false);
--    }
-+   @Override
 +   protected int getLevelFromSource(long to) {
-+      return this.ticketStorage.getTicketLevelAt(to, false);
-+   }
+         return this.ticketStorage.getTicketLevelAt(to, false);
+     }
  
--    @Override
+     @Override
 -    protected int getLevel(final long node) {
--        if (!this.distanceManager.isChunkToRemove(node)) {
--            ChunkHolder chunk = this.distanceManager.getChunk(node);
--            if (chunk != null) {
--                return chunk.getTicketLevel();
--            }
--        }
-+   @Override
 +   protected int getLevel(long node) {
-+      if (!this.distanceManager.isChunkToRemove(node)) {
-+         ChunkHolder chunk = this.distanceManager.getChunk(node);
-+         if (chunk != null) {
-+            return chunk.getTicketLevel();
-+         }
-+      }
+         if (!this.distanceManager.isChunkToRemove(node)) {
+             ChunkHolder chunk = this.distanceManager.getChunk(node);
+             if (chunk != null) {
+@@ -32,7 +32,7 @@
+     }
  
--        return MAX_LEVEL;
--    }
-+      return MAX_LEVEL;
-+   }
- 
--    @Override
+     @Override
 -    protected void setLevel(final long node, final int level) {
--        ChunkHolder chunk = this.distanceManager.getChunk(node);
--        int oldLevel = chunk == null ? MAX_LEVEL : chunk.getTicketLevel();
--        if (oldLevel != level) {
--            chunk = this.distanceManager.updateChunkScheduling(node, level, chunk, oldLevel);
--            if (chunk != null) {
--                this.distanceManager.chunksToUpdateFutures.add(chunk);
--            }
--        }
--    }
-+   @Override
 +   protected void setLevel(long node, int level) {
-+      ChunkHolder chunk = this.distanceManager.getChunk(node);
-+      int oldLevel = chunk == null ? MAX_LEVEL : chunk.getTicketLevel();
-+      if (oldLevel != level) {
-+         chunk = this.distanceManager.updateChunkScheduling(node, level, chunk, oldLevel);
-+         if (chunk != null) {
-+            this.distanceManager.chunksToUpdateFutures.add(chunk);
-+         }
-+      }
-+   }
+         ChunkHolder chunk = this.distanceManager.getChunk(node);
+         int oldLevel = chunk == null ? MAX_LEVEL : chunk.getTicketLevel();
+         if (oldLevel != level) {
+@@ -43,7 +43,7 @@
+         }
+     }
  
 -    public int runDistanceUpdates(final int count) {
--        return this.runUpdates(count);
--    }
++   public int runDistanceUpdates(int count) {
+         return this.runUpdates(count);
+     }
 -}
 \ No newline at end of file
-+   public int runDistanceUpdates(int count) {
-+      return this.runUpdates(count);
-+   }
 +}

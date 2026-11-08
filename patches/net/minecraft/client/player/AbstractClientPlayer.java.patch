@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/player/AbstractClientPlayer.java
 +++ b/net/minecraft/client/player/AbstractClientPlayer.java
-@@ -7,117 +7,213 @@
+@@ -7,35 +7,60 @@
  import net.minecraft.client.multiplayer.ClientLevel;
  import net.minecraft.client.multiplayer.PlayerInfo;
  import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -29,11 +29,9 @@
 -@OnlyIn(Dist.CLIENT)
  public abstract class AbstractClientPlayer extends Player implements ClientAvatarEntity {
 -    private @Nullable PlayerInfo playerInfo;
--    private final boolean showExtraEars;
--    private final ClientAvatarState clientAvatarState = new ClientAvatarState();
 +   private PlayerInfo playerInfo;
-+   private final boolean showExtraEars;
-+   private final ClientAvatarState clientAvatarState = new ClientAvatarState();
+     private final boolean showExtraEars;
+     private final ClientAvatarState clientAvatarState = new ClientAvatarState();
 +   private Identifier locationOfCape = null;
 +   private long reloadCapeTimeMs = 0L;
 +   private boolean elytraOfCape = false;
@@ -47,186 +45,67 @@
 +   private static final Identifier TEXTURE_ELYTRA = new Identifier("textures/entity/elytra.png");
  
 -    public AbstractClientPlayer(final ClientLevel level, final GameProfile gameProfile) {
--        super(level, gameProfile);
--        this.showExtraEars = "deadmau5".equals(this.getGameProfile().name());
--    }
 +   public AbstractClientPlayer(ClientLevel level, GameProfile gameProfile) {
-+      super(level, gameProfile);
-+      this.showExtraEars = "deadmau5".equals(this.getGameProfile().name());
+         super(level, gameProfile);
+         this.showExtraEars = "deadmau5".equals(this.getGameProfile().name());
 +      this.nameClear = gameProfile.name();
 +      if (this.nameClear != null && !this.nameClear.isEmpty()) {
 +         this.nameClear = StringUtil.stripColor(this.nameClear);
-+      }
+     }
  
--    @Override
--    public @Nullable GameType gameMode() {
--        PlayerInfo info = this.getPlayerInfo();
--        return info != null ? info.getGameMode() : null;
--    }
 +      CapeUtils.downloadCape(this);
 +      PlayerConfigurations.getPlayerConfiguration(this);
 +   }
++
+     @Override
+-    public @Nullable GameType gameMode() {
++   public GameType gameMode() {
+         PlayerInfo info = this.getPlayerInfo();
+         return info != null ? info.getGameMode() : null;
+     }
  
 -    protected @Nullable PlayerInfo getPlayerInfo() {
--        if (this.playerInfo == null) {
--            this.playerInfo = Minecraft.getInstance().getConnection().getPlayerInfo(this.getUUID());
--        }
-+   @Override
-+   public GameType gameMode() {
-+      PlayerInfo info = this.getPlayerInfo();
-+      return info != null ? info.getGameMode() : null;
-+   }
- 
--        return this.playerInfo;
--    }
 +   protected PlayerInfo getPlayerInfo() {
-+      if (this.playerInfo == null) {
-+         this.playerInfo = Minecraft.getInstance().getConnection().getPlayerInfo(this.getUUID());
-+      }
- 
--    @Override
--    public void tick() {
--        this.clientAvatarState.tick(this.position(), this.getDeltaMovement());
--        super.tick();
--    }
-+      return this.playerInfo;
-+   }
- 
--    protected void addWalkedDistance(final float distance) {
--        this.clientAvatarState.addWalkDistance(distance);
--    }
-+   @Override
-+   public void tick() {
-+      this.clientAvatarState.tick(this.position(), this.getDeltaMovement());
-+      super.tick();
+         if (this.playerInfo == null) {
+             this.playerInfo = Minecraft.getInstance().getConnection().getPlayerInfo(this.getUUID());
+         }
+@@ -47,9 +72,13 @@
+     public void tick() {
+         this.clientAvatarState.tick(this.position(), this.getDeltaMovement());
+         super.tick();
 +      if (this.lastAttachedEntity != null) {
 +         RandomEntities.checkEntityShoulder(this.lastAttachedEntity, true);
 +         this.lastAttachedEntity = null;
-+      }
+     }
 +   }
  
--    @Override
--    public ClientAvatarState avatarState() {
--        return this.clientAvatarState;
--    }
+-    protected void addWalkedDistance(final float distance) {
 +   protected void addWalkedDistance(float distance) {
-+      this.clientAvatarState.addWalkDistance(distance);
-+   }
+         this.clientAvatarState.addWalkDistance(distance);
+     }
  
--    @Override
--    public PlayerSkin getSkin() {
--        PlayerInfo info = this.getPlayerInfo();
--        return info == null ? DefaultPlayerSkin.get(this.getUUID()) : info.getSkin();
--    }
-+   @Override
-+   public ClientAvatarState avatarState() {
-+      return this.clientAvatarState;
-+   }
+@@ -65,7 +94,7 @@
+     }
  
--    @Override
+     @Override
 -    public Parrot.@Nullable Variant getParrotVariantOnShoulder(final boolean left) {
--        return (left ? this.getShoulderParrotLeft() : this.getShoulderParrotRight()).orElse(null);
--    }
-+   @Override
-+   public PlayerSkin getSkin() {
-+      PlayerInfo info = this.getPlayerInfo();
-+      return info == null ? DefaultPlayerSkin.get(this.getUUID()) : info.getSkin();
-+   }
- 
--    @Override
--    public void rideTick() {
--        super.rideTick();
--        this.avatarState().resetBob();
--    }
-+   @Override
 +   public Variant getParrotVariantOnShoulder(boolean left) {
-+      return (left ? this.getShoulderParrotLeft() : this.getShoulderParrotRight()).orElse(null);
-+   }
+         return (left ? this.getShoulderParrotLeft() : this.getShoulderParrotRight()).orElse(null);
+     }
  
--    @Override
--    public void aiStep() {
--        this.updateBob();
--        super.aiStep();
--    }
-+   @Override
-+   public void rideTick() {
-+      super.rideTick();
-+      this.avatarState().resetBob();
-+   }
- 
--    protected void updateBob() {
--        float tBob;
--        if (this.onGround() && !this.isDeadOrDying() && !this.isSwimming()) {
--            tBob = Math.min(0.1F, (float)this.getDeltaMovement().horizontalDistance());
--        } else {
--            tBob = 0.0F;
--        }
-+   @Override
-+   public void aiStep() {
-+      this.updateBob();
-+      super.aiStep();
-+   }
- 
--        this.avatarState().updateBob(tBob);
--    }
-+   protected void updateBob() {
-+      float tBob;
-+      if (this.onGround() && !this.isDeadOrDying() && !this.isSwimming()) {
-+         tBob = Math.min(0.1F, (float)this.getDeltaMovement().horizontalDistance());
-+      } else {
-+         tBob = 0.0F;
-+      }
+@@ -92,7 +121,7 @@
+         this.avatarState().updateBob(tBob);
+     }
  
 -    public float getFieldOfViewModifier(final boolean firstPerson, final float effectScale) {
--        float modifier = 1.0F;
--        if (this.getAbilities().flying) {
--            modifier *= 1.1F;
--        }
-+      this.avatarState().updateBob(tBob);
-+   }
- 
--        float walkingSpeed = this.getAbilities().getWalkingSpeed();
--        if (walkingSpeed != 0.0F) {
--            float speedFactor = (float)this.getAttributeValue(Attributes.MOVEMENT_SPEED) / walkingSpeed;
--            modifier *= (speedFactor + 1.0F) / 2.0F;
--        }
 +   public float getFieldOfViewModifier(boolean firstPerson, float effectScale) {
-+      float modifier = 1.0F;
-+      if (this.getAbilities().flying) {
-+         modifier *= 1.1F;
-+      }
+         float modifier = 1.0F;
+         if (this.getAbilities().flying) {
+             modifier *= 1.1F;
+@@ -113,6 +142,13 @@
+             }
+         }
  
--        if (this.isUsingItem()) {
--            if (this.getUseItem().is(Items.BOW)) {
--                float scale = Math.min(this.getTicksUsingItem() / 20.0F, 1.0F);
--                modifier *= 1.0F - Mth.square(scale) * 0.15F;
--            } else if (firstPerson && this.isScoping()) {
--                return 0.1F;
--            }
--        }
-+      float walkingSpeed = this.getAbilities().getWalkingSpeed();
-+      if (walkingSpeed != 0.0F) {
-+         float speedFactor = (float)this.getAttributeValue(Attributes.MOVEMENT_SPEED) / walkingSpeed;
-+         modifier *= (speedFactor + 1.0F) / 2.0F;
-+      }
- 
--        return Mth.lerp(effectScale, 1.0F, modifier);
--    }
-+      if (this.isUsingItem()) {
-+         if (this.getUseItem().is(Items.BOW)) {
-+            float scale = Math.min(this.getTicksUsingItem() / 20.0F, 1.0F);
-+            modifier *= 1.0F - Mth.square(scale) * 0.15F;
-+         } else if (firstPerson && this.isScoping()) {
-+            return 0.1F;
-+         }
-+      }
- 
--    @Override
--    public boolean showExtraEars() {
--        return this.showExtraEars;
--    }
--}
-\ No newline at end of file
 +      if (Reflector.ForgeEventFactoryClient_fireFovModifierEvent.exists()) {
 +         ComputeFovModifierEvent event = (ComputeFovModifierEvent)Reflector.ForgeEventFactoryClient_fireFovModifierEvent.call(this, modifier, effectScale);
 +         if (event != null) {
@@ -234,13 +113,15 @@
 +         }
 +      }
 +
-+      return Mth.lerp(effectScale, 1.0F, modifier);
-+   }
-+
-+   @Override
-+   public boolean showExtraEars() {
-+      return this.showExtraEars;
-+   }
+         return Mth.lerp(effectScale, 1.0F, modifier);
+     }
+ 
+@@ -120,4 +156,64 @@
+     public boolean showExtraEars() {
+         return this.showExtraEars;
+     }
+-}
+\ No newline at end of file
 +
 +   public String getNameClear() {
 +      return this.nameClear;

@@ -7,7 +7,7 @@
  import com.mojang.blaze3d.GpuFormat;
  import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
  import java.util.ArrayList;
-@@ -7,145 +8,265 @@
+@@ -7,37 +8,66 @@
  import java.util.Map;
  import java.util.stream.Collectors;
  import net.minecraft.util.Mth;
@@ -18,15 +18,13 @@
  
 -@OnlyIn(Dist.CLIENT)
 -public class VertexFormat {
--    private static final int VERTEX_ALIGNMENT = 4;
--    public static final int MAX_VERTEX_ELEMENTS = 16;
++public class VertexFormat implements IForgeVertexFormat {
+     private static final int VERTEX_ALIGNMENT = 4;
+     public static final int MAX_VERTEX_ELEMENTS = 16;
 -    private final Map<String, VertexFormatElement> elements = new Object2ObjectArrayMap<>(16);
 -    private final int vertexSize;
 -    private final int stepRate;
 -    private final List<VertexFormatElement> elementValues;
-+public class VertexFormat implements IForgeVertexFormat {
-+   private static final int VERTEX_ALIGNMENT = 4;
-+   public static final int MAX_VERTEX_ELEMENTS = 16;
 +   private Map<String, VertexFormatElement> elements = new Object2ObjectArrayMap<>(16);
 +   private int vertexSize;
 +   private int stepRate;
@@ -40,17 +38,12 @@
 +   private ImmutableMap<String, VertexFormatElement> elementMapping;
  
 -    private VertexFormat(final List<VertexFormatElement> elements, final int vertexSize, final int stepRate) {
--        this.vertexSize = vertexSize;
--        this.stepRate = stepRate;
 +   private VertexFormat(List<VertexFormatElement> elements, int vertexSize, int stepRate) {
-+      this.vertexSize = vertexSize;
-+      this.stepRate = stepRate;
+         this.vertexSize = vertexSize;
+         this.stepRate = stepRate;
  
--        for (VertexFormatElement element : elements) {
--            this.elements.putIfAbsent(element.name(), element);
--        }
-+      for (VertexFormatElement element : elements) {
-+         this.elements.putIfAbsent(element.name(), element);
+         for (VertexFormatElement element : elements) {
+             this.elements.putIfAbsent(element.name(), element);
 +         if (element.name().equals("Position")) {
 +            this.positionElement = element;
 +         } else if (element.name().equals("Normal")) {
@@ -63,130 +56,73 @@
 +            this.uvElements[1] = element;
 +         } else if (element.name().equals("UV2")) {
 +            this.uvElements[2] = element;
-+         }
+         }
 +      }
  
--        this.elementValues = elements;
--    }
-+      this.elementValues = elements;
+         this.elementValues = elements;
 +      ImmutableMap.Builder<String, VertexFormatElement> elementMappingBuilder = ImmutableMap.builder();
- 
--    public static VertexFormat.Builder builder(final int stepRate) {
--        return new VertexFormat.Builder(stepRate);
--    }
++
 +      for (VertexFormatElement element : elements) {
 +         elementMappingBuilder.put(element.name(), element);
-+      }
+     }
  
--    @Override
--    public String toString() {
--        return "VertexFormat" + this.elementValues.stream().map(VertexFormatElement::name).collect(Collectors.joining(", ", "[", "]"));
--    }
+-    public static VertexFormat.Builder builder(final int stepRate) {
 +      this.elementMapping = elementMappingBuilder.buildOrThrow();
 +   }
- 
--    public int getVertexSize() {
--        return this.vertexSize;
--    }
++
 +   public static VertexFormat.Builder builder(int stepRate) {
-+      return new VertexFormat.Builder(stepRate);
-+   }
+         return new VertexFormat.Builder(stepRate);
+     }
  
--    public int getStepRate() {
--        return this.stepRate;
--    }
-+   @Override
-+   public String toString() {
+     @Override
+     public String toString() {
+-        return "VertexFormat" + this.elementValues.stream().map(VertexFormatElement::name).collect(Collectors.joining(", ", "[", "]"));
 +      return "VertexFormat "
 +         + this.name
 +         + ", "
 +         + this.vertexSize
 +         + "B, "
 +         + this.elementValues.stream().map(VertexFormatElement::name).collect(Collectors.joining(", ", "[", "]"));
-+   }
+     }
  
--    public List<VertexFormatElement> getElements() {
--        return this.elementValues;
--    }
-+   public int getVertexSize() {
-+      return this.vertexSize;
-+   }
+     public int getVertexSize() {
+@@ -52,16 +82,16 @@
+         return this.elementValues;
+     }
  
 -    public @Nullable VertexFormatElement getElement(final String attributeName) {
--        return this.elements.get(attributeName);
--    }
-+   public int getStepRate() {
-+      return this.stepRate;
-+   }
++   public VertexFormatElement getElement(String attributeName) {
+         return this.elements.get(attributeName);
+     }
  
 -    public boolean contains(final String attributeName) {
--        return this.elements.containsKey(attributeName);
--    }
-+   public List<VertexFormatElement> getElements() {
-+      return this.elementValues;
-+   }
- 
--    @Override
--    public boolean equals(final Object o) {
--        return this == o ? true : o instanceof VertexFormat format && this.elements.equals(format.elements) && this.vertexSize == format.vertexSize;
--    }
-+   public VertexFormatElement getElement(String attributeName) {
-+      return this.elements.get(attributeName);
-+   }
- 
--    @Override
--    public int hashCode() {
--        return this.elementValues.hashCode();
--    }
 +   public boolean contains(String attributeName) {
-+      return this.elements.containsKey(attributeName);
-+   }
+         return this.elements.containsKey(attributeName);
+     }
+ 
+     @Override
+-    public boolean equals(final Object o) {
++   public boolean equals(Object o) {
+         return this == o ? true : o instanceof VertexFormat format && this.elements.equals(format.elements) && this.vertexSize == format.vertexSize;
+     }
+ 
+@@ -70,17 +100,96 @@
+         return this.elementValues.hashCode();
+     }
  
 -    @OnlyIn(Dist.CLIENT)
--    public static class Builder {
--        private final List<VertexFormatElement> elements = new ArrayList<>(16);
--        private int offset = 0;
--        private final int stepRate;
-+   @Override
-+   public boolean equals(Object o) {
-+      return this == o ? true : o instanceof VertexFormat format && this.elements.equals(format.elements) && this.vertexSize == format.vertexSize;
-+   }
- 
--        private Builder(final int stepRate) {
--            this.stepRate = stepRate;
--        }
-+   @Override
-+   public int hashCode() {
-+      return this.elementValues.hashCode();
-+   }
- 
--        private void createAttribute(final String name, final int offset, final GpuFormat elementFormat) {
--            if (this.elements.size() >= 16) {
--                throw new IllegalArgumentException("Having more than 16 attributes are not supported");
--            }
 +   public int getOffset(int index) {
 +      return this.elementValues.get(index).offset();
 +   }
- 
--            if (!Mth.isMultipleOf(offset, elementFormat.byteAlignment())) {
--                throw new IllegalArgumentException(name + " is not aligned to " + elementFormat.byteAlignment() + " as required by " + elementFormat);
--            }
++
 +   public boolean hasPosition() {
 +      return this.positionElement != null;
 +   }
- 
--            VertexFormatElement element = new VertexFormatElement(name, offset, elementFormat);
--            this.elements.add(element);
--        }
++
 +   public int getPositionOffset() {
 +      return this.positionElement.offset();
 +   }
- 
--        private void validateUniqueName(final String name) {
--            for (VertexFormatElement element : this.elements) {
--                if (element.name().equals(name)) {
--                    throw new IllegalArgumentException("Another vertex attribute exists with the name " + name);
--                }
++
 +   public boolean hasNormal() {
 +      return this.normalElement != null;
 +   }
@@ -255,132 +191,80 @@
 +      this.extended = extended;
 +   }
 +
-+   public static class Builder {
-+      private final List<VertexFormatElement> elements = new ArrayList<>(16);
-+      private int offset = 0;
-+      private final int stepRate;
-+
+     public static class Builder {
+         private final List<VertexFormatElement> elements = new ArrayList<>(16);
+         private int offset = 0;
+         private final int stepRate;
+ 
+-        private Builder(final int stepRate) {
 +      public Builder(int stepRate) {
-+         this.stepRate = stepRate;
-+      }
-+
+             this.stepRate = stepRate;
+         }
+ 
+-        private void createAttribute(final String name, final int offset, final GpuFormat elementFormat) {
 +      private void createAttribute(String name, int offset, GpuFormat elementFormat) {
-+         if (this.elements.size() >= 16) {
-+            throw new IllegalArgumentException("Having more than 16 attributes are not supported");
-+         }
-+
-+         if (!Mth.isMultipleOf(offset, elementFormat.byteAlignment())) {
-+            throw new IllegalArgumentException(name + " is not aligned to " + elementFormat.byteAlignment() + " as required by " + elementFormat);
-+         }
-+
-+         VertexFormatElement element = new VertexFormatElement(name, offset, elementFormat);
-+         this.elements.add(element);
-+      }
-+
-+      private void validateUniqueName(String name) {
-+         for (VertexFormatElement element : this.elements) {
-+            if (element.name().equals(name)) {
-+               throw new IllegalArgumentException("Another vertex attribute exists with the name " + name);
+             if (this.elements.size() >= 16) {
+                 throw new IllegalArgumentException("Having more than 16 attributes are not supported");
              }
--        }
-+         }
-+      }
+@@ -93,7 +202,7 @@
+             this.elements.add(element);
+         }
+ 
+-        private void validateUniqueName(final String name) {
++      private void validateUniqueName(String name) {
+             for (VertexFormatElement element : this.elements) {
+                 if (element.name().equals(name)) {
+                     throw new IllegalArgumentException("Another vertex attribute exists with the name " + name);
+@@ -101,21 +210,21 @@
+             }
+         }
  
 -        public VertexFormat.Builder addAttribute(final String name, final GpuFormat elementFormat) {
--            this.validateUniqueName(name);
 +      public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat) {
-+         this.validateUniqueName(name);
-+         this.createAttribute(name, this.offset, elementFormat);
-+         this.offset = this.offset + elementFormat.blockSize();
-+         return this;
-+      }
-+
-+      public VertexFormat.Builder addAttribute(String name, int stride, GpuFormat elementFormat) {
-+         this.validateUniqueName(name);
-+         this.createAttribute(name, this.offset, elementFormat);
-+         this.offset += stride;
-+         return this;
-+      }
-+
-+      public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat, int columnCount) {
-+         this.validateUniqueName(name);
-+
-+         for (int i = 0; i < columnCount; i++) {
+             this.validateUniqueName(name);
              this.createAttribute(name, this.offset, elementFormat);
              this.offset = this.offset + elementFormat.blockSize();
--            return this;
--        }
-+         }
+             return this;
+         }
  
 -        public VertexFormat.Builder addAttribute(final String name, final int stride, final GpuFormat elementFormat) {
--            this.validateUniqueName(name);
--            this.createAttribute(name, this.offset, elementFormat);
--            this.offset += stride;
--            return this;
--        }
-+         return this;
-+      }
++      public VertexFormat.Builder addAttribute(String name, int stride, GpuFormat elementFormat) {
+             this.validateUniqueName(name);
+             this.createAttribute(name, this.offset, elementFormat);
+             this.offset += stride;
+             return this;
+         }
  
 -        public VertexFormat.Builder addAttribute(final String name, final GpuFormat elementFormat, final int columnCount) {
--            this.validateUniqueName(name);
-+      public VertexFormat.Builder addAttribute(String name, int offset, int stride, GpuFormat elementFormat, int columnCount) {
-+         this.validateUniqueName(name);
-+         int offsetTracker = offset;
++      public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat, int columnCount) {
+             this.validateUniqueName(name);
  
--            for (int i = 0; i < columnCount; i++) {
--                this.createAttribute(name, this.offset, elementFormat);
--                this.offset = this.offset + elementFormat.blockSize();
--            }
-+         for (int i = 0; i < columnCount; i++) {
-+            this.createAttribute(name, offsetTracker, elementFormat);
-+            offsetTracker += stride;
-+         }
- 
--            return this;
--        }
-+         this.offset = Math.max(this.offset, offsetTracker);
-+         return this;
-+      }
+             for (int i = 0; i < columnCount; i++) {
+@@ -126,7 +235,7 @@
+             return this;
+         }
  
 -        public VertexFormat.Builder addAttribute(final String name, final int offset, final int stride, final GpuFormat elementFormat, final int columnCount) {
--            this.validateUniqueName(name);
--            int offsetTracker = offset;
-+      public VertexFormat build() {
-+         int vertexSize = this.offset;
-+         if (!Mth.isMultipleOf(vertexSize, 4)) {
-+            throw new IllegalStateException("Vertex size must be a multiple of 4, was " + vertexSize);
-+         } else {
-+            return new VertexFormat(this.elements, vertexSize, this.stepRate);
-+         }
-+      }
++      public VertexFormat.Builder addAttribute(String name, int offset, int stride, GpuFormat elementFormat, int columnCount) {
+             this.validateUniqueName(name);
+             int offsetTracker = offset;
  
--            for (int i = 0; i < columnCount; i++) {
--                this.createAttribute(name, offsetTracker, elementFormat);
--                offsetTracker += stride;
--            }
+@@ -147,5 +256,17 @@
+                 return new VertexFormat(this.elements, vertexSize, this.stepRate);
+             }
+         }
++
 +      public VertexFormat.Builder addAll(VertexFormat vf) {
 +         for (VertexFormatElement vfe : vf.getElements()) {
 +            this.addAttribute(vfe.name(), vfe.format());
-+         }
- 
--            this.offset = Math.max(this.offset, offsetTracker);
--            return this;
--        }
+     }
+-}
+\ No newline at end of file
++
 +         while (this.offset < vf.getVertexSize()) {
 +            this.addAttribute("Padding" + this.offset, GpuFormat.R8_SINT);
 +         }
- 
--        public VertexFormat build() {
--            int vertexSize = this.offset;
--            if (!Mth.isMultipleOf(vertexSize, 4)) {
--                throw new IllegalStateException("Vertex size must be a multiple of 4, was " + vertexSize);
--            } else {
--                return new VertexFormat(this.elements, vertexSize, this.stepRate);
--            }
--        }
--    }
--}
-\ No newline at end of file
++
 +         return this;
 +      }
 +   }

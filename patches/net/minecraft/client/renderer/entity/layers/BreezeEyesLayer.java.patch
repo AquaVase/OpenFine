@@ -15,13 +15,10 @@
 +   private BreezeModel model;
  
 -    public BreezeEyesLayer(final RenderLayerParent<BreezeRenderState, BreezeModel> renderer, final EntityModelSet modelSet) {
--        super(renderer);
--        this.model = new BreezeModel(modelSet.bakeLayer(ModelLayers.BREEZE_EYES));
--    }
 +   public BreezeEyesLayer(RenderLayerParent<BreezeRenderState, BreezeModel> renderer, EntityModelSet modelSet) {
-+      super(renderer);
-+      this.model = new BreezeModel(modelSet.bakeLayer(ModelLayers.BREEZE_EYES));
-+   }
+         super(renderer);
+         this.model = new BreezeModel(modelSet.bakeLayer(ModelLayers.BREEZE_EYES));
+     }
  
 -    public void submit(
 -        final PoseStack poseStack,
@@ -32,13 +29,12 @@
 -        final float xRot
 -    ) {
 -        submitNodeCollector.order(1).submitModel(this.model, state, poseStack, BREEZE_EYES, lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, null);
--    }
--}
-\ No newline at end of file
 +   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, BreezeRenderState state, float yRot, float xRot) {
 +      submitNodeCollector.order(1)
 +         .submitModel(this.model, state, poseStack, this.BREEZE_EYES, lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, null);
-+   }
+     }
+-}
+\ No newline at end of file
 +
 +   public void setModel(BreezeModel model) {
 +      this.model = model;

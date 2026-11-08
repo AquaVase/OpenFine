@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/PreferredGraphicsApi.java
 +++ b/net/minecraft/client/PreferredGraphicsApi.java
-@@ -6,36 +6,37 @@
+@@ -6,10 +6,7 @@
  import com.mojang.serialization.Codec;
  import net.minecraft.network.chat.Component;
  import net.minecraft.util.StringRepresentable;
@@ -9,59 +9,27 @@
  
 -@OnlyIn(Dist.CLIENT)
  public enum PreferredGraphicsApi implements StringRepresentable {
--    DEFAULT("default", "options.graphicsApi.default"),
--    OPENGL("opengl", "options.graphicsApi.opengl"),
--    VULKAN("vulkan", "options.graphicsApi.vulkan");
-+   DEFAULT("default", "options.graphicsApi.default"),
-+   OPENGL("opengl", "options.graphicsApi.opengl"),
-+   VULKAN("vulkan", "options.graphicsApi.vulkan");
- 
--    public static final Codec<PreferredGraphicsApi> CODEC = StringRepresentable.fromEnum(PreferredGraphicsApi::values);
--    private final String serializedName;
--    private final Component key;
-+   public static final Codec<PreferredGraphicsApi> CODEC = StringRepresentable.fromEnum(PreferredGraphicsApi::values);
-+   private final String serializedName;
-+   private final Component key;
+     DEFAULT("default", "options.graphicsApi.default"),
+     OPENGL("opengl", "options.graphicsApi.opengl"),
+@@ -19,7 +16,7 @@
+     private final String serializedName;
+     private final Component key;
  
 -    PreferredGraphicsApi(final String serializedName, final String key) {
--        this.serializedName = serializedName;
--        this.key = Component.translatable(key);
--    }
 +   PreferredGraphicsApi(String serializedName, String key) {
-+      this.serializedName = serializedName;
-+      this.key = Component.translatable(key);
-+   }
- 
--    public Component caption() {
--        return this.key;
--    }
-+   public Component caption() {
-+      return this.key;
-+   }
- 
--    @Override
--    public String getSerializedName() {
--        return this.serializedName;
--    }
-+   @Override
-+   public String getSerializedName() {
-+      return this.serializedName;
-+   }
- 
--    public GpuBackend[] getBackendsToTry() {
--        GlBackend gl = new GlBackend();
--        VulkanBackend vulkan = new VulkanBackend();
--        return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
--    }
--}
-\ No newline at end of file
-+   public GpuBackend[] getBackendsToTry() {
-+      GlBackend gl = new GlBackend();
-+      VulkanBackend vulkan = new VulkanBackend();
+         this.serializedName = serializedName;
+         this.key = Component.translatable(key);
+     }
+@@ -36,6 +33,10 @@
+     public GpuBackend[] getBackendsToTry() {
+         GlBackend gl = new GlBackend();
+         VulkanBackend vulkan = new VulkanBackend();
 +      if (Boolean.TRUE) {
 +         return new GpuBackend[]{gl};
 +      } else {
-+         return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
-+      }
+         return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
+     }
+-}
+\ No newline at end of file
 +   }
 +}

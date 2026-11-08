@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/gui/components/debug/DebugEntryFps.java
 +++ b/net/minecraft/client/gui/components/debug/DebugEntryFps.java
-@@ -1,50 +1,43 @@
+@@ -1,44 +1,37 @@
  package net.minecraft.client.gui.components.debug;
  
 -import com.mojang.blaze3d.systems.GpuSurface;
@@ -18,69 +18,47 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class DebugEntryFps implements DebugScreenEntry {
--    @Override
+     @Override
 -    public void display(
 -        final DebugScreenDisplayer displayer,
 -        final @Nullable Level serverOrClientLevel,
 -        final @Nullable LevelChunk clientChunk,
 -        final @Nullable LevelChunk serverChunk
 -    ) {
--        Minecraft minecraft = Minecraft.getInstance();
--        int framerateLimit = minecraft.getFramerateLimitTracker().getFramerateLimit();
++   public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
+         Minecraft minecraft = Minecraft.getInstance();
+         int framerateLimit = minecraft.getFramerateLimitTracker().getFramerateLimit();
 -        Optional<GpuSurface.Configuration> surfaceConfiguration = minecraft.windowSurface().currentConfiguration();
--        displayer.addPriorityLine(
--            String.format(
--                Locale.ROOT,
++      Optional<Configuration> surfaceConfiguration = minecraft.windowSurface().currentConfiguration();
+         displayer.addPriorityLine(
+             String.format(
+                 Locale.ROOT,
 -                "%d fps T: %s%s",
 -                minecraft.getFps(),
--                framerateLimit == 260 ? "inf" : framerateLimit,
--                presentModeName(surfaceConfiguration.map(GpuSurface.Configuration::presentMode).orElse(null))
--            )
--        );
--    }
-+   @Override
-+   public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
-+      Minecraft minecraft = Minecraft.getInstance();
-+      int framerateLimit = minecraft.getFramerateLimitTracker().getFramerateLimit();
-+      Optional<Configuration> surfaceConfiguration = minecraft.windowSurface().currentConfiguration();
-+      displayer.addPriorityLine(
-+         String.format(
-+            Locale.ROOT,
 +            "%s T: %s%s",
 +            Config.getFpsString(),
-+            framerateLimit == 260 ? "inf" : framerateLimit,
+                 framerateLimit == 260 ? "inf" : framerateLimit,
+-                presentModeName(surfaceConfiguration.map(GpuSurface.Configuration::presentMode).orElse(null))
 +            presentModeName(surfaceConfiguration.map(Configuration::presentMode).orElse(null))
-+         )
-+      );
-+   }
+             )
+         );
+     }
  
--    @Override
+     @Override
 -    public boolean isAllowed(final boolean reducedDebugInfo) {
--        return true;
--    }
-+   @Override
 +   public boolean isAllowed(boolean reducedDebugInfo) {
-+      return true;
-+   }
+         return true;
+     }
  
 -    private static String presentModeName(final GpuSurface.@Nullable PresentMode mode) {
--        return switch (mode) {
--            case null -> "";
--            case IMMEDIATE -> " (immediate)";
--            case MAILBOX -> " (mailbox)";
--            case FIFO -> " (fifo)";
--            case FIFO_RELAXED -> " (fifo relaxed)";
--        };
--    }
++   private static String presentModeName(PresentMode mode) {
+         return switch (mode) {
+             case null -> "";
+             case IMMEDIATE -> " (immediate)";
+@@ -47,4 +40,4 @@
+             case FIFO_RELAXED -> " (fifo relaxed)";
+         };
+     }
 -}
 \ No newline at end of file
-+   private static String presentModeName(PresentMode mode) {
-+      return switch (mode) {
-+         case null -> "";
-+         case IMMEDIATE -> " (immediate)";
-+         case MAILBOX -> " (mailbox)";
-+         case FIFO -> " (fifo)";
-+         case FIFO_RELAXED -> " (fifo relaxed)";
-+      };
-+   }
 +}

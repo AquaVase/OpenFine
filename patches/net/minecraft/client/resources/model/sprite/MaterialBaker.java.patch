@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/resources/model/sprite/MaterialBaker.java
 +++ b/net/minecraft/client/resources/model/sprite/MaterialBaker.java
-@@ -12,78 +12,75 @@
+@@ -12,36 +12,33 @@
  import net.minecraft.client.renderer.texture.SpriteLoader;
  import net.minecraft.client.renderer.texture.TextureAtlasSprite;
  import net.minecraft.client.resources.model.ModelDebugName;
@@ -13,129 +13,85 @@
  
 -@OnlyIn(Dist.CLIENT)
  public abstract class MaterialBaker {
--    private static final Logger LOGGER = LogUtils.getLogger();
+     private static final Logger LOGGER = LogUtils.getLogger();
 -    private final Material.Baked missingSprite;
 -    private final Material.Baked missingSpriteForceTranslucent;
--    private final Multimap<String, Identifier> missingSprites = Multimaps.synchronizedMultimap(HashMultimap.create());
--    private final Multimap<String, String> missingReferences = Multimaps.synchronizedMultimap(HashMultimap.create());
--    private final Map<Material, Material.@Nullable Baked> bakedMaterials = new ConcurrentHashMap<>();
--    private final Function<Material, Material.@Nullable Baked> bakerFunction = this::bake;
-+   private static final Logger LOGGER = LogUtils.getLogger();
 +   private final Baked missingSprite;
 +   private final Baked missingSpriteForceTranslucent;
-+   private final Multimap<String, Identifier> missingSprites = Multimaps.synchronizedMultimap(HashMultimap.create());
-+   private final Multimap<String, String> missingReferences = Multimaps.synchronizedMultimap(HashMultimap.create());
+     private final Multimap<String, Identifier> missingSprites = Multimaps.synchronizedMultimap(HashMultimap.create());
+     private final Multimap<String, String> missingReferences = Multimaps.synchronizedMultimap(HashMultimap.create());
+-    private final Map<Material, Material.@Nullable Baked> bakedMaterials = new ConcurrentHashMap<>();
+-    private final Function<Material, Material.@Nullable Baked> bakerFunction = this::bake;
 +   private final Map<Material, Baked> bakedMaterials = new ConcurrentHashMap<>();
 +   private final Function<Material, Baked> bakerFunction = this::bake;
  
 -    public MaterialBaker(final TextureAtlasSprite missingSprite) {
 -        this.missingSprite = new Material.Baked(missingSprite, false);
 -        this.missingSpriteForceTranslucent = new Material.Baked(missingSprite, true);
--    }
 +   public MaterialBaker(TextureAtlasSprite missingSprite) {
 +      this.missingSprite = new Baked(missingSprite, false);
 +      this.missingSpriteForceTranslucent = new Baked(missingSprite, true);
-+   }
+     }
  
 -    public Material.Baked replacementForMissingMaterial(final Material material) {
--        return material.forceTranslucent() ? this.missingSpriteForceTranslucent : this.missingSprite;
--    }
 +   public Baked replacementForMissingMaterial(Material material) {
-+      return material.forceTranslucent() ? this.missingSpriteForceTranslucent : this.missingSprite;
-+   }
+         return material.forceTranslucent() ? this.missingSpriteForceTranslucent : this.missingSprite;
+     }
  
 -    public Material.Baked get(final Material material, final ModelDebugName name) {
--        if (material.sprite().equals(MissingTextureAtlasSprite.getLocation())) {
 +   public Baked get(Material material, ModelDebugName name) {
-+      if (material.sprite().equals(MissingTextureAtlasSprite.getLocation())) {
-+         return this.replacementForMissingMaterial(material);
-+      } else {
-+         Baked baked = this.bakedMaterials.computeIfAbsent(material, this.bakerFunction);
-+         if (baked == null) {
-+            this.missingSprites.put(name.debugName(), material.sprite());
+         if (material.sprite().equals(MissingTextureAtlasSprite.getLocation())) {
              return this.replacementForMissingMaterial(material);
--        } else {
+         } else {
 -            Material.Baked baked = this.bakedMaterials.computeIfAbsent(material, this.bakerFunction);
--            if (baked == null) {
--                this.missingSprites.put(name.debugName(), material.sprite());
--                return this.replacementForMissingMaterial(material);
--            } else {
--                return baked;
--            }
--        }
--    }
-+         } else {
-+            return baked;
-+         }
-+      }
-+   }
++         Baked baked = this.bakedMaterials.computeIfAbsent(material, this.bakerFunction);
+             if (baked == null) {
+                 this.missingSprites.put(name.debugName(), material.sprite());
+                 return this.replacementForMissingMaterial(material);
+@@ -51,19 +48,19 @@
+         }
+     }
  
 -    protected abstract Material.@Nullable Baked bake(Material material);
 +   protected abstract Baked bake(Material var1);
  
 -    protected static Material.@Nullable Baked bakeForAtlas(final Material material, final SpriteLoader.Preparations atlas) {
--        TextureAtlasSprite sprite = atlas.getSprite(material.sprite());
--        return sprite != null ? new Material.Baked(sprite, material.forceTranslucent()) : null;
--    }
 +   protected static Baked bakeForAtlas(Material material, SpriteLoader.Preparations atlas) {
-+      TextureAtlasSprite sprite = atlas.getSprite(material.sprite());
+         TextureAtlasSprite sprite = atlas.getSprite(material.sprite());
+-        return sprite != null ? new Material.Baked(sprite, material.forceTranslucent()) : null;
 +      return sprite != null ? new Baked(sprite, material.forceTranslucent()) : null;
-+   }
+     }
  
 -    public Material.Baked resolveSlot(final TextureSlots slots, final String id, final ModelDebugName name) {
--        Material resolvedMaterial = slots.getMaterial(id);
--        return resolvedMaterial != null ? this.get(resolvedMaterial, name) : this.reportMissingReference(id, name);
--    }
 +   public Baked resolveSlot(TextureSlots slots, String id, ModelDebugName name) {
-+      Material resolvedMaterial = slots.getMaterial(id);
-+      return resolvedMaterial != null ? this.get(resolvedMaterial, name) : this.reportMissingReference(id, name);
-+   }
+         Material resolvedMaterial = slots.getMaterial(id);
+         return resolvedMaterial != null ? this.get(resolvedMaterial, name) : this.reportMissingReference(id, name);
+     }
  
 -    public Material.Baked reportMissingReference(final String reference, final ModelDebugName responsibleModel) {
--        this.missingReferences.put(responsibleModel.debugName(), reference);
--        return this.missingSprite;
--    }
 +   public Baked reportMissingReference(String reference, ModelDebugName responsibleModel) {
-+      this.missingReferences.put(responsibleModel.debugName(), reference);
-+      return this.missingSprite;
-+   }
- 
--    public void logMissingTextures() {
--        this.missingSprites
--            .asMap()
--            .forEach(
--                (location, sprites) -> LOGGER.warn(
+         this.missingReferences.put(responsibleModel.debugName(), reference);
+         return this.missingSprite;
+     }
+@@ -73,17 +70,17 @@
+             .asMap()
+             .forEach(
+                 (location, sprites) -> LOGGER.warn(
 -                    "Missing textures in model {}:\n{}", location, sprites.stream().sorted().map(sprite -> "    " + sprite).collect(Collectors.joining("\n"))
--                )
--            );
--        this.missingReferences
--            .asMap()
--            .forEach(
--                (location, references) -> LOGGER.warn(
++               "Missing textures in model {}: {}", location, sprites.stream().sorted().map(sprite -> "    " + sprite).collect(Collectors.joining("\n"))
+                 )
+             );
+         this.missingReferences
+             .asMap()
+             .forEach(
+                 (location, references) -> LOGGER.warn(
 -                    "Missing texture references in model {}:\n{}",
--                    location,
--                    references.stream().sorted().map(reference -> "    " + reference).collect(Collectors.joining("\n"))
--                )
--            );
--    }
++               "Missing texture references in model {}: {}",
+                     location,
+                     references.stream().sorted().map(reference -> "    " + reference).collect(Collectors.joining("\n"))
+                 )
+             );
+     }
 -}
 \ No newline at end of file
-+   public void logMissingTextures() {
-+      this.missingSprites
-+         .asMap()
-+         .forEach(
-+            (location, sprites) -> LOGGER.warn(
-+               "Missing textures in model {}: {}", location, sprites.stream().sorted().map(sprite -> "    " + sprite).collect(Collectors.joining("\n"))
-+            )
-+         );
-+      this.missingReferences
-+         .asMap()
-+         .forEach(
-+            (location, references) -> LOGGER.warn(
-+               "Missing texture references in model {}: {}",
-+               location,
-+               references.stream().sorted().map(reference -> "    " + reference).collect(Collectors.joining("\n"))
-+            )
-+         );
-+   }
 +}

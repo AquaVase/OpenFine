@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/chunk/SectionMesh.java
 +++ b/net/minecraft/client/renderer/chunk/SectionMesh.java
-@@ -1,47 +1,158 @@
+@@ -1,17 +1,24 @@
  package net.minecraft.client.renderer.chunk;
  
  import com.mojang.blaze3d.IndexType;
@@ -26,65 +26,42 @@
 -@OnlyIn(Dist.CLIENT)
  public interface SectionMesh extends AutoCloseable {
 -    default boolean isDifferentPointOfView(final TranslucencyPointOfView pointOfView) {
--        return false;
--    }
 +   default boolean isDifferentPointOfView(TranslucencyPointOfView pointOfView) {
-+      return false;
-+   }
+         return false;
+     }
  
--    default boolean hasRenderableLayers() {
--        return false;
--    }
-+   default boolean hasRenderableLayers() {
-+      return false;
-+   }
- 
--    default boolean hasTranslucentGeometry() {
--        return false;
--    }
-+   default boolean hasTranslucentGeometry() {
-+      return false;
-+   }
+@@ -23,7 +30,7 @@
+         return false;
+     }
  
 -    default boolean isEmpty(final ChunkSectionLayer layer) {
--        return true;
--    }
 +   default boolean isEmpty(ChunkSectionLayer layer) {
-+      return true;
-+   }
+         return true;
+     }
  
--    default List<BlockEntity> getRenderableBlockEntities() {
--        return Collections.emptyList();
--    }
-+   default List<BlockEntity> getRenderableBlockEntities() {
-+      return Collections.emptyList();
-+   }
+@@ -31,9 +38,9 @@
+         return Collections.emptyList();
+     }
  
 -    boolean facesCanSeeEachother(Direction direction1, Direction direction2);
 +   boolean facesCanSeeEachother(Direction var1, Direction var2);
  
 -    default SectionMesh.@Nullable SectionDraw getSectionDraw(final ChunkSectionLayer layer) {
--        return null;
--    }
 +   default SectionMesh.SectionDraw getSectionDraw(ChunkSectionLayer layer) {
-+      return null;
-+   }
+         return null;
+     }
  
--    @Override
--    default void close() {
--    }
-+   @Override
-+   default void close() {
-+   }
+@@ -41,7 +48,111 @@
+     default void close() {
+     }
  
 -    @OnlyIn(Dist.CLIENT)
 -    record SectionDraw(int indexCount, IndexType indexType, boolean hasCustomIndexBuffer) {
--    }
--}
-\ No newline at end of file
 +   default BitSet getAnimatedSprites(ChunkSectionLayer layerIn) {
 +      return null;
-+   }
+     }
+-}
+\ No newline at end of file
 +
 +   default void setAnimatedSprites(BitSet[] animatedSprites) {
 +   }

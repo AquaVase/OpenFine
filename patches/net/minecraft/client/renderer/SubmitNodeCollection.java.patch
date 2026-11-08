@@ -32,7 +32,7 @@
  import net.minecraft.client.renderer.item.ItemStackRenderState;
  import net.minecraft.client.renderer.rendertype.RenderType;
  import net.minecraft.client.renderer.rendertype.RenderTypes;
-@@ -43,326 +37,349 @@
+@@ -43,13 +37,9 @@
  import net.minecraft.world.item.ItemDisplayContext;
  import net.minecraft.world.phys.Vec3;
  import net.minecraft.world.phys.shapes.VoxelShape;
@@ -44,84 +44,20 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class SubmitNodeCollection implements OrderedSubmitNodeCollector {
--    public final SimpleFeatureRenderPhase solid = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase shadows = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase nameTags = new SimpleFeatureRenderPhase();
--    public final TranslucentFeatureRenderPhase seeThroughNameTags = new TranslucentFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase texts = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase shapeOutlines = new SimpleFeatureRenderPhase();
--    public final TranslucentFeatureRenderPhase translucentBlocksAndItems = new TranslucentFeatureRenderPhase();
--    public final TranslucentFeatureRenderPhase translucentModels = new TranslucentFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase translucentCustomGeometry = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase gizmos = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase breakingOverlay = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase waterMask = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase afterTerrain = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase alwaysOnTop = new SimpleFeatureRenderPhase();
--    public final SimpleFeatureRenderPhase outline = new SimpleFeatureRenderPhase();
--    private final List<FeatureRenderPhase<?>> allPhases = List.of(
--        this.solid,
--        this.shadows,
--        this.nameTags,
--        this.seeThroughNameTags,
--        this.texts,
--        this.shapeOutlines,
--        this.translucentBlocksAndItems,
--        this.translucentModels,
--        this.translucentCustomGeometry,
--        this.gizmos,
--        this.breakingOverlay,
--        this.waterMask,
--        this.afterTerrain,
--        this.alwaysOnTop,
--        this.outline
--    );
-+   public final SimpleFeatureRenderPhase solid = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase shadows = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase nameTags = new SimpleFeatureRenderPhase();
-+   public final TranslucentFeatureRenderPhase seeThroughNameTags = new TranslucentFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase texts = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase shapeOutlines = new SimpleFeatureRenderPhase();
-+   public final TranslucentFeatureRenderPhase translucentBlocksAndItems = new TranslucentFeatureRenderPhase();
-+   public final TranslucentFeatureRenderPhase translucentModels = new TranslucentFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase translucentCustomGeometry = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase gizmos = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase breakingOverlay = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase waterMask = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase afterTerrain = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase alwaysOnTop = new SimpleFeatureRenderPhase();
-+   public final SimpleFeatureRenderPhase outline = new SimpleFeatureRenderPhase();
-+   private final List<FeatureRenderPhase<?>> allPhases = List.of(
-+      this.solid,
-+      this.shadows,
-+      this.nameTags,
-+      this.seeThroughNameTags,
-+      this.texts,
-+      this.shapeOutlines,
-+      this.translucentBlocksAndItems,
-+      this.translucentModels,
-+      this.translucentCustomGeometry,
-+      this.gizmos,
-+      this.breakingOverlay,
-+      this.waterMask,
-+      this.afterTerrain,
-+      this.alwaysOnTop,
-+      this.outline
-+   );
+     public final SimpleFeatureRenderPhase solid = new SimpleFeatureRenderPhase();
+     public final SimpleFeatureRenderPhase shadows = new SimpleFeatureRenderPhase();
+@@ -85,20 +75,14 @@
+     );
  
--    @Override
+     @Override
 -    public void submitShadow(final PoseStack poseStack, final float radius, final List<EntityRenderState.ShadowPiece> pieces) {
--        PoseStack.Pose pose = poseStack.last();
--        this.shadows.submit(new ShadowFeatureRenderer.Submit(new Matrix4f(pose.pose()), radius, pieces));
--    }
-+   @Override
 +   public void submitShadow(PoseStack poseStack, float radius, List<EntityRenderState.ShadowPiece> pieces) {
-+      PoseStack.Pose pose = poseStack.last();
-+      this.shadows.submit(new ShadowFeatureRenderer.Submit(new Matrix4f(pose.pose()), radius, pieces));
-+   }
+         PoseStack.Pose pose = poseStack.last();
+         this.shadows.submit(new ShadowFeatureRenderer.Submit(new Matrix4f(pose.pose()), radius, pieces));
+     }
  
--    @Override
--    public void submitNameTag(
+     @Override
+     public void submitNameTag(
 -        final PoseStack poseStack,
 -        final @Nullable Vec3 nameTagAttachment,
 -        final int offset,
@@ -129,17 +65,14 @@
 -        final boolean seeThrough,
 -        final int lightCoords,
 -        final CameraRenderState camera
--    ) {
--        if (nameTagAttachment != null) {
--            Minecraft minecraft = Minecraft.getInstance();
--            poseStack.pushPose();
--            poseStack.translate(nameTagAttachment.x, nameTagAttachment.y + 0.5, nameTagAttachment.z);
--            poseStack.mulPose(camera.orientation);
--            poseStack.scale(0.025F, -0.025F, 0.025F);
--            Matrix4f pose = new Matrix4f(poseStack.last().pose());
--            float x = -minecraft.font.width(name) / 2.0F;
--            int backgroundColor = ARGB.color(minecraft.gameRenderer.gameRenderState().optionsRenderState.getBackgroundOpacity(0.25F), -16777216);
--            if (seeThrough) {
++      PoseStack poseStack, Vec3 nameTagAttachment, int offset, Component name, boolean seeThrough, int lightCoords, CameraRenderState camera
+     ) {
+         if (nameTagAttachment != null) {
+             Minecraft minecraft = Minecraft.getInstance();
+@@ -110,17 +94,10 @@
+             float x = -minecraft.font.width(name) / 2.0F;
+             int backgroundColor = ARGB.color(minecraft.gameRenderer.gameRenderState().optionsRenderState.getBackgroundOpacity(0.25F), -16777216);
+             if (seeThrough) {
 -                this.nameTags
 -                    .submit(
 -                        new NameTagFeatureRenderer.Submit(
@@ -148,39 +81,19 @@
 -                    );
 -                this.seeThroughNameTags
 -                    .submit(new NameTagFeatureRenderer.Submit(pose, x, offset, name, lightCoords, -2130706433, backgroundColor, Font.DisplayMode.SEE_THROUGH));
--            } else {
--                this.nameTags
--                    .submit(new NameTagFeatureRenderer.Submit(pose, x, offset, name, lightCoords, -2130706433, backgroundColor, Font.DisplayMode.NORMAL));
--            }
-+   @Override
-+   public void submitNameTag(
-+      PoseStack poseStack, Vec3 nameTagAttachment, int offset, Component name, boolean seeThrough, int lightCoords, CameraRenderState camera
-+   ) {
-+      if (nameTagAttachment != null) {
-+         Minecraft minecraft = Minecraft.getInstance();
-+         poseStack.pushPose();
-+         poseStack.translate(nameTagAttachment.x, nameTagAttachment.y + 0.5, nameTagAttachment.z);
-+         poseStack.mulPose(camera.orientation);
-+         poseStack.scale(0.025F, -0.025F, 0.025F);
-+         Matrix4f pose = new Matrix4f(poseStack.last().pose());
-+         float x = -minecraft.font.width(name) / 2.0F;
-+         int backgroundColor = ARGB.color(minecraft.gameRenderer.gameRenderState().optionsRenderState.getBackgroundOpacity(0.25F), -16777216);
-+         if (seeThrough) {
 +            this.nameTags.submit(new Submit(pose, x, offset, name, LightCoordsUtil.lightCoordsWithEmission(lightCoords, 2), -1, 0, Font.DisplayMode.NORMAL));
 +            this.seeThroughNameTags.submit(new Submit(pose, x, offset, name, lightCoords, -2130706433, backgroundColor, Font.DisplayMode.SEE_THROUGH));
-+         } else {
+             } else {
+-                this.nameTags
+-                    .submit(new NameTagFeatureRenderer.Submit(pose, x, offset, name, lightCoords, -2130706433, backgroundColor, Font.DisplayMode.NORMAL));
 +            this.nameTags.submit(new Submit(pose, x, offset, name, lightCoords, -2130706433, backgroundColor, Font.DisplayMode.NORMAL));
-+         }
+             }
  
--            poseStack.popPose();
--        }
--    }
-+         poseStack.popPose();
-+      }
-+   }
+             poseStack.popPose();
+@@ -129,47 +106,47 @@
  
--    @Override
--    public void submitText(
+     @Override
+     public void submitText(
 -        final PoseStack poseStack,
 -        final float x,
 -        final float y,
@@ -191,16 +104,6 @@
 -        final int color,
 -        final int backgroundColor,
 -        final int outlineColor
--    ) {
--        this.texts
--            .submit(
--                new TextFeatureRenderer.Submit(
--                    new Matrix4f(poseStack.last().pose()), x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor
--                )
--            );
--    }
-+   @Override
-+   public void submitText(
 +      PoseStack poseStack,
 +      float x,
 +      float y,
@@ -211,35 +114,31 @@
 +      int color,
 +      int backgroundColor,
 +      int outlineColor
-+   ) {
-+      this.texts
-+         .submit(
+     ) {
+         this.texts
+             .submit(
+-                new TextFeatureRenderer.Submit(
 +            new net.minecraft.client.renderer.feature.TextFeatureRenderer.Submit(
-+               new Matrix4f(poseStack.last().pose()), x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor
-+            )
-+         );
-+   }
+                     new Matrix4f(poseStack.last().pose()), x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor
+                 )
+             );
+     }
  
--    @Override
+     @Override
 -    public void submitFlame(final PoseStack poseStack, final EntityRenderState renderState, final Quaternionf rotation) {
--        this.solid.submit(new FlameFeatureRenderer.Submit(poseStack.last().copy(), renderState, rotation));
--    }
-+   @Override
 +   public void submitFlame(PoseStack poseStack, EntityRenderState renderState, Quaternionf rotation) {
-+      this.solid.submit(new FlameFeatureRenderer.Submit(poseStack.last().copy(), renderState, rotation));
-+   }
+         this.solid.submit(new FlameFeatureRenderer.Submit(poseStack.last().copy(), renderState, rotation));
+     }
  
--    @Override
+     @Override
 -    public void submitLeash(final PoseStack poseStack, final EntityRenderState.LeashState leashState) {
 -        this.solid.submit(new LeashFeatureRenderer.Submit(new Matrix4f(poseStack.last().pose()), leashState));
--    }
-+   @Override
 +   public void submitLeash(PoseStack poseStack, EntityRenderState.LeashState leashState) {
 +      this.solid.submit(new net.minecraft.client.renderer.feature.LeashFeatureRenderer.Submit(new Matrix4f(poseStack.last().pose()), leashState));
-+   }
+     }
  
--    @Override
--    public <S> void submitModel(
+     @Override
+     public <S> void submitModel(
 -        final Model<? super S> model,
 -        final S state,
 -        final PoseStack poseStack,
@@ -250,13 +149,6 @@
 -        final @Nullable TextureAtlasSprite sprite,
 -        final int outlineColor,
 -        final ModelFeatureRenderer.@Nullable CrumblingOverlay crumblingOverlay
--    ) {
--        PoseStack.Pose pose = poseStack.last().copy();
--        if (!renderType.isOutline()) {
--            ModelFeatureRenderer.Submit<S> submit = new ModelFeatureRenderer.Submit<>(
--                renderType, pose, model, state, lightCoords, overlayCoords, tintedColor, sprite, null
-+   @Override
-+   public <S> void submitModel(
 +      Model<? super S> model,
 +      S state,
 +      PoseStack poseStack,
@@ -267,135 +159,49 @@
 +      TextureAtlasSprite sprite,
 +      int outlineColor,
 +      ModelFeatureRenderer.CrumblingOverlay crumblingOverlay
-+   ) {
-+      PoseStack.Pose pose = poseStack.last().copy();
-+      if (!renderType.isOutline()) {
-+         ModelFeatureRenderer.Submit<S> submit = new ModelFeatureRenderer.Submit<>(
-+            renderType, pose, model, state, lightCoords, overlayCoords, tintedColor, sprite, null
-+         );
-+         if (renderType == RenderTypes.waterMask()) {
-+            this.waterMask.submit(submit);
-+         } else if (renderType.hasBlending()) {
-+            this.translucentModels.submit(submit);
-+         } else {
-+            this.solid.submit(submit);
-+         }
-+      }
-+
-+      if (outlineColor != 0) {
-+         RenderType outlineRenderType = getOutlineRenderType(renderType);
-+         if (outlineRenderType != null) {
-+            this.outline
-+               .submit(
-+                  new ModelFeatureRenderer.Submit<>(outlineRenderType, pose, model, state, 15728880, OverlayTexture.NO_OVERLAY, outlineColor, sprite, null)
-+               );
-+         }
-+      }
-+
-+      if (crumblingOverlay != null && renderType.affectsCrumbling()) {
-+         RenderType crumblingRenderType = ModelBakery.DESTROY_TYPES.get(crumblingOverlay.progress());
-+         this.breakingOverlay
-+            .submit(
-+               new ModelFeatureRenderer.Submit<>(
-+                  crumblingRenderType, pose, model, state, lightCoords, overlayCoords, tintedColor, null, crumblingOverlay.cameraPose()
-+               )
-             );
--            if (renderType == RenderTypes.waterMask()) {
--                this.waterMask.submit(submit);
--            } else if (renderType.hasBlending()) {
--                this.translucentModels.submit(submit);
--            } else {
--                this.solid.submit(submit);
--            }
--        }
-+      }
-+   }
- 
--        if (outlineColor != 0) {
--            RenderType outlineRenderType = getOutlineRenderType(renderType);
--            if (outlineRenderType != null) {
--                this.outline
--                    .submit(
+     ) {
+         PoseStack.Pose pose = poseStack.last().copy();
+         if (!renderType.isOutline()) {
+@@ -190,9 +167,7 @@
+             if (outlineRenderType != null) {
+                 this.outline
+                     .submit(
 -                        new ModelFeatureRenderer.Submit<>(
 -                            outlineRenderType, pose, model, state, 15728880, OverlayTexture.NO_OVERLAY, outlineColor, sprite, null
 -                        )
--                    );
--            }
--        }
-+   @Override
++                  new ModelFeatureRenderer.Submit<>(outlineRenderType, pose, model, state, 15728880, OverlayTexture.NO_OVERLAY, outlineColor, sprite, null)
+                     );
+             }
+         }
+@@ -209,8 +184,10 @@
+     }
+ 
+     @Override
+-    public void submitMovingBlock(final PoseStack poseStack, final MovingBlockRenderState movingBlockRenderState, final int outlineColor) {
+-        MovingBlockFeatureRenderer.Submit submit = new MovingBlockFeatureRenderer.Submit(new Matrix4f(poseStack.last().pose()), movingBlockRenderState, 0);
 +   public void submitMovingBlock(PoseStack poseStack, MovingBlockRenderState movingBlockRenderState, int outlineColor) {
 +      net.minecraft.client.renderer.feature.MovingBlockFeatureRenderer.Submit submit = new net.minecraft.client.renderer.feature.MovingBlockFeatureRenderer.Submit(
 +         new Matrix4f(poseStack.last().pose()), movingBlockRenderState, 0
 +      );
-+      BlockStateModel model = Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(movingBlockRenderState.blockState);
-+      if (model.hasMaterialFlag(1)) {
-+         this.translucentBlocksAndItems.submit(submit);
-+      } else {
-+         this.solid.submit(submit);
-+      }
+         BlockStateModel model = Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(movingBlockRenderState.blockState);
+         if (model.hasMaterialFlag(1)) {
+             this.translucentBlocksAndItems.submit(submit);
+@@ -219,23 +196,22 @@
+         }
  
--        if (crumblingOverlay != null && renderType.affectsCrumbling()) {
--            RenderType crumblingRenderType = ModelBakery.DESTROY_TYPES.get(crumblingOverlay.progress());
--            this.breakingOverlay
--                .submit(
--                    new ModelFeatureRenderer.Submit<>(
--                        crumblingRenderType, pose, model, state, lightCoords, overlayCoords, tintedColor, null, crumblingOverlay.cameraPose()
--                    )
--                );
--        }
--    }
-+      if (outlineColor != 0) {
+         if (outlineColor != 0) {
+-            this.outline.submit(new MovingBlockFeatureRenderer.Submit(new Matrix4f(poseStack.last().pose()), movingBlockRenderState, outlineColor));
 +         this.outline
 +            .submit(
 +               new net.minecraft.client.renderer.feature.MovingBlockFeatureRenderer.Submit(
 +                  new Matrix4f(poseStack.last().pose()), movingBlockRenderState, outlineColor
 +               )
 +            );
-+      }
-+   }
+         }
+     }
  
--    @Override
--    public void submitMovingBlock(final PoseStack poseStack, final MovingBlockRenderState movingBlockRenderState, final int outlineColor) {
--        MovingBlockFeatureRenderer.Submit submit = new MovingBlockFeatureRenderer.Submit(new Matrix4f(poseStack.last().pose()), movingBlockRenderState, 0);
--        BlockStateModel model = Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(movingBlockRenderState.blockState);
--        if (model.hasMaterialFlag(1)) {
-+   @Override
-+   public void submitBlockModel(
-+      PoseStack poseStack, RenderType renderType, List<BlockStateModelPart> modelParts, int[] tintLayers, int lightCoords, int overlayCoords, int outlineColor
-+   ) {
-+      PoseStack.Pose pose = poseStack.last().copy();
-+      if (!renderType.isOutline()) {
-+         net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit submit = new net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit(
-+            pose, renderType, modelParts, tintLayers, lightCoords, overlayCoords, -1, null
-+         );
-+         if (renderType.hasBlending()) {
-             this.translucentBlocksAndItems.submit(submit);
--        } else {
-+         } else {
-             this.solid.submit(submit);
--        }
-+         }
-+      }
- 
--        if (outlineColor != 0) {
--            this.outline.submit(new MovingBlockFeatureRenderer.Submit(new Matrix4f(poseStack.last().pose()), movingBlockRenderState, outlineColor));
--        }
--    }
-+      if (outlineColor != 0) {
-+         RenderType outlineRenderType = getOutlineRenderType(renderType);
-+         if (outlineRenderType != null) {
-+            this.outline
-+               .submit(
-+                  new net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit(
-+                     pose, outlineRenderType, modelParts, BlockModelRenderState.EMPTY_TINTS, 15728880, OverlayTexture.NO_OVERLAY, outlineColor, null
-+                  )
-+               );
-+         }
-+      }
-+   }
- 
--    @Override
--    public void submitBlockModel(
+     @Override
+     public void submitBlockModel(
 -        final PoseStack poseStack,
 -        final RenderType renderType,
 -        final List<BlockStateModelPart> modelParts,
@@ -403,151 +209,66 @@
 -        final int lightCoords,
 -        final int overlayCoords,
 -        final int outlineColor
--    ) {
--        PoseStack.Pose pose = poseStack.last().copy();
--        if (!renderType.isOutline()) {
++      PoseStack poseStack, RenderType renderType, List<BlockStateModelPart> modelParts, int[] tintLayers, int lightCoords, int overlayCoords, int outlineColor
+     ) {
+         PoseStack.Pose pose = poseStack.last().copy();
+         if (!renderType.isOutline()) {
 -            BlockModelFeatureRenderer.Submit submit = new BlockModelFeatureRenderer.Submit(
--                pose, renderType, modelParts, tintLayers, lightCoords, overlayCoords, -1, null
--            );
--            if (renderType.hasBlending()) {
--                this.translucentBlocksAndItems.submit(submit);
--            } else {
--                this.solid.submit(submit);
--            }
--        }
-+   private static RenderType getOutlineRenderType(RenderType renderType) {
-+      if (renderType.isOutline()) {
-+         return renderType;
-+      } else {
-+         return renderType.outline().isPresent() ? renderType.outline().get() : null;
-+      }
-+   }
- 
--        if (outlineColor != 0) {
--            RenderType outlineRenderType = getOutlineRenderType(renderType);
--            if (outlineRenderType != null) {
--                this.outline
--                    .submit(
++         net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit submit = new net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit(
+                 pose, renderType, modelParts, tintLayers, lightCoords, overlayCoords, -1, null
+             );
+             if (renderType.hasBlending()) {
+@@ -250,7 +226,7 @@
+             if (outlineRenderType != null) {
+                 this.outline
+                     .submit(
 -                        new BlockModelFeatureRenderer.Submit(
--                            pose, outlineRenderType, modelParts, BlockModelRenderState.EMPTY_TINTS, 15728880, OverlayTexture.NO_OVERLAY, outlineColor, null
--                        )
--                    );
--            }
--        }
--    }
-+   @Override
-+   public void submitBreakingBlockModel(PoseStack poseStack, List<BlockStateModelPart> parts, int progress) {
-+      PoseStack.Pose pose = poseStack.last().copy();
-+      this.breakingOverlay
-+         .submit(
-+            new net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit(
-+               pose,
-+               ModelBakery.DESTROY_TYPES.get(progress),
-+               List.copyOf(parts),
-+               BlockModelRenderState.EMPTY_TINTS,
-+               15728880,
-+               OverlayTexture.NO_OVERLAY,
-+               0,
-+               pose
-+            )
-+         );
-+   }
++                  new net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit(
+                             pose, outlineRenderType, modelParts, BlockModelRenderState.EMPTY_TINTS, 15728880, OverlayTexture.NO_OVERLAY, outlineColor, null
+                         )
+                     );
+@@ -258,7 +234,7 @@
+         }
+     }
  
 -    private static @Nullable RenderType getOutlineRenderType(final RenderType renderType) {
--        if (renderType.isOutline()) {
--            return renderType;
--        } else {
--            return renderType.outline().isPresent() ? renderType.outline().get() : null;
--        }
--    }
-+   @Override
-+   public void submitShapeOutline(PoseStack poseStack, VoxelShape shape, RenderType renderType, int color, float width, boolean afterTerrain) {
-+      net.minecraft.client.renderer.feature.ShapeOutlineFeatureRenderer.Submit submit = new net.minecraft.client.renderer.feature.ShapeOutlineFeatureRenderer.Submit(
-+         poseStack.last().copy(), shape, renderType, color, width
-+      );
-+      if (afterTerrain) {
-+         this.afterTerrain.submit(submit);
-+      } else {
-+         this.shapeOutlines.submit(submit);
-+      }
-+   }
++   private static RenderType getOutlineRenderType(RenderType renderType) {
+         if (renderType.isOutline()) {
+             return renderType;
+         } else {
+@@ -267,11 +243,11 @@
+     }
  
--    @Override
+     @Override
 -    public void submitBreakingBlockModel(final PoseStack poseStack, final List<BlockStateModelPart> parts, final int progress) {
--        PoseStack.Pose pose = poseStack.last().copy();
--        this.breakingOverlay
-+   @Override
-+   public void submitItem(
-+      PoseStack poseStack,
-+      ItemDisplayContext displayContext,
-+      int lightCoords,
-+      int overlayCoords,
-+      int outlineColor,
-+      int[] tintLayers,
-+      List<BakedQuad> quads,
-+      ItemStackRenderState.FoilType foilType
-+   ) {
-+      PoseStack.Pose pose = poseStack.last().copy();
-+      ItemFeatureRenderer.Submit submit = new ItemFeatureRenderer.Submit(pose, displayContext, lightCoords, overlayCoords, 0, tintLayers, quads, foilType);
-+      if (submit.hasTranslucency()) {
-+         this.translucentBlocksAndItems.submit(submit);
-+      } else {
-+         this.solid.submit(submit);
-+      }
-+
-+      if (outlineColor != 0) {
-+         this.outline
++   public void submitBreakingBlockModel(PoseStack poseStack, List<BlockStateModelPart> parts, int progress) {
+         PoseStack.Pose pose = poseStack.last().copy();
+         this.breakingOverlay
              .submit(
 -                new BlockModelFeatureRenderer.Submit(
--                    pose,
--                    ModelBakery.DESTROY_TYPES.get(progress),
--                    List.copyOf(parts),
--                    BlockModelRenderState.EMPTY_TINTS,
--                    15728880,
--                    OverlayTexture.NO_OVERLAY,
--                    0,
--                    pose
--                )
-+               new ItemFeatureRenderer.Submit(
-+                  pose,
-+                  displayContext,
-+                  15728880,
-+                  OverlayTexture.NO_OVERLAY,
-+                  outlineColor,
-+                  ItemStackRenderState.LayerRenderState.EMPTY_TINTS,
-+                  quads,
-+                  ItemStackRenderState.FoilType.NONE
-+               )
-             );
--    }
-+      }
-+   }
++            new net.minecraft.client.renderer.feature.BlockModelFeatureRenderer.Submit(
+                     pose,
+                     ModelBakery.DESTROY_TYPES.get(progress),
+                     List.copyOf(parts),
+@@ -285,10 +261,10 @@
+     }
  
--    @Override
+     @Override
 -    public void submitShapeOutline(
 -        final PoseStack poseStack, final VoxelShape shape, final RenderType renderType, final int color, final float width, final boolean afterTerrain
 -    ) {
 -        ShapeOutlineFeatureRenderer.Submit submit = new ShapeOutlineFeatureRenderer.Submit(poseStack.last().copy(), shape, renderType, color, width);
--        if (afterTerrain) {
--            this.afterTerrain.submit(submit);
--        } else {
--            this.shapeOutlines.submit(submit);
--        }
--    }
-+   @Override
-+   public void submitCustomGeometry(PoseStack poseStack, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
-+      CustomFeatureRenderer.Submit submit = new CustomFeatureRenderer.Submit(poseStack.last().copy(), renderType, customGeometryRenderer);
-+      if (renderType.isOutline()) {
-+         this.outline.submit(submit);
-+      } else if (renderType.hasBlending()) {
-+         this.translucentCustomGeometry.submit(submit);
-+      } else {
-+         this.solid.submit(submit);
-+      }
-+   }
++   public void submitShapeOutline(PoseStack poseStack, VoxelShape shape, RenderType renderType, int color, float width, boolean afterTerrain) {
++      net.minecraft.client.renderer.feature.ShapeOutlineFeatureRenderer.Submit submit = new net.minecraft.client.renderer.feature.ShapeOutlineFeatureRenderer.Submit(
++         poseStack.last().copy(), shape, renderType, color, width
++      );
+         if (afterTerrain) {
+             this.afterTerrain.submit(submit);
+         } else {
+@@ -298,14 +274,14 @@
  
--    @Override
--    public void submitItem(
+     @Override
+     public void submitItem(
 -        final PoseStack poseStack,
 -        final ItemDisplayContext displayContext,
 -        final int lightCoords,
@@ -556,70 +277,57 @@
 -        final int[] tintLayers,
 -        final List<BakedQuad> quads,
 -        final ItemStackRenderState.FoilType foilType
++      PoseStack poseStack,
++      ItemDisplayContext displayContext,
++      int lightCoords,
++      int overlayCoords,
++      int outlineColor,
++      int[] tintLayers,
++      List<BakedQuad> quads,
++      ItemStackRenderState.FoilType foilType
+     ) {
+         PoseStack.Pose pose = poseStack.last().copy();
+         ItemFeatureRenderer.Submit submit = new ItemFeatureRenderer.Submit(pose, displayContext, lightCoords, overlayCoords, 0, tintLayers, quads, foilType);
+@@ -333,9 +309,7 @@
+     }
+ 
+     @Override
+-    public void submitCustomGeometry(
+-        final PoseStack poseStack, final RenderType renderType, final SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer
 -    ) {
--        PoseStack.Pose pose = poseStack.last().copy();
--        ItemFeatureRenderer.Submit submit = new ItemFeatureRenderer.Submit(pose, displayContext, lightCoords, overlayCoords, 0, tintLayers, quads, foilType);
--        if (submit.hasTranslucency()) {
--            this.translucentBlocksAndItems.submit(submit);
--        } else {
--            this.solid.submit(submit);
--        }
-+   @Override
++   public void submitCustomGeometry(PoseStack poseStack, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
+         CustomFeatureRenderer.Submit submit = new CustomFeatureRenderer.Submit(poseStack.last().copy(), renderType, customGeometryRenderer);
+         if (renderType.isOutline()) {
+             this.outline.submit(submit);
+@@ -347,14 +321,16 @@
+     }
+ 
+     @Override
+-    public void submitQuadParticleGroup(final QuadParticleRenderState particles) {
+-        this.solid.submit(new QuadParticleFeatureRenderer.Submit(particles, false));
+-        this.afterTerrain.submit(new QuadParticleFeatureRenderer.Submit(particles, true));
 +   public void submitQuadParticleGroup(QuadParticleRenderState particles) {
 +      this.solid.submit(new net.minecraft.client.renderer.feature.QuadParticleFeatureRenderer.Submit(particles, false));
 +      this.afterTerrain.submit(new net.minecraft.client.renderer.feature.QuadParticleFeatureRenderer.Submit(particles, true));
-+   }
+     }
  
--        if (outlineColor != 0) {
--            this.outline
--                .submit(
--                    new ItemFeatureRenderer.Submit(
--                        pose,
--                        displayContext,
--                        15728880,
--                        OverlayTexture.NO_OVERLAY,
--                        outlineColor,
--                        ItemStackRenderState.LayerRenderState.EMPTY_TINTS,
--                        quads,
--                        ItemStackRenderState.FoilType.NONE
--                    )
--                );
--        }
--    }
-+   @Override
+     @Override
+-    public void submitGizmoPrimitives(final DrawableGizmoPrimitives.Group group, final CameraRenderState camera, final boolean onTop) {
+-        GizmoFeatureRenderer.Submit submit = new GizmoFeatureRenderer.Submit(group, camera);
 +   public void submitGizmoPrimitives(Group group, CameraRenderState camera, boolean onTop) {
 +      net.minecraft.client.renderer.feature.GizmoFeatureRenderer.Submit submit = new net.minecraft.client.renderer.feature.GizmoFeatureRenderer.Submit(
 +         group, camera
 +      );
-+      if (onTop) {
-+         this.alwaysOnTop.submit(submit);
-+      } else {
-+         this.gizmos.submit(submit);
-+      }
-+   }
- 
--    @Override
--    public void submitCustomGeometry(
--        final PoseStack poseStack, final RenderType renderType, final SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer
--    ) {
--        CustomFeatureRenderer.Submit submit = new CustomFeatureRenderer.Submit(poseStack.last().copy(), renderType, customGeometryRenderer);
--        if (renderType.isOutline()) {
--            this.outline.submit(submit);
--        } else if (renderType.hasBlending()) {
--            this.translucentCustomGeometry.submit(submit);
--        } else {
--            this.solid.submit(submit);
--        }
--    }
-+   public List<FeatureRenderPhase<?>> allPhases() {
-+      return this.allPhases;
-+   }
- 
--    @Override
--    public void submitQuadParticleGroup(final QuadParticleRenderState particles) {
--        this.solid.submit(new QuadParticleFeatureRenderer.Submit(particles, false));
--        this.afterTerrain.submit(new QuadParticleFeatureRenderer.Submit(particles, true));
--    }
+         if (onTop) {
+             this.alwaysOnTop.submit(submit);
+         } else {
+@@ -365,4 +341,45 @@
+     public List<FeatureRenderPhase<?>> allPhases() {
+         return this.allPhases;
+     }
+-}
+\ No newline at end of file
++
 +   @Override
 +   public String toString() {
 +      StringBuilder sb = new StringBuilder();
@@ -640,25 +348,11 @@
 +      this.append(sb, "outline", this.outline);
 +      return sb.toString();
 +   }
- 
--    @Override
--    public void submitGizmoPrimitives(final DrawableGizmoPrimitives.Group group, final CameraRenderState camera, final boolean onTop) {
--        GizmoFeatureRenderer.Submit submit = new GizmoFeatureRenderer.Submit(group, camera);
--        if (onTop) {
--            this.alwaysOnTop.submit(submit);
--        } else {
--            this.gizmos.submit(submit);
--        }
--    }
++
 +   private void append(StringBuilder sb, String name, SimpleFeatureRenderPhase list) {
 +      this.append(sb, name, list.size());
 +   }
- 
--    public List<FeatureRenderPhase<?>> allPhases() {
--        return this.allPhases;
--    }
--}
-\ No newline at end of file
++
 +   private void append(StringBuilder sb, String name, TranslucentFeatureRenderPhase list) {
 +      this.append(sb, name, list.size());
 +   }

@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/entity/layers/WingsLayer.java
 +++ b/net/minecraft/client/renderer/entity/layers/WingsLayer.java
-@@ -5,73 +5,84 @@
+@@ -5,36 +5,33 @@
  import net.minecraft.client.model.geom.EntityModelSet;
  import net.minecraft.client.model.geom.ModelLayers;
  import net.minecraft.client.model.object.equipment.ElytraModel;
@@ -24,85 +24,39 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class WingsLayer<S extends HumanoidRenderState, M extends EntityModel<S>> extends RenderLayer<S, M> {
--    private final ElytraModel elytraModel;
--    private final ElytraModel elytraBabyModel;
--    private final EquipmentLayerRenderer equipmentRenderer;
-+   private final ElytraModel elytraModel;
-+   private final ElytraModel elytraBabyModel;
-+   private final EquipmentLayerRenderer equipmentRenderer;
+     private final ElytraModel elytraModel;
+     private final ElytraModel elytraBabyModel;
+     private final EquipmentLayerRenderer equipmentRenderer;
  
 -    public WingsLayer(final RenderLayerParent<S, M> renderer, final EntityModelSet modelSet, final EquipmentLayerRenderer equipmentRenderer) {
--        super(renderer);
--        this.elytraModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA));
--        this.elytraBabyModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA_BABY));
--        this.equipmentRenderer = equipmentRenderer;
--    }
 +   public WingsLayer(RenderLayerParent<S, M> renderer, EntityModelSet modelSet, EquipmentLayerRenderer equipmentRenderer) {
-+      super(renderer);
-+      this.elytraModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA));
-+      this.elytraBabyModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA_BABY));
-+      this.equipmentRenderer = equipmentRenderer;
-+   }
+         super(renderer);
+         this.elytraModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA));
+         this.elytraBabyModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA_BABY));
+         this.equipmentRenderer = equipmentRenderer;
+     }
  
 -    public void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
 -    ) {
--        ItemStack itemStack = state.chestEquipment;
--        Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
--        if (equippable != null && !equippable.assetId().isEmpty()) {
--            Identifier playerElytraTexture = getPlayerElytraTexture(state);
--            ElytraModel model = state.isBaby ? this.elytraBabyModel : this.elytraModel;
--            poseStack.pushPose();
--            poseStack.translate(0.0F, 0.0F, 0.125F);
--            this.equipmentRenderer
--                .renderLayers(
--                    EquipmentClientInfo.LayerType.WINGS,
--                    equippable.assetId().get(),
--                    model,
--                    state,
--                    itemStack,
--                    poseStack,
--                    submitNodeCollector,
--                    lightCoords,
--                    playerElytraTexture,
--                    state.outlineColor,
--                    0
--                );
--            poseStack.popPose();
--        }
--    }
 +   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
-+      ItemStack itemStack = state.chestEquipment;
-+      Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
-+      if (equippable != null && !equippable.assetId().isEmpty()) {
-+         Identifier playerElytraTexture = getPlayerElytraTexture(state);
-+         ElytraModel model = state.isBaby ? this.elytraBabyModel : this.elytraModel;
-+         poseStack.pushPose();
-+         poseStack.translate(0.0F, 0.0F, 0.125F);
-+         this.equipmentRenderer
-+            .renderLayers(
+         ItemStack itemStack = state.chestEquipment;
+         Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
+         if (equippable != null && !equippable.assetId().isEmpty()) {
+@@ -44,7 +41,7 @@
+             poseStack.translate(0.0F, 0.0F, 0.125F);
+             this.equipmentRenderer
+                 .renderLayers(
+-                    EquipmentClientInfo.LayerType.WINGS,
 +               LayerType.WINGS,
-+               equippable.assetId().get(),
-+               model,
-+               state,
-+               itemStack,
-+               poseStack,
-+               submitNodeCollector,
-+               lightCoords,
-+               playerElytraTexture,
-+               state.outlineColor,
-+               0
-+            );
-+         poseStack.popPose();
-+      }
-+   }
+                     equippable.assetId().get(),
+                     model,
+                     state,
+@@ -60,18 +57,32 @@
+         }
+     }
  
 -    private static @Nullable Identifier getPlayerElytraTexture(final HumanoidRenderState state) {
--        if (state instanceof AvatarRenderState playerState) {
--            PlayerSkin skin = playerState.skin;
--            if (skin.elytra() != null) {
--                return skin.elytra().texturePath();
--            }
 +   protected static Identifier getPlayerElytraTexture(HumanoidRenderState state) {
 +      if (Config.isCustomItems()) {
 +         Identifier customElytra = CustomItems.getCustomElytraTexture(state.chestEquipment, null);
@@ -110,32 +64,29 @@
 +            return customElytra;
 +         }
 +      }
- 
--            if (skin.cape() != null && playerState.showCape) {
--                return skin.cape().texturePath();
-+      if (state instanceof AvatarRenderState playerState) {
-+         PlayerSkin skin = playerState.skin;
++
+         if (state instanceof AvatarRenderState playerState) {
+             PlayerSkin skin = playerState.skin;
+-            if (skin.elytra() != null) {
 +         if (state.entity instanceof AbstractClientPlayer player) {
 +            Identifier elytraTexture = player.getLocationElytra();
 +            if (elytraTexture != null) {
 +               return elytraTexture;
-             }
--        }
++            }
 +         }
++
++         if (Config.isShowCapes() && skin.elytra() != null) {
+                 return skin.elytra().texturePath();
+             }
  
--        return null;
--    }
+-            if (skin.cape() != null && playerState.showCape) {
++         if (Config.isShowCapes() && skin.cape() != null && playerState.showCape) {
+                 return skin.cape().texturePath();
+             }
+         }
+ 
+         return null;
+     }
 -}
 \ No newline at end of file
-+         if (Config.isShowCapes() && skin.elytra() != null) {
-+            return skin.elytra().texturePath();
-+         }
-+
-+         if (Config.isShowCapes() && skin.cape() != null && playerState.showCape) {
-+            return skin.cape().texturePath();
-+         }
-+      }
-+
-+      return null;
-+   }
 +}

@@ -8,7 +8,7 @@
  import net.minecraft.client.renderer.SubmitNodeCollector;
  import net.minecraft.client.renderer.entity.RenderLayerParent;
  import net.minecraft.client.renderer.entity.state.AvatarRenderState;
-@@ -13,66 +14,50 @@
+@@ -13,27 +14,25 @@
  import net.minecraft.client.renderer.texture.OverlayTexture;
  import net.minecraft.client.resources.model.EquipmentAssetManager;
  import net.minecraft.client.resources.model.EquipmentClientInfo;
@@ -24,42 +24,26 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class CapeLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
--    private final HumanoidModel<AvatarRenderState> model;
--    private final EquipmentAssetManager equipmentAssets;
-+   private final HumanoidModel<AvatarRenderState> model;
-+   private final EquipmentAssetManager equipmentAssets;
+     private final HumanoidModel<AvatarRenderState> model;
+     private final EquipmentAssetManager equipmentAssets;
  
 -    public CapeLayer(
 -        final RenderLayerParent<AvatarRenderState, PlayerModel> renderer, final EntityModelSet modelSet, final EquipmentAssetManager equipmentAssets
 -    ) {
--        super(renderer);
--        this.model = new PlayerCapeModel(modelSet.bakeLayer(ModelLayers.PLAYER_CAPE));
--        this.equipmentAssets = equipmentAssets;
--    }
 +   public CapeLayer(RenderLayerParent<AvatarRenderState, PlayerModel> renderer, EntityModelSet modelSet, EquipmentAssetManager equipmentAssets) {
-+      super(renderer);
-+      this.model = new PlayerCapeModel(modelSet.bakeLayer(ModelLayers.PLAYER_CAPE));
-+      this.equipmentAssets = equipmentAssets;
-+   }
+         super(renderer);
+         this.model = new PlayerCapeModel(modelSet.bakeLayer(ModelLayers.PLAYER_CAPE));
+         this.equipmentAssets = equipmentAssets;
+     }
  
 -    private boolean hasLayer(final ItemStack itemStack, final EquipmentClientInfo.LayerType layerType) {
--        Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
--        if (equippable != null && !equippable.assetId().isEmpty()) {
--            EquipmentClientInfo equipmentClientInfo = this.equipmentAssets.get(equippable.assetId().get());
--            return !equipmentClientInfo.getLayers(layerType).isEmpty();
--        } else {
--            return false;
--        }
--    }
 +   private boolean hasLayer(ItemStack itemStack, LayerType layerType) {
-+      Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
-+      if (equippable != null && !equippable.assetId().isEmpty()) {
-+         EquipmentClientInfo equipmentClientInfo = this.equipmentAssets.get(equippable.assetId().get());
-+         return !equipmentClientInfo.getLayers(layerType).isEmpty();
-+      } else {
-+         return false;
-+      }
-+   }
+         Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
+         if (equippable != null && !equippable.assetId().isEmpty()) {
+             EquipmentClientInfo equipmentClientInfo = this.equipmentAssets.get(equippable.assetId().get());
+@@ -43,36 +42,22 @@
+         }
+     }
  
 -    public void submit(
 -        final PoseStack poseStack,
@@ -69,16 +53,21 @@
 -        final float yRot,
 -        final float xRot
 -    ) {
--        if (!state.isInvisible && state.showCape) {
--            PlayerSkin skin = state.skin;
++   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, AvatarRenderState state, float yRot, float xRot) {
+         if (!state.isInvisible && state.showCape) {
+             PlayerSkin skin = state.skin;
 -            if (skin.cape() != null) {
 -                if (!this.hasLayer(state.chestEquipment, EquipmentClientInfo.LayerType.WINGS)) {
--                    poseStack.pushPose();
++         AbstractClientPlayer player = state.entity instanceof AbstractClientPlayer ? (AbstractClientPlayer)state.entity : null;
++         Identifier capeTexture = player != null ? player.getLocationCape() : PlayerUtils.getTexturePath(skin.cape());
++         if (capeTexture != null && !this.hasLayer(state.chestEquipment, LayerType.WINGS)) {
+                     poseStack.pushPose();
 -                    if (this.hasLayer(state.chestEquipment, EquipmentClientInfo.LayerType.HUMANOID)) {
--                        poseStack.translate(0.0F, -0.053125F, 0.06875F);
--                    }
--
--                    submitNodeCollector.submitModel(
++            if (this.hasLayer(state.chestEquipment, LayerType.HUMANOID)) {
+                         poseStack.translate(0.0F, -0.053125F, 0.06875F);
+                     }
+ 
+                     submitNodeCollector.submitModel(
 -                        this.model,
 -                        state,
 -                        poseStack,
@@ -87,29 +76,12 @@
 -                        OverlayTexture.NO_OVERLAY,
 -                        state.outlineColor,
 -                        null
--                    );
--                    poseStack.popPose();
--                }
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, AvatarRenderState state, float yRot, float xRot) {
-+      if (!state.isInvisible && state.showCape) {
-+         PlayerSkin skin = state.skin;
-+         AbstractClientPlayer player = state.entity instanceof AbstractClientPlayer ? (AbstractClientPlayer)state.entity : null;
-+         Identifier capeTexture = player != null ? player.getLocationCape() : PlayerUtils.getTexturePath(skin.cape());
-+         if (capeTexture != null && !this.hasLayer(state.chestEquipment, LayerType.WINGS)) {
-+            poseStack.pushPose();
-+            if (this.hasLayer(state.chestEquipment, LayerType.HUMANOID)) {
-+               poseStack.translate(0.0F, -0.053125F, 0.06875F);
++               this.model, state, poseStack, RenderTypes.entitySolid(capeTexture), lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, null
+                     );
+                     poseStack.popPose();
+                 }
              }
--        }
--    }
+         }
+     }
 -}
 \ No newline at end of file
-+
-+            submitNodeCollector.submitModel(
-+               this.model, state, poseStack, RenderTypes.entitySolid(capeTexture), lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, null
-+            );
-+            poseStack.popPose();
-+         }
-+      }
-+   }
-+}

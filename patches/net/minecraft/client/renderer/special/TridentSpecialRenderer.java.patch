@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/special/TridentSpecialRenderer.java
 +++ b/net/minecraft/client/renderer/special/TridentSpecialRenderer.java
-@@ -8,54 +8,53 @@
+@@ -8,30 +8,30 @@
  import net.minecraft.client.model.object.projectile.TridentModel;
  import net.minecraft.client.renderer.SubmitNodeCollector;
  import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -16,20 +16,17 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class TridentSpecialRenderer implements NoDataSpecialModelRenderer {
--    public static final Transformation DEFAULT_TRANSFORMATION = new Transformation(null, null, new Vector3f(1.0F, -1.0F, -1.0F), null);
+     public static final Transformation DEFAULT_TRANSFORMATION = new Transformation(null, null, new Vector3f(1.0F, -1.0F, -1.0F), null);
 -    private final TridentModel model;
-+   public static final Transformation DEFAULT_TRANSFORMATION = new Transformation(null, null, new Vector3f(1.0F, -1.0F, -1.0F), null);
 +   private TridentModel model;
 +   private boolean modelUpdated;
  
 -    public TridentSpecialRenderer(final TridentModel model) {
--        this.model = model;
--    }
 +   public TridentSpecialRenderer(TridentModel model) {
-+      this.model = model;
-+   }
+         this.model = model;
+     }
  
--    @Override
+     @Override
 -    public void submit(
 -        final PoseStack poseStack,
 -        final SubmitNodeCollector submitNodeCollector,
@@ -38,60 +35,38 @@
 -        final boolean hasFoil,
 -        final int outlineColor
 -    ) {
--        submitNodeCollector.order(0).submitModel(this.model, Unit.INSTANCE, poseStack, TridentModel.TEXTURE, lightCoords, overlayCoords, outlineColor, null);
--        if (hasFoil) {
--            submitNodeCollector.order(1)
--                .submitModel(this.model, Unit.INSTANCE, poseStack, RenderTypes.entityGlint(), lightCoords, overlayCoords, outlineColor, null);
--        }
--    }
-+   @Override
 +   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
 +      if (CustomEntityModels.isActive() && !this.modelUpdated) {
 +         this.model = ArrayUtils.firstNonNull(CustomStaticModels.getTridentModel(), this.model);
 +         this.modelUpdated = true;
 +      }
++
+         submitNodeCollector.order(0).submitModel(this.model, Unit.INSTANCE, poseStack, TridentModel.TEXTURE, lightCoords, overlayCoords, outlineColor, null);
+         if (hasFoil) {
+             submitNodeCollector.order(1)
+@@ -40,12 +40,11 @@
+     }
  
--    @Override
+     @Override
 -    public void getExtents(final Consumer<Vector3fc> output) {
--        PoseStack poseStack = new PoseStack();
--        this.model.root().getExtentsForGui(poseStack, output);
--    }
-+      submitNodeCollector.order(0).submitModel(this.model, Unit.INSTANCE, poseStack, TridentModel.TEXTURE, lightCoords, overlayCoords, outlineColor, null);
-+      if (hasFoil) {
-+         submitNodeCollector.order(1)
-+            .submitModel(this.model, Unit.INSTANCE, poseStack, RenderTypes.entityGlint(), lightCoords, overlayCoords, outlineColor, null);
-+      }
-+   }
++   public void getExtents(Consumer<Vector3fc> output) {
+         PoseStack poseStack = new PoseStack();
+         this.model.root().getExtentsForGui(poseStack, output);
+     }
  
 -    @OnlyIn(Dist.CLIENT)
--    public record Unbaked() implements NoDataSpecialModelRenderer.Unbaked {
--        public static final MapCodec<TridentSpecialRenderer.Unbaked> MAP_CODEC = MapCodec.unit(new TridentSpecialRenderer.Unbaked());
-+   @Override
-+   public void getExtents(Consumer<Vector3fc> output) {
-+      PoseStack poseStack = new PoseStack();
-+      this.model.root().getExtentsForGui(poseStack, output);
-+   }
+     public record Unbaked() implements NoDataSpecialModelRenderer.Unbaked {
+         public static final MapCodec<TridentSpecialRenderer.Unbaked> MAP_CODEC = MapCodec.unit(new TridentSpecialRenderer.Unbaked());
  
--        @Override
--        public MapCodec<TridentSpecialRenderer.Unbaked> type() {
--            return MAP_CODEC;
--        }
-+   public record Unbaked() implements NoDataSpecialModelRenderer.Unbaked {
-+      public static final MapCodec<TridentSpecialRenderer.Unbaked> MAP_CODEC = MapCodec.unit(new TridentSpecialRenderer.Unbaked());
+@@ -54,8 +53,8 @@
+             return MAP_CODEC;
+         }
  
 -        public TridentSpecialRenderer bake(final SpecialModelRenderer.BakingContext context) {
--            return new TridentSpecialRenderer(new TridentModel(context.entityModelSet().bakeLayer(ModelLayers.TRIDENT)));
--        }
--    }
++      public TridentSpecialRenderer bake(BakingContext context) {
+             return new TridentSpecialRenderer(new TridentModel(context.entityModelSet().bakeLayer(ModelLayers.TRIDENT)));
+         }
+     }
 -}
 \ No newline at end of file
-+      @Override
-+      public MapCodec<TridentSpecialRenderer.Unbaked> type() {
-+         return MAP_CODEC;
-+      }
-+
-+      public TridentSpecialRenderer bake(BakingContext context) {
-+         return new TridentSpecialRenderer(new TridentModel(context.entityModelSet().bakeLayer(ModelLayers.TRIDENT)));
-+      }
-+   }
 +}

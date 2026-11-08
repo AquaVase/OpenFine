@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/model/geom/builders/MeshDefinition.java
 +++ b/net/minecraft/client/model/geom/builders/MeshDefinition.java
-@@ -3,30 +3,28 @@
+@@ -3,10 +3,7 @@
  import com.google.common.collect.ImmutableList;
  import java.util.function.UnaryOperator;
  import net.minecraft.client.model.geom.PartPose;
@@ -9,44 +9,31 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class MeshDefinition {
--    private final PartDefinition root;
-+   private final PartDefinition root;
+     private final PartDefinition root;
  
--    public MeshDefinition() {
--        this(new PartDefinition(ImmutableList.of(), PartPose.ZERO));
--    }
-+   public MeshDefinition() {
-+      this(new PartDefinition(ImmutableList.of(), PartPose.ZERO));
-+   }
+@@ -14,19 +11,20 @@
+         this(new PartDefinition(ImmutableList.of(), PartPose.ZERO));
+     }
  
 -    private MeshDefinition(final PartDefinition root) {
--        this.root = root;
--    }
 +   private MeshDefinition(PartDefinition root) {
-+      this.root = root;
-+   }
+         this.root = root;
+     }
  
--    public PartDefinition getRoot() {
--        return this.root;
--    }
-+   public PartDefinition getRoot() {
+     public PartDefinition getRoot() {
 +      this.root.setName("root");
-+      return this.root;
-+   }
+         return this.root;
+     }
  
 -    public MeshDefinition transformed(final UnaryOperator<PartPose> function) {
--        return new MeshDefinition(this.root.transformed(function));
--    }
 +   public MeshDefinition transformed(UnaryOperator<PartPose> function) {
-+      return new MeshDefinition(this.root.transformed(function));
-+   }
+         return new MeshDefinition(this.root.transformed(function));
+     }
  
 -    public MeshDefinition apply(final MeshTransformer transformer) {
--        return transformer.apply(this);
--    }
++   public MeshDefinition apply(MeshTransformer transformer) {
+         return transformer.apply(this);
+     }
 -}
 \ No newline at end of file
-+   public MeshDefinition apply(MeshTransformer transformer) {
-+      return transformer.apply(this);
-+   }
 +}

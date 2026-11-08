@@ -1,6 +1,6 @@
 --- a/com/mojang/blaze3d/vertex/ByteBufferBuilder.java
 +++ b/com/mojang/blaze3d/vertex/ByteBufferBuilder.java
-@@ -4,183 +4,237 @@
+@@ -4,15 +4,14 @@
  import com.mojang.jtracy.TracyClient;
  import com.mojang.logging.LogUtils;
  import java.nio.ByteBuffer;
@@ -17,307 +17,115 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class ByteBufferBuilder implements AutoCloseable {
--    private static final MemoryPool MEMORY_POOL = TracyClient.createMemoryPool("ByteBufferBuilder");
--    private static final Logger LOGGER = LogUtils.getLogger();
--    private static final MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
--    private static final long DEFAULT_MAX_CAPACITY = 4294967295L;
--    private static final int MAX_GROWTH_SIZE = 2097152;
--    private static final int BUFFER_FREED_GENERATION = -1;
--    private long pointer;
--    private long capacity;
--    private final long maxCapacity;
--    private long writeOffset;
--    private long nextResultOffset;
--    private int resultCount;
--    private int generation;
-+   private static final MemoryPool MEMORY_POOL = TracyClient.createMemoryPool("ByteBufferBuilder");
-+   private static final Logger LOGGER = LogUtils.getLogger();
-+   private static final MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
-+   private static final long DEFAULT_MAX_CAPACITY = 4294967295L;
-+   private static final int MAX_GROWTH_SIZE = 2097152;
-+   private static final int BUFFER_FREED_GENERATION = -1;
-+   private long pointer;
-+   private long capacity;
-+   private final long maxCapacity;
-+   private long writeOffset;
-+   private long nextResultOffset;
-+   private int resultCount;
-+   private int generation;
+     private static final MemoryPool MEMORY_POOL = TracyClient.createMemoryPool("ByteBufferBuilder");
+     private static final Logger LOGGER = LogUtils.getLogger();
+@@ -27,8 +26,12 @@
+     private long nextResultOffset;
+     private int resultCount;
+     private int generation;
 +   private BufferBuilderCache bufferBuilderCache;
 +   private ByteBuffer byteBuffer;
 +   private IntBuffer intBuffer;
 +   private FloatBuffer floatBuffer;
  
 -    public ByteBufferBuilder(final int initialCapacity, final long maxCapacity) {
--        this.capacity = initialCapacity;
--        this.maxCapacity = maxCapacity;
--        this.pointer = ALLOCATOR.malloc(initialCapacity);
--        MEMORY_POOL.malloc(this.pointer, initialCapacity);
--        if (this.pointer == 0L) {
--            throw new OutOfMemoryError("Failed to allocate " + initialCapacity + " bytes");
--        }
--    }
 +   public ByteBufferBuilder(int initialCapacity, long maxCapacity) {
-+      this.capacity = initialCapacity;
-+      this.maxCapacity = maxCapacity;
-+      this.pointer = ALLOCATOR.malloc(initialCapacity);
-+      MEMORY_POOL.malloc(this.pointer, initialCapacity);
-+      if (this.pointer == 0L) {
-+         throw new OutOfMemoryError("Failed to allocate " + initialCapacity + " bytes");
-+      }
+         this.capacity = initialCapacity;
+         this.maxCapacity = maxCapacity;
+         this.pointer = ALLOCATOR.malloc(initialCapacity);
+@@ -36,17 +39,21 @@
+         if (this.pointer == 0L) {
+             throw new OutOfMemoryError("Failed to allocate " + initialCapacity + " bytes");
+         }
++
++      this.byteBuffer = MemoryUtil.memByteBuffer(this.pointer, (int)this.capacity);
++      this.intBuffer = this.byteBuffer.asIntBuffer();
++      this.floatBuffer = this.byteBuffer.asFloatBuffer();
+     }
  
 -    public ByteBufferBuilder(final int initialCapacity) {
--        this(initialCapacity, 4294967295L);
--    }
-+      this.byteBuffer = MemoryUtil.memByteBuffer(this.pointer, (int)this.capacity);
-+      this.intBuffer = this.byteBuffer.asIntBuffer();
-+      this.floatBuffer = this.byteBuffer.asFloatBuffer();
-+   }
++   public ByteBufferBuilder(int initialCapacity) {
+         this(initialCapacity, 4294967295L);
+     }
  
 -    public static ByteBufferBuilder exactlySized(final int capacity) {
--        return new ByteBufferBuilder(capacity, capacity);
--    }
-+   public ByteBufferBuilder(int initialCapacity) {
-+      this(initialCapacity, 4294967295L);
-+   }
++   public static ByteBufferBuilder exactlySized(int capacity) {
+         return new ByteBufferBuilder(capacity, capacity);
+     }
  
 -    public long reserve(final int size) {
--        long offset = this.writeOffset;
--        long nextOffset = Math.addExact(offset, size);
--        this.ensureCapacity(nextOffset);
--        this.writeOffset = nextOffset;
--        return Math.addExact(this.pointer, offset);
--    }
-+   public static ByteBufferBuilder exactlySized(int capacity) {
-+      return new ByteBufferBuilder(capacity, capacity);
-+   }
++   public long reserve(int size) {
+         long offset = this.writeOffset;
+         long nextOffset = Math.addExact(offset, size);
+         this.ensureCapacity(nextOffset);
+@@ -54,7 +61,7 @@
+         return Math.addExact(this.pointer, offset);
+     }
  
 -    private void ensureCapacity(final long requiredCapacity) {
--        if (requiredCapacity > this.capacity) {
--            if (requiredCapacity > this.maxCapacity) {
--                throw new IllegalArgumentException("Maximum capacity of ByteBufferBuilder (" + this.maxCapacity + ") exceeded, required " + requiredCapacity);
--            }
-+   public long reserve(int size) {
-+      long offset = this.writeOffset;
-+      long nextOffset = Math.addExact(offset, size);
-+      this.ensureCapacity(nextOffset);
-+      this.writeOffset = nextOffset;
-+      return Math.addExact(this.pointer, offset);
-+   }
- 
--            long preferredGrowth = Math.min(this.capacity, 2097152L);
--            long newCapacity = Mth.clamp(this.capacity + preferredGrowth, requiredCapacity, this.maxCapacity);
--            this.resize(newCapacity);
--        }
--    }
 +   private void ensureCapacity(long requiredCapacity) {
-+      if (requiredCapacity > this.capacity) {
-+         if (requiredCapacity > this.maxCapacity) {
-+            throw new IllegalArgumentException("Maximum capacity of ByteBufferBuilder (" + this.maxCapacity + ") exceeded, required " + requiredCapacity);
-+         }
+         if (requiredCapacity > this.capacity) {
+             if (requiredCapacity > this.maxCapacity) {
+                 throw new IllegalArgumentException("Maximum capacity of ByteBufferBuilder (" + this.maxCapacity + ") exceeded, required " + requiredCapacity);
+@@ -66,7 +73,7 @@
+         }
+     }
  
 -    private void resize(final long newCapacity) {
--        MEMORY_POOL.free(this.pointer);
--        this.pointer = ALLOCATOR.realloc(this.pointer, newCapacity);
--        MEMORY_POOL.malloc(this.pointer, (int)Math.min(newCapacity, 2147483647L));
--        LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, newCapacity);
--        if (this.pointer == 0L) {
--            throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + newCapacity + " bytes");
--        }
-+         long preferredGrowth = Math.min(this.capacity, 2097152L);
-+         long newCapacity = Mth.clamp(this.capacity + preferredGrowth, requiredCapacity, this.maxCapacity);
-+         this.resize(newCapacity);
-+      }
-+   }
- 
--        this.capacity = newCapacity;
--    }
 +   private void resize(long newCapacity) {
-+      MEMORY_POOL.free(this.pointer);
-+      this.pointer = ALLOCATOR.realloc(this.pointer, newCapacity);
-+      MEMORY_POOL.malloc(this.pointer, (int)Math.min(newCapacity, 2147483647L));
-+      LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, newCapacity);
-+      if (this.pointer == 0L) {
-+         throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + newCapacity + " bytes");
-+      }
+         MEMORY_POOL.free(this.pointer);
+         this.pointer = ALLOCATOR.realloc(this.pointer, newCapacity);
+         MEMORY_POOL.malloc(this.pointer, (int)Math.min(newCapacity, 2147483647L));
+@@ -76,9 +83,12 @@
+         }
  
--    public ByteBufferBuilder.@Nullable Result build() {
--        this.checkOpen();
--        long offset = this.nextResultOffset;
--        long size = this.writeOffset - offset;
--        if (size == 0L) {
--            return null;
--        }
-+      this.capacity = newCapacity;
+         this.capacity = newCapacity;
 +      this.byteBuffer = MemoryUtil.memByteBuffer(this.pointer, (int)this.capacity);
 +      this.intBuffer = this.byteBuffer.asIntBuffer();
 +      this.floatBuffer = this.byteBuffer.asFloatBuffer();
-+   }
+     }
  
--        if (size > 2147483647L) {
--            throw new IllegalStateException("Cannot build buffer larger than 2147483647 bytes (was " + size + ")");
--        }
+-    public ByteBufferBuilder.@Nullable Result build() {
 +   public ByteBufferBuilder.Result build() {
-+      this.checkOpen();
-+      long offset = this.nextResultOffset;
-+      long size = this.writeOffset - offset;
-+      if (size == 0L) {
-+         return null;
-+      }
- 
--        this.nextResultOffset = this.writeOffset;
--        this.resultCount++;
--        return new ByteBufferBuilder.Result(offset, (int)size, this.generation);
--    }
-+      if (size > 2147483647L) {
-+         throw new IllegalStateException("Cannot build buffer larger than 2147483647 bytes (was " + size + ")");
-+      }
- 
--    public void clear() {
--        if (this.resultCount > 0) {
--            LOGGER.warn("Clearing BufferBuilder with unused batches");
--        }
-+      this.nextResultOffset = this.writeOffset;
-+      this.resultCount++;
-+      return new ByteBufferBuilder.Result(offset, (int)size, this.generation);
-+   }
- 
--        this.discard();
--    }
-+   public void clear() {
-+      if (this.resultCount > 0) {
-+         LOGGER.warn("Clearing BufferBuilder with unused batches");
-+      }
- 
--    public void discard() {
--        this.checkOpen();
--        if (this.resultCount > 0) {
--            this.discardResults();
--            this.resultCount = 0;
--        }
--    }
-+      this.discard();
-+   }
+         this.checkOpen();
+         long offset = this.nextResultOffset;
+         long size = this.writeOffset - offset;
+@@ -111,7 +121,7 @@
+         }
+     }
  
 -    private boolean isValid(final int generation) {
--        return generation == this.generation;
--    }
-+   public void discard() {
-+      this.checkOpen();
-+      if (this.resultCount > 0) {
-+         this.discardResults();
-+         this.resultCount = 0;
-+      }
-+   }
- 
--    private void freeResult() {
--        if (--this.resultCount <= 0) {
--            this.discardResults();
--        }
--    }
 +   private boolean isValid(int generation) {
-+      return generation == this.generation;
-+   }
+         return generation == this.generation;
+     }
  
--    private void discardResults() {
--        long currentSize = this.writeOffset - this.nextResultOffset;
--        if (currentSize > 0L) {
--            MemoryUtil.memCopy(this.pointer + this.nextResultOffset, this.pointer, currentSize);
--        }
-+   private void freeResult() {
-+      if (--this.resultCount <= 0) {
-+         this.discardResults();
-+      }
-+   }
- 
--        this.writeOffset = currentSize;
--        this.nextResultOffset = 0L;
--        this.generation++;
--    }
-+   private void discardResults() {
-+      long currentSize = this.writeOffset - this.nextResultOffset;
-+      if (currentSize > 0L) {
-+         MemoryUtil.memCopy(this.pointer + this.nextResultOffset, this.pointer, currentSize);
-+      }
- 
--    @Override
--    public void close() {
--        if (this.pointer != 0L) {
--            MEMORY_POOL.free(this.pointer);
--            ALLOCATOR.free(this.pointer);
--            this.pointer = 0L;
--            this.generation = -1;
--        }
--    }
-+      this.writeOffset = currentSize;
-+      this.nextResultOffset = 0L;
-+      this.generation++;
-+   }
- 
--    private void checkOpen() {
--        if (this.pointer == 0L) {
--            throw new IllegalStateException("Buffer has been freed");
--        }
--    }
-+   @Override
-+   public void close() {
-+      if (this.pointer != 0L) {
-+         MEMORY_POOL.free(this.pointer);
-+         ALLOCATOR.free(this.pointer);
-+         this.pointer = 0L;
-+         this.generation = -1;
+@@ -139,6 +149,9 @@
+             ALLOCATOR.free(this.pointer);
+             this.pointer = 0L;
+             this.generation = -1;
 +         this.byteBuffer = null;
 +         this.intBuffer = null;
 +         this.floatBuffer = null;
-+      }
-+   }
+         }
+     }
+ 
+@@ -148,14 +161,50 @@
+         }
+     }
  
 -    @OnlyIn(Dist.CLIENT)
--    public class Result implements AutoCloseable {
--        private final long offset;
--        private final int size;
--        private final int generation;
--        private boolean closed;
-+   private void checkOpen() {
-+      if (this.pointer == 0L) {
-+         throw new IllegalStateException("Buffer has been freed");
-+      }
-+   }
- 
--        private Result(final long offset, final int size, final int generation) {
--            this.offset = offset;
--            this.size = size;
--            this.generation = generation;
--        }
 +   public int getCapacity() {
 +      return (int)this.capacity;
 +   }
- 
--        public ByteBuffer byteBuffer() {
--            if (!ByteBufferBuilder.this.isValid(this.generation)) {
--                throw new IllegalStateException("Buffer is no longer valid");
--            } else {
--                return MemoryUtil.memByteBuffer(ByteBufferBuilder.this.pointer + this.offset, this.size);
--            }
--        }
++
 +   public ByteBuffer getByteBuffer() {
 +      return this.byteBuffer;
 +   }
- 
--        public int size() {
--            return this.size;
--        }
++
 +   public IntBuffer getIntBuffer() {
 +      return this.intBuffer;
 +   }
- 
--        @Override
--        public void close() {
--            if (!this.closed) {
--                this.closed = true;
--                if (ByteBufferBuilder.this.isValid(this.generation)) {
--                    ByteBufferBuilder.this.freeResult();
--                }
++
 +   public FloatBuffer getFloatBuffer() {
 +      return this.floatBuffer;
 +   }
@@ -343,47 +151,27 @@
 +      return "resultOffset: " + this.nextResultOffset + ", writeOffset: " + this.writeOffset + ", capacity: " + this.capacity;
 +   }
 +
-+   public class Result implements AutoCloseable {
-+      private final long offset;
-+      private final int size;
-+      private final int generation;
-+      private boolean closed;
-+
+     public class Result implements AutoCloseable {
+         private final long offset;
+         private final int size;
+         private final int generation;
+         private boolean closed;
+ 
+-        private Result(final long offset, final int size, final int generation) {
 +      private Result(long offset, int size, int generation) {
-+         this.offset = offset;
-+         this.size = size;
-+         this.generation = generation;
-+      }
-+
-+      public ByteBuffer byteBuffer() {
-+         if (!ByteBufferBuilder.this.isValid(this.generation)) {
-+            throw new IllegalStateException("Buffer is no longer valid");
-+         } else {
-+            return MemoryUtil.memByteBuffer(ByteBufferBuilder.this.pointer + this.offset, this.size);
-+         }
-+      }
-+
-+      public int size() {
-+         return this.size;
-+      }
-+
-+      @Override
-+      public void close() {
-+         if (!this.closed) {
-+            this.closed = true;
-+            if (ByteBufferBuilder.this.isValid(this.generation)) {
-+               ByteBufferBuilder.this.freeResult();
+             this.offset = offset;
+             this.size = size;
+             this.generation = generation;
+@@ -182,5 +231,10 @@
+                 }
              }
--        }
--    }
--}
-\ No newline at end of file
-+         }
-+      }
+         }
 +
 +      @Override
 +      public String toString() {
 +         return "offset: " + this.offset + ", size: " + this.size + ", generation: " + this.generation + ", closed: " + this.closed;
-+      }
+     }
+-}
+\ No newline at end of file
 +   }
 +}

@@ -9,52 +9,37 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class CreeperPowerLayer extends EnergySwirlLayer<CreeperRenderState, CreeperModel> {
--    private static final Identifier POWER_LOCATION = Identifier.withDefaultNamespace("textures/entity/creeper/creeper_armor.png");
+     private static final Identifier POWER_LOCATION = Identifier.withDefaultNamespace("textures/entity/creeper/creeper_armor.png");
 -    private final CreeperModel model;
-+   private static final Identifier POWER_LOCATION = Identifier.withDefaultNamespace("textures/entity/creeper/creeper_armor.png");
 +   public CreeperModel model;
 +   public Identifier customTextureLocation;
  
 -    public CreeperPowerLayer(final RenderLayerParent<CreeperRenderState, CreeperModel> renderer, final EntityModelSet modelSet) {
--        super(renderer);
--        this.model = new CreeperModel(modelSet.bakeLayer(ModelLayers.CREEPER_ARMOR));
--    }
 +   public CreeperPowerLayer(RenderLayerParent<CreeperRenderState, CreeperModel> renderer, EntityModelSet modelSet) {
-+      super(renderer);
-+      this.model = new CreeperModel(modelSet.bakeLayer(ModelLayers.CREEPER_ARMOR));
-+   }
+         super(renderer);
+         this.model = new CreeperModel(modelSet.bakeLayer(ModelLayers.CREEPER_ARMOR));
+     }
  
 -    protected boolean isPowered(final CreeperRenderState state) {
--        return state.isPowered;
--    }
 +   protected boolean isPowered(CreeperRenderState state) {
-+      return state.isPowered;
-+   }
+         return state.isPowered;
+     }
  
--    @Override
+     @Override
 -    protected float xOffset(final float t) {
--        return t * 0.01F;
--    }
-+   @Override
 +   protected float xOffset(float t) {
-+      return t * 0.01F;
-+   }
+         return t * 0.01F;
+     }
  
--    @Override
--    protected Identifier getTextureLocation() {
+     @Override
+     protected Identifier getTextureLocation() {
 -        return POWER_LOCATION;
--    }
-+   @Override
-+   protected Identifier getTextureLocation() {
 +      return this.customTextureLocation != null ? this.customTextureLocation : POWER_LOCATION;
-+   }
+     }
  
--    protected CreeperModel model() {
--        return this.model;
--    }
+     protected CreeperModel model() {
+         return this.model;
+     }
 -}
 \ No newline at end of file
-+   protected CreeperModel model() {
-+      return this.model;
-+   }
 +}

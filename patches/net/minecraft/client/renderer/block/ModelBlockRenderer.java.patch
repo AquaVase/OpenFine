@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/block/ModelBlockRenderer.java
 +++ b/net/minecraft/client/renderer/block/ModelBlockRenderer.java
-@@ -1,253 +1,409 @@
+@@ -1,27 +1,41 @@
  package net.minecraft.client.renderer.block;
  
 +import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -44,34 +44,21 @@
  
 -@OnlyIn(Dist.CLIENT)
  public class ModelBlockRenderer {
--    private static final Direction[] DIRECTIONS = Direction.values();
--    private final BlockModelLighter lighter;
--    private final boolean ambientOcclusion;
--    private final boolean cull;
--    private final BlockColors blockColors;
--    private final RandomSource random = RandomSource.createThreadLocalInstance(0L);
--    private final List<BlockStateModelPart> parts = new ObjectArrayList<>();
+     private static final Direction[] DIRECTIONS = Direction.values();
+     private final BlockModelLighter lighter;
+@@ -30,46 +44,60 @@
+     private final BlockColors blockColors;
+     private final RandomSource random = RandomSource.createThreadLocalInstance(0L);
+     private final List<BlockStateModelPart> parts = new ObjectArrayList<>();
 -    private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
--    private final QuadInstance quadInstance = new QuadInstance();
--    private int tintCacheIndex = -1;
--    private int tintCacheValue;
--    private boolean tintSourcesInitialized;
--    private final List<@Nullable BlockTintSource> tintSources = new ObjectArrayList<>();
--    private final IntList computedTintValues = new IntArrayList();
-+   private static final Direction[] DIRECTIONS = Direction.values();
-+   private final BlockModelLighter lighter;
-+   private final boolean ambientOcclusion;
-+   private final boolean cull;
-+   private final BlockColors blockColors;
-+   private final RandomSource random = RandomSource.createThreadLocalInstance(0L);
-+   private final List<BlockStateModelPart> parts = new ObjectArrayList<>();
 +   private final MutableBlockPos scratchPos = new MutableBlockPos();
-+   private final QuadInstance quadInstance = new QuadInstance();
-+   private int tintCacheIndex = -1;
-+   private int tintCacheValue;
-+   private boolean tintSourcesInitialized;
+     private final QuadInstance quadInstance = new QuadInstance();
+     private int tintCacheIndex = -1;
+     private int tintCacheValue;
+     private boolean tintSourcesInitialized;
+-    private final List<@Nullable BlockTintSource> tintSources = new ObjectArrayList<>();
 +   private final List<BlockTintSource> tintSources = new ObjectArrayList<>();
-+   private final IntList computedTintValues = new IntArrayList();
+     private final IntList computedTintValues = new IntArrayList();
 +   private RenderEnv renderEnv = new RenderEnv(Blocks.AIR.defaultBlockState(), BlockPos.ZERO);
 +   private int countQuadsRendered;
 +   private static float aoLightValueOpaque = 0.2F;
@@ -81,26 +68,19 @@
 +   private static boolean forge = Reflector.ForgeHooksClient.exists();
  
 -    public ModelBlockRenderer(final boolean ambientOcclusion, final boolean cull, final BlockColors blockColors) {
--        this.lighter = new BlockModelLighter();
--        this.ambientOcclusion = ambientOcclusion;
--        this.cull = cull;
--        this.blockColors = blockColors;
--    }
 +   public ModelBlockRenderer(boolean ambientOcclusion, boolean cull, BlockColors blockColors) {
-+      this.lighter = new BlockModelLighter();
-+      this.ambientOcclusion = ambientOcclusion;
-+      this.cull = cull;
-+      this.blockColors = blockColors;
-+   }
+         this.lighter = new BlockModelLighter();
+         this.ambientOcclusion = ambientOcclusion;
+         this.cull = cull;
+         this.blockColors = blockColors;
+     }
  
 -    public static boolean forceOpaque(final boolean cutoutLeaves, final BlockState blockState) {
--        return !cutoutLeaves && blockState.getBlock() instanceof LeavesBlock;
--    }
 +   public static boolean forceOpaque(boolean cutoutLeaves, BlockState blockState) {
-+      return !cutoutLeaves && blockState.getBlock() instanceof LeavesBlock;
-+   }
+         return !cutoutLeaves && blockState.getBlock() instanceof LeavesBlock;
+     }
  
--    public void tesselateBlock(
+     public void tesselateBlock(
 -        final BlockQuadOutput output,
 -        final float x,
 -        final float y,
@@ -110,81 +90,50 @@
 -        final BlockState blockState,
 -        final BlockStateModel model,
 -        final long seed
--    ) {
--        this.random.setSeed(seed);
--        model.collectParts(this.random, this.parts);
--        if (!this.parts.isEmpty()) {
--            try {
--                Vec3 offset = blockState.getOffset(pos);
--                if (this.ambientOcclusion && blockState.getLightEmission() == 0 && this.parts.getFirst().useAmbientOcclusion()) {
--                    this.tesselateAmbientOcclusion(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
--                } else {
--                    this.tesselateFlat(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
--                }
--            } finally {
--                this.parts.clear();
--                this.resetTintCache();
-+   public void tesselateBlock(
 +      BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockPos pos, BlockState blockState, BlockStateModel model, long seed
-+   ) {
-+      this.random.setSeed(seed);
-+      model.collectParts(this.random, this.parts);
-+      if (!this.parts.isEmpty()) {
-+         try {
-+            Vec3 offset = blockState.getOffset(pos);
+     ) {
+         this.random.setSeed(seed);
+         model.collectParts(this.random, this.parts);
+         if (!this.parts.isEmpty()) {
+             try {
+                 Vec3 offset = blockState.getOffset(pos);
+-                if (this.ambientOcclusion && blockState.getLightEmission() == 0 && this.parts.getFirst().useAmbientOcclusion()) {
 +            this.renderEnv.reset(blockState, pos);
 +            this.quadInstance.setBlockState(blockState);
 +            List<BlockStateModelPart> parts2 = BlockModelCustomizer.getRenderModel(this.parts, blockState, this.renderEnv);
 +            if (parts2 != this.parts) {
 +               this.parts.clear();
 +               this.parts.addAll(parts2);
-             }
--        }
--    }
- 
--    private void configureTintCache(final BlockState blockState) {
--        List<BlockTintSource> tintSources = this.blockColors.getTintSources(blockState);
--        int tintSourceCount = tintSources.size();
--        if (tintSourceCount > 0) {
--            this.tintSources.addAll(tintSources);
++            }
++
 +            this.countQuadsRendered = 0;
 +            boolean useAo = false;
 +            if (this.ambientOcclusion && blockState.getLightEmission(level, pos) == 0 && this.parts.getFirst().useAmbientOcclusion()) {
-+               this.tesselateAmbientOcclusion(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
+                     this.tesselateAmbientOcclusion(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
 +               useAo = true;
-+            } else {
-+               this.tesselateFlat(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
-+            }
- 
--            for (int i = 0; i < tintSourceCount; i++) {
--                this.computedTintValues.add(-1);
+                 } else {
+                     this.tesselateFlat(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
+                 }
++
 +            if (this.countQuadsRendered > 0) {
 +               this.renderOverlayModels(output, x, y, z, level, this.parts, blockState, pos, this.cull, useAo);
-             }
--        }
--    }
-+         } finally {
-+            this.parts.clear();
-+            this.resetTintCache();
-+         }
-+      }
-+   }
++            }
+             } finally {
+                 this.parts.clear();
+                 this.resetTintCache();
+@@ -77,7 +105,7 @@
+         }
+     }
  
--    private void resetTintCache() {
--        this.tintCacheIndex = -1;
--        if (this.tintSourcesInitialized) {
--            this.tintSources.clear();
--            this.computedTintValues.clear();
--            this.tintSourcesInitialized = false;
--        }
--    }
+-    private void configureTintCache(final BlockState blockState) {
 +   private void configureTintCache(BlockState blockState) {
-+      List<BlockTintSource> tintSources = this.blockColors.getTintSources(blockState);
-+      int tintSourceCount = tintSources.size();
-+      if (tintSourceCount > 0) {
-+         this.tintSources.addAll(tintSources);
+         List<BlockTintSource> tintSources = this.blockColors.getTintSources(blockState);
+         int tintSourceCount = tintSources.size();
+         if (tintSourceCount > 0) {
+@@ -99,19 +127,15 @@
+     }
  
--    private void tesselateAmbientOcclusion(
+     private void tesselateAmbientOcclusion(
 -        final BlockQuadOutput output,
 -        final float x,
 -        final float y,
@@ -193,206 +142,109 @@
 -        final BlockAndTintGetter level,
 -        final BlockState state,
 -        final BlockPos pos
--    ) {
--        int cacheValid = 0;
--        int shouldRenderFaceCache = 0;
-+         for (int i = 0; i < tintSourceCount; i++) {
-+            this.computedTintValues.add(-1);
-+         }
-+      }
-+   }
- 
--        for (BlockStateModelPart part : parts) {
--            for (Direction direction : DIRECTIONS) {
--                int cacheMask = 1 << direction.ordinal();
--                boolean validCacheForDirection = (cacheValid & cacheMask) != 0;
--                boolean shouldRenderFace = (shouldRenderFaceCache & cacheMask) != 0;
--                if (!validCacheForDirection || shouldRenderFace) {
--                    List<BakedQuad> culledQuads = part.getQuads(direction);
--                    if (!culledQuads.isEmpty()) {
--                        if (!validCacheForDirection) {
--                            shouldRenderFace = this.shouldRenderFace(level, state, direction, this.scratchPos.setWithOffset(pos, direction));
--                            cacheValid |= cacheMask;
--                            if (shouldRenderFace) {
--                                shouldRenderFaceCache |= cacheMask;
--                            }
--                        }
-+   private void resetTintCache() {
-+      this.tintCacheIndex = -1;
-+      if (this.tintSourcesInitialized) {
-+         this.tintSources.clear();
-+         this.computedTintValues.clear();
-+         this.tintSourcesInitialized = false;
-+      }
-+   }
- 
--                        if (shouldRenderFace) {
--                            for (BakedQuad quad : culledQuads) {
--                                this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
--                                this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
--                            }
--                        }
--                    }
--                }
--            }
-+   private void tesselateAmbientOcclusion(
 +      BlockQuadOutput output, float x, float y, float z, List<BlockStateModelPart> parts, BlockAndTintGetter level, BlockState state, BlockPos pos
-+   ) {
-+      int cacheValid = 0;
-+      int shouldRenderFaceCache = 0;
+     ) {
+         int cacheValid = 0;
+         int shouldRenderFaceCache = 0;
 +      int partCount = parts.size();
  
--            for (BakedQuad quad : part.getQuads(null)) {
--                this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
--                this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
+-        for (BlockStateModelPart part : parts) {
 +      for (int ip = 0; ip < partCount; ip++) {
 +         BlockStateModelPart part = parts.get(ip);
 +
-+         for (Direction direction : DIRECTIONS) {
-+            int cacheMask = 1 << direction.ordinal();
-+            boolean validCacheForDirection = (cacheValid & cacheMask) != 0;
-+            boolean shouldRenderFace = (shouldRenderFaceCache & cacheMask) != 0;
-+            if (!validCacheForDirection || shouldRenderFace) {
-+               List<BakedQuad> culledQuads = part.getQuads(direction);
-+               if (!culledQuads.isEmpty()) {
-+                  if (!validCacheForDirection) {
-+                     shouldRenderFace = this.shouldRenderFace(level, state, direction, this.scratchPos.setWithOffset(pos, direction));
-+                     cacheValid |= cacheMask;
-+                     if (shouldRenderFace) {
-+                        shouldRenderFaceCache |= cacheMask;
-+                     }
-+                  }
-+
-+                  if (shouldRenderFace) {
+             for (Direction direction : DIRECTIONS) {
+                 int cacheMask = 1 << direction.ordinal();
+                 boolean validCacheForDirection = (cacheValid & cacheMask) != 0;
+@@ -128,7 +152,11 @@
+                         }
+ 
+                         if (shouldRenderFace) {
+-                            for (BakedQuad quad : culledQuads) {
 +                     culledQuads = BlockModelCustomizer.getRenderQuads(culledQuads, level, state, pos, direction, this.renderEnv);
 +                     int quadCount = culledQuads.size();
 +
 +                     for (int ix = 0; ix < quadCount; ix++) {
 +                        BakedQuad quad = culledQuads.get(ix);
-+                        this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
-+                        this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
-+                     }
-+                  }
-+               }
+                                 this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
+                                 this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
+                             }
+@@ -137,7 +165,12 @@
+                 }
              }
--        }
--    }
-+         }
  
--    private void tesselateFlat(
--        final BlockQuadOutput output,
--        final float x,
--        final float y,
--        final float z,
--        final List<BlockStateModelPart> parts,
--        final BlockAndTintGetter level,
--        final BlockState state,
--        final BlockPos pos
--    ) {
--        int cacheValid = 0;
--        int shouldRenderFaceCache = 0;
+-            for (BakedQuad quad : part.getQuads(null)) {
 +         List<BakedQuad> unculledQuads = part.getQuads(null);
 +         unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
 +         int quadCount = unculledQuads.size();
- 
--        for (BlockStateModelPart part : parts) {
--            for (Direction direction : DIRECTIONS) {
--                int cacheMask = 1 << direction.ordinal();
--                boolean validCacheForDirection = (cacheValid & cacheMask) != 0;
--                boolean shouldRenderFace = (shouldRenderFaceCache & cacheMask) != 0;
--                if (!validCacheForDirection || shouldRenderFace) {
--                    List<BakedQuad> culledQuads = part.getQuads(direction);
--                    if (!culledQuads.isEmpty()) {
--                        BlockPos relativePos = this.scratchPos.setWithOffset(pos, direction);
--                        if (!validCacheForDirection) {
--                            shouldRenderFace = this.shouldRenderFace(level, state, direction, relativePos);
--                            cacheValid |= cacheMask;
--                            if (shouldRenderFace) {
--                                shouldRenderFaceCache |= cacheMask;
--                            }
--                        }
++
 +         for (int ix = 0; ix < quadCount; ix++) {
 +            BakedQuad quad = unculledQuads.get(ix);
-+            this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
-+            this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
-+         }
-+      }
-+   }
+                 this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
+                 this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
+             }
+@@ -145,19 +178,15 @@
+     }
  
--                        if (shouldRenderFace) {
--                            int lightCoords = this.lighter.getLightCoords(state, level, relativePos);
-+   private void tesselateFlat(
+     private void tesselateFlat(
+-        final BlockQuadOutput output,
+-        final float x,
+-        final float y,
+-        final float z,
+-        final List<BlockStateModelPart> parts,
+-        final BlockAndTintGetter level,
+-        final BlockState state,
+-        final BlockPos pos
 +      BlockQuadOutput output, float x, float y, float z, List<BlockStateModelPart> parts, BlockAndTintGetter level, BlockState state, BlockPos pos
-+   ) {
-+      int cacheValid = 0;
-+      int shouldRenderFaceCache = 0;
+     ) {
+         int cacheValid = 0;
+         int shouldRenderFaceCache = 0;
 +      int partCount = parts.size();
  
--                            for (BakedQuad quad : culledQuads) {
--                                this.lighter.prepareQuadFlat(level, state, pos, lightCoords, quad, this.quadInstance);
--                                this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
--                            }
--                        }
--                    }
--                }
--            }
+-        for (BlockStateModelPart part : parts) {
 +      for (int ip = 0; ip < partCount; ip++) {
 +         BlockStateModelPart part = parts.get(ip);
- 
--            for (BakedQuad quad : part.getQuads(null)) {
--                this.lighter.prepareQuadFlat(level, state, pos, -1, quad, this.quadInstance);
--                this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
-+         for (Direction direction : DIRECTIONS) {
-+            int cacheMask = 1 << direction.ordinal();
-+            boolean validCacheForDirection = (cacheValid & cacheMask) != 0;
-+            boolean shouldRenderFace = (shouldRenderFaceCache & cacheMask) != 0;
-+            if (!validCacheForDirection || shouldRenderFace) {
-+               List<BakedQuad> culledQuads = part.getQuads(direction);
-+               if (!culledQuads.isEmpty()) {
-+                  BlockPos relativePos = this.scratchPos.setWithOffset(pos, direction);
-+                  if (!validCacheForDirection) {
-+                     shouldRenderFace = this.shouldRenderFace(level, state, direction, relativePos);
-+                     cacheValid |= cacheMask;
-+                     if (shouldRenderFace) {
-+                        shouldRenderFaceCache |= cacheMask;
-+                     }
-+                  }
 +
-+                  if (shouldRenderFace) {
-+                     int lightCoords = this.lighter.getLightCoords(state, level, relativePos);
+             for (Direction direction : DIRECTIONS) {
+                 int cacheMask = 1 << direction.ordinal();
+                 boolean validCacheForDirection = (cacheValid & cacheMask) != 0;
+@@ -176,8 +205,11 @@
+ 
+                         if (shouldRenderFace) {
+                             int lightCoords = this.lighter.getLightCoords(state, level, relativePos);
 +                     culledQuads = BlockModelCustomizer.getRenderQuads(culledQuads, level, state, pos, direction, this.renderEnv);
 +                     int quadCount = culledQuads.size();
-+
+ 
+-                            for (BakedQuad quad : culledQuads) {
 +                     for (int ix = 0; ix < quadCount; ix++) {
 +                        BakedQuad quad = culledQuads.get(ix);
-+                        this.lighter.prepareQuadFlat(level, state, pos, lightCoords, quad, this.quadInstance);
-+                        this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
-+                     }
-+                  }
-+               }
+                                 this.lighter.prepareQuadFlat(level, state, pos, lightCoords, quad, this.quadInstance);
+                                 this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
+                             }
+@@ -186,14 +218,19 @@
+                 }
              }
--        }
--    }
-+         }
+ 
+-            for (BakedQuad quad : part.getQuads(null)) {
++         List<BakedQuad> unculledQuads = part.getQuads(null);
++         unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
++         int quadCount = unculledQuads.size();
++
++         for (int ix = 0; ix < quadCount; ix++) {
++            BakedQuad quad = unculledQuads.get(ix);
+                 this.lighter.prepareQuadFlat(level, state, pos, -1, quad, this.quadInstance);
+                 this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
+             }
+         }
+     }
  
 -    private boolean shouldRenderFace(final BlockAndTintGetter level, final BlockState state, final Direction direction, final BlockPos neighborPos) {
--        if (!this.cull) {
--            return true;
--        }
-+         List<BakedQuad> unculledQuads = part.getQuads(null);
-+         unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
-+         int quadCount = unculledQuads.size();
- 
--        BlockState neighborState = level.getBlockState(neighborPos);
--        return Block.shouldRenderFace(state, neighborState, direction);
--    }
-+         for (int ix = 0; ix < quadCount; ix++) {
-+            BakedQuad quad = unculledQuads.get(ix);
-+            this.lighter.prepareQuadFlat(level, state, pos, -1, quad, this.quadInstance);
-+            this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
-+         }
-+      }
-+   }
++   private boolean shouldRenderFace(BlockAndTintGetter level, BlockState state, Direction direction, BlockPos neighborPos) {
+         if (!this.cull) {
+             return true;
+         }
+@@ -202,25 +239,24 @@
+         return Block.shouldRenderFace(state, neighborState, direction);
+     }
  
 -    private void putQuadWithTint(
 -        final BlockQuadOutput output,
@@ -404,92 +256,44 @@
 -        final BlockPos pos,
 -        final BakedQuad quad
 -    ) {
--        int tintIndex = quad.materialInfo().tintIndex();
--        if (tintIndex != -1) {
--            this.quadInstance.multiplyColor(this.getTintColor(level, state, pos, tintIndex));
--        }
-+   private boolean shouldRenderFace(BlockAndTintGetter level, BlockState state, Direction direction, BlockPos neighborPos) {
-+      if (!this.cull) {
-+         return true;
-+      }
- 
--        output.put(x, y, z, quad, this.quadInstance);
--    }
-+      BlockState neighborState = level.getBlockState(neighborPos);
-+      return Block.shouldRenderFace(state, neighborState, direction);
-+   }
- 
--    private int getTintColor(final BlockAndTintGetter level, final BlockState state, final BlockPos pos, final int tintIndex) {
--        if (this.tintCacheIndex == tintIndex) {
--            return this.tintCacheValue;
--        }
 +   private void putQuadWithTint(BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockState state, BlockPos pos, BakedQuad quad) {
 +      if (quad.sprite().isSpriteEmissive) {
 +         setMaxBlockLight(this.quadInstance);
 +      }
- 
--        int tintColor = this.computeTintColor(level, state, pos, tintIndex);
--        this.tintCacheIndex = tintIndex;
--        this.tintCacheValue = tintColor;
--        return tintColor;
--    }
-+      int tintIndex = quad.materialInfo().tintIndex();
++
+         int tintIndex = quad.materialInfo().tintIndex();
+-        if (tintIndex != -1) {
 +      int colorMultiplier = CustomColors.getColorMultiplier(quad, state, level, pos, this.renderEnv);
 +      if (colorMultiplier != -1) {
 +         this.quadInstance.multiplyColor(colorMultiplier);
 +      } else if (tintIndex != -1) {
-+         this.quadInstance.multiplyColor(this.getTintColor(level, state, pos, tintIndex));
-+      }
+             this.quadInstance.multiplyColor(this.getTintColor(level, state, pos, tintIndex));
+         }
+ 
+         output.put(x, y, z, quad, this.quadInstance);
++      this.countQuadsRendered++;
+     }
+ 
+-    private int getTintColor(final BlockAndTintGetter level, final BlockState state, final BlockPos pos, final int tintIndex) {
++   private int getTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
+         if (this.tintCacheIndex == tintIndex) {
+             return this.tintCacheValue;
+         }
+@@ -231,7 +267,7 @@
+         return tintColor;
+     }
  
 -    private int computeTintColor(final BlockAndTintGetter level, final BlockState state, final BlockPos pos, final int tintIndex) {
--        if (!this.tintSourcesInitialized) {
--            this.configureTintCache(state);
--            this.tintSourcesInitialized = true;
--        }
-+      output.put(x, y, z, quad, this.quadInstance);
-+      this.countQuadsRendered++;
-+   }
- 
--        if (tintIndex >= this.tintSources.size()) {
--            return -1;
--        } else {
--            BlockTintSource tintSource = this.tintSources.set(tintIndex, null);
--            if (tintSource != null) {
--                int computedTintValue = tintSource.colorInWorld(state, level, pos);
--                this.computedTintValues.set(tintIndex, computedTintValue);
--                return computedTintValue;
--            } else {
--                return this.computedTintValues.getInt(tintIndex);
-+   private int getTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
-+      if (this.tintCacheIndex == tintIndex) {
-+         return this.tintCacheValue;
-+      }
-+
-+      int tintColor = this.computeTintColor(level, state, pos, tintIndex);
-+      this.tintCacheIndex = tintIndex;
-+      this.tintCacheValue = tintColor;
-+      return tintColor;
-+   }
-+
 +   private int computeTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
-+      if (!this.tintSourcesInitialized) {
-+         this.configureTintCache(state);
-+         this.tintSourcesInitialized = true;
-+      }
-+
-+      if (tintIndex >= this.tintSources.size()) {
-+         return -1;
-+      } else {
-+         BlockTintSource tintSource = this.tintSources.set(tintIndex, null);
-+         if (tintSource != null) {
-+            int computedTintValue = tintSource.colorInWorld(state, level, pos);
-+            this.computedTintValues.set(tintIndex, computedTintValue);
-+            return computedTintValue;
-+         } else {
-+            return this.computedTintValues.getInt(tintIndex);
-+         }
-+      }
-+   }
+         if (!this.tintSourcesInitialized) {
+             this.configureTintCache(state);
+             this.tintSourcesInitialized = true;
+@@ -250,4 +286,124 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
 +
 +   public static float fixAoLightValue(float val) {
 +      return val == 0.2F ? aoLightValueOpaque : val;
@@ -556,11 +360,7 @@
 +               }
 +
 +               listQuadsOverlay.clear();
-             }
--        }
--    }
--}
-\ No newline at end of file
++            }
 +         }
 +      }
 +
