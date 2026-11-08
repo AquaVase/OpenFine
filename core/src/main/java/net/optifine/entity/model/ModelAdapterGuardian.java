@@ -14,39 +14,39 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterGuardian extends ModelAdapterLiving {
-   public ModelAdapterGuardian() {
-      super(EntityTypes.GUARDIAN, "guardian", ModelLayers.GUARDIAN);
-   }
+    public ModelAdapterGuardian() {
+        super(EntityTypes.GUARDIAN, "guardian", ModelLayers.GUARDIAN);
+    }
 
-   public ModelAdapterGuardian(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    public ModelAdapterGuardian(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new GuardianModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new GuardianModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "head");
-      map.put("eye", "eye");
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "head");
+        map.put("eye", "eye");
 
-      for (int i = 0; i < 12; i++) {
-         map.put("spine" + (i + 1), "spike" + i);
-      }
+        for (int i = 0; i < 12; i++) {
+            map.put("spine" + (i + 1), "spike" + i);
+        }
 
-      for (int i = 0; i < 3; i++) {
-         map.put("tail" + (i + 1), "tail" + i);
-      }
+        for (int i = 0; i < 3; i++) {
+            map.put("tail" + (i + 1), "tail" + i);
+        }
 
-      map.put("root", "root");
-      return map;
-   }
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new GuardianRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new GuardianRenderer(context);
+    }
 }

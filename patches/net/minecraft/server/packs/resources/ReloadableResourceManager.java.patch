@@ -18,7 +18,7 @@
      private final PackType type;
  
 -    public ReloadableResourceManager(final PackType type) {
-+   public ReloadableResourceManager(PackType type) {
++    public ReloadableResourceManager(PackType type) {
          this.type = type;
          this.resources = new MultiPackResourceManager(type, List.of());
      }
@@ -27,7 +27,7 @@
      }
  
 -    public void registerReloadListener(final PreparableReloadListener listener) {
-+   public void registerReloadListener(PreparableReloadListener listener) {
++    public void registerReloadListener(PreparableReloadListener listener) {
          this.listeners.add(listener);
      }
  
@@ -36,21 +36,21 @@
 -        final Executor mainThreadExecutor,
 -        final CompletableFuture<Unit> initialTask,
 -        final List<PackResources> resourcePacks
-+      Executor backgroundExecutor, Executor mainThreadExecutor, CompletableFuture<Unit> initialTask, List<PackResources> resourcePacks
++        Executor backgroundExecutor, Executor mainThreadExecutor, CompletableFuture<Unit> initialTask, List<PackResources> resourcePacks
      ) {
          LOGGER.info("Reloading ResourceManager: {}", LogUtils.defer(() -> resourcePacks.stream().map(PackResources::packId).collect(Collectors.joining(", "))));
          this.resources.close();
          this.resources = new MultiPackResourceManager(this.type, resourcePacks);
-+      if (Minecraft.getInstance().getResourceManager() == this) {
-+         TextureUtils.resourcesPreReload(this);
-+      }
++        if (Minecraft.getInstance().getResourceManager() == this) {
++            TextureUtils.resourcesPreReload(this);
++        }
 +
          return SimpleReloadInstance.create(this.resources, this.listeners, backgroundExecutor, mainThreadExecutor, initialTask, LOGGER.isDebugEnabled());
      }
  
      @Override
 -    public Optional<Resource> getResource(final Identifier location) {
-+   public Optional<Resource> getResource(Identifier location) {
++    public Optional<Resource> getResource(Identifier location) {
          return this.resources.getResource(location);
      }
  
@@ -59,19 +59,19 @@
  
      @Override
 -    public List<Resource> getResourceStack(final Identifier location) {
-+   public List<Resource> getResourceStack(Identifier location) {
++    public List<Resource> getResourceStack(Identifier location) {
          return this.resources.getResourceStack(location);
      }
  
      @Override
 -    public Map<Identifier, Resource> listResources(final String directory, final Predicate<Identifier> filenameFilter) {
-+   public Map<Identifier, Resource> listResources(String directory, Predicate<Identifier> filenameFilter) {
++    public Map<Identifier, Resource> listResources(String directory, Predicate<Identifier> filenameFilter) {
          return this.resources.listResources(directory, filenameFilter);
      }
  
      @Override
 -    public Map<Identifier, List<Resource>> listResourceStacks(final String directory, final Predicate<Identifier> filter) {
-+   public Map<Identifier, List<Resource>> listResourceStacks(String directory, Predicate<Identifier> filter) {
++    public Map<Identifier, List<Resource>> listResourceStacks(String directory, Predicate<Identifier> filter) {
          return this.resources.listResourceStacks(directory, filter);
      }
  
@@ -82,9 +82,9 @@
 -}
 \ No newline at end of file
 +
-+   public void registerReloadListenerIfNotPresent(PreparableReloadListener listener) {
-+      if (!this.listeners.contains(listener)) {
-+         this.registerReloadListener(listener);
-+      }
-+   }
++    public void registerReloadListenerIfNotPresent(PreparableReloadListener listener) {
++        if (!this.listeners.contains(listener)) {
++            this.registerReloadListener(listener);
++        }
++    }
 +}

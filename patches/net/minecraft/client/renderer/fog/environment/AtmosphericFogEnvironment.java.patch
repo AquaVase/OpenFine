@@ -20,11 +20,11 @@
  
      @Override
 -    public int getBaseColor(final ClientLevel level, final Camera camera, final int renderDistance, final float partialTicks) {
-+   public int getBaseColor(ClientLevel level, Camera camera, int renderDistance, float partialTicks) {
++    public int getBaseColor(ClientLevel level, Camera camera, int renderDistance, float partialTicks) {
          int fogColor = camera.attributeProbe().getValue(EnvironmentAttributes.FOG_COLOR, partialTicks);
-+      if (Config.isCustomColors()) {
-+         fogColor = CustomColors.getWorldFogColor(fogColor, level, camera.entity(), 0.0F);
-+      }
++        if (Config.isCustomColors()) {
++            fogColor = CustomColors.getWorldFogColor(fogColor, level, camera.entity(), 0.0F);
++        }
 +
          if (renderDistance >= 4) {
              float sunAngle = camera.attributeProbe().getValue(EnvironmentAttributes.SUN_ANGLE, partialTicks) * (float) (Math.PI / 180.0);
@@ -33,9 +33,9 @@
          }
  
          int skyColor = camera.attributeProbe().getValue(EnvironmentAttributes.SKY_COLOR, partialTicks);
-+      if (Config.isCustomColors()) {
-+         skyColor = CustomColors.getWorldSkyColor(skyColor, level, camera.entity(), 0.0F);
-+      }
++        if (Config.isCustomColors()) {
++            skyColor = CustomColors.getWorldSkyColor(skyColor, level, camera.entity(), 0.0F);
++        }
 +
          skyColor = applyWeatherDarken(skyColor, level.getRainLevel(partialTicks), level.getThunderLevel(partialTicks));
          float skyFogEnd = Math.min(camera.attributeProbe().getValue(EnvironmentAttributes.SKY_FOG_END_DISTANCE, partialTicks) / 16.0F, renderDistance);
@@ -45,7 +45,7 @@
      }
  
 -    private static int applyWeatherDarken(int color, final float rainLevel, final float thunderLevel) {
-+   private static int applyWeatherDarken(int color, float rainLevel, float thunderLevel) {
++    private static int applyWeatherDarken(int color, float rainLevel, float thunderLevel) {
          if (rainLevel > 0.0F) {
              float rainColorModifier = 1.0F - rainLevel * 0.5F;
              float rainBlueColorModifier = 1.0F - rainLevel * 0.4F;
@@ -54,7 +54,7 @@
  
      @Override
 -    public void setupFog(final FogData fog, final Camera camera, final ClientLevel level, final float renderDistance, final DeltaTracker deltaTracker) {
-+   public void setupFog(FogData fog, Camera camera, ClientLevel level, float renderDistance, DeltaTracker deltaTracker) {
++    public void setupFog(FogData fog, Camera camera, ClientLevel level, float renderDistance, DeltaTracker deltaTracker) {
          this.updateRainFogState(camera, level, deltaTracker);
          float partialTicks = deltaTracker.getGameTimeDeltaPartialTick(false);
          fog.environmentalStart = camera.attributeProbe().getValue(EnvironmentAttributes.FOG_START_DISTANCE, partialTicks);
@@ -64,7 +64,7 @@
          fog.cloudEnd = Math.min(
 -            Minecraft.getInstance().options.cloudRange().get() * 16,
 -            camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE, partialTicks)
-+         Minecraft.getInstance().options.cloudRange().get() * 16, camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE, partialTicks)
++            Minecraft.getInstance().options.cloudRange().get() * 16, camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE, partialTicks)
          );
          if (Minecraft.getInstance().gui.hud.getBossOverlay().shouldCreateWorldFog()) {
              fog.environmentalStart = Math.min(fog.environmentalStart, 10.0F);
@@ -73,7 +73,7 @@
      }
  
 -    private void updateRainFogState(final Camera camera, final ClientLevel level, final DeltaTracker deltaTracker) {
-+   private void updateRainFogState(Camera camera, ClientLevel level, DeltaTracker deltaTracker) {
++    private void updateRainFogState(Camera camera, ClientLevel level, DeltaTracker deltaTracker) {
          BlockPos blockPos = camera.blockPosition();
          Biome biome = level.getBiome(blockPos).value();
          float deltaTicks = deltaTracker.getGameTimeDeltaTicks();
@@ -82,7 +82,7 @@
  
      @Override
 -    public boolean isApplicable(final @Nullable FogType fogType, final Entity entity) {
-+   public boolean isApplicable(FogType fogType, Entity entity) {
++    public boolean isApplicable(FogType fogType, Entity entity) {
          return fogType == FogType.ATMOSPHERIC;
      }
 -}

@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.resources.Identifier;
 
 public class CustomEntityModel extends Model {
-   public CustomEntityModel(ModelPart root, Function<Identifier, RenderType> renderTypeIn) {
-      super(root, renderTypeIn);
-   }
+    public CustomEntityModel(ModelPart root, Function<Identifier, RenderType> renderTypeIn) {
+        super(root, renderTypeIn);
+    }
 }

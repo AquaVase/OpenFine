@@ -4,11 +4,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 
 public class ComponentUtils {
-   public static String getTranslationKey(Component comp) {
-      if (comp == null) {
-         return null;
-      } else {
-         return !(comp.getContents() instanceof TranslatableContents tran) ? null : tran.getKey();
-      }
-   }
+    public static String getTranslationKey(Component comp) {
+        if (comp == null) {
+            return null;
+        } else {
+            return !(comp.getContents() instanceof TranslatableContents tran) ? null : tran.getKey();
+        }
+    }
 }

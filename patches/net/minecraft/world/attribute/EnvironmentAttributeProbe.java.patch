@@ -13,8 +13,8 @@
      );
 -    private @Nullable Level level;
 -    private @Nullable Vec3 position;
-+   private Level level;
-+   private Vec3 position;
++    private Level level;
++    private Vec3 position;
      private final SpatialAttributeInterpolator biomeInterpolator = new SpatialAttributeInterpolator();
  
      public void reset() {
@@ -23,7 +23,7 @@
      }
  
 -    public void tick(final Level level, final Vec3 position) {
-+   public void tick(Level level, Vec3 position) {
++    public void tick(Level level, Vec3 position) {
          this.level = level;
          this.position = position;
          this.valueProbes.values().removeIf(EnvironmentAttributeProbe.ValueProbe::tick);
@@ -32,7 +32,7 @@
      }
  
 -    public <Value> Value getValue(final EnvironmentAttribute<Value> attribute, final float partialTicks) {
-+   public <Value> Value getValue(EnvironmentAttribute<Value> attribute, float partialTicks) {
++    public <Value> Value getValue(EnvironmentAttribute<Value> attribute, float partialTicks) {
          EnvironmentAttributeProbe.ValueProbe<Value> valueProbe = (EnvironmentAttributeProbe.ValueProbe<Value>)this.valueProbes
              .computeIfAbsent(attribute, this.valueProbeFactory);
          return valueProbe.get(attribute, partialTicks);
@@ -41,17 +41,17 @@
      private class ValueProbe<Value> {
          private Value lastValue;
 -        private @Nullable Value newValue;
-+      private Value newValue;
++        private Value newValue;
  
 -        public ValueProbe(final EnvironmentAttribute<Value> attribute) {
-+      public ValueProbe(EnvironmentAttribute<Value> attribute) {
++        public ValueProbe(EnvironmentAttribute<Value> attribute) {
              Value value = this.getValueFromLevel(attribute);
              this.lastValue = value;
              this.newValue = value;
          }
  
 -        private Value getValueFromLevel(final EnvironmentAttribute<Value> attribute) {
-+      private Value getValueFromLevel(EnvironmentAttribute<Value> attribute) {
++        private Value getValueFromLevel(EnvironmentAttribute<Value> attribute) {
              return EnvironmentAttributeProbe.this.level != null && EnvironmentAttributeProbe.this.position != null
                  ? EnvironmentAttributeProbe.this.level
                      .environmentAttributes()
@@ -60,7 +60,7 @@
          }
  
 -        public Value get(final EnvironmentAttribute<Value> attribute, final float partialTicks) {
-+      public Value get(EnvironmentAttribute<Value> attribute, float partialTicks) {
++        public Value get(EnvironmentAttribute<Value> attribute, float partialTicks) {
              if (this.newValue == null) {
                  this.newValue = this.getValueFromLevel(attribute);
              }
@@ -68,11 +68,11 @@
              return attribute.type().partialTickLerp().apply(partialTicks, this.lastValue, this.newValue);
          }
 +
-+      @Override
-+      public String toString() {
-+         return "last: " + this.lastValue + ", new: " + this.newValue;
++        @Override
++        public String toString() {
++            return "last: " + this.lastValue + ", new: " + this.newValue;
++        }
      }
 -}
 \ No newline at end of file
-+   }
 +}

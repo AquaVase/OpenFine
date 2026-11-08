@@ -37,24 +37,24 @@
 -    private @Nullable Future<?> fullUpdateTask;
 -    private @Nullable ViewArea viewArea;
 -    private final AtomicReference<SectionOcclusionGraph.@Nullable GraphState> currentGraph = new AtomicReference<>();
-+   private Future<?> fullUpdateTask;
-+   private ViewArea viewArea;
-+   private final AtomicReference<SectionOcclusionGraph.GraphState> currentGraph = new AtomicReference<>();
++    private Future<?> fullUpdateTask;
++    private ViewArea viewArea;
++    private final AtomicReference<SectionOcclusionGraph.GraphState> currentGraph = new AtomicReference<>();
      private final AtomicBoolean needsFrustumUpdate = new AtomicBoolean(false);
      private final LongOpenHashSet emptySections = new LongOpenHashSet();
      private final LongOpenHashSet loadedChunks = new LongOpenHashSet();
 -    private volatile @Nullable BlockingQueue<SectionRenderDispatcher.RenderSection> nextSectionsToPropagateFrom;
-+   private volatile BlockingQueue<SectionRenderDispatcher.RenderSection> nextSectionsToPropagateFrom;
++    private volatile BlockingQueue<SectionRenderDispatcher.RenderSection> nextSectionsToPropagateFrom;
      private double prevCamX = Double.MIN_VALUE;
      private double prevCamY = Double.MIN_VALUE;
      private double prevCamZ = Double.MIN_VALUE;
      private int prevFov = Integer.MAX_VALUE;
      private boolean lastSmartCull = true;
-+   private LevelRenderer levelRenderer;
-+   private LevelExtractor levelExtractor;
++    private LevelRenderer levelRenderer;
++    private LevelExtractor levelExtractor;
  
 -    public void waitAndReset(final @Nullable ViewArea viewArea) {
-+   public void waitAndReset(ViewArea viewArea) {
++    public void waitAndReset(ViewArea viewArea) {
          if (this.fullUpdateTask != null) {
              try {
                  this.fullUpdateTask.get();
@@ -62,8 +62,8 @@
          }
  
          this.viewArea = viewArea;
-+      this.levelRenderer = Minecraft.getInstance().levelRenderer;
-+      this.levelExtractor = Minecraft.getInstance().levelExtractor;
++        this.levelRenderer = Minecraft.getInstance().levelRenderer;
++        this.levelExtractor = Minecraft.getInstance().levelExtractor;
          if (viewArea != null) {
              this.currentGraph.set(new SectionOcclusionGraph.GraphState(viewArea));
              this.invalidate();
@@ -72,76 +72,76 @@
      }
  
 -    public void invalidateIfNeeded(final CameraRenderState camera, final int fov) {
-+   public void invalidateIfNeeded(CameraRenderState camera, int fov) {
++    public void invalidateIfNeeded(CameraRenderState camera, int fov) {
          Vec3 cameraPos = camera.pos;
          double camX = Math.floor(cameraPos.x / 8.0);
          double camY = Math.floor(cameraPos.y / 8.0);
-@@ -112,19 +116,56 @@
+@@ -112,18 +116,55 @@
      }
  
      public void addSectionsInFrustum(
 -        final Frustum frustum,
 -        final List<SectionRenderDispatcher.RenderSection> visibleSections,
 -        final List<SectionRenderDispatcher.RenderSection> nearbyVisibleSection
-+      Frustum frustum, List<SectionRenderDispatcher.RenderSection> visibleSections, List<SectionRenderDispatcher.RenderSection> nearbyVisibleSection
++        Frustum frustum, List<SectionRenderDispatcher.RenderSection> visibleSections, List<SectionRenderDispatcher.RenderSection> nearbyVisibleSection
      ) {
-+      this.addSectionsInFrustum(frustum, visibleSections, nearbyVisibleSection, true, -1);
-+   }
++        this.addSectionsInFrustum(frustum, visibleSections, nearbyVisibleSection, true, -1);
++    }
 +
-+   public void addSectionsInFrustum(
-+      Frustum frustum,
-+      List<SectionRenderDispatcher.RenderSection> visibleSections,
-+      List<SectionRenderDispatcher.RenderSection> nearbyVisibleSection,
-+      boolean updateSections,
-+      int maxChunkDistance
-+   ) {
-+      List<SectionRenderDispatcher.RenderSection> renderInfosTerrain = this.levelRenderer.getRenderInfosTerrain();
-+      List<SectionRenderDispatcher.RenderSection> renderInfosTileEntities = this.levelRenderer.getRenderInfosTileEntities();
-+      int cameraChunkX = (int)frustum.getCameraX() >> 4 << 4;
-+      int cameraChunkY = (int)frustum.getCameraY() >> 4 << 4;
-+      int cameraChunkZ = (int)frustum.getCameraZ() >> 4 << 4;
-+      int maxChunkDistSq = maxChunkDistance * maxChunkDistance;
++    public void addSectionsInFrustum(
++        Frustum frustum,
++        List<SectionRenderDispatcher.RenderSection> visibleSections,
++        List<SectionRenderDispatcher.RenderSection> nearbyVisibleSection,
++        boolean updateSections,
++        int maxChunkDistance
++    ) {
++        List<SectionRenderDispatcher.RenderSection> renderInfosTerrain = this.levelRenderer.getRenderInfosTerrain();
++        List<SectionRenderDispatcher.RenderSection> renderInfosTileEntities = this.levelRenderer.getRenderInfosTileEntities();
++        int cameraChunkX = (int)frustum.getCameraX() >> 4 << 4;
++        int cameraChunkY = (int)frustum.getCameraY() >> 4 << 4;
++        int cameraChunkZ = (int)frustum.getCameraZ() >> 4 << 4;
++        int maxChunkDistSq = maxChunkDistance * maxChunkDistance;
          Frustum offsetFrustum = offsetFrustum(frustum);
          this.currentGraph.get().storage().sectionTree.visitNodes((node, fullyVisible, depth, isClose) -> {
              SectionRenderDispatcher.RenderSection renderSection = node.getSection();
              if (renderSection != null) {
-+            if (maxChunkDistance > 0) {
-+               BlockPos posChunk = renderSection.getPosition();
-+               int dx = cameraChunkX - posChunk.getX();
-+               int dy = cameraChunkY - posChunk.getY();
-+               int dz = cameraChunkZ - posChunk.getZ();
-+               int chunkDistSq = dx * dx + dy * dy + dz * dz;
-+               if (chunkDistSq > maxChunkDistSq) {
-+                  return;
-+               }
-+            }
+-                visibleSections.add(renderSection);
++                if (maxChunkDistance > 0) {
++                    BlockPos posChunk = renderSection.getPosition();
++                    int dx = cameraChunkX - posChunk.getX();
++                    int dy = cameraChunkY - posChunk.getY();
++                    int dz = cameraChunkZ - posChunk.getZ();
++                    int chunkDistSq = dx * dx + dy * dy + dz * dz;
++                    if (chunkDistSq > maxChunkDistSq) {
++                        return;
++                    }
++                }
 +
-+            if (updateSections) {
-                 visibleSections.add(renderSection);
-+            }
++                if (updateSections) {
++                    visibleSections.add(renderSection);
++                }
 +
                  if (isClose) {
                      nearbyVisibleSection.add(renderSection);
                  }
 +
-+            SectionMesh compiledChunk = renderSection.getSectionMesh();
-+            if (!compiledChunk.isEmpty()) {
-+               renderInfosTerrain.add(renderSection);
-             }
++                SectionMesh compiledChunk = renderSection.getSectionMesh();
++                if (!compiledChunk.isEmpty()) {
++                    renderInfosTerrain.add(renderSection);
++                }
 +
-+            if (!compiledChunk.getRenderableBlockEntities().isEmpty()) {
-+               renderInfosTileEntities.add(renderSection);
-+            }
-+         }
++                if (!compiledChunk.getRenderableBlockEntities().isEmpty()) {
++                    renderInfosTileEntities.add(renderSection);
++                }
+             }
          }, offsetFrustum, 32);
      }
- 
 @@ -132,7 +173,7 @@
          return this.needsFrustumUpdate.compareAndSet(true, false);
      }
  
 -    public void schedulePropagationFrom(final SectionRenderDispatcher.RenderSection section) {
-+   public void schedulePropagationFrom(SectionRenderDispatcher.RenderSection section) {
++    public void schedulePropagationFrom(SectionRenderDispatcher.RenderSection section) {
          BlockingQueue<SectionRenderDispatcher.RenderSection> nextSectionsToPropagateFrom = this.nextSectionsToPropagateFrom;
          if (nextSectionsToPropagateFrom != null) {
              nextSectionsToPropagateFrom.add(section);
@@ -150,13 +150,13 @@
              sectionsToPropagateFrom.add(section);
          }
 +
-+      if (section.getSectionMesh().hasTerrainBlockEntities()) {
-+         this.needsFrustumUpdate.set(true);
++        if (section.getSectionMesh().hasTerrainBlockEntities()) {
++            this.needsFrustumUpdate.set(true);
++        }
      }
-+   }
  
 -    public void update(final CameraRenderState camera, final int fov, final ChunkLoadingRenderState chunkLoadingRenderState) {
-+   public void update(CameraRenderState camera, int fov, ChunkLoadingRenderState chunkLoadingRenderState) {
++    public void update(CameraRenderState camera, int fov, ChunkLoadingRenderState chunkLoadingRenderState) {
          this.updateLoadedChunks(chunkLoadingRenderState.addedLoadedChunks, chunkLoadingRenderState.removedLoadedChunks);
          this.updateEmptySections(chunkLoadingRenderState.addedEmptySections, chunkLoadingRenderState.removedEmptySections);
          if (!camera.isFrustumCaptured) {
@@ -165,7 +165,7 @@
      }
  
 -    private void scheduleFullUpdate(final CameraRenderState camera) {
-+   private void scheduleFullUpdate(CameraRenderState camera) {
++    private void scheduleFullUpdate(CameraRenderState camera) {
          this.needsFullUpdate = false;
          LongOpenHashSet clonedEmptySections = this.emptySections.clone();
          LongOpenHashSet clonedLoadedChunks = this.loadedChunks.clone();
@@ -174,7 +174,7 @@
      }
  
 -    private void runPartialUpdate(final CameraRenderState camera, final LongSet loadedExpectedChunks) {
-+   private void runPartialUpdate(CameraRenderState camera, LongSet loadedExpectedChunks) {
++    private void runPartialUpdate(CameraRenderState camera, LongSet loadedExpectedChunks) {
          SectionOcclusionGraph.GraphState state = this.currentGraph.get();
          loadedExpectedChunks.forEach(chunkNode -> {
              LongList waitingSections = state.storage.sectionsWaitingForChunkLoads.remove(chunkNode);
@@ -182,31 +182,31 @@
                  }
              }
  
-+         List<SectionRenderDispatcher.RenderSection> renderInfos = this.levelRenderer.getRenderInfos();
-+         List<SectionRenderDispatcher.RenderSection> renderInfosTerrain = this.levelRenderer.getRenderInfosTerrain();
-+         List<SectionRenderDispatcher.RenderSection> renderInfosTileEntities = this.levelRenderer.getRenderInfosTileEntities();
++            List<SectionRenderDispatcher.RenderSection> renderInfos = this.levelRenderer.getRenderInfos();
++            List<SectionRenderDispatcher.RenderSection> renderInfosTerrain = this.levelRenderer.getRenderInfosTerrain();
++            List<SectionRenderDispatcher.RenderSection> renderInfosTileEntities = this.levelRenderer.getRenderInfosTileEntities();
              Frustum offsetFrustum = offsetFrustum(camera.cullFrustum);
              Consumer<SectionRenderDispatcher.RenderSection> onSectionAdded = section -> {
                  if (offsetFrustum.isVisible(section.getBoundingBox())) {
                      this.needsFrustumUpdate.set(true);
-+               if (section == renderInfos) {
-+                  SectionMesh compiledChunk = section.sectionMesh.get();
-+                  if (!compiledChunk.isEmpty()) {
-+                     renderInfosTerrain.add(section);
-                 }
++                    if (section == renderInfos) {
++                        SectionMesh compiledChunk = section.sectionMesh.get();
++                        if (!compiledChunk.isEmpty()) {
++                            renderInfosTerrain.add(section);
++                        }
 +
-+                  if (!compiledChunk.getRenderableBlockEntities().isEmpty()) {
-+                     renderInfosTileEntities.add(section);
-+                  }
-+               }
-+            }
++                        if (!compiledChunk.getRenderableBlockEntities().isEmpty()) {
++                            renderInfosTileEntities.add(section);
++                        }
++                    }
+                 }
              };
              this.runUpdates(state.storage, camera.pos, queue, camera.smartCull, onSectionAdded, this.emptySections, this.loadedChunks);
          }
      }
  
 -    private void initializeQueueForFullUpdate(final BlockPos cameraPosition, final Queue<SectionOcclusionGraph.Node> queue) {
-+   private void initializeQueueForFullUpdate(BlockPos cameraPosition, Queue<SectionOcclusionGraph.Node> queue) {
++    private void initializeQueueForFullUpdate(BlockPos cameraPosition, Queue<SectionOcclusionGraph.Node> queue) {
          long cameraSectionNode = SectionPos.asLong(cameraPosition);
          int cameraSectionY = SectionPos.y(cameraSectionNode);
          SectionRenderDispatcher.RenderSection cameraSection = this.viewArea.getRenderSection(cameraSectionNode);
@@ -215,7 +215,7 @@
                      if (renderSectionAt != null && this.isInViewDistance(cameraSectionNode, renderSectionAt.getSectionNode())) {
                          Direction sourceDirection = isBelowTheWorld ? Direction.UP : Direction.DOWN;
 -                        SectionOcclusionGraph.Node node = new SectionOcclusionGraph.Node(renderSectionAt, sourceDirection, 0);
-+                  SectionOcclusionGraph.Node node = renderSectionAt.getRenderInfo(sourceDirection, 0);
++                        SectionOcclusionGraph.Node node = renderSectionAt.getRenderInfo(sourceDirection, 0);
                          node.setDirections(node.directions, sourceDirection);
                          if (sectionX > 0) {
                              node.setDirections(node.directions, Direction.EAST);
@@ -224,7 +224,7 @@
              queue.addAll(toAdd);
          } else {
 -            queue.add(new SectionOcclusionGraph.Node(cameraSection, null, 0));
-+         queue.add(cameraSection.getRenderInfo(null, 0));
++            queue.add(cameraSection.getRenderInfo(null, 0));
          }
      }
  
@@ -236,13 +236,13 @@
 -        final Consumer<SectionRenderDispatcher.RenderSection> onSectionAdded,
 -        final LongOpenHashSet emptySections,
 -        final LongOpenHashSet loadedChunks
-+      SectionOcclusionGraph.GraphStorage storage,
-+      Vec3 cameraPos,
-+      Queue<SectionOcclusionGraph.Node> queue,
-+      boolean smartCull,
-+      Consumer<SectionRenderDispatcher.RenderSection> onSectionAdded,
-+      LongOpenHashSet emptySections,
-+      LongOpenHashSet loadedChunks
++        SectionOcclusionGraph.GraphStorage storage,
++        Vec3 cameraPos,
++        Queue<SectionOcclusionGraph.Node> queue,
++        boolean smartCull,
++        Consumer<SectionRenderDispatcher.RenderSection> onSectionAdded,
++        LongOpenHashSet emptySections,
++        LongOpenHashSet loadedChunks
      ) {
          SectionPos cameraSectionPos = SectionPos.of(cameraPos);
          long cameraSectionNode = cameraSectionPos.asLong();
@@ -254,9 +254,9 @@
 -                                renderSectionOriginX + (maxX ? 16 : 0), renderSectionOriginY + (maxY ? 16 : 0), renderSectionOriginZ + (maxZ ? 16 : 0)
 -                            );
 -                            Vector3d step = new Vector3d(cameraPos.x, cameraPos.y, cameraPos.z).sub(checkPos).normalize().mul(CEILED_SECTION_DIAGONAL);
-+                     Vec3M checkPos = storage.vec3M1
-+                        .set(renderSectionOriginX + (maxX ? 16 : 0), renderSectionOriginY + (maxY ? 16 : 0), renderSectionOriginZ + (maxZ ? 16 : 0));
-+                     Vec3M step = storage.vec3M2.set(cameraPos.x, cameraPos.y, cameraPos.z).sub(checkPos).normalize().mul(CEILED_SECTION_DIAGONAL);
++                            Vec3M checkPos = storage.vec3M1
++                                .set(renderSectionOriginX + (maxX ? 16 : 0), renderSectionOriginY + (maxY ? 16 : 0), renderSectionOriginZ + (maxZ ? 16 : 0));
++                            Vec3M step = storage.vec3M2.set(cameraPos.x, cameraPos.y, cameraPos.z).sub(checkPos).normalize().mul(CEILED_SECTION_DIAGONAL);
                              boolean visible = true;
  
                              while (checkPos.distanceSquared(cameraPos.x, cameraPos.y, cameraPos.z) > 3600.0) {
@@ -265,7 +265,7 @@
  
                                  SectionRenderDispatcher.RenderSection checkSection = this.viewArea
 -                                    .getRenderSectionAt(BlockPos.containing(checkPos.x, checkPos.y, checkPos.z));
-+                           .getRenderSectionAt(storage.blockPosM1.setXyz(checkPos.x, checkPos.y, checkPos.z));
++                                    .getRenderSectionAt(storage.blockPosM1.setXyz(checkPos.x, checkPos.y, checkPos.z));
                                  if (checkSection == null || storage.sectionToNodeMap.get(checkSection) == null) {
                                      visible = false;
                                      break;
@@ -274,7 +274,7 @@
                              existingNode.addSourceDirection(direction);
                          } else {
 -                            SectionOcclusionGraph.Node newNode = new SectionOcclusionGraph.Node(renderSectionAt, direction, node.step + 1);
-+                     SectionOcclusionGraph.Node newNode = renderSectionAt.getRenderInfo(direction, node.step + 1);
++                            SectionOcclusionGraph.Node newNode = renderSectionAt.getRenderInfo(direction, node.step + 1);
                              newNode.setDirections(node.directions, direction);
                              queue.add(newNode);
                              storage.sectionToNodeMap.put(renderSectionAt, newNode);
@@ -283,12 +283,12 @@
      }
  
 -    private static Frustum offsetFrustum(final Frustum frustum) {
-+   private static Frustum offsetFrustum(Frustum frustum) {
++    private static Frustum offsetFrustum(Frustum frustum) {
          return new Frustum(frustum).offsetToFullyIncludeCameraCube(8);
      }
  
 -    private boolean isInViewDistance(final long cameraSectionNode, final long sectionNode) {
-+   private boolean isInViewDistance(long cameraSectionNode, long sectionNode) {
++    private boolean isInViewDistance(long cameraSectionNode, long sectionNode) {
          return ChunkTrackingView.isInViewDistance(
              SectionPos.x(cameraSectionNode),
              SectionPos.z(cameraSectionNode),
@@ -298,43 +298,44 @@
  
 -    private SectionRenderDispatcher.@Nullable RenderSection getRelativeFrom(
 -        final long cameraSectionNode, final SectionRenderDispatcher.RenderSection renderSection, final Direction direction
-+   private SectionRenderDispatcher.RenderSection getRelativeFrom(
-+      long cameraSectionNode, SectionRenderDispatcher.RenderSection renderSection, Direction direction
++    private SectionRenderDispatcher.RenderSection getRelativeFrom(
++        long cameraSectionNode, SectionRenderDispatcher.RenderSection renderSection, Direction direction
      ) {
          long relative = renderSection.getNeighborSectionNode(direction);
 -        if (!this.isInViewDistance(cameraSectionNode, relative)) {
-+      int yIn = SectionPos.sectionToBlockCoord(SectionPos.y(cameraSectionNode));
-+      int yN = SectionPos.sectionToBlockCoord(SectionPos.y(relative));
-+      ClientLevel world = this.levelRenderer.getWorld();
-+      if (yN >= world.getMinY() && yN < world.getMaxY()) {
-+         if (Mth.abs(yIn - yN) > this.levelExtractor.renderDistance) {
-             return null;
-+         }
+-            return null;
++        int yIn = SectionPos.sectionToBlockCoord(SectionPos.y(cameraSectionNode));
++        int yN = SectionPos.sectionToBlockCoord(SectionPos.y(relative));
++        ClientLevel world = this.levelRenderer.getWorld();
++        if (yN >= world.getMinY() && yN < world.getMaxY()) {
++            if (Mth.abs(yIn - yN) > this.levelExtractor.renderDistance) {
++                return null;
++            }
 +
-+         int xIn = SectionPos.sectionToBlockCoord(SectionPos.x(cameraSectionNode));
-+         int zIn = SectionPos.sectionToBlockCoord(SectionPos.z(cameraSectionNode));
-+         int xN = SectionPos.sectionToBlockCoord(SectionPos.x(relative));
-+         int zN = SectionPos.sectionToBlockCoord(SectionPos.z(relative));
-+         int dxs = xIn - xN;
-+         int dzs = zIn - zN;
-+         int distSq = dxs * dxs + dzs * dzs;
-+         return distSq > this.levelExtractor.renderDistanceXZSq ? null : this.viewArea.getRenderSection(relative);
++            int xIn = SectionPos.sectionToBlockCoord(SectionPos.x(cameraSectionNode));
++            int zIn = SectionPos.sectionToBlockCoord(SectionPos.z(cameraSectionNode));
++            int xN = SectionPos.sectionToBlockCoord(SectionPos.x(relative));
++            int zN = SectionPos.sectionToBlockCoord(SectionPos.z(relative));
++            int dxs = xIn - xN;
++            int dzs = zIn - zN;
++            int distSq = dxs * dxs + dzs * dzs;
++            return distSq > this.levelExtractor.renderDistanceXZSq ? null : this.viewArea.getRenderSection(relative);
          } else {
 -            return Mth.abs(SectionPos.y(cameraSectionNode) - SectionPos.y(relative)) > this.viewArea.getViewDistance()
 -                ? null
 -                : this.viewArea.getRenderSection(relative);
-+         return null;
++            return null;
          }
      }
  
      @VisibleForDebug
 -    public SectionOcclusionGraph.@Nullable Node getNode(final SectionRenderDispatcher.RenderSection section) {
-+   public SectionOcclusionGraph.Node getNode(SectionRenderDispatcher.RenderSection section) {
++    public SectionOcclusionGraph.Node getNode(SectionRenderDispatcher.RenderSection section) {
          return this.currentGraph.get().storage.sectionToNodeMap.get(section);
      }
  
 -    public void updateEmptySections(final LongOpenHashSet added, final LongOpenHashSet removed) {
-+   public void updateEmptySections(LongOpenHashSet added, LongOpenHashSet removed) {
++    public void updateEmptySections(LongOpenHashSet added, LongOpenHashSet removed) {
          this.emptySections.addAll(added);
          LongIterator iter = removed.longIterator();
  
@@ -343,7 +344,7 @@
      }
  
 -    public void updateLoadedChunks(final LongOpenHashSet added, final LongOpenHashSet removed) {
-+   public void updateLoadedChunks(LongOpenHashSet added, LongOpenHashSet removed) {
++    public void updateLoadedChunks(LongOpenHashSet added, LongOpenHashSet removed) {
          this.loadedChunks.addAll(added);
          this.loadedChunks.removeAll(removed);
      }
@@ -352,17 +353,17 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public boolean needsFrustumUpdate() {
-+      return this.needsFrustumUpdate.get();
-+   }
++    public boolean needsFrustumUpdate() {
++        return this.needsFrustumUpdate.get();
++    }
 +
-+   public void setNeedsFrustumUpdate(boolean val) {
-+      this.needsFrustumUpdate.set(val);
-+   }
++    public void setNeedsFrustumUpdate(boolean val) {
++        this.needsFrustumUpdate.set(val);
++    }
 +
      private record GraphState(SectionOcclusionGraph.GraphStorage storage, BlockingQueue<SectionRenderDispatcher.RenderSection> sectionsToPropagateFrom) {
 -        private GraphState(final ViewArea viewArea) {
-+      private GraphState(ViewArea viewArea) {
++        private GraphState(ViewArea viewArea) {
              this(new SectionOcclusionGraph.GraphStorage(viewArea), new LinkedBlockingQueue<>());
          }
      }
@@ -372,23 +373,23 @@
          public final SectionOcclusionGraph.SectionToNodeMap sectionToNodeMap;
          public final Octree sectionTree;
          public final Long2ObjectMap<LongList> sectionsWaitingForChunkLoads;
-+      public final Vec3M vec3M1 = new Vec3M(0.0, 0.0, 0.0);
-+      public final Vec3M vec3M2 = new Vec3M(0.0, 0.0, 0.0);
-+      public final Vec3M vec3M3 = new Vec3M(0.0, 0.0, 0.0);
-+      public final BlockPosM blockPosM1 = new BlockPosM();
++        public final Vec3M vec3M1 = new Vec3M(0.0, 0.0, 0.0);
++        public final Vec3M vec3M2 = new Vec3M(0.0, 0.0, 0.0);
++        public final Vec3M vec3M3 = new Vec3M(0.0, 0.0, 0.0);
++        public final BlockPosM blockPosM1 = new BlockPosM();
  
 -        public GraphStorage(final ViewArea viewArea) {
-+      public GraphStorage(ViewArea viewArea) {
++        public GraphStorage(ViewArea viewArea) {
              this.sectionToNodeMap = new SectionOcclusionGraph.SectionToNodeMap(viewArea.size());
              this.sectionTree = new Octree(viewArea.getCameraSectionPos(), viewArea.getViewDistance(), viewArea.sectionCount(), viewArea.minY());
              this.sectionsWaitingForChunkLoads = new Long2ObjectOpenHashMap<>();
          }
 +
-+      @Override
-+      public String toString() {
-+         return "sectionToNode: " + this.sectionToNodeMap + ", sectionTree: " + this.sectionTree + ", sectionsWaiting: " + this.sectionsWaitingForChunkLoads;
++        @Override
++        public String toString() {
++            return "sectionToNode: " + this.sectionToNodeMap + ", sectionTree: " + this.sectionTree + ", sectionsWaiting: " + this.sectionsWaitingForChunkLoads;
++        }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      @VisibleForDebug
@@ -397,15 +398,15 @@
 -        protected final SectionRenderDispatcher.RenderSection section;
 -        private byte sourceDirections;
 -        private byte directions;
-+      public final SectionRenderDispatcher.RenderSection section;
-+      private int sourceDirections;
-+      private int directions;
++        public final SectionRenderDispatcher.RenderSection section;
++        private int sourceDirections;
++        private int directions;
          @VisibleForDebug
 -        public final int step;
-+      public int step;
++        public int step;
  
 -        private Node(final SectionRenderDispatcher.RenderSection section, final @Nullable Direction sourceDirection, final int step) {
-+      public Node(SectionRenderDispatcher.RenderSection section, Direction sourceDirection, int step) {
++        public Node(SectionRenderDispatcher.RenderSection section, Direction sourceDirection, int step) {
              this.section = section;
              if (sourceDirection != null) {
                  this.addSourceDirection(sourceDirection);
@@ -415,34 +416,34 @@
  
 -        private void setDirections(final byte oldDirections, final Direction direction) {
 -            this.directions = (byte)(this.directions | oldDirections | 1 << direction.ordinal());
-+      private void setDirections(int oldDirections, Direction direction) {
-+         this.directions = this.directions | oldDirections | 1 << direction.ordinal();
++        private void setDirections(int oldDirections, Direction direction) {
++            this.directions = this.directions | oldDirections | 1 << direction.ordinal();
          }
  
 -        private boolean hasDirection(final Direction direction) {
-+      public void initialize(Direction facingIn, int step) {
-+         this.sourceDirections = facingIn != null ? 1 << facingIn.ordinal() : 0;
-+         this.directions = 0;
-+         this.step = step;
-+      }
++        public void initialize(Direction facingIn, int step) {
++            this.sourceDirections = facingIn != null ? 1 << facingIn.ordinal() : 0;
++            this.directions = 0;
++            this.step = step;
++        }
 +
-+      @Override
-+      public String toString() {
-+         return this.section.getPosition() + "";
-+      }
++        @Override
++        public String toString() {
++            return this.section.getPosition() + "";
++        }
 +
-+      private boolean hasDirection(Direction direction) {
++        private boolean hasDirection(Direction direction) {
              return (this.directions & 1 << direction.ordinal()) > 0;
          }
  
 -        private void addSourceDirection(final Direction direction) {
-+      private void addSourceDirection(Direction direction) {
++        private void addSourceDirection(Direction direction) {
              this.sourceDirections = (byte)(this.sourceDirections | this.sourceDirections | 1 << direction.ordinal());
          }
  
          @VisibleForDebug
 -        public boolean hasSourceDirection(final int directionOrdinal) {
-+      public boolean hasSourceDirection(int directionOrdinal) {
++        public boolean hasSourceDirection(int directionOrdinal) {
              return (this.sourceDirections & 1 << directionOrdinal) > 0;
          }
  
@@ -451,7 +452,7 @@
  
          @Override
 -        public boolean equals(final Object obj) {
-+      public boolean equals(Object obj) {
++        public boolean equals(Object obj) {
              return obj instanceof SectionOcclusionGraph.Node other ? this.section.getSectionNode() == other.section.getSectionNode() : false;
          }
      }
@@ -461,44 +462,44 @@
          private final SectionOcclusionGraph.Node[] nodes;
  
 -        private SectionToNodeMap(final int sectionCount) {
-+      private SectionToNodeMap(int sectionCount) {
++        private SectionToNodeMap(int sectionCount) {
              this.nodes = new SectionOcclusionGraph.Node[sectionCount];
          }
  
 -        public void put(final SectionRenderDispatcher.RenderSection renderSection, final SectionOcclusionGraph.Node node) {
-+      public void put(SectionRenderDispatcher.RenderSection renderSection, SectionOcclusionGraph.Node node) {
++        public void put(SectionRenderDispatcher.RenderSection renderSection, SectionOcclusionGraph.Node node) {
              this.nodes[renderSection.index] = node;
          }
  
 -        public SectionOcclusionGraph.@Nullable Node get(final SectionRenderDispatcher.RenderSection renderSection) {
-+      public SectionOcclusionGraph.Node get(SectionRenderDispatcher.RenderSection renderSection) {
++        public SectionOcclusionGraph.Node get(SectionRenderDispatcher.RenderSection renderSection) {
              int index = renderSection.index;
              return index >= 0 && index < this.nodes.length ? this.nodes[index] : null;
          }
 +
-+      @Override
-+      public String toString() {
-+         StringBuilder sb = new StringBuilder();
-+         int count = 0;
++        @Override
++        public String toString() {
++            StringBuilder sb = new StringBuilder();
++            int count = 0;
 +
-+         for (int i = 0; i < this.nodes.length; i++) {
-+            SectionOcclusionGraph.Node node = this.nodes[i];
-+            if (node != null) {
-+               if (!sb.isEmpty()) {
-+                  sb.append(", ");
++            for (int i = 0; i < this.nodes.length; i++) {
++                SectionOcclusionGraph.Node node = this.nodes[i];
++                if (node != null) {
++                    if (!sb.isEmpty()) {
++                        sb.append(", ");
++                    }
++
++                    sb.append(i + ":" + node);
++                    if (count++ > 100) {
++                        sb.append(", ...");
++                        break;
++                    }
++                }
++            }
++
++            return "[" + sb.toString() + "]";
++        }
      }
 -}
 \ No newline at end of file
-+
-+               sb.append(i + ":" + node);
-+               if (count++ > 100) {
-+                  sb.append(", ...");
-+                  break;
-+               }
-+            }
-+         }
-+
-+         return "[" + sb.toString() + "]";
-+      }
-+   }
 +}

@@ -4,7 +4,7 @@
 +package net.minecraftforge.common.util;
 +
 +public interface HasResult {
-+   Result getResult();
++    Result getResult();
 +
-+   void setResult(Result var1);
++    void setResult(Result var1);
 +}

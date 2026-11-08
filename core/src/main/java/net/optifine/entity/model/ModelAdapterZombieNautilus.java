@@ -16,39 +16,39 @@ import net.optifine.Config;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterZombieNautilus extends ModelAdapterMultiLiving {
-   public ModelAdapterZombieNautilus() {
-      super(EntityTypes.ZOMBIE_NAUTILUS, "zombie_nautilus", ModelLayers.ZOMBIE_NAUTILUS, ModelType.NORMAL);
-   }
+    public ModelAdapterZombieNautilus() {
+        super(EntityTypes.ZOMBIE_NAUTILUS, "zombie_nautilus", ModelLayers.ZOMBIE_NAUTILUS, ModelType.NORMAL);
+    }
 
-   protected ModelAdapterZombieNautilus(EntityType entityType, String name, ModelLayerLocation modelLayer, ModelType type) {
-      super(entityType, name, modelLayer, type);
-   }
+    protected ModelAdapterZombieNautilus(EntityType entityType, String name, ModelLayerLocation modelLayer, ModelType type) {
+        super(entityType, name, modelLayer, type);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new NautilusModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new NautilusModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      return ModelAdapterNautilus.makeStaticMapParts();
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        return ModelAdapterNautilus.makeStaticMapParts();
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new ZombieNautilusRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new ZombieNautilusRenderer(context);
+    }
 
-   @Override
-   protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase, Object type, boolean baby) {
-      ZombieNautilusRenderer znRenderer = (ZombieNautilusRenderer)renderer;
-      NautilusModel nautilusModel = (NautilusModel)modelBase;
-      ModelType znType = (ModelType)type;
-      Map<ModelType, NautilusModel> models = (Map<ModelType, NautilusModel>)Reflector.ZombieNautilusRenderer_models.getValue(znRenderer);
-      if (models == null) {
-         Config.warn("ZombieNautilusRenderer.models not found.");
-      } else {
-         models.put(znType, nautilusModel);
-      }
-   }
+    @Override
+    protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase, Object type, boolean baby) {
+        ZombieNautilusRenderer znRenderer = (ZombieNautilusRenderer)renderer;
+        NautilusModel nautilusModel = (NautilusModel)modelBase;
+        ModelType znType = (ModelType)type;
+        Map<ModelType, NautilusModel> models = (Map<ModelType, NautilusModel>)Reflector.ZombieNautilusRenderer_models.getValue(znRenderer);
+        if (models == null) {
+            Config.warn("ZombieNautilusRenderer.models not found.");
+        } else {
+            models.put(znType, nautilusModel);
+        }
+    }
 }

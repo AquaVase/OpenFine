@@ -20,7 +20,7 @@
      private final GpuBufferSlice defaultSlice;
  
 -    public GpuBuffer(final @GpuBuffer.Usage int usage, final long size) {
-+   public GpuBuffer(@GpuBuffer.Usage int usage, long size) {
++    public GpuBuffer(@GpuBuffer.Usage int usage, long size) {
          this.size = size;
          this.usage = usage;
          this.defaultSlice = new GpuBufferSlice(this, 0L, size);
@@ -29,7 +29,7 @@
      public abstract void close();
  
 -    public GpuBufferSlice slice(final long offset, final long length) {
-+   public GpuBufferSlice slice(long offset, long length) {
++    public GpuBufferSlice slice(long offset, long length) {
          if (offset >= 0L && length >= 0L && offset + length <= this.size) {
              return new GpuBufferSlice(this, offset, length);
          } else {
@@ -38,22 +38,22 @@
      }
  
 -    public GpuBufferSlice.MappedView map(final boolean read, final boolean write) {
-+   public GpuBufferSlice.MappedView map(boolean read, boolean write) {
++    public GpuBufferSlice.MappedView map(boolean read, boolean write) {
          return this.map(0L, this.size, read, write);
      }
  
 -    public abstract GpuBufferSlice.MappedView map(final long offset, final long length, final boolean read, final boolean write);
-+   public abstract GpuBufferSlice.MappedView map(long var1, long var3, boolean var5, boolean var6);
++    public abstract GpuBufferSlice.MappedView map(long var1, long var3, boolean var5, boolean var6);
  
-+   public GlBuffer getGlBuffer() {
-+      return (GlBuffer)this;
-+   }
++    public GlBuffer getGlBuffer() {
++        return (GlBuffer)this;
++    }
 +
-+   public GpuBufferSlice slice(long offsetIn, long lengthIn, Object data) {
-+      GpuBufferSlice slice = this.slice(offsetIn, lengthIn);
-+      slice.setData(data);
-+      return slice;
-+   }
++    public GpuBufferSlice slice(long offsetIn, long lengthIn, Object data) {
++        GpuBufferSlice slice = this.slice(offsetIn, lengthIn);
++        slice.setData(data);
++        return slice;
++    }
 +
      @Retention(RetentionPolicy.CLASS)
      @Target(ElementType.TYPE_USE)

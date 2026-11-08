@@ -29,7 +29,7 @@
      private final EquipmentLayerRenderer equipmentRenderer;
  
 -    public WingsLayer(final RenderLayerParent<S, M> renderer, final EntityModelSet modelSet, final EquipmentLayerRenderer equipmentRenderer) {
-+   public WingsLayer(RenderLayerParent<S, M> renderer, EntityModelSet modelSet, EquipmentLayerRenderer equipmentRenderer) {
++    public WingsLayer(RenderLayerParent<S, M> renderer, EntityModelSet modelSet, EquipmentLayerRenderer equipmentRenderer) {
          super(renderer);
          this.elytraModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA));
          this.elytraBabyModel = new ElytraModel(modelSet.bakeLayer(ModelLayers.ELYTRA_BABY));
@@ -39,7 +39,7 @@
 -    public void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
          ItemStack itemStack = state.chestEquipment;
          Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
          if (equippable != null && !equippable.assetId().isEmpty()) {
@@ -48,7 +48,7 @@
              this.equipmentRenderer
                  .renderLayers(
 -                    EquipmentClientInfo.LayerType.WINGS,
-+               LayerType.WINGS,
++                    LayerType.WINGS,
                      equippable.assetId().get(),
                      model,
                      state,
@@ -57,30 +57,30 @@
      }
  
 -    private static @Nullable Identifier getPlayerElytraTexture(final HumanoidRenderState state) {
-+   protected static Identifier getPlayerElytraTexture(HumanoidRenderState state) {
-+      if (Config.isCustomItems()) {
-+         Identifier customElytra = CustomItems.getCustomElytraTexture(state.chestEquipment, null);
-+         if (customElytra != null) {
-+            return customElytra;
-+         }
-+      }
++    protected static Identifier getPlayerElytraTexture(HumanoidRenderState state) {
++        if (Config.isCustomItems()) {
++            Identifier customElytra = CustomItems.getCustomElytraTexture(state.chestEquipment, null);
++            if (customElytra != null) {
++                return customElytra;
++            }
++        }
 +
          if (state instanceof AvatarRenderState playerState) {
              PlayerSkin skin = playerState.skin;
 -            if (skin.elytra() != null) {
-+         if (state.entity instanceof AbstractClientPlayer player) {
-+            Identifier elytraTexture = player.getLocationElytra();
-+            if (elytraTexture != null) {
-+               return elytraTexture;
++            if (state.entity instanceof AbstractClientPlayer player) {
++                Identifier elytraTexture = player.getLocationElytra();
++                if (elytraTexture != null) {
++                    return elytraTexture;
++                }
 +            }
-+         }
 +
-+         if (Config.isShowCapes() && skin.elytra() != null) {
++            if (Config.isShowCapes() && skin.elytra() != null) {
                  return skin.elytra().texturePath();
              }
  
 -            if (skin.cape() != null && playerState.showCape) {
-+         if (Config.isShowCapes() && skin.cape() != null && playerState.showCape) {
++            if (Config.isShowCapes() && skin.cape() != null && playerState.showCape) {
                  return skin.cape().texturePath();
              }
          }

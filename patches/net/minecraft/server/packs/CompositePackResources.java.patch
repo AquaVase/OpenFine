@@ -12,11 +12,11 @@
  public class CompositePackResources implements PackResources {
 -    private final PackResources primaryPackResources;
 -    private final List<PackResources> packResourcesStack;
-+   public final PackResources primaryPackResources;
-+   public final List<PackResources> packResourcesStack;
++    public final PackResources primaryPackResources;
++    public final List<PackResources> packResourcesStack;
  
 -    public CompositePackResources(final PackResources primaryPackResources, final List<PackResources> overlayPackResources) {
-+   public CompositePackResources(PackResources primaryPackResources, List<PackResources> overlayPackResources) {
++    public CompositePackResources(PackResources primaryPackResources, List<PackResources> overlayPackResources) {
          this.primaryPackResources = primaryPackResources;
          List<PackResources> stack = new ArrayList<>(overlayPackResources.size() + 1);
          stack.addAll(Lists.reverse(overlayPackResources));
@@ -25,13 +25,13 @@
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getRootResource(final String... path) {
-+   public IoSupplier<InputStream> getRootResource(String... path) {
++    public IoSupplier<InputStream> getRootResource(String... path) {
          return this.primaryPackResources.getRootResource(path);
      }
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getResource(final PackType type, final Identifier location) {
-+   public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
++    public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
          for (PackResources packResources : this.packResourcesStack) {
              IoSupplier<InputStream> resource = packResources.getResource(type, location);
              if (resource != null) {
@@ -40,7 +40,7 @@
  
      @Override
 -    public void listResources(final PackType type, final String namespace, final String directory, final PackResources.ResourceOutput output) {
-+   public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
++    public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
          Map<Identifier, IoSupplier<InputStream>> result = new HashMap<>();
  
          for (PackResources packResources : this.packResourcesStack) {
@@ -49,7 +49,7 @@
  
      @Override
 -    public Set<String> getNamespaces(final PackType type) {
-+   public Set<String> getNamespaces(PackType type) {
++    public Set<String> getNamespaces(PackType type) {
          Set<String> result = new HashSet<>();
  
          for (PackResources overlayPackResource : this.packResourcesStack) {
@@ -58,7 +58,7 @@
  
      @Override
 -    public <T> @Nullable T getMetadataSection(final MetadataSectionType<T> metadataSerializer) throws IOException {
-+   public <T> T getMetadataSection(MetadataSectionType<T> metadataSerializer) throws IOException {
++    public <T> T getMetadataSection(MetadataSectionType<T> metadataSerializer) throws IOException {
          return this.primaryPackResources.getMetadataSection(metadataSerializer);
      }
  

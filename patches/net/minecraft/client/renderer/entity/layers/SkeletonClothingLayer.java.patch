@@ -11,13 +11,13 @@
  public class SkeletonClothingLayer<S extends SkeletonRenderState, M extends EntityModel<S>> extends RenderLayer<S, M> {
 -    private final SkeletonModel<S> layerModel;
 -    private final Identifier clothesLocation;
-+   public SkeletonModel<S> layerModel;
-+   public Identifier clothesLocation;
++    public SkeletonModel<S> layerModel;
++    public Identifier clothesLocation;
  
 -    public SkeletonClothingLayer(
 -        final RenderLayerParent<S, M> renderer, final EntityModelSet models, final ModelLayerLocation layerLocation, final Identifier clothesLocation
 -    ) {
-+   public SkeletonClothingLayer(RenderLayerParent<S, M> renderer, EntityModelSet models, ModelLayerLocation layerLocation, Identifier clothesLocation) {
++    public SkeletonClothingLayer(RenderLayerParent<S, M> renderer, EntityModelSet models, ModelLayerLocation layerLocation, Identifier clothesLocation) {
          super(renderer);
          this.clothesLocation = clothesLocation;
          this.layerModel = new SkeletonModel<>(models.bakeLayer(layerLocation));
@@ -26,7 +26,7 @@
 -    public void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
          coloredCutoutModelCopyLayerRender(this.layerModel, this.clothesLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
      }
 -}

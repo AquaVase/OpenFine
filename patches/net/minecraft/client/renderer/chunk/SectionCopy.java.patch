@@ -12,17 +12,17 @@
  public class SectionCopy {
      private final Map<BlockPos, BlockEntity> blockEntities;
 -    private final @Nullable PalettedContainer<BlockState> section;
-+   private final PalettedContainer<BlockState> section;
++    private final PalettedContainer<BlockState> section;
      private final boolean debug;
      private final LevelHeightAccessor levelHeightAccessor;
-+   private LevelChunk chunk;
++    private LevelChunk chunk;
  
 -    public SectionCopy(final LevelChunk levelChunk, final int sectionIndex) {
-+   public SectionCopy(LevelChunk levelChunk, int sectionIndex) {
++    public SectionCopy(LevelChunk levelChunk, int sectionIndex) {
          this.levelHeightAccessor = levelChunk;
          this.debug = levelChunk.getLevel().isDebug();
          this.blockEntities = ImmutableMap.copyOf(levelChunk.getBlockEntities());
-+      this.chunk = levelChunk;
++        this.chunk = levelChunk;
          if (levelChunk instanceof EmptyLevelChunk) {
              this.section = null;
          } else {
@@ -31,12 +31,12 @@
      }
  
 -    public @Nullable BlockEntity getBlockEntity(final BlockPos pos) {
-+   public BlockEntity getBlockEntity(BlockPos pos) {
++    public BlockEntity getBlockEntity(BlockPos pos) {
          return this.blockEntities.get(pos);
      }
  
 -    public BlockState getBlockState(final BlockPos pos) {
-+   public BlockState getBlockState(BlockPos pos) {
++    public BlockState getBlockState(BlockPos pos) {
          int x = pos.getX();
          int y = pos.getY();
          int z = pos.getZ();
@@ -47,13 +47,13 @@
 -}
 \ No newline at end of file
 +
-+   public LevelChunk getChunk() {
-+      return this.chunk;
-+   }
++    public LevelChunk getChunk() {
++        return this.chunk;
++    }
 +
-+   public void finish() {
-+      if (this.section != null) {
-+         this.section.finish();
-+      }
-+   }
++    public void finish() {
++        if (this.section != null) {
++            this.section.finish();
++        }
++    }
 +}

@@ -14,36 +14,36 @@ import net.minecraft.world.item.equipment.Equippable;
 import net.optifine.reflect.Reflector;
 
 public class ItemUtils {
-   private static CompoundTag EMPTY_TAG = new CompoundTag();
+    private static CompoundTag EMPTY_TAG = new CompoundTag();
 
-   public static Item getItem(Identifier loc) {
-      return !BuiltInRegistries.ITEM.containsKey(loc) ? null : BuiltInRegistries.ITEM.getValue(loc);
-   }
+    public static Item getItem(Identifier loc) {
+        return !BuiltInRegistries.ITEM.containsKey(loc) ? null : BuiltInRegistries.ITEM.getValue(loc);
+    }
 
-   public static int getId(Item item) {
-      return BuiltInRegistries.ITEM.getId(item);
-   }
+    public static int getId(Item item) {
+        return BuiltInRegistries.ITEM.getId(item);
+    }
 
-   public static CompoundTag getTag(ItemStack itemStack) {
-      if (itemStack == null) {
-         return EMPTY_TAG;
-      }
+    public static CompoundTag getTag(ItemStack itemStack) {
+        if (itemStack == null) {
+            return EMPTY_TAG;
+        }
 
-      PatchedDataComponentMap components = (PatchedDataComponentMap)Reflector.ItemStack_components.getValue(itemStack);
-      return components == null ? EMPTY_TAG : components.getTag();
-   }
+        PatchedDataComponentMap components = (PatchedDataComponentMap)Reflector.ItemStack_components.getValue(itemStack);
+        return components == null ? EMPTY_TAG : components.getTag();
+    }
 
-   public static Equippable getEquippable(Item item) {
-      return !item.builtInRegistryHolder().areComponentsBound() ? null : item.components().get(DataComponents.EQUIPPABLE);
-   }
+    public static Equippable getEquippable(Item item) {
+        return !item.builtInRegistryHolder().areComponentsBound() ? null : item.components().get(DataComponents.EQUIPPABLE);
+    }
 
-   public static String getMaterial(Equippable equip) {
-      Optional<ResourceKey<EquipmentAsset>> optAssetKey = equip.assetId();
-      return !optAssetKey.isPresent() ? null : optAssetKey.get().identifier().getPath();
-   }
+    public static String getMaterial(Equippable equip) {
+        Optional<ResourceKey<EquipmentAsset>> optAssetKey = equip.assetId();
+        return !optAssetKey.isPresent() ? null : optAssetKey.get().identifier().getPath();
+    }
 
-   public static String getEquippableMaterial(Item item) {
-      Equippable equip = getEquippable(item);
-      return equip == null ? null : getMaterial(equip);
-   }
+    public static String getEquippableMaterial(Item item) {
+        Equippable equip = getEquippable(item);
+        return equip == null ? null : getMaterial(equip);
+    }
 }

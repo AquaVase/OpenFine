@@ -35,7 +35,7 @@
 -    private static final Comparator<GuiElementRenderState> ELEMENT_SORT_COMPARATOR = Comparator.comparing(
 -            GuiElementRenderState::scissorArea, SCISSOR_COMPARATOR
 -        )
-+   private static final Comparator<GuiElementRenderState> ELEMENT_SORT_COMPARATOR = Comparator.comparing(GuiElementRenderState::scissorArea, SCISSOR_COMPARATOR)
++    private static final Comparator<GuiElementRenderState> ELEMENT_SORT_COMPARATOR = Comparator.comparing(GuiElementRenderState::scissorArea, SCISSOR_COMPARATOR)
          .thenComparing(GuiElementRenderState::pipeline, Comparator.comparing(RenderPipeline::getSortKey))
          .thenComparing(GuiElementRenderState::textureSetup, TEXTURE_COMPARATOR);
      private final Map<Object, OversizedItemRenderer> oversizedItemRenderers = new Object2ObjectOpenHashMap<>();
@@ -44,25 +44,25 @@
      private final FeatureRenderDispatcher featureRenderDispatcher;
      private final Map<Class<? extends PictureInPictureRenderState>, PictureInPictureRenderer<?>> pictureInPictureRenderers;
 -    private @Nullable GuiItemAtlas itemAtlas;
-+   private GuiItemAtlas itemAtlas;
++    private GuiItemAtlas itemAtlas;
      private int cachedGuiScale;
      private final CubeMap cubeMap = new CubeMap(Identifier.withDefaultNamespace("textures/gui/title/background/panorama"));
 -    private @Nullable ScreenRectangle previousScissorArea = null;
 -    private @Nullable RenderPipeline previousPipeline = null;
 -    private @Nullable TextureSetup previousTextureSetup = null;
 -    private StagedVertexBuffer.@Nullable Draw previousDraw;
-+   private ScreenRectangle previousScissorArea = null;
-+   private RenderPipeline previousPipeline = null;
-+   private TextureSetup previousTextureSetup = null;
-+   private StagedVertexBuffer.Draw previousDraw;
-+   private static boolean renderGui;
++    private ScreenRectangle previousScissorArea = null;
++    private RenderPipeline previousPipeline = null;
++    private TextureSetup previousTextureSetup = null;
++    private StagedVertexBuffer.Draw previousDraw;
++    private static boolean renderGui;
  
 -    public GuiRenderer(
 -        final GuiRenderState renderState,
 -        final FeatureRenderDispatcher featureRenderDispatcher,
 -        final List<PictureInPictureRenderer<?>> pictureInPictureRenderers
 -    ) {
-+   public GuiRenderer(GuiRenderState renderState, FeatureRenderDispatcher featureRenderDispatcher, List<PictureInPictureRenderer<?>> pictureInPictureRenderers) {
++    public GuiRenderer(GuiRenderState renderState, FeatureRenderDispatcher featureRenderDispatcher, List<PictureInPictureRenderer<?>> pictureInPictureRenderers) {
          this.renderState = renderState;
          this.featureRenderDispatcher = featureRenderDispatcher;
          Builder<Class<? extends PictureInPictureRenderState>, PictureInPictureRenderer<?>> builder = ImmutableMap.builder();
@@ -70,7 +70,7 @@
              builder.put((Class<? extends PictureInPictureRenderState>)pictureInPictureRenderer.getRenderStateClass(), pictureInPictureRenderer);
          }
  
-+      Reflector.ForgeHooksClient_onRegisterPictureInPictureRenderers.call(pictureInPictureRenderers, builder);
++        Reflector.ForgeHooksClient_onRegisterPictureInPictureRenderers.call(pictureInPictureRenderers, builder);
          this.pictureInPictureRenderers = builder.buildOrThrow();
      }
  
@@ -78,7 +78,7 @@
      }
  
      public void render() {
-+      renderGui = true;
++        renderGui = true;
          ProfilerFiller profiler = Profiler.get();
          if (this.renderState.panoramaRenderState != null) {
              this.cubeMap.render(10.0F, this.renderState.panoramaRenderState.spin());
@@ -86,7 +86,7 @@
          }
  
          profiler.pop();
-+      renderGui = false;
++        renderGui = false;
      }
  
      private void clearUnusedOversizedItemRenderers() {
@@ -95,23 +95,23 @@
          this.prepareText();
          this.renderState.sortElements(ELEMENT_SORT_COMPARATOR);
 +
-+      for (int i = 0; i < this.renderState.frameListeners.size(); i++) {
-+         this.renderState.frameListeners.get(i).addToMeshBegin();
-+      }
++        for (int i = 0; i < this.renderState.frameListeners.size(); i++) {
++            this.renderState.frameListeners.get(i).addToMeshBegin();
++        }
 +
          this.addElementsToMeshes(GuiRenderState.TraverseRange.BEFORE_BLUR);
 +
-+      for (int i = 0; i < this.renderState.frameListeners.size(); i++) {
-+         this.renderState.frameListeners.get(i).addToMeshEnd();
-+      }
++        for (int i = 0; i < this.renderState.frameListeners.size(); i++) {
++            this.renderState.frameListeners.get(i).addToMeshEnd();
++        }
 +
-+      this.renderState.frameListeners.clear();
++        this.renderState.frameListeners.clear();
          this.firstDrawIndexAfterBlur = this.draws.size();
          this.addElementsToMeshes(GuiRenderState.TraverseRange.AFTER_BLUR);
      }
  
 -    private void addElementsToMeshes(final GuiRenderState.TraverseRange range) {
-+   private void addElementsToMeshes(GuiRenderState.TraverseRange range) {
++    private void addElementsToMeshes(GuiRenderState.TraverseRange range) {
          this.previousScissorArea = null;
          this.previousPipeline = null;
          this.previousTextureSetup = null;
@@ -122,7 +122,7 @@
 -                this.executeDrawRange(
 -                    () -> "GUI before blur", mainRenderTarget, dynamicTransforms, 0, Math.min(this.firstDrawIndexAfterBlur, this.draws.size())
 -                );
-+            this.executeDrawRange(() -> "GUI before blur", mainRenderTarget, dynamicTransforms, 0, Math.min(this.firstDrawIndexAfterBlur, this.draws.size()));
++                this.executeDrawRange(() -> "GUI before blur", mainRenderTarget, dynamicTransforms, 0, Math.min(this.firstDrawIndexAfterBlur, this.draws.size()));
              }
  
              if (this.draws.size() > this.firstDrawIndexAfterBlur) {
@@ -131,14 +131,14 @@
                  this.executeDrawRange(() -> "GUI after blur", mainRenderTarget, dynamicTransforms, this.firstDrawIndexAfterBlur, this.draws.size());
              }
 +
-+         Lagometer.renderLines(this);
++            Lagometer.renderLines(this);
          }
      }
  
 -    private void executeDrawRange(
 -        final Supplier<String> label, final RenderTarget mainRenderTarget, final GpuBufferSlice dynamicTransforms, final int startIndex, final int endIndex
 -    ) {
-+   private void executeDrawRange(Supplier<String> label, RenderTarget mainRenderTarget, GpuBufferSlice dynamicTransforms, int startIndex, int endIndex) {
++    private void executeDrawRange(Supplier<String> label, RenderTarget mainRenderTarget, GpuBufferSlice dynamicTransforms, int startIndex, int endIndex) {
          try (RenderPass renderPass = RenderSystem.getDevice()
                  .createCommandEncoder()
                  .createRenderPass(
@@ -147,7 +147,7 @@
      }
  
 -    private void addElementToMesh(final GuiElementRenderState elementState) {
-+   private void addElementToMesh(GuiElementRenderState elementState) {
++    private void addElementToMesh(GuiElementRenderState elementState) {
          RenderPipeline pipeline = elementState.pipeline();
          TextureSetup textureSetup = elementState.textureSetup();
          ScreenRectangle scissorArea = elementState.scissorArea();
@@ -156,7 +156,7 @@
              text.ensurePrepared().visit(new Font.GlyphVisitor() {
                  @Override
 -                public void acceptRenderable(final TextRenderable renderable) {
-+            public void acceptRenderable(TextRenderable renderable) {
++                public void acceptRenderable(TextRenderable renderable) {
                      GuiRenderer.this.renderState.addGlyphToCurrentLayer(new GlyphRenderState(pose, renderable, scissor));
                  }
              });
@@ -165,7 +165,7 @@
                      hasOversizedItems.setTrue();
                  } else {
 -                    GuiItemAtlas.SlotView slotView = itemAtlas.getOrUpdate(itemState.itemStackRenderState());
-+               SlotView slotView = itemAtlas.getOrUpdate(itemState.itemStackRenderState());
++                    SlotView slotView = itemAtlas.getOrUpdate(itemState.itemStackRenderState());
                      if (slotView != null) {
                          this.submitBlitFromItemAtlas(itemState, slotView);
                      }
@@ -174,7 +174,7 @@
      }
  
 -    private <T extends PictureInPictureRenderState> void preparePictureInPictureState(final T picturesInPictureState, final int guiScale) {
-+   private <T extends PictureInPictureRenderState> void preparePictureInPictureState(T picturesInPictureState, int guiScale) {
++    private <T extends PictureInPictureRenderState> void preparePictureInPictureState(T picturesInPictureState, int guiScale) {
          PictureInPictureRenderer<T> renderer = (PictureInPictureRenderer<T>)this.pictureInPictureRenderers.get(picturesInPictureState.getClass());
          if (renderer != null) {
              renderer.prepare(picturesInPictureState, this.renderState, this.featureRenderDispatcher, guiScale);
@@ -182,7 +182,7 @@
      }
  
 -    private void submitBlitFromItemAtlas(final GuiItemRenderState itemState, final GuiItemAtlas.SlotView slotView) {
-+   private void submitBlitFromItemAtlas(GuiItemRenderState itemState, SlotView slotView) {
++    private void submitBlitFromItemAtlas(GuiItemRenderState itemState, SlotView slotView) {
          this.renderState
              .addBlitToCurrentLayer(
                  new BlitRenderState(
@@ -191,7 +191,7 @@
      }
  
 -    private GuiItemAtlas prepareItemAtlas(final Set<Object> itemsInFrame, final int slotTextureSize) {
-+   private GuiItemAtlas prepareItemAtlas(Set<Object> itemsInFrame, int slotTextureSize) {
++    private GuiItemAtlas prepareItemAtlas(Set<Object> itemsInFrame, int slotTextureSize) {
          if (this.itemAtlas != null && this.itemAtlas.tryPrepareFor(itemsInFrame)) {
              return this.itemAtlas;
          }
@@ -200,7 +200,7 @@
      }
  
 -    private void executeDraw(final GuiRenderer.Draw draw, final RenderPass renderPass) {
-+   private void executeDraw(GuiRenderer.Draw draw, RenderPass renderPass) {
++    private void executeDraw(GuiRenderer.Draw draw, RenderPass renderPass) {
          StagedVertexBuffer.ExecuteInfo executeInfo = this.vertexBuffer.getExecuteInfo(draw.draw);
          if (executeInfo != null) {
              RenderPipeline pipeline = draw.pipeline();
@@ -209,7 +209,7 @@
      }
  
 -    private boolean scissorChanged(final @Nullable ScreenRectangle newScissor, final @Nullable ScreenRectangle oldScissor) {
-+   private boolean scissorChanged(ScreenRectangle newScissor, ScreenRectangle oldScissor) {
++    private boolean scissorChanged(ScreenRectangle newScissor, ScreenRectangle oldScissor) {
          if (newScissor == oldScissor) {
              return false;
          } else {
@@ -218,7 +218,7 @@
      }
  
 -    private void enableScissor(final ScreenRectangle rectangle, final RenderPass renderPass) {
-+   private void enableScissor(ScreenRectangle rectangle, RenderPass renderPass) {
++    private void enableScissor(ScreenRectangle rectangle, RenderPass renderPass) {
          WindowRenderState window = Minecraft.getInstance().gameRenderer.gameRenderState().windowRenderState;
          int guiScale = window.guiScale;
          double left = rectangle.left() * guiScale;
@@ -227,7 +227,7 @@
      }
  
 -    public void registerPanoramaTextures(final TextureManager textureManager) {
-+   public void registerPanoramaTextures(TextureManager textureManager) {
++    public void registerPanoramaTextures(TextureManager textureManager) {
          this.cubeMap.registerTextures(textureManager);
      }
  
@@ -237,22 +237,22 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    private record Draw(StagedVertexBuffer.Draw draw, RenderPipeline pipeline, TextureSetup textureSetup, @Nullable ScreenRectangle scissorArea) {
-+   public GuiRenderState getRenderState() {
-+      return this.renderState;
++    public GuiRenderState getRenderState() {
++        return this.renderState;
      }
 -}
 \ No newline at end of file
 +
-+   public void addMeshesToDraw(List<GuiRenderer.Draw> meshes) {
-+   }
++    public void addMeshesToDraw(List<GuiRenderer.Draw> meshes) {
++    }
 +
-+   public void flushMesh() {
-+   }
++    public void flushMesh() {
++    }
 +
-+   public static boolean isRenderGui() {
-+      return renderGui;
-+   }
++    public static boolean isRenderGui() {
++        return renderGui;
++    }
 +
-+   public record Draw(StagedVertexBuffer.Draw draw, RenderPipeline pipeline, TextureSetup textureSetup, ScreenRectangle scissorArea) {
-+   }
++    public record Draw(StagedVertexBuffer.Draw draw, RenderPipeline pipeline, TextureSetup textureSetup, ScreenRectangle scissorArea) {
++    }
 +}

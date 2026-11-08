@@ -12,21 +12,21 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterSkeleton extends ModelAdapterAgeableHumanoid {
-   public ModelAdapterSkeleton() {
-      super(EntityTypes.SKELETON, "skeleton", ModelLayers.SKELETON);
-   }
+    public ModelAdapterSkeleton() {
+        super(EntityTypes.SKELETON, "skeleton", ModelLayers.SKELETON);
+    }
 
-   protected ModelAdapterSkeleton(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    protected ModelAdapterSkeleton(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SkeletonModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SkeletonModel(root);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new SkeletonRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new SkeletonRenderer(context);
+    }
 }

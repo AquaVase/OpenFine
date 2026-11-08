@@ -7,53 +7,53 @@ import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
 
 public class SliderPercentageOptionOF extends OptionInstance {
-   public SliderPercentageOptionOF(String name, double defVal) {
-      super(
-         name,
-         OptionInstance.noTooltip(),
-         (labelIn, valuein) -> Options.genericValueLabel(labelIn, Component.translatable(name, valuein)),
-         OptionInstance.UnitDouble.INSTANCE,
-         defVal,
-         val -> {}
-      );
-   }
+    public SliderPercentageOptionOF(String name, double defVal) {
+        super(
+            name,
+            OptionInstance.noTooltip(),
+            (labelIn, valuein) -> Options.genericValueLabel(labelIn, Component.translatable(name, valuein)),
+            OptionInstance.UnitDouble.INSTANCE,
+            defVal,
+            val -> {}
+        );
+    }
 
-   public SliderPercentageOptionOF(String name, int valueMin, int valueMax, int step, int valueDef) {
-      super(
-         name,
-         OptionInstance.noTooltip(),
-         (labelIn, valuein) -> Options.genericValueLabel(labelIn, Component.translatable(name, valuein)),
-         new OptionInstance.IntRange(valueMin / step, valueMax / step).xmap(val -> val * step, val -> val / step, true),
-         Codec.intRange(valueMin, valueMax),
-         valueDef,
-         val -> {}
-      );
-   }
+    public SliderPercentageOptionOF(String name, int valueMin, int valueMax, int step, int valueDef) {
+        super(
+            name,
+            OptionInstance.noTooltip(),
+            (labelIn, valuein) -> Options.genericValueLabel(labelIn, Component.translatable(name, valuein)),
+            new OptionInstance.IntRange(valueMin / step, valueMax / step).xmap(val -> val * step, val -> val / step, true),
+            Codec.intRange(valueMin, valueMax),
+            valueDef,
+            val -> {}
+        );
+    }
 
-   public SliderPercentageOptionOF(String name, int valueMin, int valueMax, int[] stepValues, int valueDef) {
-      super(
-         name,
-         OptionInstance.noTooltip(),
-         (labelIn, valuein) -> Options.genericValueLabel(labelIn, Component.translatable(name, valuein)),
-         new OptionInstance.IntRange(0, stepValues.length - 1).xmap(val -> stepValues[val], val -> Options.indexOf(val, stepValues), true),
-         Codec.intRange(valueMin, valueMax),
-         valueDef,
-         val -> {}
-      );
-   }
+    public SliderPercentageOptionOF(String name, int valueMin, int valueMax, int[] stepValues, int valueDef) {
+        super(
+            name,
+            OptionInstance.noTooltip(),
+            (labelIn, valuein) -> Options.genericValueLabel(labelIn, Component.translatable(name, valuein)),
+            new OptionInstance.IntRange(0, stepValues.length - 1).xmap(val -> stepValues[val], val -> Options.indexOf(val, stepValues), true),
+            Codec.intRange(valueMin, valueMax),
+            valueDef,
+            val -> {}
+        );
+    }
 
-   public double getOptionValue() {
-      Options gameSettings = Minecraft.getInstance().options;
-      return gameSettings.getOptionFloatValueOF(this);
-   }
+    public double getOptionValue() {
+        Options gameSettings = Minecraft.getInstance().options;
+        return gameSettings.getOptionFloatValueOF(this);
+    }
 
-   public void setOptionValue(double value) {
-      Options gameSettings = Minecraft.getInstance().options;
-      gameSettings.setOptionFloatValueOF(this, value);
-   }
+    public void setOptionValue(double value) {
+        Options gameSettings = Minecraft.getInstance().options;
+        gameSettings.setOptionFloatValueOF(this, value);
+    }
 
-   public Component getOptionText() {
-      Options gameSetings = Minecraft.getInstance().options;
-      return gameSetings.getKeyComponentOF(this);
-   }
+    public Component getOptionText() {
+        Options gameSetings = Minecraft.getInstance().options;
+        return gameSetings.getKeyComponentOF(this);
+    }
 }

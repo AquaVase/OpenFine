@@ -113,7 +113,7 @@
      private final ClientLevel.ClientLevelData clientLevelData;
      private final TickRateManager tickRateManager;
 -    private final @Nullable EndFlashState endFlashState;
-+   private final EndFlashState endFlashState;
++    private final EndFlashState endFlashState;
      private final Minecraft minecraft = Minecraft.getInstance();
      private final List<AbstractClientPlayer> players = Lists.newArrayList();
      private final List<EnderDragonPart> dragonParts = Lists.newArrayList();
@@ -121,7 +121,7 @@
          cache.put(BiomeColors.FOLIAGE_COLOR_RESOLVER, new BlockTintCache(pos -> this.calculateBlockTint(pos, BiomeColors.FOLIAGE_COLOR_RESOLVER)));
          cache.put(BiomeColors.DRY_FOLIAGE_COLOR_RESOLVER, new BlockTintCache(pos -> this.calculateBlockTint(pos, BiomeColors.DRY_FOLIAGE_COLOR_RESOLVER)));
          cache.put(BiomeColors.WATER_COLOR_RESOLVER, new BlockTintCache(pos -> this.calculateBlockTint(pos, BiomeColors.WATER_COLOR_RESOLVER)));
-+      Reflector.ColorResolverManager_registerBlockTintCaches.call(this, cache);
++        Reflector.ColorResolverManager_registerBlockTintCaches.call(this, cache);
      });
      private final ClientChunkCache chunkSource;
      private final Deque<Runnable> lightUpdateQueue = Queues.newArrayDeque();
@@ -129,13 +129,13 @@
      private final Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress = new Long2ObjectOpenHashMap<>();
      private final int seaLevel;
      private static final Set<Item> MARKER_PARTICLE_ITEMS = Set.of(Items.BARRIER, Items.LIGHT);
-+   private final Int2ObjectMap<PartEntity<?>> partEntities = new Int2ObjectOpenHashMap<>();
-+   private final ModelDataManager modelDataManager = new ModelDataManager(this);
-+   private RenderEnv renderEnv = new RenderEnv(Blocks.AIR.defaultBlockState(), new BlockPos(0, 0, 0));
-+   private boolean playerUpdate = false;
++    private final Int2ObjectMap<PartEntity<?>> partEntities = new Int2ObjectOpenHashMap<>();
++    private final ModelDataManager modelDataManager = new ModelDataManager(this);
++    private RenderEnv renderEnv = new RenderEnv(Blocks.AIR.defaultBlockState(), new BlockPos(0, 0, 0));
++    private boolean playerUpdate = false;
  
 -    public void handleBlockChangedAck(final int sequence) {
-+   public void handleBlockChangedAck(int sequence) {
++    public void handleBlockChangedAck(int sequence) {
          if (SharedConstants.DEBUG_BLOCK_BREAK) {
              LOGGER.debug("ACK {}", sequence);
          }
@@ -144,7 +144,7 @@
  
      @Override
 -    public void onBlockEntityAdded(final BlockEntity blockEntity) {
-+   public void onBlockEntityAdded(BlockEntity blockEntity) {
++    public void onBlockEntityAdded(BlockEntity blockEntity) {
          BlockEntityRenderer<BlockEntity, ?> renderer = this.minecraft.getBlockEntityRenderDispatcher().getRenderer(blockEntity);
          if (renderer != null && renderer.shouldRenderOffScreen()) {
              this.globallyRenderedBlockEntities.add(blockEntity);
@@ -153,14 +153,14 @@
      }
  
 -    public void setServerVerifiedBlockState(final BlockPos pos, final BlockState blockState, final @Block.UpdateFlags int updateFlag) {
-+   public void setServerVerifiedBlockState(BlockPos pos, BlockState blockState, @UpdateFlags int updateFlag) {
++    public void setServerVerifiedBlockState(BlockPos pos, BlockState blockState, @UpdateFlags int updateFlag) {
          if (!this.blockStatePredictionHandler.updateKnownServerState(pos, blockState)) {
              super.setBlock(pos, blockState, updateFlag, 512);
          }
      }
  
 -    public void syncBlockState(final BlockPos pos, final BlockState state, final @Nullable Vec3 playerPos) {
-+   public void syncBlockState(BlockPos pos, BlockState state, Vec3 playerPos) {
++    public void syncBlockState(BlockPos pos, BlockState state, Vec3 playerPos) {
          BlockState oldState = this.getBlockState(pos);
          if (oldState != state) {
              this.setBlock(pos, state, 19);
@@ -169,7 +169,7 @@
  
      @Override
 -    public boolean setBlock(final BlockPos pos, final BlockState blockState, final @Block.UpdateFlags int updateFlags, final int updateLimit) {
-+   public boolean setBlock(BlockPos pos, BlockState blockState, @UpdateFlags int updateFlags, int updateLimit) {
++    public boolean setBlock(BlockPos pos, BlockState blockState, @UpdateFlags int updateFlags, int updateLimit) {
          if (this.blockStatePredictionHandler.isPredicting()) {
              BlockState oldState = this.getBlockState(pos);
              boolean success = super.setBlock(pos, blockState, updateFlags, updateLimit);
@@ -187,16 +187,16 @@
 -        final boolean isDebug,
 -        final long biomeZoomSeed,
 -        final int seaLevel
-+      ClientPacketListener connection,
-+      ClientLevel.ClientLevelData levelData,
-+      ResourceKey<Level> dimension,
-+      Holder<DimensionType> dimensionType,
-+      int serverChunkRadius,
-+      int serverSimulationDistance,
-+      LevelExtractor levelExtractor,
-+      boolean isDebug,
-+      long biomeZoomSeed,
-+      int seaLevel
++        ClientPacketListener connection,
++        ClientLevel.ClientLevelData levelData,
++        ResourceKey<Level> dimension,
++        Holder<DimensionType> dimensionType,
++        int serverChunkRadius,
++        int serverSimulationDistance,
++        LevelExtractor levelExtractor,
++        boolean isDebug,
++        long biomeZoomSeed,
++        int seaLevel
      ) {
          super(levelData, dimension, connection.registryAccess(), dimensionType, true, isDebug, biomeZoomSeed, 1000000);
          this.connection = connection;
@@ -205,23 +205,23 @@
          this.levelEventHandler = new LevelEventHandler(this.minecraft, this);
          this.endFlashState = dimensionType.value().hasEndFlashes() ? new EndFlashState() : null;
 -        this.setRespawnData(LevelData.RespawnData.of(dimension, new BlockPos(8, 64, 8), 0.0F, 0.0F));
-+      this.setRespawnData(RespawnData.of(dimension, new BlockPos(8, 64, 8), 0.0F, 0.0F));
++        this.setRespawnData(RespawnData.of(dimension, new BlockPos(8, 64, 8), 0.0F, 0.0F));
          this.serverSimulationDistance = serverSimulationDistance;
          this.environmentAttributes = this.addEnvironmentAttributeLayers(EnvironmentAttributeSystem.builder()).build();
          this.updateSkyBrightness();
-+      if (Reflector.CapabilityProvider_gatherCapabilities.exists() && Reflector.CapabilityProvider.getTargetClass().isAssignableFrom(this.getClass())) {
-+         Reflector.call(this, Reflector.CapabilityProvider_gatherCapabilities);
++        if (Reflector.CapabilityProvider_gatherCapabilities.exists() && Reflector.CapabilityProvider.getTargetClass().isAssignableFrom(this.getClass())) {
++            Reflector.call(this, Reflector.CapabilityProvider_gatherCapabilities);
++        }
++
++        Reflector.ForgeEventFactory_onLevelLoad.call(this);
++        if (this.minecraft.gameMode != null && this.minecraft.gameMode.getClass() == MultiPlayerGameMode.class) {
++            this.minecraft.gameMode = new PlayerControllerOF(this.minecraft, connection);
++            CustomGuis.setPlayerControllerOF((PlayerControllerOF)this.minecraft.gameMode);
++        }
      }
  
 -    private EnvironmentAttributeSystem.Builder addEnvironmentAttributeLayers(final EnvironmentAttributeSystem.Builder environmentAttributes) {
-+      Reflector.ForgeEventFactory_onLevelLoad.call(this);
-+      if (this.minecraft.gameMode != null && this.minecraft.gameMode.getClass() == MultiPlayerGameMode.class) {
-+         this.minecraft.gameMode = new PlayerControllerOF(this.minecraft, connection);
-+         CustomGuis.setPlayerControllerOF((PlayerControllerOF)this.minecraft.gameMode);
-+      }
-+   }
-+
-+   private Builder addEnvironmentAttributeLayers(Builder environmentAttributes) {
++    private Builder addEnvironmentAttributeLayers(Builder environmentAttributes) {
          environmentAttributes.addDefaultLayers(this);
          int flashColor = ARGB.color(204, 204, 255);
          environmentAttributes.addTimeBasedLayer(
@@ -230,12 +230,12 @@
 -        environmentAttributes.addTimeBasedLayer(
 -            EnvironmentAttributes.SKY_LIGHT_FACTOR, (skyFactor, cacheTickId) -> this.getSkyFlashTime() > 0 ? 1.0F : skyFactor
 -        );
-+      environmentAttributes.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_FACTOR, (skyFactor, cacheTickId) -> this.getSkyFlashTime() > 0 ? 1.0F : skyFactor);
++        environmentAttributes.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_FACTOR, (skyFactor, cacheTickId) -> this.getSkyFlashTime() > 0 ? 1.0F : skyFactor);
          return environmentAttributes;
      }
  
 -    public void queueLightUpdate(final Runnable update) {
-+   public void queueLightUpdate(Runnable update) {
++    public void queueLightUpdate(Runnable update) {
          this.lightUpdateQueue.add(update);
      }
  
@@ -244,19 +244,19 @@
      }
  
 -    public @Nullable EndFlashState endFlashState() {
-+   public EndFlashState endFlashState() {
++    public EndFlashState endFlashState() {
          return this.endFlashState;
      }
  
 -    public void tick(final BooleanSupplier haveTime) {
-+   public void tick(BooleanSupplier haveTime) {
++    public void tick(BooleanSupplier haveTime) {
          this.updateSkyBrightness();
          if (this.tickRateManager().runsNormally()) {
              this.getWorldBorder().tick();
              this.tickTime();
              this.tickWeatherEffects();
              this.removeBlockBreakingProgress();
-+         Config.getRenderGlobal().customTick(this.getGameTime());
++            Config.getRenderGlobal().customTick(this.getGameTime());
          }
  
          if (this.skyFlashTime > 0) {
@@ -265,11 +265,11 @@
          int weatherRadius = this.minecraft.options.weatherRadius().get();
          float rainLevel = this.getRainLevel(1.0F);
 -        if (!(rainLevel <= 0.0F)) {
-+      if (Config.isRainFast()) {
-+         rainLevel /= 2.0F;
-+      }
++        if (Config.isRainFast()) {
++            rainLevel /= 2.0F;
++        }
 +
-+      if (!(rainLevel <= 0.0F) && Config.isRainSplash()) {
++        if (!(rainLevel <= 0.0F) && Config.isRainSplash()) {
              RandomSource random = RandomSource.createThreadLocalInstance(this.getGameTime() * 312987231L);
              BlockPos cameraPosition = BlockPos.containing(this.minecraft.gameRenderer.mainCamera().position());
              BlockPos rainParticlePosition = null;
@@ -278,12 +278,12 @@
                  int x = random.nextInt(weatherDiameter) - weatherRadius;
                  int z = random.nextInt(weatherDiameter) - weatherRadius;
 -                BlockPos heightmapPosition = this.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, cameraPosition.offset(x, 0, z));
-+            BlockPos heightmapPosition = this.getHeightmapPos(Types.MOTION_BLOCKING, cameraPosition.offset(x, 0, z));
++                BlockPos heightmapPosition = this.getHeightmapPos(Types.MOTION_BLOCKING, cameraPosition.offset(x, 0, z));
                  if (heightmapPosition.getY() > this.getMinY()
                      && heightmapPosition.getY() <= cameraPosition.getY() + 10
                      && heightmapPosition.getY() >= cameraPosition.getY() - 10
 -                    && this.getPrecipitationAt(heightmapPosition) == Biome.Precipitation.RAIN) {
-+               && this.getPrecipitationAt(heightmapPosition) == Precipitation.RAIN) {
++                    && this.getPrecipitationAt(heightmapPosition) == Precipitation.RAIN) {
                      rainParticlePosition = heightmapPosition.below();
                      if (particleStatus == ParticleStatus.MINIMAL) {
                          break;
@@ -292,7 +292,7 @@
                  this.rainSoundTime = 0;
                  if (rainParticlePosition.getY() > cameraPosition.getY() + 1
 -                    && this.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, cameraPosition).getY() > Mth.floor(cameraPosition.getY())) {
-+               && this.getHeightmapPos(Types.MOTION_BLOCKING, cameraPosition).getY() > Mth.floor(cameraPosition.getY())) {
++                    && this.getHeightmapPos(Types.MOTION_BLOCKING, cameraPosition).getY() > Mth.floor(cameraPosition.getY())) {
                      this.playLocalSound(rainParticlePosition, SoundEvents.WEATHER_RAIN_ABOVE, SoundSource.WEATHER, 0.1F, 0.5F, false);
                  } else {
                      this.playLocalSound(rainParticlePosition, SoundEvents.WEATHER_RAIN, SoundSource.WEATHER, 0.2F, 1.0F, false);
@@ -301,10 +301,10 @@
      }
  
 -    public Biome.Precipitation getPrecipitationAt(final BlockPos pos) {
-+   public Precipitation getPrecipitationAt(BlockPos pos) {
++    public Precipitation getPrecipitationAt(BlockPos pos) {
          if (!this.chunkSource.hasChunk(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()))) {
 -            return Biome.Precipitation.NONE;
-+         return Precipitation.NONE;
++            return Precipitation.NONE;
          }
  
          Biome biome = this.getBiome(pos).value();
@@ -313,7 +313,7 @@
      }
  
 -    private void removeProgress(final BlockDestructionProgress block) {
-+   private void removeProgress(BlockDestructionProgress block) {
++    private void removeProgress(BlockDestructionProgress block) {
          long pos = block.getPos().asLong();
          Set<BlockDestructionProgress> progresses = this.destructionProgress.get(pos);
          progresses.remove(block);
@@ -322,7 +322,7 @@
      }
  
 -    public void setTimeFromServer(final long gameTime) {
-+   public void setTimeFromServer(long gameTime) {
++    public void setTimeFromServer(long gameTime) {
          this.clientLevelData.setGameTime(gameTime);
      }
  
@@ -331,33 +331,34 @@
      }
  
 -    public boolean isTickingEntity(final Entity entity) {
-+   public boolean isTickingEntity(Entity entity) {
++    public boolean isTickingEntity(Entity entity) {
          return this.tickingEntities.contains(entity);
      }
  
      @Override
 -    public boolean shouldTickDeath(final Entity entity) {
-+   public boolean shouldTickDeath(Entity entity) {
++    public boolean shouldTickDeath(Entity entity) {
          return entity.chunkPosition().getChessboardDistance(this.minecraft.player.chunkPosition()) <= this.serverSimulationDistance;
      }
  
 -    public void tickNonPassenger(final Entity entity) {
-+   public void tickNonPassenger(Entity entity) {
++    public void tickNonPassenger(Entity entity) {
          entity.setOldPosAndRot();
          entity.tickCount++;
          Profiler.get().push(entity.typeHolder()::getRegisteredName);
-+      if (ReflectorForge.canUpdate(entity)) {
-         entity.tick();
-+      }
+-        entity.tick();
++        if (ReflectorForge.canUpdate(entity)) {
++            entity.tick();
++        }
 +
-+      if (entity.isRemoved()) {
-+         this.onEntityRemoved(entity);
-+      }
++        if (entity.isRemoved()) {
++            this.onEntityRemoved(entity);
++        }
 +
          Profiler.get().pop();
  
          for (Entity passenger : entity.getPassengers()) {
-@@ -479,10 +525,9 @@
+@@ -479,17 +525,19 @@
          }
      }
  
@@ -365,36 +366,40 @@
 -        if (entity.isRemoved() || entity.getVehicle() != vehicle) {
 -            entity.stopRiding();
 -        } else if (entity instanceof Player || this.tickingEntities.contains(entity)) {
-+   private void tickPassenger(Entity vehicle, Entity entity) {
-+      if (!entity.isRemoved() && entity.getVehicle() == vehicle) {
-+         if (entity instanceof Player || this.tickingEntities.contains(entity)) {
-             entity.setOldPosAndRot();
-             entity.tickCount++;
-             entity.rideTick();
-@@ -491,7 +536,10 @@
-                 this.tickPassenger(entity, passenger);
-             }
-         }
-+      } else {
-+         entity.stopRiding();
-     }
-+   }
+-            entity.setOldPosAndRot();
+-            entity.tickCount++;
+-            entity.rideTick();
++    private void tickPassenger(Entity vehicle, Entity entity) {
++        if (!entity.isRemoved() && entity.getVehicle() == vehicle) {
++            if (entity instanceof Player || this.tickingEntities.contains(entity)) {
++                entity.setOldPosAndRot();
++                entity.tickCount++;
++                entity.rideTick();
  
-     public void update() {
-         ProfilerFiller profiler = Profiler.get();
+-            for (Entity passenger : entity.getPassengers()) {
+-                this.tickPassenger(entity, passenger);
++                for (Entity passenger : entity.getPassengers()) {
++                    this.tickPassenger(entity, passenger);
++                }
+             }
++        } else {
++            entity.stopRiding();
+         }
+     }
+ 
 @@ -502,13 +550,13 @@
          profiler.pop();
      }
  
 -    public void unload(final LevelChunk levelChunk) {
-+   public void unload(LevelChunk levelChunk) {
++    public void unload(LevelChunk levelChunk) {
          levelChunk.clearAllBlockEntities();
          this.chunkSource.getLightEngine().setLightEnabled(levelChunk.getPos(), false);
          this.entityStorage.stopTicking(levelChunk.getPos());
      }
  
 -    public void onChunkLoaded(final ChunkPos pos) {
-+   public void onChunkLoaded(ChunkPos pos) {
++    public void onChunkLoaded(ChunkPos pos) {
          this.tintCaches.forEach((resolver, cache) -> cache.invalidateForChunk(pos.x(), pos.z()));
          this.entityStorage.startTicking(pos);
      }
@@ -403,7 +408,7 @@
  
      @Override
 -    public boolean hasChunk(final int chunkX, final int chunkZ) {
-+   public boolean hasChunk(int chunkX, int chunkZ) {
++    public boolean hasChunk(int chunkX, int chunkZ) {
          return true;
      }
  
@@ -413,20 +418,21 @@
  
 -    public void addEntity(final Entity entity) {
 -        this.removeEntity(entity.getId(), Entity.RemovalReason.DISCARDED);
-+   public void addEntity(Entity entity) {
-+      if (!Reflector.ForgeEventFactory_onEntityJoinLevel.exists() || !Reflector.ForgeEventFactory_onEntityJoinLevel.callBoolean(entity, this)) {
-+         this.removeEntity(entity.getId(), RemovalReason.DISCARDED);
-         this.entityStorage.addEntity(entity);
-+         if (Reflector.IForgeEntity_onAddedToWorld.exists()) {
-+            Reflector.call(entity, Reflector.IForgeEntity_onAddedToWorld);
+-        this.entityStorage.addEntity(entity);
++    public void addEntity(Entity entity) {
++        if (!Reflector.ForgeEventFactory_onEntityJoinLevel.exists() || !Reflector.ForgeEventFactory_onEntityJoinLevel.callBoolean(entity, this)) {
++            this.removeEntity(entity.getId(), RemovalReason.DISCARDED);
++            this.entityStorage.addEntity(entity);
++            if (Reflector.IForgeEntity_onAddedToWorld.exists()) {
++                Reflector.call(entity, Reflector.IForgeEntity_onAddedToWorld);
++            }
++
++            this.onEntityAdded(entity);
++        }
      }
  
 -    public void removeEntity(final int id, final Entity.RemovalReason reason) {
-+         this.onEntityAdded(entity);
-+      }
-+   }
-+
-+   public void removeEntity(int id, RemovalReason reason) {
++    public void removeEntity(int id, RemovalReason reason) {
          Entity entity = this.getEntities().get(id);
          if (entity != null) {
              entity.setRemoved(reason);
@@ -435,7 +441,7 @@
  
      @Override
 -    public List<Entity> getPushableEntities(final Entity pusher, final AABB boundingBox) {
-+   public List<Entity> getPushableEntities(Entity pusher, AABB boundingBox) {
++    public List<Entity> getPushableEntities(Entity pusher, AABB boundingBox) {
          LocalPlayer player = this.minecraft.player;
          return player != null && player != pusher && player.getBoundingBox().intersects(boundingBox) && EntitySelector.pushableBy(pusher).test(player)
              ? List.of(player)
@@ -444,23 +450,23 @@
  
      @Override
 -    public @Nullable Entity getEntity(final int id) {
-+   public Entity getEntity(int id) {
++    public Entity getEntity(int id) {
          return this.getEntities().get(id);
      }
  
 -    public void disconnect(final Component message) {
-+   public void disconnect(Component message) {
++    public void disconnect(Component message) {
          this.connection.getConnection().disconnect(message);
          this.minecraft.getPlayerSocialManager().getPresenceHandler().tryUpdatePresence();
      }
  
 -    public void animateTick(final int xt, final int yt, final int zt) {
-+   public void animateTick(int xt, int yt, int zt) {
++    public void animateTick(int xt, int yt, int zt) {
          int r = 32;
          RandomSource animateRandom = RandomSource.createThreadLocalInstance();
          Block markerParticleTarget = this.getMarkerParticleTarget();
 -        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-+      MutableBlockPos pos = new MutableBlockPos();
++        MutableBlockPos pos = new MutableBlockPos();
  
          for (int i = 0; i < 667; i++) {
              this.doAnimateTick(xt, yt, zt, 16, animateRandom, markerParticleTarget, pos);
@@ -469,7 +475,7 @@
      }
  
 -    private @Nullable Block getMarkerParticleTarget() {
-+   private Block getMarkerParticleTarget() {
++    private Block getMarkerParticleTarget() {
          if (this.minecraft.gameMode.getPlayerMode() == GameType.CREATIVE) {
              ItemStack carriedItemStack = this.minecraft.player.getMainHandItem();
              Item carriedItem = carriedItemStack.getItem();
@@ -486,7 +492,7 @@
 -        final @Nullable Block markerParticleTarget,
 -        final BlockPos.MutableBlockPos pos
 -    ) {
-+   public void doAnimateTick(int xt, int yt, int zt, int r, RandomSource animateRandom, Block markerParticleTarget, MutableBlockPos pos) {
++    public void doAnimateTick(int xt, int yt, int zt, int r, RandomSource animateRandom, Block markerParticleTarget, MutableBlockPos pos) {
          int x = xt + this.random.nextInt(r) - this.random.nextInt(r);
          int y = yt + this.random.nextInt(r) - this.random.nextInt(r);
          int z = zt + this.random.nextInt(r) - this.random.nextInt(r);
@@ -495,7 +501,7 @@
      }
  
 -    private void trySpawnDripParticles(final BlockPos pos, final BlockState state, final ParticleOptions dripParticle, final boolean isTopSolid) {
-+   private void trySpawnDripParticles(BlockPos pos, BlockState state, ParticleOptions dripParticle, boolean isTopSolid) {
++    private void trySpawnDripParticles(BlockPos pos, BlockState state, ParticleOptions dripParticle, boolean isTopSolid) {
          if (state.getFluidState().isEmpty()) {
              VoxelShape collisionShape = state.getCollisionShape(this, pos);
              double topSideHeight = collisionShape.max(Direction.Axis.Y);
@@ -504,7 +510,7 @@
      }
  
 -    private void spawnParticle(final BlockPos pos, final ParticleOptions dripParticle, final VoxelShape dripShape, final double height) {
-+   private void spawnParticle(BlockPos pos, ParticleOptions dripParticle, VoxelShape dripShape, double height) {
++    private void spawnParticle(BlockPos pos, ParticleOptions dripParticle, VoxelShape dripShape, double height) {
          this.spawnFluidParticle(
              pos.getX() + dripShape.min(Direction.Axis.X),
              pos.getX() + dripShape.max(Direction.Axis.X),
@@ -513,13 +519,13 @@
      }
  
 -    private void spawnFluidParticle(final double x1, final double x2, final double z1, final double z2, final double y, final ParticleOptions dripParticle) {
-+   private void spawnFluidParticle(double x1, double x2, double z1, double z2, double y, ParticleOptions dripParticle) {
++    private void spawnFluidParticle(double x1, double x2, double z1, double z2, double y, ParticleOptions dripParticle) {
          this.addParticle(dripParticle, Mth.lerp(this.random.nextDouble(), x1, x2), y, Mth.lerp(this.random.nextDouble(), z1, z2), 0.0, 0.0, 0.0);
      }
  
      @Override
 -    public CrashReportCategory fillReportDetails(final CrashReport report) {
-+   public CrashReportCategory fillReportDetails(CrashReport report) {
++    public CrashReportCategory fillReportDetails(CrashReport report) {
          CrashReportCategory category = super.fillReportDetails(report);
          category.setDetail("Server brand", () -> this.minecraft.player.connection.serverBrand());
          category.setDetail(
@@ -538,18 +544,18 @@
 -        final float pitch,
 -        final long seed
 -    ) {
-+   public void playSeededSound(Entity except, double x, double y, double z, Holder<SoundEvent> sound, SoundSource source, float volume, float pitch, long seed) {
-+      if (Reflector.ForgeEventFactory_onPlaySoundAtPosition.exists()) {
-+         Object event = Reflector.ForgeEventFactory_onPlaySoundAtPosition.call(this, x, y, z, sound, source, volume, pitch);
-+         if (event == null || Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound) == null) {
-+            return;
-+         }
++    public void playSeededSound(Entity except, double x, double y, double z, Holder<SoundEvent> sound, SoundSource source, float volume, float pitch, long seed) {
++        if (Reflector.ForgeEventFactory_onPlaySoundAtPosition.exists()) {
++            Object event = Reflector.ForgeEventFactory_onPlaySoundAtPosition.call(this, x, y, z, sound, source, volume, pitch);
++            if (event == null || Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound) == null) {
++                return;
++            }
 +
-+         sound = (Holder<SoundEvent>)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound);
-+         source = (SoundSource)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSource);
-+         volume = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewVolume);
-+         pitch = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewPitch);
-+      }
++            sound = (Holder<SoundEvent>)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound);
++            source = (SoundSource)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSource);
++            volume = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewVolume);
++            pitch = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewPitch);
++        }
 +
          if (except == this.minecraft.player) {
              this.playSound(x, y, z, sound.value(), source, volume, pitch, false, seed);
@@ -566,18 +572,18 @@
 -        final float pitch,
 -        final long seed
 -    ) {
-+   public void playSeededSound(Entity except, Entity sourceEntity, Holder<SoundEvent> sound, SoundSource source, float volume, float pitch, long seed) {
-+      if (Reflector.ForgeEventFactory_onPlaySoundAtEntity.exists()) {
-+         Object event = Reflector.ForgeEventFactory_onPlaySoundAtEntity.call(sourceEntity, sound, source, volume, pitch);
-+         if (event == null || Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound) == null) {
-+            return;
-+         }
++    public void playSeededSound(Entity except, Entity sourceEntity, Holder<SoundEvent> sound, SoundSource source, float volume, float pitch, long seed) {
++        if (Reflector.ForgeEventFactory_onPlaySoundAtEntity.exists()) {
++            Object event = Reflector.ForgeEventFactory_onPlaySoundAtEntity.call(sourceEntity, sound, source, volume, pitch);
++            if (event == null || Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound) == null) {
++                return;
++            }
 +
-+         sound = (Holder<SoundEvent>)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound);
-+         source = (SoundSource)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSource);
-+         volume = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewVolume);
-+         pitch = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewPitch);
-+      }
++            sound = (Holder<SoundEvent>)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSound);
++            source = (SoundSource)Reflector.call(event, Reflector.PlayLevelSoundEvent_getSource);
++            volume = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewVolume);
++            pitch = Reflector.callFloat(event, Reflector.PlayLevelSoundEvent_getNewPitch);
++        }
 +
          if (except == this.minecraft.player) {
              this.minecraft.getSoundManager().play(new EntityBoundSoundInstance(sound.value(), source, volume, pitch, sourceEntity, seed));
@@ -586,13 +592,13 @@
  
      @Override
 -    public void playLocalSound(final Entity sourceEntity, final SoundEvent sound, final SoundSource source, final float volume, final float pitch) {
-+   public void playLocalSound(Entity sourceEntity, SoundEvent sound, SoundSource source, float volume, float pitch) {
++    public void playLocalSound(Entity sourceEntity, SoundEvent sound, SoundSource source, float volume, float pitch) {
          this.minecraft.getSoundManager().play(new EntityBoundSoundInstance(sound, source, volume, pitch, sourceEntity, this.random.nextLong()));
      }
  
      @Override
 -    public void playPlayerSound(final SoundEvent sound, final SoundSource source, final float volume, final float pitch) {
-+   public void playPlayerSound(SoundEvent sound, SoundSource source, float volume, float pitch) {
++    public void playPlayerSound(SoundEvent sound, SoundSource source, float volume, float pitch) {
          if (this.minecraft.player != null) {
              this.minecraft.getSoundManager().play(new EntityBoundSoundInstance(sound, source, volume, pitch, this.minecraft.player, this.random.nextLong()));
          }
@@ -609,7 +615,7 @@
 -        final float pitch,
 -        final boolean distanceDelay
 -    ) {
-+   public void playLocalSound(double x, double y, double z, SoundEvent sound, SoundSource source, float volume, float pitch, boolean distanceDelay) {
++    public void playLocalSound(double x, double y, double z, SoundEvent sound, SoundSource source, float volume, float pitch, boolean distanceDelay) {
          this.playSound(x, y, z, sound, source, volume, pitch, distanceDelay, this.random.nextLong());
      }
  
@@ -624,7 +630,7 @@
 -        final boolean distanceDelay,
 -        final long seed
 -    ) {
-+   private void playSound(double x, double y, double z, SoundEvent sound, SoundSource source, float volume, float pitch, boolean distanceDelay, long seed) {
++    private void playSound(double x, double y, double z, SoundEvent sound, SoundSource source, float volume, float pitch, boolean distanceDelay, long seed) {
          double distanceToSqr = this.minecraft.gameRenderer.mainCamera().position().distanceToSqr(x, y, z);
          SimpleSoundInstance instance = new SimpleSoundInstance(sound, source, volume, pitch, RandomSource.create(seed), x, y, z);
          if (distanceDelay && distanceToSqr > 100.0) {
@@ -635,20 +641,20 @@
 -    public void createFireworks(
 -        final double x, final double y, final double z, final double xd, final double yd, final double zd, final List<FireworkExplosion> explosions
 -    ) {
-+   public void createFireworks(double x, double y, double z, double xd, double yd, double zd, List<FireworkExplosion> explosions) {
++    public void createFireworks(double x, double y, double z, double xd, double yd, double zd, List<FireworkExplosion> explosions) {
          if (explosions.isEmpty()) {
              for (int i = 0; i < this.random.nextInt(3) + 2; i++) {
                  this.addParticle(ParticleTypes.POOF, x, y, z, this.random.nextGaussian() * 0.05, 0.005, this.random.nextGaussian() * 0.05);
              }
          } else {
 -            this.minecraft.particleEngine.add(new FireworkParticles.Starter(this, x, y, z, xd, yd, zd, this.minecraft.particleEngine, explosions));
-+         this.minecraft.particleEngine.add(new Starter(this, x, y, z, xd, yd, zd, this.minecraft.particleEngine, explosions));
++            this.minecraft.particleEngine.add(new Starter(this, x, y, z, xd, yd, zd, this.minecraft.particleEngine, explosions));
          }
      }
  
      @Override
 -    public void sendPacketToServer(final Packet<?> packet) {
-+   public void sendPacketToServer(Packet<?> packet) {
++    public void sendPacketToServer(Packet<?> packet) {
          this.connection.send(packet);
      }
  
@@ -657,42 +663,42 @@
  
      @Override
 -    public @Nullable MapItemSavedData getMapData(final MapId id) {
-+   public boolean setBlock(BlockPos pos, BlockState newState, int flags) {
-+      this.playerUpdate = this.isPlayerActing();
-+      boolean res = super.setBlock(pos, newState, flags);
-+      this.playerUpdate = false;
-+      return res;
-+   }
++    public boolean setBlock(BlockPos pos, BlockState newState, int flags) {
++        this.playerUpdate = this.isPlayerActing();
++        boolean res = super.setBlock(pos, newState, flags);
++        this.playerUpdate = false;
++        return res;
++    }
 +
-+   private boolean isPlayerActing() {
-+      return this.minecraft.gameMode instanceof PlayerControllerOF pcof ? pcof.isActing() : false;
-+   }
++    private boolean isPlayerActing() {
++        return this.minecraft.gameMode instanceof PlayerControllerOF pcof ? pcof.isActing() : false;
++    }
 +
-+   public boolean isPlayerUpdate() {
-+      return this.playerUpdate;
-+   }
++    public boolean isPlayerUpdate() {
++        return this.playerUpdate;
++    }
 +
-+   public void onEntityAdded(Entity entityIn) {
-+      RandomEntities.entityLoaded(entityIn, this);
-+      if (Config.isDynamicLights()) {
-+         DynamicLights.entityAdded(entityIn, Config.getRenderGlobal());
-+      }
-+   }
++    public void onEntityAdded(Entity entityIn) {
++        RandomEntities.entityLoaded(entityIn, this);
++        if (Config.isDynamicLights()) {
++            DynamicLights.entityAdded(entityIn, Config.getRenderGlobal());
++        }
++    }
 +
-+   public void onEntityRemoved(Entity entityIn) {
-+      RandomEntities.entityUnloaded(entityIn, this);
-+      if (Config.isDynamicLights()) {
-+         DynamicLights.entityRemoved(entityIn, Config.getRenderGlobal());
-+      }
-+   }
++    public void onEntityRemoved(Entity entityIn) {
++        RandomEntities.entityUnloaded(entityIn, this);
++        if (Config.isDynamicLights()) {
++            DynamicLights.entityRemoved(entityIn, Config.getRenderGlobal());
++        }
++    }
 +
-+   @Override
-+   public MapItemSavedData getMapData(MapId id) {
++    @Override
++    public MapItemSavedData getMapData(MapId id) {
          return this.mapData.get(id);
      }
  
 -    public void overrideMapData(final MapId id, final MapItemSavedData data) {
-+   public void overrideMapData(MapId id, MapItemSavedData data) {
++    public void overrideMapData(MapId id, MapItemSavedData data) {
          this.mapData.put(id, data);
      }
  
@@ -701,31 +707,31 @@
  
      @Override
 -    public void sendBlockUpdated(final BlockPos pos, final BlockState old, final BlockState current, final @Block.UpdateFlags int updateFlags) {
-+   public void sendBlockUpdated(BlockPos pos, BlockState old, BlockState current, @UpdateFlags int updateFlags) {
++    public void sendBlockUpdated(BlockPos pos, BlockState old, BlockState current, @UpdateFlags int updateFlags) {
          this.levelExtractor.blockChanged(pos, updateFlags);
      }
  
      @Override
 -    public void setBlocksDirty(final BlockPos pos, final BlockState oldState, final BlockState newState) {
-+   public void setBlocksDirty(BlockPos pos, BlockState oldState, BlockState newState) {
++    public void setBlocksDirty(BlockPos pos, BlockState oldState, BlockState newState) {
          this.levelExtractor.setBlockDirty(pos, oldState, newState);
      }
  
 -    public void setSectionDirtyWithNeighbors(final int chunkX, final int chunkY, final int chunkZ) {
-+   public void setSectionDirtyWithNeighbors(int chunkX, int chunkY, int chunkZ) {
++    public void setSectionDirtyWithNeighbors(int chunkX, int chunkY, int chunkZ) {
          this.levelExtractor.setSectionDirtyWithNeighbors(chunkX, chunkY, chunkZ);
      }
  
 -    public void setSectionRangeDirty(
 -        final int minSectionX, final int minSectionY, final int minSectionZ, final int maxSectionX, final int maxSectionY, final int maxSectionZ
 -    ) {
-+   public void setSectionRangeDirty(int minSectionX, int minSectionY, int minSectionZ, int maxSectionX, int maxSectionY, int maxSectionZ) {
++    public void setSectionRangeDirty(int minSectionX, int minSectionY, int minSectionZ, int maxSectionX, int maxSectionY, int maxSectionZ) {
          this.levelExtractor.setSectionRangeDirty(minSectionX, minSectionY, minSectionZ, maxSectionX, maxSectionY, maxSectionZ);
      }
  
      @Override
 -    public void destroyBlockProgress(final int id, final BlockPos pos, final int progress) {
-+   public void destroyBlockProgress(int id, BlockPos pos, int progress) {
++    public void destroyBlockProgress(int id, BlockPos pos, int progress) {
          if (progress >= 0 && progress < 10) {
              BlockDestructionProgress entry = this.destroyingBlocks.get(id);
              if (entry != null) {
@@ -734,22 +740,22 @@
  
      @Override
 -    public void globalLevelEvent(final int type, final BlockPos pos, final int data) {
-+   public void globalLevelEvent(int type, BlockPos pos, int data) {
++    public void globalLevelEvent(int type, BlockPos pos, int data) {
          this.levelEventHandler.globalLevelEvent(type, pos, data);
      }
  
      @Override
 -    public void levelEvent(final @Nullable Entity source, final int type, final BlockPos pos, final int data) {
-+   public void levelEvent(Entity source, int type, BlockPos pos, int data) {
++    public void levelEvent(Entity source, int type, BlockPos pos, int data) {
          try {
              this.levelEventHandler.levelEvent(type, pos, data);
          } catch (Throwable t) {
-@@ -894,65 +954,43 @@
+@@ -894,66 +954,44 @@
      }
  
      @Override
 -    public void addParticle(final ParticleOptions particle, final double x, final double y, final double z, final double xd, final double yd, final double zd) {
-+   public void addParticle(ParticleOptions particle, double x, double y, double z, double xd, double yd, double zd) {
++    public void addParticle(ParticleOptions particle, double x, double y, double z, double xd, double yd, double zd) {
          this.doAddParticle(particle, particle.getType().getOverrideLimiter(), false, x, y, z, xd, yd, zd);
      }
  
@@ -765,7 +771,7 @@
 -        final double yd,
 -        final double zd
 -    ) {
-+   public void addParticle(ParticleOptions particle, boolean overrideLimiter, boolean alwaysShow, double x, double y, double z, double xd, double yd, double zd) {
++    public void addParticle(ParticleOptions particle, boolean overrideLimiter, boolean alwaysShow, double x, double y, double z, double xd, double yd, double zd) {
          this.doAddParticle(particle, particle.getType().getOverrideLimiter() || overrideLimiter, alwaysShow, x, y, z, xd, yd, zd);
      }
  
@@ -773,7 +779,7 @@
 -    public void addAlwaysVisibleParticle(
 -        final ParticleOptions particle, final double x, final double y, final double z, final double xd, final double yd, final double zd
 -    ) {
-+   public void addAlwaysVisibleParticle(ParticleOptions particle, double x, double y, double z, double xd, double yd, double zd) {
++    public void addAlwaysVisibleParticle(ParticleOptions particle, double x, double y, double z, double xd, double yd, double zd) {
          this.doAddParticle(particle, false, true, x, y, z, xd, yd, zd);
      }
  
@@ -788,7 +794,7 @@
 -        final double yd,
 -        final double zd
 -    ) {
-+   public void addAlwaysVisibleParticle(ParticleOptions particle, boolean overrideLimiter, double x, double y, double z, double xd, double yd, double zd) {
++    public void addAlwaysVisibleParticle(ParticleOptions particle, boolean overrideLimiter, double x, double y, double z, double xd, double yd, double zd) {
          this.doAddParticle(particle, particle.getType().getOverrideLimiter() || overrideLimiter, true, x, y, z, xd, yd, zd);
      }
  
@@ -802,36 +808,38 @@
 -        final double xd,
 -        final double yd,
 -        final double zd
-+      ParticleOptions particle, boolean overrideLimiter, boolean alwaysShowParticles, double x, double y, double z, double xd, double yd, double zd
++        ParticleOptions particle, boolean overrideLimiter, boolean alwaysShowParticles, double x, double y, double z, double xd, double yd, double zd
      ) {
          try {
              Camera camera = this.minecraft.gameRenderer.mainCamera();
              ParticleStatus particleLevel = this.calculateParticleLevel(alwaysShowParticles);
-+         if (CustomParticles.isAddParticle(particle)) {
-+            double maxDistSq = 1024.0;
-+            if (particle == ParticleTypes.CRIT) {
-+               maxDistSq = 38416.0;
-+            }
-+
-             if (overrideLimiter) {
+-            if (overrideLimiter) {
 -                this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
 -            } else if (!(camera.position().distanceToSqr(x, y, z) > 1024.0)) {
 -                if (particleLevel != ParticleStatus.MINIMAL) {
 -                    this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
-+               Particle particleInst = this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
-+               CustomParticles.modifyParticle(particle, particleInst, this, x, y, z, this.renderEnv);
-+            } else if (!(camera.position().distanceToSqr(x, y, z) > maxDistSq) && particleLevel != ParticleStatus.MINIMAL) {
-+               Particle particleInst = this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
-+               CustomParticles.modifyParticle(particle, particleInst, this, x, y, z, this.renderEnv);
++            if (CustomParticles.isAddParticle(particle)) {
++                double maxDistSq = 1024.0;
++                if (particle == ParticleTypes.CRIT) {
++                    maxDistSq = 38416.0;
                  }
++
++                if (overrideLimiter) {
++                    Particle particleInst = this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
++                    CustomParticles.modifyParticle(particle, particleInst, this, x, y, z, this.renderEnv);
++                } else if (!(camera.position().distanceToSqr(x, y, z) > maxDistSq) && particleLevel != ParticleStatus.MINIMAL) {
++                    Particle particleInst = this.minecraft.particleEngine.createParticle(particle, x, y, z, xd, yd, zd);
++                    CustomParticles.modifyParticle(particle, particleInst, this, x, y, z, this.renderEnv);
++                }
              }
          } catch (Throwable t) {
+             CrashReport report = CrashReport.forThrowable(t, "Exception while adding particle");
 @@ -967,7 +1005,7 @@
          }
      }
  
 -    private ParticleStatus calculateParticleLevel(final boolean alwaysShowParticles) {
-+   private ParticleStatus calculateParticleLevel(boolean alwaysShowParticles) {
++    private ParticleStatus calculateParticleLevel(boolean alwaysShowParticles) {
          ParticleStatus particleLevel = this.minecraft.options.particles().get();
          if (alwaysShowParticles && particleLevel == ParticleStatus.MINIMAL && this.random.nextInt(10) == 0) {
              particleLevel = ParticleStatus.DECREASED;
@@ -840,41 +848,41 @@
  
      @Override
 -    public Holder<Biome> getUncachedNoiseBiome(final int quartX, final int quartY, final int quartZ) {
-+   public Holder<Biome> getUncachedNoiseBiome(int quartX, int quartY, int quartZ) {
++    public Holder<Biome> getUncachedNoiseBiome(int quartX, int quartY, int quartZ) {
          return this.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS);
      }
  
 -    private int getSkyFlashTime() {
-+   public int getSkyFlashTime() {
++    public int getSkyFlashTime() {
          return this.minecraft.options.hideLightningFlash().get() ? 0 : this.skyFlashTime;
      }
  
      @Override
 -    public void setSkyFlashTime(final int skyFlashTime) {
-+   public void setSkyFlashTime(int skyFlashTime) {
++    public void setSkyFlashTime(int skyFlashTime) {
          this.skyFlashTime = skyFlashTime;
      }
  
      @Override
      public CardinalLighting cardinalLighting() {
 -        return this.dimensionType().cardinalLightType().get();
-+      CardinalLighting cl = this.dimensionType().cardinalLightType().get();
-+      return Config.isShaders() && cl == CardinalLighting.DEFAULT ? Shaders.blockCardinalLighting : cl;
++        CardinalLighting cl = this.dimensionType().cardinalLightType().get();
++        return Config.isShaders() && cl == CardinalLighting.DEFAULT ? Shaders.blockCardinalLighting : cl;
      }
  
      @Override
 -    public int getBlockTint(final BlockPos pos, final ColorResolver resolver) {
-+   public int getBlockTint(BlockPos pos, ColorResolver resolver) {
++    public int getBlockTint(BlockPos pos, ColorResolver resolver) {
          BlockTintCache cache = this.tintCaches.get(resolver);
          return cache.getColor(pos);
      }
  
 -    public int calculateBlockTint(final BlockPos pos, final ColorResolver colorResolver) {
-+   public int calculateBlockTint(BlockPos pos, ColorResolver colorResolver) {
++    public int calculateBlockTint(BlockPos pos, ColorResolver colorResolver) {
          int dist = Minecraft.getInstance().options.biomeBlendRadius().get();
          if (dist == 0) {
 -            return colorResolver.getColor(this.getBiome(pos).value(), pos.getX(), pos.getZ());
-+         return colorResolver.getColor(CustomColors.fixBiome(this.getBiome(pos).value()), pos.getX(), pos.getZ());
++            return colorResolver.getColor(CustomColors.fixBiome(this.getBiome(pos).value()), pos.getX(), pos.getZ());
          }
  
          int count = (dist * 2 + 1) * (dist * 2 + 1);
@@ -883,12 +891,12 @@
          int totalBlue = 0;
          Cursor3D cursor = new Cursor3D(pos.getX() - dist, pos.getY(), pos.getZ() - dist, pos.getX() + dist, pos.getY(), pos.getZ() + dist);
 -        BlockPos.MutableBlockPos nextPos = new BlockPos.MutableBlockPos();
-+      MutableBlockPos nextPos = new MutableBlockPos();
++        MutableBlockPos nextPos = new MutableBlockPos();
  
          while (cursor.advance()) {
              nextPos.set(cursor.nextX(), cursor.nextY(), cursor.nextZ());
 -            int color = colorResolver.getColor(this.getBiome(nextPos).value(), nextPos.getX(), nextPos.getZ());
-+         int color = colorResolver.getColor(CustomColors.fixBiome(this.getBiome(nextPos).value()), nextPos.getX(), nextPos.getZ());
++            int color = colorResolver.getColor(CustomColors.fixBiome(this.getBiome(nextPos).value()), nextPos.getX(), nextPos.getZ());
              totalRed += ARGB.red(color);
              totalGreen += ARGB.green(color);
              totalBlue += ARGB.blue(color);
@@ -897,13 +905,13 @@
  
      @Override
 -    public void setRespawnData(final LevelData.RespawnData respawnData) {
-+   public void setRespawnData(RespawnData respawnData) {
++    public void setRespawnData(RespawnData respawnData) {
          this.levelData.setSpawn(this.getWorldBorderAdjustedRespawnData(respawnData));
      }
  
      @Override
 -    public LevelData.RespawnData getRespawnData() {
-+   public RespawnData getRespawnData() {
++    public RespawnData getRespawnData() {
          return this.levelData.getRespawnData();
      }
  
@@ -912,7 +920,7 @@
  
      @Override
 -    public void gameEvent(final Holder<GameEvent> gameEvent, final Vec3 pos, final GameEvent.Context context) {
-+   public void gameEvent(Holder<GameEvent> gameEvent, Vec3 pos, Context context) {
++    public void gameEvent(Holder<GameEvent> gameEvent, Vec3 pos, Context context) {
      }
  
      protected Map<MapId, MapItemSavedData> getAllMapData() {
@@ -920,7 +928,7 @@
      }
  
 -    protected void addMapData(final Map<MapId, MapItemSavedData> mapData) {
-+   protected void addMapData(Map<MapId, MapItemSavedData> mapData) {
++    protected void addMapData(Map<MapId, MapItemSavedData> mapData) {
          this.mapData.putAll(mapData);
      }
  
@@ -930,17 +938,17 @@
      @Override
 -    public void addDestroyBlockEffect(final BlockPos pos, final BlockState blockState) {
 -        if (!blockState.isAir() && blockState.shouldSpawnTerrainParticles()) {
-+   public void addDestroyBlockEffect(BlockPos pos, BlockState blockState) {
-+      boolean forgeSpawnTerrainParticles = blockState.shouldSpawnTerrainParticles();
-+      if (Reflector.ForgeHooksClient.exists()) {
-+         forgeSpawnTerrainParticles = !IClientBlockExtensions.of(blockState).addDestroyEffects(blockState, this, pos, this.minecraft.particleEngine);
-+      }
++    public void addDestroyBlockEffect(BlockPos pos, BlockState blockState) {
++        boolean forgeSpawnTerrainParticles = blockState.shouldSpawnTerrainParticles();
++        if (Reflector.ForgeHooksClient.exists()) {
++            forgeSpawnTerrainParticles = !IClientBlockExtensions.of(blockState).addDestroyEffects(blockState, this, pos, this.minecraft.particleEngine);
++        }
 +
-+      if (!blockState.isAir() && forgeSpawnTerrainParticles) {
++        if (!blockState.isAir() && forgeSpawnTerrainParticles) {
              VoxelShape shape = blockState.getShape(this, pos);
              double density = 0.25;
              shape.forAllBoxes(
-@@ -1102,22 +1146,30 @@
+@@ -1102,13 +1146,14 @@
                                  double x = relX * widthX + x1;
                                  double y = relY * widthY + y1;
                                  double z = relZ * widthZ + z1;
@@ -948,32 +956,33 @@
 -                                    .particleEngine
 -                                    .add(
 -                                        new TerrainParticle(
-+                        TerrainParticle terrainParticle = new TerrainParticle(
-                                             this, pos.getX() + x, pos.getY() + y, pos.getZ() + z, relX - 0.5, relY - 0.5, relZ - 0.5, blockState, pos
+-                                            this, pos.getX() + x, pos.getY() + y, pos.getZ() + z, relX - 0.5, relY - 0.5, relZ - 0.5, blockState, pos
 -                                        )
-                                     );
-+                        if (Reflector.TerrainParticle_updateSprite.exists()) {
-+                           terrainParticle = (TerrainParticle)Reflector.call(terrainParticle, Reflector.TerrainParticle_updateSprite, blockState, pos);
-                             }
+-                                    );
++                                TerrainParticle terrainParticle = new TerrainParticle(
++                                    this, pos.getX() + x, pos.getY() + y, pos.getZ() + z, relX - 0.5, relY - 0.5, relZ - 0.5, blockState, pos
++                                );
++                                if (Reflector.TerrainParticle_updateSprite.exists()) {
++                                    terrainParticle = (TerrainParticle)Reflector.call(terrainParticle, Reflector.TerrainParticle_updateSprite, blockState, pos);
++                                }
 +
-+                        this.minecraft.particleEngine.add(terrainParticle);
++                                this.minecraft.particleEngine.add(terrainParticle);
+                             }
                          }
                      }
-                 }
-+            }
-             );
+@@ -1117,7 +1162,14 @@
          }
      }
  
 -    public void addBreakingBlockEffect(final BlockPos pos, final Direction direction) {
-+   public void addBreakingBlockEffect(BlockPos pos, BlockHitResult target) {
-+      BlockState state = this.getBlockState(pos);
-+      if (!IClientBlockExtensions.of(state).addHitEffects(state, this, target, this.minecraft.particleEngine)) {
-+         this.addBreakingBlockEffect(pos, target.getDirection());
-+      }
-+   }
++    public void addBreakingBlockEffect(BlockPos pos, BlockHitResult target) {
++        BlockState state = this.getBlockState(pos);
++        if (!IClientBlockExtensions.of(state).addHitEffects(state, this, target, this.minecraft.particleEngine)) {
++            this.addBreakingBlockEffect(pos, target.getDirection());
++        }
++    }
 +
-+   public void addBreakingBlockEffect(BlockPos pos, Direction direction) {
++    public void addBreakingBlockEffect(BlockPos pos, Direction direction) {
          BlockState blockState = this.getBlockState(pos);
          if (blockState.getRenderShape() != RenderShape.INVISIBLE && blockState.shouldSpawnTerrainParticles()) {
              int x = pos.getX();
@@ -982,17 +991,17 @@
              }
  
 -            this.minecraft.particleEngine.add(new TerrainParticle(this, xp, yp, zp, 0.0, 0.0, 0.0, blockState, pos).setPower(0.2F).scale(0.6F));
-+         TerrainParticle terrainParticle = new TerrainParticle(this, xp, yp, zp, 0.0, 0.0, 0.0, blockState, pos);
-+         if (Reflector.TerrainParticle_updateSprite.exists()) {
-+            terrainParticle = (TerrainParticle)Reflector.call(terrainParticle, Reflector.TerrainParticle_updateSprite, blockState, pos);
-         }
++            TerrainParticle terrainParticle = new TerrainParticle(this, xp, yp, zp, 0.0, 0.0, 0.0, blockState, pos);
++            if (Reflector.TerrainParticle_updateSprite.exists()) {
++                terrainParticle = (TerrainParticle)Reflector.call(terrainParticle, Reflector.TerrainParticle_updateSprite, blockState, pos);
++            }
 +
-+         this.minecraft.particleEngine.add(terrainParticle.setPower(0.2F).scale(0.6F));
++            this.minecraft.particleEngine.add(terrainParticle.setPower(0.2F).scale(0.6F));
+         }
      }
-+   }
  
 -    public void setServerSimulationDistance(final int serverSimulationDistance) {
-+   public void setServerSimulationDistance(int serverSimulationDistance) {
++    public void setServerSimulationDistance(int serverSimulationDistance) {
          this.serverSimulationDistance = serverSimulationDistance;
      }
  
@@ -1013,19 +1022,19 @@
 -        final ParticleOptions largeExplosionParticles,
 -        final WeightedList<ExplosionParticleInfo> secondaryParticles,
 -        final Holder<SoundEvent> explosionSound
-+      Entity source,
-+      DamageSource damageSource,
-+      ExplosionDamageCalculator damageCalculator,
-+      double x,
-+      double y,
-+      double z,
-+      float r,
-+      boolean fire,
-+      ExplosionInteraction interactionType,
-+      ParticleOptions smallExplosionParticles,
-+      ParticleOptions largeExplosionParticles,
-+      WeightedList<ExplosionParticleInfo> secondaryParticles,
-+      Holder<SoundEvent> explosionSound
++        Entity source,
++        DamageSource damageSource,
++        ExplosionDamageCalculator damageCalculator,
++        double x,
++        double y,
++        double z,
++        float r,
++        boolean fire,
++        ExplosionInteraction interactionType,
++        ParticleOptions smallExplosionParticles,
++        ParticleOptions largeExplosionParticles,
++        WeightedList<ExplosionParticleInfo> secondaryParticles,
++        Holder<SoundEvent> explosionSound
      ) {
      }
  
@@ -1033,13 +1042,13 @@
          return this.seaLevel;
      }
  
-+   public EntitySectionStorage getSectionStorage() {
-+      return (EntitySectionStorage)Reflector.getFieldValue(this.entityStorage, Reflector.TransientEntitySectionManager_sectionStorage);
-+   }
++    public EntitySectionStorage getSectionStorage() {
++        return (EntitySectionStorage)Reflector.getFieldValue(this.entityStorage, Reflector.TransientEntitySectionManager_sectionStorage);
++    }
 +
      @Override
 -    public int getClientLeafTintColor(final BlockPos pos) {
-+   public int getClientLeafTintColor(BlockPos pos) {
++    public int getClientLeafTintColor(BlockPos pos) {
          BlockState state = this.getBlockState(pos);
          BlockTintSource tintSource = Minecraft.getInstance().getBlockColors().getTintSource(state, 0);
          return tintSource != null ? tintSource.colorInWorld(state, this, pos) : -1;
@@ -1047,35 +1056,35 @@
  
      @Override
 -    public void registerForCleaning(final CacheSlot<ClientLevel, ?> slot) {
-+   public void registerForCleaning(CacheSlot<ClientLevel, ?> slot) {
++    public void registerForCleaning(CacheSlot<ClientLevel, ?> slot) {
          this.connection.registerForCleaning(slot);
      }
  
 -    public void trackExplosionEffects(final Vec3 center, final float radius, final int blockCount, final WeightedList<ExplosionParticleInfo> blockParticles) {
-+   public void trackExplosionEffects(Vec3 center, float radius, int blockCount, WeightedList<ExplosionParticleInfo> blockParticles) {
++    public void trackExplosionEffects(Vec3 center, float radius, int blockCount, WeightedList<ExplosionParticleInfo> blockParticles) {
          this.explosionTracker.track(center, radius, blockCount, blockParticles);
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public Collection<PartEntity<?>> getPartEntities() {
-+      return this.partEntities.values();
-+   }
++    public Collection<PartEntity<?>> getPartEntities() {
++        return this.partEntities.values();
++    }
 +
-+   public ModelDataManager getModelDataManager() {
-+      return this.modelDataManager;
-+   }
++    public ModelDataManager getModelDataManager() {
++        return this.modelDataManager;
++    }
 +
      public static class ClientLevelData implements WritableLevelData {
          private final boolean hardcore;
          private final boolean isFlat;
 -        private LevelData.RespawnData respawnData;
-+      private RespawnData respawnData;
++        private RespawnData respawnData;
          private long gameTime;
          private Difficulty difficulty;
          private boolean difficultyLocked;
  
 -        public ClientLevelData(final Difficulty difficulty, final boolean hardcore, final boolean isFlat) {
-+      public ClientLevelData(Difficulty difficulty, boolean hardcore, boolean isFlat) {
++        public ClientLevelData(Difficulty difficulty, boolean hardcore, boolean isFlat) {
              this.difficulty = difficulty;
              this.hardcore = hardcore;
              this.isFlat = isFlat;
@@ -1083,7 +1092,7 @@
  
          @Override
 -        public LevelData.RespawnData getRespawnData() {
-+      public RespawnData getRespawnData() {
++        public RespawnData getRespawnData() {
              return this.respawnData;
          }
  
@@ -1092,13 +1101,13 @@
          }
  
 -        public void setGameTime(final long time) {
-+      public void setGameTime(long time) {
++        public void setGameTime(long time) {
              this.gameTime = time;
          }
  
          @Override
 -        public void setSpawn(final LevelData.RespawnData respawnData) {
-+      public void setSpawn(RespawnData respawnData) {
++        public void setSpawn(RespawnData respawnData) {
              this.respawnData = respawnData;
          }
  
@@ -1107,23 +1116,23 @@
  
          @Override
 -        public void fillCrashReportCategory(final CrashReportCategory category, final LevelHeightAccessor levelHeightAccessor) {
-+      public void fillCrashReportCategory(CrashReportCategory category, LevelHeightAccessor levelHeightAccessor) {
++        public void fillCrashReportCategory(CrashReportCategory category, LevelHeightAccessor levelHeightAccessor) {
              WritableLevelData.super.fillCrashReportCategory(category, levelHeightAccessor);
          }
  
 -        public void setDifficulty(final Difficulty difficulty) {
-+      public void setDifficulty(Difficulty difficulty) {
-+         Reflector.ForgeEventFactory_onDifficultyChange.callVoid(difficulty, this.difficulty);
++        public void setDifficulty(Difficulty difficulty) {
++            Reflector.ForgeEventFactory_onDifficultyChange.callVoid(difficulty, this.difficulty);
              this.difficulty = difficulty;
          }
  
 -        public void setDifficultyLocked(final boolean locked) {
-+      public void setDifficultyLocked(boolean locked) {
++        public void setDifficultyLocked(boolean locked) {
              this.difficultyLocked = locked;
          }
  
 -        public double getHorizonHeight(final LevelHeightAccessor level) {
-+      public double getHorizonHeight(LevelHeightAccessor level) {
++        public double getHorizonHeight(LevelHeightAccessor level) {
              return this.isFlat ? level.getMinY() : 63.0;
          }
  
@@ -1134,25 +1143,25 @@
 -    @OnlyIn(Dist.CLIENT)
      private final class EntityCallbacks implements LevelCallback<Entity> {
 -        public void onCreated(final Entity entity) {
-+      public void onCreated(Entity entity) {
++        public void onCreated(Entity entity) {
          }
  
 -        public void onDestroyed(final Entity entity) {
-+      public void onDestroyed(Entity entity) {
++        public void onDestroyed(Entity entity) {
          }
  
 -        public void onTickingStart(final Entity entity) {
-+      public void onTickingStart(Entity entity) {
++        public void onTickingStart(Entity entity) {
              ClientLevel.this.tickingEntities.add(entity);
          }
  
 -        public void onTickingEnd(final Entity entity) {
-+      public void onTickingEnd(Entity entity) {
++        public void onTickingEnd(Entity entity) {
              ClientLevel.this.tickingEntities.remove(entity);
          }
  
 -        public void onTrackingStart(final Entity entity) {
-+      public void onTrackingStart(Entity entity) {
++        public void onTrackingStart(Entity entity) {
              switch (entity) {
                  case AbstractClientPlayer player:
                      ClientLevel.this.players.add(player);
@@ -1161,20 +1170,20 @@
                  default:
              }
 +
-+         if (Reflector.IForgeEntity_isMultipartEntity.exists() && Reflector.IForgeEntity_getParts.exists()) {
-+            boolean multipartEntity = Reflector.callBoolean(entity, Reflector.IForgeEntity_isMultipartEntity);
-+            if (multipartEntity) {
-+               PartEntity[] parts = (PartEntity[])Reflector.call(entity, Reflector.IForgeEntity_getParts);
++            if (Reflector.IForgeEntity_isMultipartEntity.exists() && Reflector.IForgeEntity_getParts.exists()) {
++                boolean multipartEntity = Reflector.callBoolean(entity, Reflector.IForgeEntity_isMultipartEntity);
++                if (multipartEntity) {
++                    PartEntity[] parts = (PartEntity[])Reflector.call(entity, Reflector.IForgeEntity_getParts);
 +
-+               for (PartEntity part : parts) {
-+                  ClientLevel.this.partEntities.put(part.getId(), part);
-         }
++                    for (PartEntity part : parts) {
++                        ClientLevel.this.partEntities.put(part.getId(), part);
++                    }
++                }
 +            }
-+         }
-+      }
+         }
  
 -        public void onTrackingEnd(final Entity entity) {
-+      public void onTrackingEnd(Entity entity) {
++        public void onTrackingEnd(Entity entity) {
              entity.unRide();
              switch (entity) {
                  case AbstractClientPlayer player:
@@ -1183,32 +1192,32 @@
                  default:
              }
 +
-+         if (Reflector.IForgeEntity_onRemovedFromWorld.exists()) {
-+            Reflector.call(entity, Reflector.IForgeEntity_onRemovedFromWorld);
++            if (Reflector.IForgeEntity_onRemovedFromWorld.exists()) {
++                Reflector.call(entity, Reflector.IForgeEntity_onRemovedFromWorld);
++            }
++
++            if (Reflector.ForgeEventFactory_onEntityLeaveLevel.exists()) {
++                Reflector.ForgeEventFactory_onEntityLeaveLevel.callVoid(entity, ClientLevel.this);
++            }
++
++            if (Reflector.IForgeEntity_isMultipartEntity.exists() && Reflector.IForgeEntity_getParts.exists()) {
++                boolean multipartEntity = Reflector.callBoolean(entity, Reflector.IForgeEntity_isMultipartEntity);
++                if (multipartEntity) {
++                    PartEntity[] parts = (PartEntity[])Reflector.call(entity, Reflector.IForgeEntity_getParts);
++
++                    for (PartEntity part : parts) {
++                        ClientLevel.this.partEntities.remove(part.getId(), part);
++                    }
++                }
++            }
++
++            ClientLevel.this.onEntityRemoved(entity);
          }
  
 -        public void onSectionChange(final Entity entity) {
-+         if (Reflector.ForgeEventFactory_onEntityLeaveLevel.exists()) {
-+            Reflector.ForgeEventFactory_onEntityLeaveLevel.callVoid(entity, ClientLevel.this);
++        public void onSectionChange(Entity entity) {
          }
-+
-+         if (Reflector.IForgeEntity_isMultipartEntity.exists() && Reflector.IForgeEntity_getParts.exists()) {
-+            boolean multipartEntity = Reflector.callBoolean(entity, Reflector.IForgeEntity_isMultipartEntity);
-+            if (multipartEntity) {
-+               PartEntity[] parts = (PartEntity[])Reflector.call(entity, Reflector.IForgeEntity_getParts);
-+
-+               for (PartEntity part : parts) {
-+                  ClientLevel.this.partEntities.remove(part.getId(), part);
      }
 -}
 \ No newline at end of file
-+            }
-+         }
-+
-+         ClientLevel.this.onEntityRemoved(entity);
-+      }
-+
-+      public void onSectionChange(Entity entity) {
-+      }
-+   }
 +}

@@ -11,11 +11,11 @@
 -@OnlyIn(Dist.CLIENT)
  public class SlimeOuterLayer extends RenderLayer<SlimeRenderState, SlimeModel> {
 -    private final SlimeModel model;
-+   public SlimeModel model;
-+   public Identifier customTextureLocation;
++    public SlimeModel model;
++    public Identifier customTextureLocation;
  
 -    public SlimeOuterLayer(final RenderLayerParent<SlimeRenderState, SlimeModel> renderer, final EntityModelSet modelSet) {
-+   public SlimeOuterLayer(RenderLayerParent<SlimeRenderState, SlimeModel> renderer, EntityModelSet modelSet) {
++    public SlimeOuterLayer(RenderLayerParent<SlimeRenderState, SlimeModel> renderer, EntityModelSet modelSet) {
          super(renderer);
          this.model = new SlimeModel(modelSet.bakeLayer(ModelLayers.SLIME_OUTER));
      }
@@ -28,17 +28,17 @@
 -        final float yRot,
 -        final float xRot
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, SlimeRenderState state, float yRot, float xRot) {
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, SlimeRenderState state, float yRot, float xRot) {
          boolean appearsGlowingWithInvisibility = state.appearsGlowing() && state.isInvisible;
          if (!state.isInvisible || appearsGlowingWithInvisibility) {
              int overlayCoords = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
-+         Identifier textureLocation = this.customTextureLocation != null ? this.customTextureLocation : SlimeRenderer.SLIME_LOCATION;
++            Identifier textureLocation = this.customTextureLocation != null ? this.customTextureLocation : SlimeRenderer.SLIME_LOCATION;
              if (appearsGlowingWithInvisibility) {
                  submitNodeCollector.order(1)
 -                    .submitModel(
 -                        this.model, state, poseStack, RenderTypes.outline(SlimeRenderer.SLIME_LOCATION), lightCoords, overlayCoords, state.outlineColor, null
 -                    );
-+               .submitModel(this.model, state, poseStack, RenderTypes.outline(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
++                    .submitModel(this.model, state, poseStack, RenderTypes.outline(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
              } else {
                  submitNodeCollector.order(1)
 -                    .submitModel(
@@ -51,7 +51,7 @@
 -                        state.outlineColor,
 -                        null
 -                    );
-+               .submitModel(this.model, state, poseStack, RenderTypes.entityTranslucent(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
++                    .submitModel(this.model, state, poseStack, RenderTypes.entityTranslucent(textureLocation), lightCoords, overlayCoords, state.outlineColor, null);
              }
          }
      }

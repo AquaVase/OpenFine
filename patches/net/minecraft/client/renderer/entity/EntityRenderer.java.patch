@@ -53,46 +53,46 @@
      private final Font font;
 -    protected float shadowRadius;
 -    protected float shadowStrength = 1.0F;
-+   public float shadowRadius;
-+   public float shadowStrength = 1.0F;
-+   private EntityType entityType = null;
-+   private Identifier locationTextureCustom = null;
-+   public float shadowOffsetX;
-+   public float shadowOffsetZ;
-+   public float leashOffsetX;
-+   public float leashOffsetY;
-+   public float leashOffsetZ;
++    public float shadowRadius;
++    public float shadowStrength = 1.0F;
++    private EntityType entityType = null;
++    private Identifier locationTextureCustom = null;
++    public float shadowOffsetX;
++    public float shadowOffsetZ;
++    public float leashOffsetX;
++    public float leashOffsetY;
++    public float leashOffsetZ;
  
 -    protected EntityRenderer(final EntityRendererProvider.Context context) {
-+   protected EntityRenderer(Context context) {
++    protected EntityRenderer(Context context) {
          this.entityRenderDispatcher = context.getEntityRenderDispatcher();
          this.font = context.getFont();
      }
  
 -    public final int getPackedLightCoords(final T entity, final float partialTickTime) {
-+   public final int getPackedLightCoords(T entity, float partialTickTime) {
++    public final int getPackedLightCoords(T entity, float partialTickTime) {
          BlockPos blockPos = BlockPos.containing(entity.getLightProbePosition(partialTickTime));
 -        return LightCoordsUtil.pack(this.getBlockLightLevel(entity, blockPos), this.getSkyLightLevel(entity, blockPos));
-+      int packedLight = LightCoordsUtil.pack(this.getBlockLightLevel(entity, blockPos), this.getSkyLightLevel(entity, blockPos));
-+      if (Config.isDynamicLights()) {
-+         packedLight = DynamicLights.getCombinedLight(entity, packedLight);
++        int packedLight = LightCoordsUtil.pack(this.getBlockLightLevel(entity, blockPos), this.getSkyLightLevel(entity, blockPos));
++        if (Config.isDynamicLights()) {
++            packedLight = DynamicLights.getCombinedLight(entity, packedLight);
++        }
++
++        return packedLight;
      }
  
 -    protected int getSkyLightLevel(final T entity, final BlockPos blockPos) {
-+      return packedLight;
-+   }
-+
-+   protected int getSkyLightLevel(T entity, BlockPos blockPos) {
++    protected int getSkyLightLevel(T entity, BlockPos blockPos) {
          return entity.level().getBrightness(LightLayer.SKY, blockPos);
      }
  
 -    protected int getBlockLightLevel(final T entity, final BlockPos blockPos) {
-+   protected int getBlockLightLevel(T entity, BlockPos blockPos) {
++    protected int getBlockLightLevel(T entity, BlockPos blockPos) {
          return entity.isOnFire() ? 15 : entity.level().getBrightness(LightLayer.BLOCK, blockPos);
      }
  
 -    public boolean shouldRender(final T entity, final Frustum culler, final double camX, final double camY, final double camZ) {
-+   public boolean shouldRender(T entity, Frustum culler, double camX, double camY, double camZ) {
++    public boolean shouldRender(T entity, Frustum culler, double camX, double camY, double camZ) {
          if (!entity.shouldRender(camX, camY, camZ)) {
              return false;
          }
@@ -101,22 +101,22 @@
      }
  
 -    protected AABB getBoundingBoxForCulling(final T entity) {
-+   protected AABB getBoundingBoxForCulling(T entity) {
++    protected AABB getBoundingBoxForCulling(T entity) {
          return entity.getBoundingBox();
      }
  
 -    protected boolean affectedByCulling(final T entity) {
-+   protected boolean affectedByCulling(T entity) {
++    protected boolean affectedByCulling(T entity) {
          return true;
      }
  
 -    public Vec3 getRenderOffset(final S state) {
-+   public Vec3 getRenderOffset(S state) {
++    public Vec3 getRenderOffset(S state) {
          return state.passengerOffset != null ? state.passengerOffset : Vec3.ZERO;
      }
  
 -    public void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
-+   public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          if (state.leashStates != null) {
              for (EntityRenderState.LeashState leashState : state.leashStates) {
                  submitNodeCollector.submitLeash(poseStack, leashState);
@@ -125,7 +125,7 @@
      }
  
 -    protected boolean shouldShowName(final T entity, final double distanceToCameraSq) {
-+   protected boolean shouldShowName(T entity, double distanceToCameraSq) {
++    protected boolean shouldShowName(T entity, double distanceToCameraSq) {
          return entity.shouldShowName() || entity.hasCustomName() && entity == this.entityRenderDispatcher.crosshairPickEntity;
      }
  
@@ -134,61 +134,61 @@
      }
  
 -    protected void submitNameDisplay(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
-+   protected void submitNameDisplay(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    protected void submitNameDisplay(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          this.submitNameDisplay(state, poseStack, submitNodeCollector, camera, 0);
      }
  
      protected final <S extends EntityRenderState> void submitNameDisplay(
 -        final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera, final int offset
-+      S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera, int offset
++        S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera, int offset
      ) {
          poseStack.pushPose();
          if (state.scoreText != null) {
              submitNodeCollector.submitNameTag(poseStack, state.nameTagAttachment, offset, state.scoreText, !state.isDiscrete, state.lightCoords, camera);
 -            poseStack.translate(0.0F, 9.0F * 1.15F * 0.025F, 0.0F);
-+         poseStack.translate(0.0F, 0.25875F, 0.0F);
++            poseStack.translate(0.0F, 0.25875F, 0.0F);
          }
  
 -        if (state.nameTag != null) {
 -            submitNodeCollector.submitNameTag(poseStack, state.nameTagAttachment, offset, state.nameTag, !state.isDiscrete, state.lightCoords, camera);
-+      boolean forgeSubmitFlag = state.nameTag != null;
-+      Component forgeNameTag = state.nameTag;
-+      if (Reflector.ForgeEventFactoryClient_fireRenderNameTagEvent.exists()) {
-+         HasResult renderNameplateEvent = (HasResult)Reflector.ForgeEventFactoryClient_fireRenderNameTagEvent
-+            .call(state, state.nameTag, this, poseStack, submitNodeCollector, camera);
-+         Result result = renderNameplateEvent.getResult();
-+         if (result != Result.DENY && (result == Result.ALLOW || state.nameTag != null)) {
-+            forgeSubmitFlag = true;
-+            forgeNameTag = (Component)Reflector.call(renderNameplateEvent, Reflector.RenderNameTagEvent_getContent);
++        boolean forgeSubmitFlag = state.nameTag != null;
++        Component forgeNameTag = state.nameTag;
++        if (Reflector.ForgeEventFactoryClient_fireRenderNameTagEvent.exists()) {
++            HasResult renderNameplateEvent = (HasResult)Reflector.ForgeEventFactoryClient_fireRenderNameTagEvent
++                .call(state, state.nameTag, this, poseStack, submitNodeCollector, camera);
++            Result result = renderNameplateEvent.getResult();
++            if (result != Result.DENY && (result == Result.ALLOW || state.nameTag != null)) {
++                forgeSubmitFlag = true;
++                forgeNameTag = (Component)Reflector.call(renderNameplateEvent, Reflector.RenderNameTagEvent_getContent);
++            }
          }
-+      }
  
-+      if (forgeSubmitFlag) {
-+         submitNodeCollector.submitNameTag(poseStack, state.nameTagAttachment, offset, forgeNameTag, !state.isDiscrete, state.lightCoords, camera);
-+      }
++        if (forgeSubmitFlag) {
++            submitNodeCollector.submitNameTag(poseStack, state.nameTagAttachment, offset, forgeNameTag, !state.isDiscrete, state.lightCoords, camera);
++        }
 +
          poseStack.popPose();
      }
  
 -    protected @Nullable Component getNameTag(final T entity) {
-+   protected Component getNameTag(T entity) {
++    protected Component getNameTag(T entity) {
          return entity.getDisplayName();
      }
  
 -    protected float getShadowRadius(final S state) {
-+   protected float getShadowRadius(S state) {
++    protected float getShadowRadius(S state) {
          return this.shadowRadius;
      }
  
 -    protected float getShadowStrength(final S state) {
-+   protected float getShadowStrength(S state) {
++    protected float getShadowStrength(S state) {
          return this.shadowStrength;
      }
  
      public abstract S createRenderState();
  
 -    public final S createRenderState(final T entity, final float partialTicks) {
-+   public final S createRenderState(T entity, float partialTicks) {
++    public final S createRenderState(T entity, float partialTicks) {
          S state = this.createRenderState();
          this.extractRenderState(entity, state, partialTicks);
          this.finalizeRenderState(entity, state);
@@ -196,7 +196,7 @@
      }
  
 -    public void extractRenderState(final T entity, final S state, final float partialTicks) {
-+   public void extractRenderState(T entity, S state, float partialTicks) {
++    public void extractRenderState(T entity, S state, float partialTicks) {
          state.entityType = entity.getType();
          state.x = Mth.lerp(partialTicks, entity.xOld, entity.getX());
          state.y = Mth.lerp(partialTicks, entity.yOld, entity.getY());
@@ -204,22 +204,22 @@
              Entity roper = leashable.getLeashHolder();
              float entityYRot = entity.getPreciseBodyRotation(partialTicks) * (float) (Math.PI / 180.0);
              Vec3 attachOffset = leashable.getLeashOffset(partialTicks);
-+         if (this.leashOffsetX != 0.0F || this.leashOffsetY != 0.0F || this.leashOffsetZ != 0.0F) {
-+            attachOffset = attachOffset.add(this.leashOffsetX, this.leashOffsetY, this.leashOffsetZ);
-+         }
++            if (this.leashOffsetX != 0.0F || this.leashOffsetY != 0.0F || this.leashOffsetZ != 0.0F) {
++                attachOffset = attachOffset.add(this.leashOffsetX, this.leashOffsetY, this.leashOffsetZ);
++            }
 +
              BlockPos entityEyePos = BlockPos.containing(entity.getEyePosition(partialTicks));
              BlockPos roperEyePos = BlockPos.containing(roper.getEyePosition(partialTicks));
              int startBlockLight = this.getBlockLightLevel(entity, entityEyePos);
              int endBlockLight = this.entityRenderDispatcher.getRenderer(roper).getBlockLightLevel(roper, roperEyePos);
-+         if (Config.isDynamicLights()) {
-+            int packedEntity = LightCoordsUtil.pack(startBlockLight, 0);
-+            int packedHolder = LightCoordsUtil.pack(endBlockLight, 0);
-+            packedEntity = DynamicLights.getCombinedLight(entity, packedEntity);
-+            packedHolder = DynamicLights.getCombinedLight(entityYRot, packedHolder);
-+            startBlockLight = LightCoordsUtil.block(packedEntity);
-+            endBlockLight = LightCoordsUtil.block(packedHolder);
-+         }
++            if (Config.isDynamicLights()) {
++                int packedEntity = LightCoordsUtil.pack(startBlockLight, 0);
++                int packedHolder = LightCoordsUtil.pack(endBlockLight, 0);
++                packedEntity = DynamicLights.getCombinedLight(entity, packedEntity);
++                packedHolder = DynamicLights.getCombinedLight(entityYRot, packedHolder);
++                startBlockLight = LightCoordsUtil.block(packedEntity);
++                endBlockLight = LightCoordsUtil.block(packedHolder);
++            }
 +
              int startSkyLight = level.getBrightness(LightLayer.SKY, entityEyePos);
              int endSkyLight = level.getBrightness(LightLayer.SKY, roperEyePos);
@@ -228,62 +228,103 @@
          boolean appearsGlowing = minecraft.shouldEntityAppearGlowing(entity);
          state.outlineColor = appearsGlowing ? ARGB.opaque(entity.getTeamColor()) : 0;
          state.lightCoords = this.getPackedLightCoords(entity, partialTicks);
-+      state.entity = entity;
++        state.entity = entity;
      }
  
 -    protected void extractNameTags(final T entity, final S state, final float partialTicks) {
-+   protected void extractNameTags(T entity, S state, float partialTicks) {
++    protected void extractNameTags(T entity, S state, float partialTicks) {
          this.extractNameTags(entity, state, partialTicks, 64.0, 10.0);
      }
  
 -    protected final void extractNameTags(final T entity, final S state, final float partialTicks, final double nameTagDistance, final double belowNameDistance) {
-+   protected final void extractNameTags(T entity, S state, float partialTicks, double nameTagDistance, double belowNameDistance) {
++    protected final void extractNameTags(T entity, S state, float partialTicks, double nameTagDistance, double belowNameDistance) {
          if (this.entityRenderDispatcher.camera != null) {
              state.distanceToCameraSq = this.entityRenderDispatcher.distanceToSqr(entity);
              boolean shouldShowName = state.distanceToCameraSq < Mth.square(nameTagDistance) && this.shouldShowName(entity, state.distanceToCameraSq);
-+         if (Reflector.ForgeHooksClient_isNameplateInRenderDistance.exists()) {
-+            shouldShowName = Reflector.ForgeHooksClient_isNameplateInRenderDistance.callBoolean(entity, state.distanceToCameraSq)
-+               && this.shouldShowName(entity, state.distanceToCameraSq);
-+         }
++            if (Reflector.ForgeHooksClient_isNameplateInRenderDistance.exists()) {
++                shouldShowName = Reflector.ForgeHooksClient_isNameplateInRenderDistance.callBoolean(entity, state.distanceToCameraSq)
++                    && this.shouldShowName(entity, state.distanceToCameraSq);
++            }
 +
              if (shouldShowName) {
                  state.nameTag = this.getNameTag(entity);
                  state.nameTagAttachment = entity.getAttachments().getNullable(EntityAttachment.NAME_TAG, 0, entity.getYRot(partialTicks));
-@@ -268,14 +320,15 @@
+@@ -268,70 +320,70 @@
          }
      }
  
 -    protected void finalizeRenderState(final T entity, final S state) {
-+   protected void finalizeRenderState(T entity, S state) {
++    protected void finalizeRenderState(T entity, S state) {
          Minecraft minecraft = Minecraft.getInstance();
          Level level = entity.level();
          this.extractShadow(state, minecraft, level);
      }
  
 -    private void extractShadow(final S state, final Minecraft minecraft, final Level level) {
-+   private void extractShadow(S state, Minecraft minecraft, Level level) {
++    private void extractShadow(S state, Minecraft minecraft, Level level) {
          state.shadowPieces.clear();
-+      if (!Config.isShaders() || !Shaders.shouldSkipDefaultShadow) {
-         if (minecraft.options.entityShadows().get() && !state.isInvisible) {
-             float shadowRadius = Math.min(this.getShadowRadius(state), 32.0F);
-             state.shadowRadius = shadowRadius;
-@@ -290,7 +343,7 @@
-                     float depth = Math.min(pow / 0.5F - 1.0F, shadowRadius);
-                     int y0 = Mth.floor(state.y - depth);
-                     int y1 = Mth.floor(state.y);
+-        if (minecraft.options.entityShadows().get() && !state.isInvisible) {
+-            float shadowRadius = Math.min(this.getShadowRadius(state), 32.0F);
+-            state.shadowRadius = shadowRadius;
+-            if (shadowRadius > 0.0F) {
+-                double distSq = state.distanceToCameraSq;
+-                float pow = (float)((1.0 - distSq / 256.0) * this.getShadowStrength(state));
+-                if (pow > 0.0F) {
+-                    int x0 = Mth.floor(state.x - shadowRadius);
+-                    int x1 = Mth.floor(state.x + shadowRadius);
+-                    int z0 = Mth.floor(state.z - shadowRadius);
+-                    int z1 = Mth.floor(state.z + shadowRadius);
+-                    float depth = Math.min(pow / 0.5F - 1.0F, shadowRadius);
+-                    int y0 = Mth.floor(state.y - depth);
+-                    int y1 = Mth.floor(state.y);
 -                    BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-+                  MutableBlockPos pos = new MutableBlockPos();
++        if (!Config.isShaders() || !Shaders.shouldSkipDefaultShadow) {
++            if (minecraft.options.entityShadows().get() && !state.isInvisible) {
++                float shadowRadius = Math.min(this.getShadowRadius(state), 32.0F);
++                state.shadowRadius = shadowRadius;
++                if (shadowRadius > 0.0F) {
++                    double distSq = state.distanceToCameraSq;
++                    float pow = (float)((1.0 - distSq / 256.0) * this.getShadowStrength(state));
++                    if (pow > 0.0F) {
++                        int x0 = Mth.floor(state.x - shadowRadius);
++                        int x1 = Mth.floor(state.x + shadowRadius);
++                        int z0 = Mth.floor(state.z - shadowRadius);
++                        int z1 = Mth.floor(state.z + shadowRadius);
++                        float depth = Math.min(pow / 0.5F - 1.0F, shadowRadius);
++                        int y0 = Mth.floor(state.y - depth);
++                        int y1 = Mth.floor(state.y);
++                        MutableBlockPos pos = new MutableBlockPos();
  
-                     for (int z = z0; z <= z1; z++) {
-                         for (int x = x0; x <= x1; x++) {
-@@ -309,15 +362,15 @@
-             state.shadowRadius = 0.0F;
+-                    for (int z = z0; z <= z1; z++) {
+-                        for (int x = x0; x <= x1; x++) {
+-                            pos.set(x, 0, z);
+-                            ChunkAccess chunk = level.getChunk(pos);
++                        for (int z = z0; z <= z1; z++) {
++                            for (int x = x0; x <= x1; x++) {
++                                pos.set(x, 0, z);
++                                ChunkAccess chunk = level.getChunk(pos);
+ 
+-                            for (int y = y0; y <= y1; y++) {
+-                                pos.setY(y);
+-                                this.extractShadowPiece(state, level, pow, pos, chunk);
++                                for (int y = y0; y <= y1; y++) {
++                                    pos.setY(y);
++                                    this.extractShadowPiece(state, level, pow, pos, chunk);
++                                }
+                             }
+                         }
+                     }
+                 }
++            } else {
++                state.shadowRadius = 0.0F;
+             }
+-        } else {
+-            state.shadowRadius = 0.0F;
          }
      }
-+   }
  
 -    private void extractShadowPiece(final S state, final Level level, final float pow, final BlockPos.MutableBlockPos pos, final ChunkAccess chunk) {
-+   private void extractShadowPiece(S state, Level level, float pow, MutableBlockPos pos, ChunkAccess chunk) {
++    private void extractShadowPiece(S state, Level level, float pow, MutableBlockPos pos, ChunkAccess chunk) {
          float powerAtDepth = pow - (float)(state.y - pos.getY()) * 0.5F;
          BlockPos belowPos = pos.below();
          BlockState belowState = chunk.getBlockState(belowPos);
@@ -291,18 +332,29 @@
              int brightness = level.getMaxLocalRawBrightness(pos);
 -            if (brightness > 3) {
 -                if (belowState.isCollisionShapeFullBlock(chunk, belowPos)) {
-+         if (brightness > 3 && belowState.isCollisionShapeFullBlock(chunk, belowPos)) {
-                     VoxelShape belowShape = belowState.getShape(chunk, belowPos);
-                     if (!belowShape.isEmpty()) {
-                         float alpha = Mth.clamp(powerAtDepth * 0.5F * Lightmap.getBrightness(level.dimensionType(), brightness), 0.0F, 1.0F);
-@@ -329,9 +382,8 @@
+-                    VoxelShape belowShape = belowState.getShape(chunk, belowPos);
+-                    if (!belowShape.isEmpty()) {
+-                        float alpha = Mth.clamp(powerAtDepth * 0.5F * Lightmap.getBrightness(level.dimensionType(), brightness), 0.0F, 1.0F);
+-                        float relativeX = (float)(pos.getX() - state.x);
+-                        float relativeY = (float)(pos.getY() - state.y);
+-                        float relativeZ = (float)(pos.getZ() - state.z);
+-                        state.shadowPieces.add(new EntityRenderState.ShadowPiece(relativeX, relativeY, relativeZ, belowShape, alpha));
+-                    }
++            if (brightness > 3 && belowState.isCollisionShapeFullBlock(chunk, belowPos)) {
++                VoxelShape belowShape = belowState.getShape(chunk, belowPos);
++                if (!belowShape.isEmpty()) {
++                    float alpha = Mth.clamp(powerAtDepth * 0.5F * Lightmap.getBrightness(level.dimensionType(), brightness), 0.0F, 1.0F);
++                    float relativeX = (float)(pos.getX() - state.x);
++                    float relativeY = (float)(pos.getY() - state.y);
++                    float relativeZ = (float)(pos.getZ() - state.z);
++                    state.shadowPieces.add(new EntityRenderState.ShadowPiece(relativeX, relativeY, relativeZ, belowShape, alpha));
                  }
              }
          }
--    }
+     }
  
 -    private static @Nullable Entity getServerSideEntity(final Entity entity) {
-+   private static Entity getServerSideEntity(Entity entity) {
++    private static Entity getServerSideEntity(Entity entity) {
          IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
          if (server != null) {
              ServerLevel level = server.getLevel(entity.level().dimension());
@@ -313,28 +365,28 @@
 -}
 \ No newline at end of file
 +
-+   @Override
-+   public Either<EntityType, BlockEntityType> getType() {
-+      return this.entityType == null ? null : Either.makeLeft(this.entityType);
-+   }
++    @Override
++    public Either<EntityType, BlockEntityType> getType() {
++        return this.entityType == null ? null : Either.makeLeft(this.entityType);
++    }
 +
-+   @Override
-+   public void setType(Either<EntityType, BlockEntityType> type) {
-+      this.entityType = type.getLeft().get();
-+   }
++    @Override
++    public void setType(Either<EntityType, BlockEntityType> type) {
++        this.entityType = type.getLeft().get();
++    }
 +
-+   @Override
-+   public void setShadowSize(float shadowSize) {
-+      this.shadowRadius = shadowSize;
-+   }
++    @Override
++    public void setShadowSize(float shadowSize) {
++        this.shadowRadius = shadowSize;
++    }
 +
-+   @Override
-+   public Identifier getLocationTextureCustom() {
-+      return this.locationTextureCustom;
-+   }
++    @Override
++    public Identifier getLocationTextureCustom() {
++        return this.locationTextureCustom;
++    }
 +
-+   @Override
-+   public void setLocationTextureCustom(Identifier locationTextureCustom) {
-+      this.locationTextureCustom = locationTextureCustom;
-+   }
++    @Override
++    public void setLocationTextureCustom(Identifier locationTextureCustom) {
++        this.locationTextureCustom = locationTextureCustom;
++    }
 +}

@@ -7,23 +7,23 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 
 public interface IRandomEntity {
-   int getId();
+    int getId();
 
-   int getVehicleId();
+    int getVehicleId();
 
-   BlockPos getSpawnPosition();
+    BlockPos getSpawnPosition();
 
-   Biome getSpawnBiome();
+    Biome getSpawnBiome();
 
-   String getName();
+    String getName();
 
-   int getHealth();
+    int getHealth();
 
-   int getMaxHealth();
+    int getMaxHealth();
 
-   CompoundTag getNbtTag();
+    CompoundTag getNbtTag();
 
-   DyeColor getColor();
+    DyeColor getColor();
 
-   BlockState getBlockState();
+    BlockState getBlockState();
 }

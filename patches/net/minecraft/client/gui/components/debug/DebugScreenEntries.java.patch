@@ -21,7 +21,7 @@
 -@OnlyIn(Dist.CLIENT)
  public class DebugScreenEntries {
 -    private static final Map<Identifier, DebugScreenEntry> ENTRIES_BY_ID = new HashMap<>();
-+   private static final Map<Identifier, DebugScreenEntry> ENTRIES_BY_ID = new LinkedHashMap<>();
++    private static final Map<Identifier, DebugScreenEntry> ENTRIES_BY_ID = new LinkedHashMap<>();
      public static final Identifier GAME_VERSION = register("game_version", new DebugEntryVersion());
      public static final Identifier FPS = register("fps", new DebugEntryFps());
      public static final Identifier TPS = register("tps", new DebugEntryTps());
@@ -32,10 +32,10 @@
 -    public static final Identifier LOOKING_AT_BLOCK_TAGS = register("looking_at_block_tags", new DebugEntryLookingAt.BlockTagInfo());
 -    public static final Identifier LOOKING_AT_FLUID_STATE = register("looking_at_fluid_state", new DebugEntryLookingAt.FluidStateInfo());
 -    public static final Identifier LOOKING_AT_FLUID_TAGS = register("looking_at_fluid_tags", new DebugEntryLookingAt.FluidTagInfo());
-+   public static final Identifier LOOKING_AT_BLOCK_STATE = register("looking_at_block_state", new BlockStateInfo());
-+   public static final Identifier LOOKING_AT_BLOCK_TAGS = register("looking_at_block_tags", new BlockTagInfo());
-+   public static final Identifier LOOKING_AT_FLUID_STATE = register("looking_at_fluid_state", new FluidStateInfo());
-+   public static final Identifier LOOKING_AT_FLUID_TAGS = register("looking_at_fluid_tags", new FluidTagInfo());
++    public static final Identifier LOOKING_AT_BLOCK_STATE = register("looking_at_block_state", new BlockStateInfo());
++    public static final Identifier LOOKING_AT_BLOCK_TAGS = register("looking_at_block_tags", new BlockTagInfo());
++    public static final Identifier LOOKING_AT_FLUID_STATE = register("looking_at_fluid_state", new FluidStateInfo());
++    public static final Identifier LOOKING_AT_FLUID_TAGS = register("looking_at_fluid_tags", new FluidTagInfo());
      public static final Identifier LOOKING_AT_ENTITY = register("looking_at_entity", new DebugEntryLookingAtEntity());
      public static final Identifier LOOKING_AT_ENTITY_TAGS = register("looking_at_entity_tags", new DebugEntryLookingAtEntityTags());
      public static final Identifier CHUNK_RENDER_STATS = register("chunk_render_stats", new DebugEntryChunkRenderStats());
@@ -43,46 +43,46 @@
      public static final Identifier VISUALIZE_CHUNKS_ON_SERVER = register("visualize_chunks_on_server", new DebugEntryNoop());
      public static final Identifier VISUALIZE_SKY_LIGHT_SECTIONS = register("visualize_sky_light_sections", new DebugEntryNoop());
      public static final Identifier CHUNK_SECTION_VISIBILITY = register("chunk_section_visibility", new DebugEntryNoop());
-+   public static final Identifier OPTIFINE = register("optifine", new DebugEntryOF());
++    public static final Identifier OPTIFINE = register("optifine", new DebugEntryOF());
      public static final Map<DebugScreenProfile, Map<Identifier, DebugScreenEntryStatus>> PROFILES;
-+   private static Set<Identifier> locationsLeft = ImmutableSet.of(
-+      GAME_VERSION,
-+      FPS,
-+      SIMPLE_PERFORMANCE_IMPACTORS,
-+      GPU_UTILIZATION,
-+      TPS,
-+      CHUNK_RENDER_STATS,
-+      ENTITY_RENDER_STATS,
-+      PARTICLE_RENDER_STATS,
-+      CHUNK_SOURCE_STATS,
-+      OPTIFINE,
-+      PLAYER_POSITION,
-+      PLAYER_SECTION_POSITION,
-+      LIGHT_LEVELS,
-+      HEIGHTMAP,
-+      BIOME,
-+      LOCAL_DIFFICULTY,
-+      CHUNK_GENERATION_STATS,
-+      ENTITY_SPAWN_COUNTS,
-+      SOUND_MOOD,
-+      POST_EFFECT
-+   );
-+   private static Set<Identifier> locationsRight = ImmutableSet.of(
-+      MEMORY, SYSTEM_SPECS, LOOKING_AT_BLOCK_STATE, LOOKING_AT_BLOCK_TAGS, LOOKING_AT_FLUID_STATE, LOOKING_AT_FLUID_TAGS, LOOKING_AT_ENTITY
-+   );
-+   private static Set<Identifier> locationsFps = ImmutableSet.of(FPS, SIMPLE_PERFORMANCE_IMPACTORS, GPU_UTILIZATION);
-+   private static Set<Identifier> locationsNewLine = ImmutableSet.of(
-+      PLAYER_POSITION, SYSTEM_SPECS, LOOKING_AT_BLOCK_STATE, LOOKING_AT_BLOCK_TAGS, LOOKING_AT_FLUID_STATE, LOOKING_AT_FLUID_TAGS, LOOKING_AT_ENTITY
-+   );
-+   private static Map<Identifier, Integer> locationsIndex = new HashMap<>();
++    private static Set<Identifier> locationsLeft = ImmutableSet.of(
++        GAME_VERSION,
++        FPS,
++        SIMPLE_PERFORMANCE_IMPACTORS,
++        GPU_UTILIZATION,
++        TPS,
++        CHUNK_RENDER_STATS,
++        ENTITY_RENDER_STATS,
++        PARTICLE_RENDER_STATS,
++        CHUNK_SOURCE_STATS,
++        OPTIFINE,
++        PLAYER_POSITION,
++        PLAYER_SECTION_POSITION,
++        LIGHT_LEVELS,
++        HEIGHTMAP,
++        BIOME,
++        LOCAL_DIFFICULTY,
++        CHUNK_GENERATION_STATS,
++        ENTITY_SPAWN_COUNTS,
++        SOUND_MOOD,
++        POST_EFFECT
++    );
++    private static Set<Identifier> locationsRight = ImmutableSet.of(
++        MEMORY, SYSTEM_SPECS, LOOKING_AT_BLOCK_STATE, LOOKING_AT_BLOCK_TAGS, LOOKING_AT_FLUID_STATE, LOOKING_AT_FLUID_TAGS, LOOKING_AT_ENTITY
++    );
++    private static Set<Identifier> locationsFps = ImmutableSet.of(FPS, SIMPLE_PERFORMANCE_IMPACTORS, GPU_UTILIZATION);
++    private static Set<Identifier> locationsNewLine = ImmutableSet.of(
++        PLAYER_POSITION, SYSTEM_SPECS, LOOKING_AT_BLOCK_STATE, LOOKING_AT_BLOCK_TAGS, LOOKING_AT_FLUID_STATE, LOOKING_AT_FLUID_TAGS, LOOKING_AT_ENTITY
++    );
++    private static Map<Identifier, Integer> locationsIndex = new HashMap<>();
  
 -    private static Identifier register(final String id, final DebugScreenEntry entry) {
-+   private static Identifier register(String id, DebugScreenEntry entry) {
++    private static Identifier register(String id, DebugScreenEntry entry) {
          return register(Identifier.withDefaultNamespace(id), entry);
      }
  
 -    private static Identifier register(final Identifier identifier, final DebugScreenEntry entry) {
-+   private static Identifier register(Identifier identifier, DebugScreenEntry entry) {
++    private static Identifier register(Identifier identifier, DebugScreenEntry entry) {
          ENTRIES_BY_ID.put(identifier, entry);
          return identifier;
      }
@@ -91,54 +91,54 @@
      }
  
 -    public static @Nullable DebugScreenEntry getEntry(final Identifier id) {
-+   public static DebugScreenEntry getEntry(Identifier id) {
++    public static DebugScreenEntry getEntry(Identifier id) {
          return ENTRIES_BY_ID.get(id);
      }
  
-+   public static boolean isLineLeft(Identifier locationIn) {
-+      return locationsLeft.contains(locationIn);
-+   }
++    public static boolean isLineLeft(Identifier locationIn) {
++        return locationsLeft.contains(locationIn);
++    }
 +
-+   public static boolean isFpsLine(Identifier locationIn) {
-+      return locationsFps.contains(locationIn);
-+   }
++    public static boolean isFpsLine(Identifier locationIn) {
++        return locationsFps.contains(locationIn);
++    }
 +
-+   public static boolean isNewLine(Identifier locationIn) {
-+      return locationsNewLine.contains(locationIn);
-+   }
++    public static boolean isNewLine(Identifier locationIn) {
++        return locationsNewLine.contains(locationIn);
++    }
 +
-+   public static int getIndex(Identifier loc) {
-+      Integer index = locationsIndex.get(loc);
-+      return index == null ? -1 : index;
-+   }
++    public static int getIndex(Identifier loc) {
++        Integer index = locationsIndex.get(loc);
++        return index == null ? -1 : index;
++    }
 +
-+   public static int compareIndex(Identifier loc1, Identifier loc2) {
-+      return getIndex(loc1) - getIndex(loc2);
-+   }
++    public static int compareIndex(Identifier loc1, Identifier loc2) {
++        return getIndex(loc1) - getIndex(loc2);
++    }
 +
      static {
-+      Map<Identifier, DebugScreenEntry> mapEntries = new LinkedHashMap<>(ENTRIES_BY_ID);
-+      ENTRIES_BY_ID.clear();
++        Map<Identifier, DebugScreenEntry> mapEntries = new LinkedHashMap<>(ENTRIES_BY_ID);
++        ENTRIES_BY_ID.clear();
 +
-+      for (Identifier loc : locationsLeft) {
-+         ENTRIES_BY_ID.put(loc, mapEntries.remove(loc));
-+      }
++        for (Identifier loc : locationsLeft) {
++            ENTRIES_BY_ID.put(loc, mapEntries.remove(loc));
++        }
 +
-+      for (Identifier loc : locationsRight) {
-+         ENTRIES_BY_ID.put(loc, mapEntries.remove(loc));
-+      }
++        for (Identifier loc : locationsRight) {
++            ENTRIES_BY_ID.put(loc, mapEntries.remove(loc));
++        }
 +
-+      ENTRIES_BY_ID.putAll(mapEntries);
-+      Identifier[] locs = ENTRIES_BY_ID.keySet().toArray(new Identifier[0]);
++        ENTRIES_BY_ID.putAll(mapEntries);
++        Identifier[] locs = ENTRIES_BY_ID.keySet().toArray(new Identifier[0]);
 +
-+      for (int i = 0; i < locs.length; i++) {
-+         Identifier loc = locs[i];
-+         locationsIndex.put(loc, i);
-+      }
++        for (int i = 0; i < locs.length; i++) {
++            Identifier loc = locs[i];
++            locationsIndex.put(loc, i);
++        }
 +
          Map<Identifier, DebugScreenEntryStatus> defaultProfile = Map.of(
-+         OPTIFINE,
-+         DebugScreenEntryStatus.IN_OVERLAY,
++            OPTIFINE,
++            DebugScreenEntryStatus.IN_OVERLAY,
              THREE_DIMENSIONAL_CROSSHAIR,
              DebugScreenEntryStatus.IN_OVERLAY,
              GAME_VERSION,
@@ -146,8 +146,8 @@
              DebugScreenEntryStatus.IN_OVERLAY
          );
          Map<Identifier, DebugScreenEntryStatus> performance = Map.of(
-+         OPTIFINE,
-+         DebugScreenEntryStatus.IN_OVERLAY,
++            OPTIFINE,
++            DebugScreenEntryStatus.IN_OVERLAY,
              TPS,
              DebugScreenEntryStatus.IN_OVERLAY,
              FPS,

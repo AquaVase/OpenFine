@@ -12,34 +12,34 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterSlimeOuter extends ModelAdapterSlime {
-   public ModelAdapterSlimeOuter() {
-      super(EntityTypes.SLIME, "slime_outer", ModelLayers.SLIME_OUTER);
-   }
+    public ModelAdapterSlimeOuter() {
+        super(EntityTypes.SLIME, "slime_outer", ModelLayers.SLIME_OUTER);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "cube");
-      map.put("root", "root");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "cube");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
-      SlimeRenderer slimeRenderer = (SlimeRenderer)renderer;
-      SlimeOuterLayer layer = new SlimeOuterLayer(slimeRenderer, this.getContext().getModelSet());
-      layer.model = (SlimeModel)modelBase;
-      slimeRenderer.replaceLayer(SlimeOuterLayer.class, layer);
-   }
+    @Override
+    protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
+        SlimeRenderer slimeRenderer = (SlimeRenderer)renderer;
+        SlimeOuterLayer layer = new SlimeOuterLayer(slimeRenderer, this.getContext().getModelSet());
+        layer.model = (SlimeModel)modelBase;
+        slimeRenderer.replaceLayer(SlimeOuterLayer.class, layer);
+    }
 
-   @Override
-   public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
-      SlimeRenderer renderer = (SlimeRenderer)er;
+    @Override
+    public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
+        SlimeRenderer renderer = (SlimeRenderer)er;
 
-      for (SlimeOuterLayer layer : renderer.getLayers(SlimeOuterLayer.class)) {
-         layer.customTextureLocation = textureLocation;
-      }
+        for (SlimeOuterLayer layer : renderer.getLayers(SlimeOuterLayer.class)) {
+            layer.customTextureLocation = textureLocation;
+        }
 
-      return true;
-   }
+        return true;
+    }
 }

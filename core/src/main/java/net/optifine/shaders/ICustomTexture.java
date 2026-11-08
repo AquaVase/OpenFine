@@ -1,13 +1,13 @@
 package net.optifine.shaders;
 
 public interface ICustomTexture {
-   int getTextureId();
+    int getTextureId();
 
-   int getTextureUnit();
+    int getTextureUnit();
 
-   void deleteTexture();
+    void deleteTexture();
 
-   default int getTarget() {
-      return 3553;
-   }
+    default int getTarget() {
+        return 3553;
+    }
 }

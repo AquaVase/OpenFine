@@ -42,7 +42,7 @@
      private final SpriteGetter sprites;
      private final PlayerSkinRenderCache playerSkinRenderCache;
 -    private final Map<BlockState, BlockStateModel.UnbakedRoot> unbakedBlockStateModels;
-+   private final Map<BlockState, UnbakedRoot> unbakedBlockStateModels;
++    private final Map<BlockState, UnbakedRoot> unbakedBlockStateModels;
      private final Map<Identifier, ClientItem> clientInfos;
      private final Map<Identifier, ResolvedModel> resolvedModels;
      private final ResolvedModel missingModel;
@@ -55,13 +55,13 @@
 -        final Map<Identifier, ClientItem> clientInfos,
 -        final Map<Identifier, ResolvedModel> resolvedModels,
 -        final ResolvedModel missingModel
-+      EntityModelSet entityModelSet,
-+      SpriteGetter sprites,
-+      PlayerSkinRenderCache playerSkinRenderCache,
-+      Map<BlockState, UnbakedRoot> unbakedBlockStateModels,
-+      Map<Identifier, ClientItem> clientInfos,
-+      Map<Identifier, ResolvedModel> resolvedModels,
-+      ResolvedModel missingModel
++        EntityModelSet entityModelSet,
++        SpriteGetter sprites,
++        PlayerSkinRenderCache playerSkinRenderCache,
++        Map<BlockState, UnbakedRoot> unbakedBlockStateModels,
++        Map<Identifier, ClientItem> clientInfos,
++        Map<Identifier, ResolvedModel> resolvedModels,
++        ResolvedModel missingModel
      ) {
          this.entityModelSet = entityModelSet;
          this.sprites = sprites;
@@ -70,7 +70,7 @@
      }
  
 -    public CompletableFuture<ModelBakery.BakingResult> bakeModels(final MaterialBaker materials, final Executor taskExecutor) {
-+   public CompletableFuture<ModelBakery.BakingResult> bakeModels(MaterialBaker materials, Executor taskExecutor) {
++    public CompletableFuture<ModelBakery.BakingResult> bakeModels(MaterialBaker materials, Executor taskExecutor) {
          ModelBakery.InternerImpl interner = new ModelBakery.InternerImpl();
          ModelBakery.MissingModels missingModels = ModelBakery.MissingModels.bake(this.missingModel, materials, interner);
          ModelBakery.ModelBakerImpl baker = new ModelBakery.ModelBakerImpl(materials, interner, missingModels);
@@ -81,7 +81,7 @@
 -                            new ItemModel.BakingContext(
 -                                baker, this.entityModelSet, this.sprites, this.playerSkinRenderCache, missingModels.item, clientInfo.registrySwapper()
 -                            ),
-+                     new BakingContext(baker, this.entityModelSet, this.sprites, this.playerSkinRenderCache, missingModels.item, clientInfo.registrySwapper()),
++                            new BakingContext(baker, this.entityModelSet, this.sprites, this.playerSkinRenderCache, missingModels.item, clientInfo.registrySwapper()),
                              IDENTITY
                          );
                  } catch (Exception e) {
@@ -90,12 +90,12 @@
              taskExecutor
          );
 -        Map<Identifier, ClientItem.Properties> itemStackModelProperties = new HashMap<>(this.clientInfos.size());
-+      Map<Identifier, Properties> itemStackModelProperties = new HashMap<>(this.clientInfos.size());
++        Map<Identifier, Properties> itemStackModelProperties = new HashMap<>(this.clientInfos.size());
          this.clientInfos.forEach((id, clientInfo) -> {
 -            ClientItem.Properties properties = clientInfo.properties();
 -            if (!properties.equals(ClientItem.Properties.DEFAULT)) {
-+         Properties properties = clientInfo.properties();
-+         if (!properties.equals(Properties.DEFAULT)) {
++            Properties properties = clientInfo.properties();
++            if (!properties.equals(Properties.DEFAULT)) {
                  itemStackModelProperties.put(id, properties);
              }
          });
@@ -106,7 +106,7 @@
 -                (Map<BlockState, BlockStateModel>)bakedBlockStateModels,
 -                (Map<Identifier, ItemModel>)bakedItemStateModels,
 -                itemStackModelProperties
-+            missingModels, (Map<BlockState, BlockStateModel>)bakedBlockStateModels, (Map<Identifier, ItemModel>)bakedItemStateModels, itemStackModelProperties
++                missingModels, (Map<BlockState, BlockStateModel>)bakedBlockStateModels, (Map<Identifier, ItemModel>)bakedItemStateModels, itemStackModelProperties
              )
          );
      }
@@ -117,29 +117,29 @@
          Map<BlockState, BlockStateModel> blockStateModels,
          Map<Identifier, ItemModel> itemStackModels,
 -        Map<Identifier, ClientItem.Properties> itemProperties
-+      Map<Identifier, Properties> itemProperties
++        Map<Identifier, Properties> itemProperties
      ) {
 -        public BlockStateModel getBlockStateModel(final BlockState blockState) {
-+      public BlockStateModel getBlockStateModel(BlockState blockState) {
++        public BlockStateModel getBlockStateModel(BlockState blockState) {
              return this.blockStateModels.getOrDefault(blockState, this.missingModels.block);
          }
      }
  
 -    @OnlyIn(Dist.CLIENT)
 -    private static class InternerImpl implements ModelBaker.Interner {
-+   public static class InternerImpl implements ModelBaker.Interner {
++    public static class InternerImpl implements ModelBaker.Interner {
          private final Interner<Vector3fc> vectors = Interners.newStrongInterner();
          private final Interner<BakedQuad.MaterialInfo> materialInfos = Interners.newStrongInterner();
  
          @Override
 -        public Vector3fc vector(final Vector3fc v) {
-+      public Vector3fc vector(Vector3fc v) {
++        public Vector3fc vector(Vector3fc v) {
              return this.vectors.intern(v);
          }
  
          @Override
 -        public BakedQuad.MaterialInfo materialInfo(final BakedQuad.MaterialInfo material) {
-+      public BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo material) {
++        public BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo material) {
              return this.materialInfos.intern(material);
          }
      }
@@ -147,11 +147,11 @@
 -    @OnlyIn(Dist.CLIENT)
      public record MissingModels(BlockStateModelPart blockPart, BlockStateModel block, MissingItemModel item, FluidModel fluid) {
 -        public static ModelBakery.MissingModels bake(final ResolvedModel unbaked, final MaterialBaker materials, final ModelBaker.Interner interner) {
-+      public static ModelBakery.MissingModels bake(ResolvedModel unbaked, final MaterialBaker materials, final ModelBaker.Interner interner) {
++        public static ModelBakery.MissingModels bake(ResolvedModel unbaked, final MaterialBaker materials, final ModelBaker.Interner interner) {
              ModelBaker missingModelBakery = new ModelBaker() {
                  @Override
 -                public ResolvedModel getModel(final Identifier location) {
-+            public ResolvedModel getModel(Identifier location) {
++                public ResolvedModel getModel(Identifier location) {
                      throw new IllegalStateException("Missing model can't have dependencies, but asked for " + location);
                  }
  
@@ -160,7 +160,7 @@
  
                  @Override
 -                public <T> T compute(final ModelBaker.SharedOperationKey<T> key) {
-+            public <T> T compute(ModelBaker.SharedOperationKey<T> key) {
++                public <T> T compute(ModelBaker.SharedOperationKey<T> key) {
                      return key.compute(this);
                  }
  
@@ -169,7 +169,7 @@
              }
  
 -            Material.Baked particleMaterial = unbaked.resolveParticleMaterial(textureSlots, missingModelBakery);
-+         Baked particleMaterial = unbaked.resolveParticleMaterial(textureSlots, missingModelBakery);
++            Baked particleMaterial = unbaked.resolveParticleMaterial(textureSlots, missingModelBakery);
              SimpleModelWrapper missingModelPart = new SimpleModelWrapper(geometry, hasAmbientOcclusion, particleMaterial);
              BlockStateModel bakedBlockModel = new SingleVariant(missingModelPart);
              MissingItemModel bakedItemModel = new MissingItemModel(geometry.getAll(), new ModelRenderProperties(usesBlockLight, particleMaterial, transforms));
@@ -186,7 +186,7 @@
          private final Function<ModelBaker.SharedOperationKey<Object>, Object> cacheComputeFunction = k -> k.compute(this);
  
 -        private ModelBakerImpl(final MaterialBaker materials, final ModelBaker.Interner interner, final ModelBakery.MissingModels missingModels) {
-+      private ModelBakerImpl(MaterialBaker materials, ModelBaker.Interner interner, ModelBakery.MissingModels missingModels) {
++        private ModelBakerImpl(MaterialBaker materials, ModelBaker.Interner interner, ModelBakery.MissingModels missingModels) {
              this.materials = materials;
              this.interner = interner;
              this.missingModels = missingModels;
@@ -195,7 +195,7 @@
  
          @Override
 -        public ResolvedModel getModel(final Identifier location) {
-+      public ResolvedModel getModel(Identifier location) {
++        public ResolvedModel getModel(Identifier location) {
              ResolvedModel result = ModelBakery.this.resolvedModels.get(location);
              if (result == null) {
                  ModelBakery.LOGGER.warn("Requested a model that was not discovered previously: {}", location);
@@ -205,8 +205,8 @@
          @Override
 -        public <T> T compute(final ModelBaker.SharedOperationKey<T> key) {
 -            return (T)this.operationCache.computeIfAbsent((ModelBaker.SharedOperationKey)key, this.cacheComputeFunction);
-+      public <T> T compute(ModelBaker.SharedOperationKey<T> key) {
-+         return (T)this.operationCache.computeIfAbsent((ModelBaker.SharedOperationKey<Object>)(ModelBaker.SharedOperationKey<?>)key, this.cacheComputeFunction);
++        public <T> T compute(ModelBaker.SharedOperationKey<T> key) {
++            return (T)this.operationCache.computeIfAbsent((ModelBaker.SharedOperationKey<Object>)(ModelBaker.SharedOperationKey<?>)key, this.cacheComputeFunction);
          }
      }
  }

@@ -45,17 +45,17 @@
      private final Map<Identifier, AbstractTexture> byPath = new HashMap<>();
      private final Set<TickableTexture> tickableTextures = new HashSet<>();
      private final ResourceManager resourceManager;
-+   private AbstractTexture mojangLogoTexture;
++    private AbstractTexture mojangLogoTexture;
  
 -    public TextureManager(final ResourceManager resourceManager) {
-+   public TextureManager(ResourceManager resourceManager) {
++    public TextureManager(ResourceManager resourceManager) {
          this.resourceManager = resourceManager;
          NativeImage checkerboard = MissingTextureAtlasSprite.generateMissingImage();
          this.register(MissingTextureAtlasSprite.getLocation(), new DynamicTexture(() -> "(intentionally-)Missing Texture", checkerboard));
      }
  
 -    public void registerAndLoad(final Identifier textureId, final ReloadableTexture texture) {
-+   public void registerAndLoad(Identifier textureId, ReloadableTexture texture) {
++    public void registerAndLoad(Identifier textureId, ReloadableTexture texture) {
          try {
              texture.apply(this.loadContentsSafe(textureId, texture));
          } catch (Throwable t) {
@@ -64,7 +64,7 @@
      }
  
 -    private TextureContents loadContentsSafe(final Identifier textureId, final ReloadableTexture texture) {
-+   private TextureContents loadContentsSafe(Identifier textureId, ReloadableTexture texture) {
++    private TextureContents loadContentsSafe(Identifier textureId, ReloadableTexture texture) {
          try {
              return loadContents(this.resourceManager, textureId, texture);
          } catch (Exception e) {
@@ -73,21 +73,21 @@
      }
  
 -    public void registerForNextReload(final Identifier location) {
-+   public void registerForNextReload(Identifier location) {
++    public void registerForNextReload(Identifier location) {
          this.register(location, new SimpleTexture(location));
      }
  
 -    public void register(final Identifier location, final AbstractTexture texture) {
-+   public void register(Identifier location, AbstractTexture texture) {
-+      if (Reflector.MinecraftForge.exists() && this.mojangLogoTexture == null && location.equals(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION)) {
-+         LOGGER.info("Keep logo texture for ForgeLoadingOverlay: " + texture);
-+         this.mojangLogoTexture = texture;
-+      }
++    public void register(Identifier location, AbstractTexture texture) {
++        if (Reflector.MinecraftForge.exists() && this.mojangLogoTexture == null && location.equals(LoadingOverlay.MOJANG_STUDIOS_LOGO_LOCATION)) {
++            LOGGER.info("Keep logo texture for ForgeLoadingOverlay: " + texture);
++            this.mojangLogoTexture = texture;
++        }
 +
          AbstractTexture prev = this.byPath.put(location, texture);
          if (prev != texture) {
 -            if (prev != null) {
-+         if (prev != null && texture != this.mojangLogoTexture) {
++            if (prev != null && texture != this.mojangLogoTexture) {
                  this.safeClose(location, prev);
              }
  
@@ -96,7 +96,7 @@
      }
  
 -    private void safeClose(final Identifier id, final AbstractTexture texture) {
-+   private void safeClose(Identifier id, AbstractTexture texture) {
++    private void safeClose(Identifier id, AbstractTexture texture) {
          this.tickableTextures.remove(texture);
  
          try {
@@ -105,7 +105,7 @@
      }
  
 -    public AbstractTexture getTexture(final Identifier location) {
-+   public AbstractTexture getTexture(Identifier location) {
++    public AbstractTexture getTexture(Identifier location) {
          AbstractTexture textureObject = this.byPath.get(location);
          if (textureObject != null) {
              return textureObject;
@@ -113,17 +113,17 @@
      }
  
      public void tick() {
-+      RenderSystem.getGlDevice().debugLabels().pushDebugGroup(() -> "Animations");
++        RenderSystem.getGlDevice().debugLabels().pushDebugGroup(() -> "Animations");
 +
          for (TickableTexture tickableTexture : this.tickableTextures) {
              tickableTexture.tick();
          }
 +
-+      RenderSystem.getGlDevice().debugLabels().popDebugGroup();
++        RenderSystem.getGlDevice().debugLabels().popDebugGroup();
      }
  
 -    public void release(final Identifier location) {
-+   public void release(Identifier location) {
++    public void release(Identifier location) {
          AbstractTexture texture = this.byPath.remove(location);
          if (texture != null) {
              this.safeClose(location, texture);
@@ -137,33 +137,33 @@
 -        final PreparableReloadListener.PreparationBarrier preparationBarrier,
 -        final Executor reloadExecutor
 -    ) {
-+   public CompletableFuture<Void> reload(SharedState currentReload, Executor taskExecutor, PreparationBarrier preparationBarrier, Executor reloadExecutor) {
-+      Config.dbg("*** Reloading textures ***");
-+      Iterator it = this.byPath.keySet().iterator();
++    public CompletableFuture<Void> reload(SharedState currentReload, Executor taskExecutor, PreparationBarrier preparationBarrier, Executor reloadExecutor) {
++        Config.dbg("*** Reloading textures ***");
++        Iterator it = this.byPath.keySet().iterator();
 +
-+      while (it.hasNext()) {
-+         Identifier loc = (Identifier)it.next();
-+         String path = loc.getPath();
-+         if (path.startsWith("optifine/") || EmissiveTextures.isEmissive(loc)) {
-+            AbstractTexture tex = this.byPath.get(loc);
-+            if (tex instanceof AbstractTexture at) {
-+               at.deleteGlTexture();
++        while (it.hasNext()) {
++            Identifier loc = (Identifier)it.next();
++            String path = loc.getPath();
++            if (path.startsWith("optifine/") || EmissiveTextures.isEmissive(loc)) {
++                AbstractTexture tex = this.byPath.get(loc);
++                if (tex instanceof AbstractTexture at) {
++                    at.deleteGlTexture();
++                }
++
++                it.remove();
 +            }
++        }
 +
-+            it.remove();
-+         }
-+      }
-+
-+      RandomEntities.update();
-+      EmissiveTextures.update();
++        RandomEntities.update();
++        EmissiveTextures.update();
          ResourceManager manager = currentReload.resourceManager();
          List<TextureManager.PendingReload> reloads = new ArrayList<>();
 -        this.byPath.forEach((id, texture) -> {
-+      Map<Identifier, AbstractTexture> mapTexturesCopy = new HashMap<>(this.byPath);
-+      mapTexturesCopy.forEach((id, texture) -> {
-+         if (Config.isShaders() && texture instanceof DynamicTexture dynTex && texture.hasGlTexture()) {
-+            ShadersTex.initDynamicTextureNS(dynTex);
-+         }
++        Map<Identifier, AbstractTexture> mapTexturesCopy = new HashMap<>(this.byPath);
++        mapTexturesCopy.forEach((id, texture) -> {
++            if (Config.isShaders() && texture instanceof DynamicTexture dynTex && texture.hasGlTexture()) {
++                ShadersTex.initDynamicTextureNS(dynTex);
++            }
 +
              if (texture instanceof ReloadableTexture reloadableTexture) {
                  reloads.add(scheduleLoad(manager, id, reloadableTexture, taskExecutor));
@@ -173,7 +173,7 @@
      }
  
 -    public void dumpAllSheets(final Path targetDir) {
-+   public void dumpAllSheets(Path targetDir) {
++    public void dumpAllSheets(Path targetDir) {
          try {
              Files.createDirectories(targetDir);
          } catch (IOException e) {
@@ -182,7 +182,7 @@
      }
  
 -    private static TextureContents loadContents(final ResourceManager manager, final Identifier location, final ReloadableTexture texture) throws IOException {
-+   private static TextureContents loadContents(ResourceManager manager, Identifier location, ReloadableTexture texture) throws IOException {
++    private static TextureContents loadContents(ResourceManager manager, Identifier location, ReloadableTexture texture) throws IOException {
          try {
              return texture.loadContents(manager);
          } catch (FileNotFoundException e) {
@@ -193,7 +193,7 @@
 -    private static TextureManager.PendingReload scheduleLoad(
 -        final ResourceManager manager, final Identifier location, final ReloadableTexture texture, final Executor executor
 -    ) {
-+   private static TextureManager.PendingReload scheduleLoad(ResourceManager manager, Identifier location, ReloadableTexture texture, Executor executor) {
++    private static TextureManager.PendingReload scheduleLoad(ResourceManager manager, Identifier location, ReloadableTexture texture, Executor executor) {
          return new TextureManager.PendingReload(texture, CompletableFuture.supplyAsync(() -> {
              try {
                  return loadContents(manager, location, texture);
@@ -202,22 +202,22 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public boolean hasTexture(Identifier loc) {
-+      return this.byPath.containsKey(loc);
-+   }
++    public boolean hasTexture(Identifier loc) {
++        return this.byPath.containsKey(loc);
++    }
 +
-+   public Collection<AbstractTexture> getTextures() {
-+      return this.byPath.values();
-+   }
++    public Collection<AbstractTexture> getTextures() {
++        return this.byPath.values();
++    }
 +
-+   public Collection<Identifier> getTextureLocations() {
-+      return this.byPath.keySet();
-+   }
++    public Collection<Identifier> getTextureLocations() {
++        return this.byPath.keySet();
++    }
 +
-+   public void bindTexture(Identifier resource) {
-+      AbstractTexture abstracttexture = this.getTexture(resource);
-+      abstracttexture.bindTexture();
-+   }
++    public void bindTexture(Identifier resource) {
++        AbstractTexture abstracttexture = this.getTexture(resource);
++        abstracttexture.bindTexture();
++    }
 +
      private record PendingReload(ReloadableTexture texture, CompletableFuture<TextureContents> newContents) {
      }

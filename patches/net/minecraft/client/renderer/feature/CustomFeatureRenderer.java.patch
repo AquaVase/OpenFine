@@ -18,7 +18,7 @@
  
      @Override
 -    protected void buildGroup(final FeatureFrameContext context, final List<CustomFeatureRenderer.Submit> submits) {
-+   protected void buildGroup(FeatureFrameContext context, List<CustomFeatureRenderer.Submit> submits) {
++    protected void buildGroup(FeatureFrameContext context, List<CustomFeatureRenderer.Submit> submits) {
          for (CustomFeatureRenderer.Submit submit : submits) {
              VertexConsumer builder = this.getVertexBuilder(submit.renderType());
              submit.customGeometryRenderer().render(submit.pose(), builder);
@@ -27,11 +27,11 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record Submit(PoseStack.Pose pose, RenderType renderType, SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer)
-+   public record Submit(PoseStack.Pose pose, RenderType renderType, CustomGeometryRenderer customGeometryRenderer, Object renderState)
++    public record Submit(PoseStack.Pose pose, RenderType renderType, CustomGeometryRenderer customGeometryRenderer, Object renderState)
          implements BatchableSubmit {
-+      public Submit(PoseStack.Pose pose, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
-+         this(pose, renderType, customGeometryRenderer, RenderState.getRenderState());
-+      }
++        public Submit(PoseStack.Pose pose, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
++            this(pose, renderType, customGeometryRenderer, RenderState.getRenderState());
++        }
 +
          @Override
          public Object batchKey() {

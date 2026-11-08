@@ -15,10 +15,10 @@
 -@OnlyIn(Dist.CLIENT)
  public class RenderRegionCache {
      private final Long2ObjectMap<SectionCopy> sectionCopyCache = new Long2ObjectOpenHashMap<>();
-+   private AtomicInteger countCompileTasks = new AtomicInteger();
++    private AtomicInteger countCompileTasks = new AtomicInteger();
  
 -    public RenderSectionRegion createRegion(final ClientLevel level, final long sectionNode) {
-+   public RenderSectionRegion createRegion(ClientLevel level, long sectionNode) {
++    public RenderSectionRegion createRegion(ClientLevel level, long sectionNode) {
          int sectionX = SectionPos.x(sectionNode);
          int sectionY = SectionPos.y(sectionNode);
          int sectionZ = SectionPos.z(sectionNode);
@@ -27,34 +27,34 @@
          }
  
 -        return new RenderSectionRegion(level, minSectionX, minSectionY, minSectionZ, regionSections);
-+      return new RenderSectionRegion(level, minSectionX, minSectionY, minSectionZ, regionSections, SectionPos.of(sectionNode), this);
++        return new RenderSectionRegion(level, minSectionX, minSectionY, minSectionZ, regionSections, SectionPos.of(sectionNode), this);
      }
  
 -    private SectionCopy getSectionDataCopy(final Level level, final int sectionX, final int sectionY, final int sectionZ) {
-+   public void compileStarted() {
-+      this.countCompileTasks.incrementAndGet();
-+   }
++    public void compileStarted() {
++        this.countCompileTasks.incrementAndGet();
++    }
 +
-+   public void compileFinished() {
-+      int count = this.countCompileTasks.decrementAndGet();
-+      if (count <= 0) {
-+         this.finish();
-+      }
-+   }
++    public void compileFinished() {
++        int count = this.countCompileTasks.decrementAndGet();
++        if (count <= 0) {
++            this.finish();
++        }
++    }
 +
-+   public int getCountCompileTasks() {
-+      return this.countCompileTasks.get();
-+   }
++    public int getCountCompileTasks() {
++        return this.countCompileTasks.get();
++    }
 +
-+   private void finish() {
-+      for (SectionCopy info : this.sectionCopyCache.values()) {
-+         if (info.getChunk() != null) {
-+            info.finish();
-+         }
-+      }
-+   }
++    private void finish() {
++        for (SectionCopy info : this.sectionCopyCache.values()) {
++            if (info.getChunk() != null) {
++                info.finish();
++            }
++        }
++    }
 +
-+   private SectionCopy getSectionDataCopy(Level level, int sectionX, int sectionY, int sectionZ) {
++    private SectionCopy getSectionDataCopy(Level level, int sectionX, int sectionY, int sectionZ) {
          return this.sectionCopyCache.computeIfAbsent(SectionPos.asLong(sectionX, sectionY, sectionZ), k -> {
              LevelChunk chunk = level.getChunk(sectionX, sectionZ);
              return new SectionCopy(chunk, chunk.getSectionIndexFromSectionY(sectionY));

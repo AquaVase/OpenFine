@@ -11,30 +11,30 @@ import net.minecraft.world.entity.EntityTypes;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterTropicalFishPatternB extends ModelAdapterTropicalFishB {
-   public ModelAdapterTropicalFishPatternB() {
-      super(EntityTypes.TROPICAL_FISH, "tropical_fish_pattern_b", ModelLayers.TROPICAL_FISH_LARGE_PATTERN);
-   }
+    public ModelAdapterTropicalFishPatternB() {
+        super(EntityTypes.TROPICAL_FISH, "tropical_fish_pattern_b", ModelLayers.TROPICAL_FISH_LARGE_PATTERN);
+    }
 
-   @Override
-   protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
-      TropicalFishRenderer renderTropicalFish = (TropicalFishRenderer)renderer;
+    @Override
+    protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
+        TropicalFishRenderer renderTropicalFish = (TropicalFishRenderer)renderer;
 
-      for (TropicalFishPatternLayer layer : renderTropicalFish.getLayers(TropicalFishPatternLayer.class)) {
-         this.setModel(layer, Reflector.TropicalFishPatternLayer_modelB, "TropicalFishPatternLayer.modelB", modelBase);
-      }
-   }
+        for (TropicalFishPatternLayer layer : renderTropicalFish.getLayers(TropicalFishPatternLayer.class)) {
+            this.setModel(layer, Reflector.TropicalFishPatternLayer_modelB, "TropicalFishPatternLayer.modelB", modelBase);
+        }
+    }
 
-   @Override
-   public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
-      TropicalFishRenderer renderTropicalFish = (TropicalFishRenderer)er;
+    @Override
+    public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
+        TropicalFishRenderer renderTropicalFish = (TropicalFishRenderer)er;
 
-      for (TropicalFishPatternLayer layer : renderTropicalFish.getLayers(TropicalFishPatternLayer.class)) {
-         TropicalFishLargeModel model = (TropicalFishLargeModel)Reflector.TropicalFishPatternLayer_modelB.getValue(layer);
-         if (model != null) {
-            model.locationTextureCustom = textureLocation;
-         }
-      }
+        for (TropicalFishPatternLayer layer : renderTropicalFish.getLayers(TropicalFishPatternLayer.class)) {
+            TropicalFishLargeModel model = (TropicalFishLargeModel)Reflector.TropicalFishPatternLayer_modelB.getValue(layer);
+            if (model != null) {
+                model.locationTextureCustom = textureLocation;
+            }
+        }
 
-      return true;
-   }
+        return true;
+    }
 }

@@ -26,24 +26,24 @@
      public BlockEntityType<?> blockEntityType = BlockEntityTypes.TEST_BLOCK;
      public int lightCoords;
 -    public ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress;
-+   public ModelFeatureRenderer.CrumblingOverlay breakProgress;
-+   public BlockEntity blockEntity;
-+   public BlockEntityRenderer blockEntityRenderer;
++    public ModelFeatureRenderer.CrumblingOverlay breakProgress;
++    public BlockEntity blockEntity;
++    public BlockEntityRenderer blockEntityRenderer;
  
 -    public static void extractBase(
 -        final BlockEntity blockEntity, final BlockEntityRenderState state, final ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress
 -    ) {
-+   public static void extractBase(BlockEntity blockEntity, BlockEntityRenderState state, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
++    public static void extractBase(BlockEntity blockEntity, BlockEntityRenderState state, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
          state.blockPos = blockEntity.getBlockPos();
          state.blockState = blockEntity.getBlockState();
          state.blockEntityType = blockEntity.getType();
          state.lightCoords = blockEntity.getLevel() != null ? LightCoordsUtil.getLightCoords(blockEntity.getLevel(), blockEntity.getBlockPos()) : 15728880;
          state.breakProgress = breakProgress;
-+      state.blockEntity = blockEntity;
++        state.blockEntity = blockEntity;
      }
  
 -    public void fillCrashReportCategory(final CrashReportCategory category) {
-+   public void fillCrashReportCategory(CrashReportCategory category) {
++    public void fillCrashReportCategory(CrashReportCategory category) {
          category.setDetail("BlockEntityRenderState", this.getClass().getCanonicalName());
          category.setDetail("Position", this.blockPos);
          category.setDetail("Block state", this.blockState::toString);
@@ -51,18 +51,18 @@
 -}
 \ No newline at end of file
 +
-+   @Override
-+   public String toString() {
-+      Identifier blockEntityKey = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(this.blockEntityType);
-+      return "type: "
-+         + blockEntityKey
-+         + ", pos: "
-+         + this.blockPos
-+         + ", state: "
-+         + this.blockState
-+         + ", entity: "
-+         + this.blockEntity
-+         + ", renderer: "
-+         + this.blockEntityRenderer;
-+   }
++    @Override
++    public String toString() {
++        Identifier blockEntityKey = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(this.blockEntityType);
++        return "type: "
++            + blockEntityKey
++            + ", pos: "
++            + this.blockPos
++            + ", state: "
++            + this.blockState
++            + ", entity: "
++            + this.blockEntity
++            + ", renderer: "
++            + this.blockEntityRenderer;
++    }
 +}

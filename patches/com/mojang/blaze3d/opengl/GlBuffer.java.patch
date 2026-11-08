@@ -17,10 +17,10 @@
      private final int handle;
      protected final boolean canPersistentMap;
      protected int mappingRefCount = 0;
-+   public Supplier<String> label = () -> "";
++    public Supplier<String> label = () -> "";
  
 -    protected GlBuffer(final @GpuBuffer.Usage int usage, final long size, final int handle, final boolean canPersistentMap) {
-+   protected GlBuffer(@GpuBuffer.Usage int usage, long size, int handle, boolean canPersistentMap) {
++    protected GlBuffer(@GpuBuffer.Usage int usage, long size, int handle, boolean canPersistentMap) {
          super(usage, size);
          this.handle = handle;
          this.canPersistentMap = canPersistentMap;
@@ -30,82 +30,84 @@
      protected void checkCanBeUsed() {
 -        if (!this.canPersistentMap) {
 -            if (this.mappingRefCount != 0) {
-+      if (!this.canPersistentMap && this.mappingRefCount != 0) {
-                 throw new IllegalStateException("Attempt to use buffer while mapped without persistent mapping capability");
-             }
+-                throw new IllegalStateException("Attempt to use buffer while mapped without persistent mapping capability");
+-            }
++        if (!this.canPersistentMap && this.mappingRefCount != 0) {
++            throw new IllegalStateException("Attempt to use buffer while mapped without persistent mapping capability");
          }
-+
-+   public int getHandle() {
-+      return this.handle;
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public static String usageToString(int usageIn) {
-+      StringBuilder sb = new StringBuilder();
-+      if ((usageIn & 1) != 0) {
-+         sb.append("R");
-+      }
++    public int getHandle() {
++        return this.handle;
++    }
 +
-+      if ((usageIn & 2) != 0) {
-+         sb.append("W");
-+      }
++    public static String usageToString(int usageIn) {
++        StringBuilder sb = new StringBuilder();
++        if ((usageIn & 1) != 0) {
++            sb.append("R");
++        }
 +
-+      if ((usageIn & 4) != 0) {
-+         sb.append("C");
-+      }
++        if ((usageIn & 2) != 0) {
++            sb.append("W");
++        }
 +
-+      if ((usageIn & 16) != 0) {
-+         sb.append("S");
-+      }
++        if ((usageIn & 4) != 0) {
++            sb.append("C");
++        }
 +
-+      if ((usageIn & 8) != 0) {
-+         sb.append("D");
-+      }
++        if ((usageIn & 16) != 0) {
++            sb.append("S");
++        }
 +
-+      if ((usageIn & 32) != 0) {
-+         sb.append("V");
-+      }
++        if ((usageIn & 8) != 0) {
++            sb.append("D");
++        }
 +
-+      if ((usageIn & 64) != 0) {
-+         sb.append("I");
-+      }
++        if ((usageIn & 32) != 0) {
++            sb.append("V");
++        }
 +
-+      if ((usageIn & 128) != 0) {
-+         sb.append("U");
-+      }
++        if ((usageIn & 64) != 0) {
++            sb.append("I");
++        }
 +
-+      if ((usageIn & 256) != 0) {
-+         sb.append("T");
-+      }
++        if ((usageIn & 128) != 0) {
++            sb.append("U");
++        }
 +
-+      if (sb.isEmpty()) {
-+         sb.append("0x" + Integer.toHexString(usageIn));
-+      }
++        if ((usageIn & 256) != 0) {
++            sb.append("T");
++        }
 +
-+      return sb.toString();
-+   }
++        if (sb.isEmpty()) {
++            sb.append("0x" + Integer.toHexString(usageIn));
++        }
 +
-+   @Override
-+   public String toString() {
-+      String usageStr = usageToString(this.usage());
-+      return this.label.get() + ", " + usageStr + ", " + this.size();
-+   }
++        return sb.toString();
++    }
++
++    @Override
++    public String toString() {
++        String usageStr = usageToString(this.usage());
++        return this.label.get() + ", " + usageStr + ", " + this.size();
++    }
 +
      public static class Direct extends GlBuffer {
          private boolean closed;
          private final DirectStateAccess dsa;
          protected final int mappingFlags;
 -        protected @Nullable ByteBuffer mappedBuffer;
-+      protected ByteBuffer mappedBuffer;
-+      private long allocatedSize;
++        protected ByteBuffer mappedBuffer;
++        private long allocatedSize;
  
 -        protected Direct(final DirectStateAccess dsa, final @GpuBuffer.Usage int usage, final long size, final int handle, final boolean canPersistentMap) {
-+      protected Direct(DirectStateAccess dsa, @GpuBuffer.Usage int usage, long size, int handle, boolean canPersistentMap) {
++        protected Direct(DirectStateAccess dsa, @GpuBuffer.Usage int usage, long size, int handle, boolean canPersistentMap) {
              this.dsa = dsa;
              int clampedSize = (int)Math.min(size, 2147483647L);
              MEMORY_POOL.malloc(handle, clampedSize);
-+         GpuMemory.bufferAllocated(clampedSize);
-+         this.allocatedSize = clampedSize;
++            GpuMemory.bufferAllocated(clampedSize);
++            this.allocatedSize = clampedSize;
              int mappingFlags = 0;
              if ((usage & 1) != 0) {
                  mappingFlags |= 1;
@@ -113,13 +115,13 @@
  
                  GlStateManager._glDeleteBuffers(this.handle());
                  MEMORY_POOL.free(this.handle());
-+            GpuMemory.bufferFreed(this.allocatedSize);
++                GpuMemory.bufferFreed(this.allocatedSize);
              }
          }
  
          @Override
 -        public GpuBufferSlice.MappedView map(final long offset, final long length, final boolean read, final boolean write) {
-+      public GpuBufferSlice.MappedView map(long offset, long length, boolean read, boolean write) {
++        public GpuBufferSlice.MappedView map(long offset, long length, boolean read, boolean write) {
              if (this.isClosed()) {
                  throw new IllegalStateException("Buffer already closed");
              }
@@ -130,7 +132,7 @@
 -                                        .flushMappedBufferRange(
 -                                            Direct.this.handle(), Direct.this.slice().offset(), Direct.this.slice().length(), Direct.this.usage()
 -                                        );
-+                              .flushMappedBufferRange(Direct.this.handle(), Direct.this.slice().offset(), Direct.this.slice().length(), Direct.this.usage());
++                                        .flushMappedBufferRange(Direct.this.handle(), Direct.this.slice().offset(), Direct.this.slice().length(), Direct.this.usage());
                                  }
  
                                  Direct.this.unmap();

@@ -19,36 +19,36 @@
      private final String prefix;
  
 -    private FilePackResources(final PackLocationInfo location, final FilePackResources.SharedZipFileAccess zipFileAccess, final String prefix) {
-+   private FilePackResources(PackLocationInfo location, FilePackResources.SharedZipFileAccess zipFileAccess, String prefix) {
++    private FilePackResources(PackLocationInfo location, FilePackResources.SharedZipFileAccess zipFileAccess, String prefix) {
          super(location);
          this.zipFileAccess = zipFileAccess;
          this.prefix = prefix;
      }
  
 -    private static String getPathFromLocation(final PackType type, final Identifier location) {
-+   private static String getPathFromLocation(PackType type, Identifier location) {
++    private static String getPathFromLocation(PackType type, Identifier location) {
          return String.format(Locale.ROOT, "%s/%s/%s", type.getDirectory(), location.getNamespace(), location.getPath());
      }
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getRootResource(final String... path) {
-+   public IoSupplier<InputStream> getRootResource(String... path) {
++    public IoSupplier<InputStream> getRootResource(String... path) {
          return this.getResource(String.join("/", path));
      }
  
      @Override
 -    public IoSupplier<InputStream> getResource(final PackType type, final Identifier location) {
-+   public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
++    public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
          return this.getResource(getPathFromLocation(type, location));
      }
  
 -    private String addPrefix(final String path) {
-+   private String addPrefix(String path) {
++    private String addPrefix(String path) {
          return this.prefix.isEmpty() ? path : this.prefix + "/" + path;
      }
  
 -    private @Nullable IoSupplier<InputStream> getResource(final String path) {
-+   private IoSupplier<InputStream> getResource(String path) {
++    private IoSupplier<InputStream> getResource(String path) {
          ZipFile zipFile = this.zipFileAccess.getOrCreateZipFile();
          if (zipFile == null) {
              return null;
@@ -57,7 +57,7 @@
  
      @Override
 -    public Set<String> getNamespaces(final PackType type) {
-+   public Set<String> getNamespaces(PackType type) {
++    public Set<String> getNamespaces(PackType type) {
          ZipFile zipFile = this.zipFileAccess.getOrCreateZipFile();
          if (zipFile == null) {
              return Set.of();
@@ -66,7 +66,7 @@
  
      @VisibleForTesting
 -    public static String extractNamespace(final String prefix, final String name) {
-+   public static String extractNamespace(String prefix, String name) {
++    public static String extractNamespace(String prefix, String name) {
          if (!name.startsWith(prefix)) {
              return "";
          }
@@ -75,7 +75,7 @@
  
      @Override
 -    public void listResources(final PackType type, final String namespace, final String directory, final PackResources.ResourceOutput output) {
-+   public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
++    public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
          ZipFile zipFile = this.zipFileAccess.getOrCreateZipFile();
          if (zipFile != null) {
              Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -84,33 +84,33 @@
      }
  
 -    public static class FileResourcesSupplier implements Pack.ResourcesSupplier {
-+   public File getFile() {
-+      return this.zipFileAccess.file;
-+   }
++    public File getFile() {
++        return this.zipFileAccess.file;
++    }
 +
-+   public static class FileResourcesSupplier implements ResourcesSupplier {
++    public static class FileResourcesSupplier implements ResourcesSupplier {
          private final File content;
  
 -        public FileResourcesSupplier(final Path content) {
-+      public FileResourcesSupplier(Path content) {
++        public FileResourcesSupplier(Path content) {
              this(content.toFile());
          }
  
 -        public FileResourcesSupplier(final File content) {
-+      public FileResourcesSupplier(File content) {
++        public FileResourcesSupplier(File content) {
              this.content = content;
          }
  
          @Override
 -        public PackResources openPrimary(final PackLocationInfo location) {
-+      public PackResources openPrimary(PackLocationInfo location) {
++        public PackResources openPrimary(PackLocationInfo location) {
              FilePackResources.SharedZipFileAccess fileAccess = new FilePackResources.SharedZipFileAccess(this.content);
              return new FilePackResources(location, fileAccess, "");
          }
  
          @Override
 -        public PackResources openFull(final PackLocationInfo location, final Pack.Metadata metadata) {
-+      public PackResources openFull(PackLocationInfo location, Metadata metadata) {
++        public PackResources openFull(PackLocationInfo location, Metadata metadata) {
              FilePackResources.SharedZipFileAccess fileAccess = new FilePackResources.SharedZipFileAccess(this.content);
              PackResources primary = new FilePackResources(location, fileAccess, "");
              List<String> overlays = metadata.overlays();
@@ -119,16 +119,16 @@
      private static class SharedZipFileAccess implements AutoCloseable {
          private final File file;
 -        private @Nullable ZipFile zipFile;
-+      private ZipFile zipFile;
++        private ZipFile zipFile;
          private boolean failedToLoad;
  
 -        private SharedZipFileAccess(final File file) {
-+      private SharedZipFileAccess(File file) {
++        private SharedZipFileAccess(File file) {
              this.file = file;
          }
  
 -        private @Nullable ZipFile getOrCreateZipFile() {
-+      private ZipFile getOrCreateZipFile() {
++        private ZipFile getOrCreateZipFile() {
              if (this.failedToLoad) {
                  return null;
              }

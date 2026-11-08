@@ -8,7 +8,7 @@
 +import net.minecraft.client.renderer.state.level.LevelRenderState;
 +
 +public class RenderHighlightEvent {
-+   public interface Callback {
-+      void render(SubmitNodeCollector var1, PoseStack var2, LevelRenderState var3);
-+   }
++    public interface Callback {
++        void render(SubmitNodeCollector var1, PoseStack var2, LevelRenderState var3);
++    }
 +}

@@ -17,7 +17,7 @@
      public static final Codec<GraphicsPreset> CODEC = StringRepresentable.fromEnum(GraphicsPreset::values);
  
 -    GraphicsPreset(final String serializedName, final String key) {
-+   GraphicsPreset(String serializedName, String key) {
++    GraphicsPreset(String serializedName, String key) {
          this.serializedName = serializedName;
          this.key = key;
      }
@@ -26,7 +26,7 @@
      }
  
 -    public void apply(final Minecraft minecraft) {
-+   public void apply(Minecraft minecraft) {
++    public void apply(Minecraft minecraft) {
          OptionsSubScreen screen = minecraft.gui != null && minecraft.gui.screen() instanceof OptionsSubScreen ? (OptionsSubScreen)minecraft.gui.screen() : null;
          GpuDevice device = RenderSystem.getDevice();
          switch (this) {
@@ -34,7 +34,7 @@
                  set(screen, minecraft.options.weatherRadius(), 5);
                  set(screen, minecraft.options.maxAnisotropyBit(), 1);
                  set(screen, minecraft.options.textureFiltering(), TextureFilteringMethod.NONE);
-+            minecraft.options.ofTrees = 1;
++                minecraft.options.ofTrees = 1;
                  break;
              }
              case FANCY: {
@@ -42,7 +42,7 @@
                  set(screen, minecraft.options.weatherRadius(), 10);
                  set(screen, minecraft.options.maxAnisotropyBit(), 1);
                  set(screen, minecraft.options.textureFiltering(), TextureFilteringMethod.RGSS);
-+            minecraft.options.ofTrees = 2;
++                minecraft.options.ofTrees = 2;
                  break;
              }
              case FABULOUS: {
@@ -51,13 +51,13 @@
                      set(screen, minecraft.options.textureFiltering(), TextureFilteringMethod.ANISOTROPIC);
                  }
 +
-+            minecraft.options.ofTrees = 2;
++                minecraft.options.ofTrees = 2;
              }
          }
      }
  
 -    private static <T> void set(final @Nullable OptionsSubScreen screen, final OptionInstance<T> option, final T value) {
-+   private static <T> void set(OptionsSubScreen screen, OptionInstance<T> option, T value) {
++    private static <T> void set(OptionsSubScreen screen, OptionInstance<T> option, T value) {
          if (option.get() != value) {
              option.set(value);
              if (screen != null) {

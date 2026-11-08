@@ -8,13 +8,13 @@
 +import net.minecraft.client.resources.model.geometry.BakedQuad;
 +
 +public interface IForgeVertexConsumer {
-+   private VertexConsumer self() {
-+      return (VertexConsumer)this;
-+   }
++    private VertexConsumer self() {
++        return (VertexConsumer)this;
++    }
 +
-+   default void putBulkData(
-+      PoseStack.Pose pose, BakedQuad bakedQuad, float red, float green, float blue, float alpha, int packedLight, int packedOverlay, boolean readExistingColor
-+   ) {
-+      throw new UnsupportedOperationException();
-+   }
++    default void putBulkData(
++        PoseStack.Pose pose, BakedQuad bakedQuad, float red, float green, float blue, float alpha, int packedLight, int packedOverlay, boolean readExistingColor
++    ) {
++        throw new UnsupportedOperationException();
++    }
 +}

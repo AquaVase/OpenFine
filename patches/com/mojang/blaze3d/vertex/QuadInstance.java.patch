@@ -18,11 +18,11 @@
      private int lightCoords2 = 15728880;
      private int lightCoords3 = 15728880;
      private int overlayCoords = OverlayTexture.NO_OVERLAY;
-+   private BlockState blockState = Blocks.AIR.defaultBlockState();
-+   private Vector3f midBlock = new Vector3f();
++    private BlockState blockState = Blocks.AIR.defaultBlockState();
++    private Vector3f midBlock = new Vector3f();
  
 -    public int getColor(final int vertex) {
-+   public int getColor(int vertex) {
++    public int getColor(int vertex) {
          return switch (vertex) {
              case 0 -> this.color0;
              case 1 -> this.color1;
@@ -31,7 +31,7 @@
      }
  
 -    public int getLightCoords(final int vertex) {
-+   public int getLightCoords(int vertex) {
++    public int getLightCoords(int vertex) {
          return switch (vertex) {
              case 0 -> this.lightCoords0;
              case 1 -> this.lightCoords1;
@@ -40,7 +40,7 @@
      }
  
 -    public int getLightCoordsWithEmission(final int vertex, final int lightEmission) {
-+   public int getLightCoordsWithEmission(int vertex, int lightEmission) {
++    public int getLightCoordsWithEmission(int vertex, int lightEmission) {
          return LightCoordsUtil.lightCoordsWithEmission(this.getLightCoords(vertex), lightEmission);
      }
  
@@ -49,7 +49,7 @@
      }
  
 -    public void setColor(final int vertex, final int color) {
-+   public void setColor(int vertex, int color) {
++    public void setColor(int vertex, int color) {
          switch (vertex) {
              case 0:
                  this.color0 = color;
@@ -58,7 +58,7 @@
      }
  
 -    public void setLightCoords(final int vertex, final int lightCoords) {
-+   public void setLightCoords(int vertex, int lightCoords) {
++    public void setLightCoords(int vertex, int lightCoords) {
          switch (vertex) {
              case 0:
                  this.lightCoords0 = lightCoords;
@@ -67,7 +67,7 @@
      }
  
 -    public void setColor(final int color) {
-+   public void setColor(int color) {
++    public void setColor(int color) {
          this.color0 = color;
          this.color1 = color;
          this.color2 = color;
@@ -75,7 +75,7 @@
      }
  
 -    public void setLightCoords(final int lightCoords) {
-+   public void setLightCoords(int lightCoords) {
++    public void setLightCoords(int lightCoords) {
          this.lightCoords0 = lightCoords;
          this.lightCoords1 = lightCoords;
          this.lightCoords2 = lightCoords;
@@ -83,12 +83,12 @@
      }
  
 -    public void setOverlayCoords(final int overlayCoords) {
-+   public void setOverlayCoords(int overlayCoords) {
++    public void setOverlayCoords(int overlayCoords) {
          this.overlayCoords = overlayCoords;
      }
  
 -    public void multiplyColor(final int color) {
-+   public void multiplyColor(int color) {
++    public void multiplyColor(int color) {
          this.color0 = ARGB.multiply(this.color0, color);
          this.color1 = ARGB.multiply(this.color1, color);
          this.color2 = ARGB.multiply(this.color2, color);
@@ -96,7 +96,7 @@
      }
  
 -    public void scaleColor(final float scale) {
-+   public void scaleColor(float scale) {
++    public void scaleColor(float scale) {
          this.color0 = ARGB.scaleRGB(this.color0, scale);
          this.color1 = ARGB.scaleRGB(this.color1, scale);
          this.color2 = ARGB.scaleRGB(this.color2, scale);
@@ -105,15 +105,15 @@
 -}
 \ No newline at end of file
 +
-+   public BlockState getBlockState() {
-+      return this.blockState;
-+   }
++    public BlockState getBlockState() {
++        return this.blockState;
++    }
 +
-+   public void setBlockState(BlockState blockState) {
-+      this.blockState = blockState;
-+   }
++    public void setBlockState(BlockState blockState) {
++        this.blockState = blockState;
++    }
 +
-+   public Vector3f getMidBlock() {
-+      return this.midBlock;
-+   }
++    public Vector3f getMidBlock() {
++        return this.midBlock;
++    }
 +}

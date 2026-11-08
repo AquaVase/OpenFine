@@ -11,22 +11,22 @@ import net.optifine.reflect.Reflector;
 import net.optifine.reflect.ReflectorField;
 
 public class ModelAdapterWolfArmor extends ModelAdapterWolf {
-   public ModelAdapterWolfArmor() {
-      this(EntityTypes.WOLF, "wolf_armor", ModelLayers.WOLF_ARMOR);
-   }
+    public ModelAdapterWolfArmor() {
+        this(EntityTypes.WOLF, "wolf_armor", ModelLayers.WOLF_ARMOR);
+    }
 
-   protected ModelAdapterWolfArmor(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterWolfArmor(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      return null;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        return null;
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      ReflectorField field = Reflector.WolfArmorLayer_adultModel;
-      this.setLayerModel(renderer, WolfArmorLayer.class, field, "WolfArmorLayer.model", modelBase);
-   }
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        ReflectorField field = Reflector.WolfArmorLayer_adultModel;
+        this.setLayerModel(renderer, WolfArmorLayer.class, field, "WolfArmorLayer.model", modelBase);
+    }
 }

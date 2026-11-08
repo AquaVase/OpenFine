@@ -13,110 +13,110 @@ import net.minecraft.client.Minecraft;
 import net.optifine.Config;
 
 public class HttpUtils {
-   private static String playerItemsUrl = null;
-   public static final String SERVER_URL = "http://s.optifine.net";
-   public static final String POST_URL = "http://optifine.net";
+    private static String playerItemsUrl = null;
+    public static final String SERVER_URL = "http://s.optifine.net";
+    public static final String POST_URL = "http://optifine.net";
 
-   public static byte[] get(String urlStr) throws IOException {
-      HttpURLConnection conn = null;
+    public static byte[] get(String urlStr) throws IOException {
+        HttpURLConnection conn = null;
 
-      try {
-         URL url = new URL(urlStr);
-         conn = (HttpURLConnection)url.openConnection(Minecraft.getInstance().getProxy());
-         conn.setDoInput(true);
-         conn.setDoOutput(false);
-         conn.connect();
-         if (conn.getResponseCode() / 100 != 2) {
-            if (conn.getErrorStream() != null) {
-               Config.readAll(conn.getErrorStream());
+        try {
+            URL url = new URL(urlStr);
+            conn = (HttpURLConnection)url.openConnection(Minecraft.getInstance().getProxy());
+            conn.setDoInput(true);
+            conn.setDoOutput(false);
+            conn.connect();
+            if (conn.getResponseCode() / 100 != 2) {
+                if (conn.getErrorStream() != null) {
+                    Config.readAll(conn.getErrorStream());
+                }
+
+                throw new IOException("HTTP response: " + conn.getResponseCode());
+            } else {
+                InputStream in = conn.getInputStream();
+                byte[] bytes = new byte[conn.getContentLength()];
+                int pos = 0;
+
+                do {
+                    int len = in.read(bytes, pos, bytes.length - pos);
+                    if (len < 0) {
+                        throw new IOException("Input stream closed: " + urlStr);
+                    }
+
+                    pos += len;
+                } while (pos < bytes.length);
+
+                return bytes;
+            }
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    public static String post(String urlStr, Map headers, byte[] content) throws IOException {
+        HttpURLConnection conn = null;
+
+        try {
+            URL url = new URL(urlStr);
+            conn = (HttpURLConnection)url.openConnection(Minecraft.getInstance().getProxy());
+            conn.setRequestMethod("POST");
+            if (headers != null) {
+                for (String key : (java.lang.Iterable<String>)(java.lang.Iterable<?>)(headers.keySet())) {
+                    String val = headers.get(key) + "";
+                    conn.setRequestProperty(key, val);
+                }
             }
 
-            throw new IOException("HTTP response: " + conn.getResponseCode());
-         } else {
+            conn.setRequestProperty("Content-Type", "text/plain");
+            conn.setRequestProperty("Content-Length", content.length + "");
+            conn.setRequestProperty("Content-Language", "en-US");
+            conn.setUseCaches(false);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            OutputStream os = conn.getOutputStream();
+            os.write(content);
+            os.flush();
+            os.close();
             InputStream in = conn.getInputStream();
-            byte[] bytes = new byte[conn.getContentLength()];
-            int pos = 0;
+            InputStreamReader isr = new InputStreamReader(in, "ASCII");
+            BufferedReader br = new BufferedReader(isr);
+            StringBuffer sb = new StringBuffer();
 
-            do {
-               int len = in.read(bytes, pos, bytes.length - pos);
-               if (len < 0) {
-                  throw new IOException("Input stream closed: " + urlStr);
-               }
-
-               pos += len;
-            } while (pos < bytes.length);
-
-            return bytes;
-         }
-      } finally {
-         if (conn != null) {
-            conn.disconnect();
-         }
-      }
-   }
-
-   public static String post(String urlStr, Map headers, byte[] content) throws IOException {
-      HttpURLConnection conn = null;
-
-      try {
-         URL url = new URL(urlStr);
-         conn = (HttpURLConnection)url.openConnection(Minecraft.getInstance().getProxy());
-         conn.setRequestMethod("POST");
-         if (headers != null) {
-            for (String key : (java.lang.Iterable<String>)(java.lang.Iterable<?>)(headers.keySet())) {
-               String val = headers.get(key) + "";
-               conn.setRequestProperty(key, val);
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+                sb.append('\r');
             }
-         }
 
-         conn.setRequestProperty("Content-Type", "text/plain");
-         conn.setRequestProperty("Content-Length", content.length + "");
-         conn.setRequestProperty("Content-Language", "en-US");
-         conn.setUseCaches(false);
-         conn.setDoInput(true);
-         conn.setDoOutput(true);
-         OutputStream os = conn.getOutputStream();
-         os.write(content);
-         os.flush();
-         os.close();
-         InputStream in = conn.getInputStream();
-         InputStreamReader isr = new InputStreamReader(in, "ASCII");
-         BufferedReader br = new BufferedReader(isr);
-         StringBuffer sb = new StringBuffer();
-
-         String line;
-         while ((line = br.readLine()) != null) {
-            sb.append(line);
-            sb.append('\r');
-         }
-
-         br.close();
-         return sb.toString();
-      } finally {
-         if (conn != null) {
-            conn.disconnect();
-         }
-      }
-   }
-
-   public static synchronized String getPlayerItemsUrl() {
-      if (playerItemsUrl == null) {
-         try {
-            boolean local = Config.parseBoolean(System.getProperty("player.models.local"), false);
-            if (local) {
-               File dirMc = Minecraft.getInstance().gameDirectory;
-               File dirModels = new File(dirMc, "playermodels");
-               playerItemsUrl = dirModels.toURI().toURL().toExternalForm();
+            br.close();
+            return sb.toString();
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
             }
-         } catch (Exception e) {
-            Config.warn(e.getClass().getName() + ": " + e.getMessage());
-         }
+        }
+    }
 
-         if (playerItemsUrl == null) {
-            playerItemsUrl = "http://s.optifine.net";
-         }
-      }
+    public static synchronized String getPlayerItemsUrl() {
+        if (playerItemsUrl == null) {
+            try {
+                boolean local = Config.parseBoolean(System.getProperty("player.models.local"), false);
+                if (local) {
+                    File dirMc = Minecraft.getInstance().gameDirectory;
+                    File dirModels = new File(dirMc, "playermodels");
+                    playerItemsUrl = dirModels.toURI().toURL().toExternalForm();
+                }
+            } catch (Exception e) {
+                Config.warn(e.getClass().getName() + ": " + e.getMessage());
+            }
 
-      return playerItemsUrl;
-   }
+            if (playerItemsUrl == null) {
+                playerItemsUrl = "http://s.optifine.net";
+            }
+        }
+
+        return playerItemsUrl;
+    }
 }

@@ -29,13 +29,13 @@
      private final Int2ObjectAVLTreeMap<SubmitNodeCollection> submitsPerOrder = new Int2ObjectAVLTreeMap<>();
  
 -    public SubmitNodeCollection order(final int order) {
-+   public SubmitNodeCollection order(int order) {
++    public SubmitNodeCollection order(int order) {
          return this.submitsPerOrder.computeIfAbsent(order, var0 -> new SubmitNodeCollection());
      }
  
      @Override
 -    public void submitShadow(final PoseStack poseStack, final float radius, final List<EntityRenderState.ShadowPiece> pieces) {
-+   public void submitShadow(PoseStack poseStack, float radius, List<EntityRenderState.ShadowPiece> pieces) {
++    public void submitShadow(PoseStack poseStack, float radius, List<EntityRenderState.ShadowPiece> pieces) {
          this.order(0).submitShadow(poseStack, radius, pieces);
      }
  
@@ -48,7 +48,7 @@
 -        final boolean seeThrough,
 -        final int lightCoords,
 -        final CameraRenderState camera
-+      PoseStack poseStack, Vec3 nameTagAttachment, int offset, Component name, boolean seeThrough, int lightCoords, CameraRenderState camera
++        PoseStack poseStack, Vec3 nameTagAttachment, int offset, Component name, boolean seeThrough, int lightCoords, CameraRenderState camera
      ) {
          this.order(0).submitNameTag(poseStack, nameTagAttachment, offset, name, seeThrough, lightCoords, camera);
      }
@@ -65,29 +65,29 @@
 -        final int color,
 -        final int backgroundColor,
 -        final int outlineColor
-+      PoseStack poseStack,
-+      float x,
-+      float y,
-+      FormattedCharSequence string,
-+      boolean dropShadow,
-+      Font.DisplayMode displayMode,
-+      int lightCoords,
-+      int color,
-+      int backgroundColor,
-+      int outlineColor
++        PoseStack poseStack,
++        float x,
++        float y,
++        FormattedCharSequence string,
++        boolean dropShadow,
++        Font.DisplayMode displayMode,
++        int lightCoords,
++        int color,
++        int backgroundColor,
++        int outlineColor
      ) {
          this.order(0).submitText(poseStack, x, y, string, dropShadow, displayMode, lightCoords, color, backgroundColor, outlineColor);
      }
  
      @Override
 -    public void submitFlame(final PoseStack poseStack, final EntityRenderState renderState, final Quaternionf rotation) {
-+   public void submitFlame(PoseStack poseStack, EntityRenderState renderState, Quaternionf rotation) {
++    public void submitFlame(PoseStack poseStack, EntityRenderState renderState, Quaternionf rotation) {
          this.order(0).submitFlame(poseStack, renderState, rotation);
      }
  
      @Override
 -    public void submitLeash(final PoseStack poseStack, final EntityRenderState.LeashState leashState) {
-+   public void submitLeash(PoseStack poseStack, EntityRenderState.LeashState leashState) {
++    public void submitLeash(PoseStack poseStack, EntityRenderState.LeashState leashState) {
          this.order(0).submitLeash(poseStack, leashState);
      }
  
@@ -103,23 +103,23 @@
 -        final @Nullable TextureAtlasSprite sprite,
 -        final int outlineColor,
 -        final ModelFeatureRenderer.@Nullable CrumblingOverlay crumblingOverlay
-+      Model<? super S> model,
-+      S state,
-+      PoseStack poseStack,
-+      RenderType renderType,
-+      int lightCoords,
-+      int overlayCoords,
-+      int tintedColor,
-+      TextureAtlasSprite sprite,
-+      int outlineColor,
-+      ModelFeatureRenderer.CrumblingOverlay crumblingOverlay
++        Model<? super S> model,
++        S state,
++        PoseStack poseStack,
++        RenderType renderType,
++        int lightCoords,
++        int overlayCoords,
++        int tintedColor,
++        TextureAtlasSprite sprite,
++        int outlineColor,
++        ModelFeatureRenderer.CrumblingOverlay crumblingOverlay
      ) {
          this.order(0).submitModel(model, state, poseStack, renderType, lightCoords, overlayCoords, tintedColor, sprite, outlineColor, crumblingOverlay);
      }
  
      @Override
 -    public void submitMovingBlock(final PoseStack poseStack, final MovingBlockRenderState movingBlockRenderState, final int outlineColor) {
-+   public void submitMovingBlock(PoseStack poseStack, MovingBlockRenderState movingBlockRenderState, int outlineColor) {
++    public void submitMovingBlock(PoseStack poseStack, MovingBlockRenderState movingBlockRenderState, int outlineColor) {
          this.order(0).submitMovingBlock(poseStack, movingBlockRenderState, outlineColor);
      }
  
@@ -132,14 +132,14 @@
 -        final int lightCoords,
 -        final int overlayCoords,
 -        final int outlineColor
-+      PoseStack poseStack, RenderType renderType, List<BlockStateModelPart> modelParts, int[] tintLayers, int lightCoords, int overlayCoords, int outlineColor
++        PoseStack poseStack, RenderType renderType, List<BlockStateModelPart> modelParts, int[] tintLayers, int lightCoords, int overlayCoords, int outlineColor
      ) {
          this.order(0).submitBlockModel(poseStack, renderType, modelParts, tintLayers, lightCoords, overlayCoords, outlineColor);
      }
  
      @Override
 -    public void submitBreakingBlockModel(final PoseStack poseStack, final List<BlockStateModelPart> parts, final int progress) {
-+   public void submitBreakingBlockModel(PoseStack poseStack, List<BlockStateModelPart> parts, int progress) {
++    public void submitBreakingBlockModel(PoseStack poseStack, List<BlockStateModelPart> parts, int progress) {
          this.order(0).submitBreakingBlockModel(poseStack, parts, progress);
      }
  
@@ -147,7 +147,7 @@
 -    public void submitShapeOutline(
 -        final PoseStack poseStack, final VoxelShape shape, final RenderType renderType, final int color, final float width, final boolean afterTerrain
 -    ) {
-+   public void submitShapeOutline(PoseStack poseStack, VoxelShape shape, RenderType renderType, int color, float width, boolean afterTerrain) {
++    public void submitShapeOutline(PoseStack poseStack, VoxelShape shape, RenderType renderType, int color, float width, boolean afterTerrain) {
          this.order(0).submitShapeOutline(poseStack, shape, renderType, color, width, afterTerrain);
      }
  
@@ -161,14 +161,14 @@
 -        final int[] tintLayers,
 -        final List<BakedQuad> quads,
 -        final ItemStackRenderState.FoilType foilType
-+      PoseStack poseStack,
-+      ItemDisplayContext displayContext,
-+      int lightCoords,
-+      int overlayCoords,
-+      int outlineColor,
-+      int[] tintLayers,
-+      List<BakedQuad> quads,
-+      ItemStackRenderState.FoilType foilType
++        PoseStack poseStack,
++        ItemDisplayContext displayContext,
++        int lightCoords,
++        int overlayCoords,
++        int outlineColor,
++        int[] tintLayers,
++        List<BakedQuad> quads,
++        ItemStackRenderState.FoilType foilType
      ) {
          this.order(0).submitItem(poseStack, displayContext, lightCoords, overlayCoords, outlineColor, tintLayers, quads, foilType);
      }
@@ -177,19 +177,19 @@
 -    public void submitCustomGeometry(
 -        final PoseStack poseStack, final RenderType renderType, final SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer
 -    ) {
-+   public void submitCustomGeometry(PoseStack poseStack, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
++    public void submitCustomGeometry(PoseStack poseStack, RenderType renderType, CustomGeometryRenderer customGeometryRenderer) {
          this.order(0).submitCustomGeometry(poseStack, renderType, customGeometryRenderer);
      }
  
      @Override
 -    public void submitQuadParticleGroup(final QuadParticleRenderState particles) {
-+   public void submitQuadParticleGroup(QuadParticleRenderState particles) {
++    public void submitQuadParticleGroup(QuadParticleRenderState particles) {
          this.order(0).submitQuadParticleGroup(particles);
      }
  
      @Override
 -    public void submitGizmoPrimitives(final DrawableGizmoPrimitives.Group group, final CameraRenderState camera, final boolean onTop) {
-+   public void submitGizmoPrimitives(Group group, CameraRenderState camera, boolean onTop) {
++    public void submitGizmoPrimitives(Group group, CameraRenderState camera, boolean onTop) {
          this.order(0).submitGizmoPrimitives(group, camera, onTop);
      }
  
@@ -198,12 +198,12 @@
      }
  
 -    public void drainPhases(final Consumer<FeatureRenderPhase<?>> consumer) {
-+   @Override
-+   public String toString() {
-+      return this.submitsPerOrder + "";
-+   }
++    @Override
++    public String toString() {
++        return this.submitsPerOrder + "";
++    }
 +
-+   public void drainPhases(Consumer<FeatureRenderPhase<?>> consumer) {
++    public void drainPhases(Consumer<FeatureRenderPhase<?>> consumer) {
          this.submitsPerOrder.values().removeIf(collection -> {
              boolean empty = true;
  

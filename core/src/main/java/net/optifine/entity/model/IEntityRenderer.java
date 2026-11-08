@@ -6,13 +6,13 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.optifine.util.Either;
 
 public interface IEntityRenderer {
-   Either<EntityType, BlockEntityType> getType();
+    Either<EntityType, BlockEntityType> getType();
 
-   void setType(Either<EntityType, BlockEntityType> var1);
+    void setType(Either<EntityType, BlockEntityType> var1);
 
-   void setShadowSize(float var1);
+    void setShadowSize(float var1);
 
-   Identifier getLocationTextureCustom();
+    Identifier getLocationTextureCustom();
 
-   void setLocationTextureCustom(Identifier var1);
+    void setLocationTextureCustom(Identifier var1);
 }

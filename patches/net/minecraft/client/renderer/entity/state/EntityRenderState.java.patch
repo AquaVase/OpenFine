@@ -28,40 +28,40 @@
 -    public @Nullable Component scoreText;
 -    public @Nullable Vec3 nameTagAttachment;
 -    public @Nullable List<EntityRenderState.LeashState> leashStates;
-+   public Vec3 passengerOffset;
-+   public Component nameTag;
-+   public Component scoreText;
-+   public Vec3 nameTagAttachment;
-+   public List<EntityRenderState.LeashState> leashStates;
++    public Vec3 passengerOffset;
++    public Component nameTag;
++    public Component scoreText;
++    public Vec3 nameTagAttachment;
++    public List<EntityRenderState.LeashState> leashStates;
      public float shadowRadius;
      public final List<EntityRenderState.ShadowPiece> shadowPieces = new ArrayList<>();
-+   public Entity entity;
-+   public EntityRenderer entityRenderer;
-+   public RenderLayer renderLayer;
-+   public float overlayProgress;
++    public Entity entity;
++    public EntityRenderer entityRenderer;
++    public RenderLayer renderLayer;
++    public float overlayProgress;
  
      public boolean appearsGlowing() {
          return this.outlineColor != 0;
      }
  
 -    public void fillCrashReportCategory(final CrashReportCategory category) {
-+   public void fillCrashReportCategory(CrashReportCategory category) {
++    public void fillCrashReportCategory(CrashReportCategory category) {
          category.setDetail("EntityRenderState", this.getClass().getCanonicalName());
          category.setDetail("Entity's Exact location", String.format(Locale.ROOT, "%.2f, %.2f, %.2f", this.x, this.y, this.z));
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   @Override
-+   public String toString() {
-+      return "type: "
-+         + this.entityType
-+         + ", pos: "
-+         + String.format("%f, %f, %f", this.x, this.y, this.z)
-+         + ", entity: "
-+         + this.entity
-+         + ", renderer: "
-+         + this.entityRenderer;
-+   }
++    @Override
++    public String toString() {
++        return "type: "
++            + this.entityType
++            + ", pos: "
++            + String.format("%f, %f, %f", this.x, this.y, this.z)
++            + ", entity: "
++            + this.entity
++            + ", renderer: "
++            + this.entityRenderer;
++    }
 +
      public static class LeashState {
          public Vec3 offset = Vec3.ZERO;

@@ -16,7 +16,7 @@
 -@OnlyIn(Dist.CLIENT)
  public class TntMinecartRenderer extends AbstractMinecartRenderer<MinecartTNT, MinecartTntRenderState> {
 -    public TntMinecartRenderer(final EntityRendererProvider.Context context) {
-+   public TntMinecartRenderer(Context context) {
++    public TntMinecartRenderer(Context context) {
          super(context, ModelLayers.TNT_MINECART);
      }
  
@@ -26,7 +26,7 @@
 -        final PoseStack poseStack,
 -        final SubmitNodeCollector submitNodeCollector,
 -        final int lightCoords
-+      MinecartTntRenderState state, BlockModelRenderState blockModel, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords
++        MinecartTntRenderState state, BlockModelRenderState blockModel, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords
      ) {
          float fuse = state.fuseRemainingInTicks;
          if (fuse > -1.0F && fuse < 10.0F) {
@@ -40,7 +40,7 @@
 -        final int lightCoords,
 -        final boolean white,
 -        final int outlineColor
-+      BlockModelRenderState blockModel, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, boolean white, int outlineColor
++        BlockModelRenderState blockModel, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, boolean white, int outlineColor
      ) {
          int overlayCoords;
          if (white) {
@@ -48,22 +48,22 @@
              overlayCoords = OverlayTexture.NO_OVERLAY;
          }
  
-+      if (Config.isShaders() && white) {
-+         Shaders.setEntityColor(1.0F, 1.0F, 1.0F, 0.5F);
-+      }
++        if (Config.isShaders() && white) {
++            Shaders.setEntityColor(1.0F, 1.0F, 1.0F, 0.5F);
++        }
 +
          blockModel.submit(poseStack, submitNodeCollector, lightCoords, overlayCoords, outlineColor);
-+      if (Config.isShaders()) {
-+         Shaders.setEntityColor(0.0F, 0.0F, 0.0F, 0.0F);
++        if (Config.isShaders()) {
++            Shaders.setEntityColor(0.0F, 0.0F, 0.0F, 0.0F);
++        }
      }
-+   }
  
      public MinecartTntRenderState createRenderState() {
          return new MinecartTntRenderState();
      }
  
 -    public void extractRenderState(final MinecartTNT entity, final MinecartTntRenderState state, final float partialTicks) {
-+   public void extractRenderState(MinecartTNT entity, MinecartTntRenderState state, float partialTicks) {
++    public void extractRenderState(MinecartTNT entity, MinecartTntRenderState state, float partialTicks) {
          super.extractRenderState(entity, state, partialTicks);
          state.fuseRemainingInTicks = entity.getFuse() > -1 ? entity.getFuse() - partialTicks + 1.0F : -1.0F;
      }

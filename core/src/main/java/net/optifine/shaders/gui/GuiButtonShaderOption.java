@@ -6,26 +6,26 @@ import net.optifine.shaders.config.ShaderOption;
 import net.optifine.shaders.config.ShaderOptionScreen;
 
 public class GuiButtonShaderOption extends GuiButtonOF {
-   private ShaderOption shaderOption = null;
+    private ShaderOption shaderOption = null;
 
-   public GuiButtonShaderOption(int buttonId, int x, int y, int widthIn, int heightIn, ShaderOption shaderOption, String text) {
-      super(buttonId, x, y, widthIn, heightIn, text);
-      this.shaderOption = shaderOption;
-   }
+    public GuiButtonShaderOption(int buttonId, int x, int y, int widthIn, int heightIn, ShaderOption shaderOption, String text) {
+        super(buttonId, x, y, widthIn, heightIn, text);
+        this.shaderOption = shaderOption;
+    }
 
-   @Override
-   protected boolean isValidClickButton(MouseButtonInfo info) {
-      return this.shaderOption instanceof ShaderOptionScreen ? info.button() == 0 : true;
-   }
+    @Override
+    protected boolean isValidClickButton(MouseButtonInfo info) {
+        return this.shaderOption instanceof ShaderOptionScreen ? info.button() == 0 : true;
+    }
 
-   public ShaderOption getShaderOption() {
-      return this.shaderOption;
-   }
+    public ShaderOption getShaderOption() {
+        return this.shaderOption;
+    }
 
-   public void valueChanged() {
-   }
+    public void valueChanged() {
+    }
 
-   public boolean isSwitchable() {
-      return true;
-   }
+    public boolean isSwitchable() {
+        return true;
+    }
 }

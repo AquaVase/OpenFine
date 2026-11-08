@@ -13,35 +13,35 @@ import net.optifine.Config;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterSheepWoolUndercoat extends ModelAdapterSheep {
-   public ModelAdapterSheepWoolUndercoat() {
-      super(EntityTypes.SHEEP, "sheep_wool_undercoat", ModelLayers.SHEEP_WOOL_UNDERCOAT);
-      this.setAlias("sheep");
-   }
+    public ModelAdapterSheepWoolUndercoat() {
+        super(EntityTypes.SHEEP, "sheep_wool_undercoat", ModelLayers.SHEEP_WOOL_UNDERCOAT);
+        this.setAlias("sheep");
+    }
 
-   protected ModelAdapterSheepWoolUndercoat(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterSheepWoolUndercoat(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      return null;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        return null;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SheepFurModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SheepFurModel(root);
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      SheepFurModel model = (SheepFurModel)modelBase;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        SheepFurModel model = (SheepFurModel)modelBase;
 
-      for (SheepWoolUndercoatLayer layer : (java.lang.Iterable<SheepWoolUndercoatLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SheepWoolUndercoatLayer.class))) {
-         if (!Reflector.SheepWoolUndercoatLayer_model.exists()) {
-            Config.warn("Field not found: SheepWoolUndercoatLayer.model");
-         }
+        for (SheepWoolUndercoatLayer layer : (java.lang.Iterable<SheepWoolUndercoatLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SheepWoolUndercoatLayer.class))) {
+            if (!Reflector.SheepWoolUndercoatLayer_model.exists()) {
+                Config.warn("Field not found: SheepWoolUndercoatLayer.model");
+            }
 
-         Reflector.SheepWoolUndercoatLayer_model.setValue(layer, model);
-      }
-   }
+            Reflector.SheepWoolUndercoatLayer_model.setValue(layer, model);
+        }
+    }
 }

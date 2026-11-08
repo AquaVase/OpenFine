@@ -28,8 +28,8 @@
      private static final TextureSlots.Data TEXTURE_SLOTS = new TextureSlots.Data.Builder().addReference("particle", "layer0").build();
 -    private static final CuboidFace.UVs SOUTH_FACE_UVS = new CuboidFace.UVs(0.0F, 0.0F, 16.0F, 16.0F);
 -    private static final CuboidFace.UVs NORTH_FACE_UVS = new CuboidFace.UVs(16.0F, 0.0F, 0.0F, 16.0F);
-+   private static final UVs SOUTH_FACE_UVS = new UVs(0.0F, 0.0F, 16.0F, 16.0F);
-+   private static final UVs NORTH_FACE_UVS = new UVs(16.0F, 0.0F, 0.0F, 16.0F);
++    private static final UVs SOUTH_FACE_UVS = new UVs(0.0F, 0.0F, 16.0F, 16.0F);
++    private static final UVs NORTH_FACE_UVS = new UVs(16.0F, 0.0F, 0.0F, 16.0F);
      private static final float UV_SHRINK = 0.1F;
  
      @Override
@@ -39,12 +39,12 @@
      @Override
 -    public UnbakedModel.@Nullable GuiLight guiLight() {
 -        return UnbakedModel.GuiLight.FRONT;
-+   public GuiLight guiLight() {
-+      return GuiLight.FRONT;
++    public GuiLight guiLight() {
++        return GuiLight.FRONT;
      }
  
 -    private static QuadCollection bake(final TextureSlots textureSlots, final ModelBaker modelBaker, final ModelState modelState, final ModelDebugName name) {
-+   public static QuadCollection bake(TextureSlots textureSlots, ModelBaker modelBaker, ModelState modelState, ModelDebugName name) {
++    public static QuadCollection bake(TextureSlots textureSlots, ModelBaker modelBaker, ModelState modelState, ModelDebugName name) {
          QuadCollection singleResult = null;
          QuadCollection.Builder builder = null;
  
@@ -53,9 +53,9 @@
              }
  
 -            Material.Baked bakedMaterial = modelBaker.materials().get(material, name);
-+         Baked bakedMaterial = modelBaker.materials().get(material, name);
++            Baked bakedMaterial = modelBaker.materials().get(material, name);
              QuadCollection bakedLayer = modelBaker.compute(new ItemModelGenerator.ItemLayerKey(bakedMaterial, modelState, layerIndex));
-+         bakedLayer.setBuiltinGenerated(true);
++            bakedLayer.setBuiltinGenerated(true);
              if (builder != null) {
                  builder.addAll(bakedLayer);
              } else if (singleResult != null) {
@@ -64,9 +64,9 @@
  
          if (builder != null) {
 -            return builder.build();
-+         QuadCollection qc = builder.build();
-+         qc.setBuiltinGenerated(true);
-+         return qc;
++            QuadCollection qc = builder.build();
++            qc.setBuiltinGenerated(true);
++            return qc;
          } else {
              return singleResult != null ? singleResult : QuadCollection.EMPTY;
          }
@@ -74,7 +74,7 @@
  
      private static void bakeExtrudedSprite(
 -        final QuadCollection.Builder builder, final ModelBaker.Interner interner, final ModelState modelState, final BakedQuad.MaterialInfo materialInfo
-+      QuadCollection.Builder builder, ModelBaker.Interner interner, ModelState modelState, BakedQuad.MaterialInfo materialInfo
++        QuadCollection.Builder builder, ModelBaker.Interner interner, ModelState modelState, BakedQuad.MaterialInfo materialInfo
      ) {
          Vector3f from = new Vector3f(0.0F, 0.0F, 7.5F);
          Vector3f to = new Vector3f(16.0F, 16.0F, 8.5F);
@@ -85,7 +85,7 @@
 -    private static void bakeSideFaces(
 -        final QuadCollection.Builder builder, final ModelBaker.Interner interner, final ModelState modelState, final BakedQuad.MaterialInfo materialInfo
 -    ) {
-+   private static void bakeSideFaces(QuadCollection.Builder builder, ModelBaker.Interner interner, ModelState modelState, BakedQuad.MaterialInfo materialInfo) {
++    private static void bakeSideFaces(QuadCollection.Builder builder, ModelBaker.Interner interner, ModelState modelState, BakedQuad.MaterialInfo materialInfo) {
          SpriteContents sprite = materialInfo.sprite().contents();
          float xScale = 16.0F / sprite.width();
          float yScale = 16.0F / sprite.height();
@@ -94,13 +94,13 @@
              }
  
 -            CuboidFace.UVs uvs = new CuboidFace.UVs(u0 * xScale, v0 * yScale, u1 * xScale, v1 * yScale);
-+         UVs uvs = new UVs(u0 * xScale, v0 * yScale, u1 * xScale, v1 * yScale);
++            UVs uvs = new UVs(u0 * xScale, v0 * yScale, u1 * xScale, v1 * yScale);
              builder.addUnculledFace(FaceBakery.bakeQuad(interner, from, to, uvs, Quadrant.R0, materialInfo, sideDirection.getDirection(), modelState, null));
          }
      }
  
 -    private static Collection<ItemModelGenerator.SideFace> getSideFaces(final SpriteContents sprite) {
-+   private static Collection<ItemModelGenerator.SideFace> getSideFaces(SpriteContents sprite) {
++    private static Collection<ItemModelGenerator.SideFace> getSideFaces(SpriteContents sprite) {
          int width = sprite.width();
          int height = sprite.height();
          Set<ItemModelGenerator.SideFace> sideFaces = new HashSet<>();
@@ -116,14 +116,14 @@
 -        final int y,
 -        final int width,
 -        final int height
-+      ItemModelGenerator.SideDirection facing,
-+      Set<ItemModelGenerator.SideFace> sideFaces,
-+      SpriteContents sprite,
-+      int frame,
-+      int x,
-+      int y,
-+      int width,
-+      int height
++        ItemModelGenerator.SideDirection facing,
++        Set<ItemModelGenerator.SideFace> sideFaces,
++        SpriteContents sprite,
++        int frame,
++        int x,
++        int y,
++        int width,
++        int height
      ) {
          if (isTransparent(sprite, frame, x - facing.direction.getStepX(), y - facing.direction.getStepY(), width, height)) {
              sideFaces.add(new ItemModelGenerator.SideFace(facing, x, y));
@@ -131,15 +131,15 @@
      }
  
 -    private static boolean isTransparent(final SpriteContents sprite, final int frame, final int x, final int y, final int width, final int height) {
-+   private static boolean isTransparent(SpriteContents sprite, int frame, int x, int y, int width, int height) {
++    private static boolean isTransparent(SpriteContents sprite, int frame, int x, int y, int width, int height) {
          return x >= 0 && y >= 0 && x < width && y < height ? sprite.isTransparent(frame, x, y) : true;
      }
  
 -    @OnlyIn(Dist.CLIENT)
 -    private record ItemLayerKey(Material.Baked material, ModelState modelState, int layerIndex) implements ModelBaker.SharedOperationKey<QuadCollection> {
 -        public QuadCollection compute(final ModelBaker modelBakery) {
-+   private record ItemLayerKey(Baked material, ModelState modelState, int layerIndex) implements ModelBaker.SharedOperationKey<QuadCollection> {
-+      public QuadCollection compute(ModelBaker modelBakery) {
++    private record ItemLayerKey(Baked material, ModelState modelState, int layerIndex) implements ModelBaker.SharedOperationKey<QuadCollection> {
++        public QuadCollection compute(ModelBaker modelBakery) {
              QuadCollection.Builder builder = new QuadCollection.Builder();
              BakedQuad.MaterialInfo materialInfo = modelBakery.interner()
                  .materialInfo(BakedQuad.MaterialInfo.of(this.material, this.material.sprite().transparency(), this.layerIndex, true, 0));
@@ -156,7 +156,7 @@
          private final Direction direction;
  
 -        SideDirection(final Direction direction) {
-+      SideDirection(Direction direction) {
++        SideDirection(Direction direction) {
              this.direction = direction;
          }
  

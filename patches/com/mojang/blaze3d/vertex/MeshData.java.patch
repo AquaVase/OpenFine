@@ -16,26 +16,26 @@
  public class MeshData implements AutoCloseable {
      private final ByteBufferBuilder.Result vertexBuffer;
 -    private ByteBufferBuilder.@Nullable Result indexBuffer;
-+   private ByteBufferBuilder.Result indexBuffer;
++    private ByteBufferBuilder.Result indexBuffer;
      private final MeshData.DrawState drawState;
-+   private MultiTextureData multiTextureData;
-+   private boolean persistent;
++    private MultiTextureData multiTextureData;
++    private boolean persistent;
  
 -    public MeshData(final ByteBufferBuilder.Result vertexBuffer, final MeshData.DrawState drawState) {
-+   public MeshData(ByteBufferBuilder.Result vertexBuffer, MeshData.DrawState drawState) {
-+      this(vertexBuffer, drawState, null);
-+   }
++    public MeshData(ByteBufferBuilder.Result vertexBuffer, MeshData.DrawState drawState) {
++        this(vertexBuffer, drawState, null);
++    }
 +
-+   public MeshData(ByteBufferBuilder.Result vertexBuffer, MeshData.DrawState drawState, MultiTextureData multiTextureDataIn) {
++    public MeshData(ByteBufferBuilder.Result vertexBuffer, MeshData.DrawState drawState, MultiTextureData multiTextureDataIn) {
          this.vertexBuffer = vertexBuffer;
          this.drawState = drawState;
-+      this.multiTextureData = multiTextureDataIn;
++        this.multiTextureData = multiTextureDataIn;
      }
  
 -    public static void decodeQuadCentroids(
 -        final ByteBuffer vertexBuffer, final int vertexCount, final VertexFormat format, final CompactVectorArray output, final int outputIndex
 -    ) {
-+   public static void decodeQuadCentroids(ByteBuffer vertexBuffer, int vertexCount, VertexFormat format, CompactVectorArray output, int outputIndex) {
++    public static void decodeQuadCentroids(ByteBuffer vertexBuffer, int vertexCount, VertexFormat format, CompactVectorArray output, int outputIndex) {
          VertexFormatElement positionElement = format.getElement("Position");
          if (positionElement == null) {
              throw new IllegalArgumentException("Cannot identify quad centers with no position element");
@@ -44,7 +44,7 @@
      }
  
 -    public @Nullable ByteBuffer indexBuffer() {
-+   public ByteBuffer indexBuffer() {
++    public ByteBuffer indexBuffer() {
          return this.indexBuffer != null ? this.indexBuffer.byteBuffer() : null;
      }
  
@@ -53,7 +53,7 @@
      }
  
 -    public MeshData.@Nullable SortState sortQuads(final ByteBufferBuilder indexBufferTarget, final VertexSorting sorting) {
-+   public MeshData.SortState sortQuads(ByteBufferBuilder indexBufferTarget, VertexSorting sorting) {
++    public MeshData.SortState sortQuads(ByteBufferBuilder indexBufferTarget, VertexSorting sorting) {
          if (this.drawState.primitiveTopology() != PrimitiveTopology.QUADS) {
              return null;
          }
@@ -61,71 +61,74 @@
          CompactVectorArray centroids = new CompactVectorArray(this.drawState.vertexCount() / 4);
          decodeQuadCentroids(this.vertexBuffer.byteBuffer(), this.drawState.vertexCount(), this.drawState.format(), centroids, 0);
 -        MeshData.SortState sortState = new MeshData.SortState(centroids, this.drawState.indexType());
-+      MeshData.SortState sortState = new MeshData.SortState(centroids, this.drawState.indexType(), this.multiTextureData);
++        MeshData.SortState sortState = new MeshData.SortState(centroids, this.drawState.indexType(), this.multiTextureData);
          this.indexBuffer = sortState.buildSortedIndexBuffer(indexBufferTarget, sorting);
          return sortState;
      }
  
      @Override
      public void close() {
-+      if (!this.persistent) {
-         this.vertexBuffer.close();
-         if (this.indexBuffer != null) {
-             this.indexBuffer.close();
+-        this.vertexBuffer.close();
+-        if (this.indexBuffer != null) {
+-            this.indexBuffer.close();
++        if (!this.persistent) {
++            this.vertexBuffer.close();
++            if (this.indexBuffer != null) {
++                this.indexBuffer.close();
++            }
          }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public MultiTextureData getMultiTextureData() {
-+      return this.multiTextureData;
-+   }
++    public MultiTextureData getMultiTextureData() {
++        return this.multiTextureData;
++    }
 +
-+   public ByteBufferBuilder.Result getVertexResult() {
-+      return this.vertexBuffer;
-+   }
++    public ByteBufferBuilder.Result getVertexResult() {
++        return this.vertexBuffer;
++    }
 +
-+   public boolean isPersistent() {
-+      return this.persistent;
-+   }
++    public boolean isPersistent() {
++        return this.persistent;
++    }
 +
-+   public void setPersistent(boolean persistent) {
-+      this.persistent = persistent;
-+   }
++    public void setPersistent(boolean persistent) {
++        this.persistent = persistent;
++    }
 +
-+   @Override
-+   public String toString() {
-+      return "vertexBuffer: (" + this.vertexBuffer + "), indexBuffer: (" + this.indexBuffer + "), drawState: (" + this.drawState + ")";
-+   }
++    @Override
++    public String toString() {
++        return "vertexBuffer: (" + this.vertexBuffer + "), indexBuffer: (" + this.indexBuffer + "), drawState: (" + this.drawState + ")";
++    }
 +
      public record DrawState(VertexFormat format, int vertexCount, int indexCount, PrimitiveTopology primitiveTopology, IndexType indexType) {
-+      public int getVertexBufferSize() {
-+         return this.vertexCount * this.format.getVertexSize();
++        public int getVertexBufferSize() {
++            return this.vertexCount * this.format.getVertexSize();
++        }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record SortState(CompactVectorArray centroids, IndexType indexType) {
 -        public ByteBufferBuilder.@Nullable Result buildSortedIndexBuffer(final ByteBufferBuilder target, final VertexSorting sorting) {
-+   public record SortState(CompactVectorArray centroids, IndexType indexType, MultiTextureData multiTextureData) {
-+      public SortState(CompactVectorArray centroids, IndexType indexType) {
-+         this(centroids, indexType, null);
-+      }
++    public record SortState(CompactVectorArray centroids, IndexType indexType, MultiTextureData multiTextureData) {
++        public SortState(CompactVectorArray centroids, IndexType indexType) {
++            this(centroids, indexType, null);
++        }
 +
-+      public ByteBufferBuilder.Result buildSortedIndexBuffer(ByteBufferBuilder target, VertexSorting sorting) {
++        public ByteBufferBuilder.Result buildSortedIndexBuffer(ByteBufferBuilder target, VertexSorting sorting) {
              int[] startIndices = sorting.sort(this.centroids);
              long pointer = target.reserve(startIndices.length * 6 * this.indexType.bytes);
              writeIndices(startIndices, this.indexWriter(pointer, this.indexType));
-+         if (this.multiTextureData != null) {
-+            MultiTextureBuilder mtb = target.getBufferBuilderCache().getMultiTextureBuilder();
-+            this.multiTextureData.prepareSort(mtb, startIndices);
-+         }
++            if (this.multiTextureData != null) {
++                MultiTextureBuilder mtb = target.getBufferBuilderCache().getMultiTextureBuilder();
++                this.multiTextureData.prepareSort(mtb, startIndices);
++            }
 +
              return target.build();
          }
  
 -        public void writeSortedIndexBuffer(final ByteBuffer target, final VertexSorting sorting) {
-+      public void writeSortedIndexBuffer(ByteBuffer target, VertexSorting sorting) {
++        public void writeSortedIndexBuffer(ByteBuffer target, VertexSorting sorting) {
              IntConsumer output = switch (this.indexType) {
                  case SHORT -> value -> target.putShort((short)value);
                  case INT -> target::putInt;
@@ -134,7 +137,7 @@
          }
  
 -        private static void writeIndices(final int[] startIndices, final IntConsumer output) {
-+      private static void writeIndices(int[] startIndices, IntConsumer output) {
++        private static void writeIndices(int[] startIndices, IntConsumer output) {
              for (int startIndex : startIndices) {
                  output.accept(startIndex * 4 + 0);
                  output.accept(startIndex * 4 + 1);
@@ -143,7 +146,7 @@
          }
  
 -        private IntConsumer indexWriter(final long pointer, final IndexType indexType) {
-+      private IntConsumer indexWriter(long pointer, IndexType indexType) {
++        private IntConsumer indexWriter(long pointer, IndexType indexType) {
              MutableLong nextIndex = new MutableLong(pointer);
  
              return switch (indexType) {

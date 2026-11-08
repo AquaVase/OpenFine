@@ -19,7 +19,7 @@
      private long matrixVersion = -1L;
  
 -    public void setupPerspective(final float zNear, final float zFar, final float fov, final float width, final float height) {
-+   public void setupPerspective(float zNear, float zFar, float fov, float width, float height) {
++    public void setupPerspective(float zNear, float zFar, float fov, float width, float height) {
          if (this.projectionType != ProjectionType.PERSPECTIVE
              || this.zNear != zNear
              || this.zFar != zFar
@@ -28,7 +28,7 @@
      }
  
 -    public void setupOrtho(final float zNear, final float zFar, final float width, final float height, final boolean invertY) {
-+   public void setupOrtho(float zNear, float zFar, float width, float height, boolean invertY) {
++    public void setupOrtho(float zNear, float zFar, float width, float height, boolean invertY) {
          if (this.projectionType != ProjectionType.ORTHOGRAPHIC
              || this.zNear != zNear
              || this.zFar != zFar
@@ -37,17 +37,17 @@
      }
  
 -    public void setSize(final float width, final float height) {
-+   public void setSize(float width, float height) {
++    public void setSize(float width, float height) {
          this.isMatrixDirty = true;
          this.width = width;
          this.height = height;
      }
  
 -    public Matrix4f getMatrix(final Matrix4f dest) {
-+   public Matrix4f getMatrix(Matrix4f dest) {
-+      if (Config.isShaders() && Shaders.isRenderingHand()) {
-+         this.isMatrixDirty = true;
-+      }
++    public Matrix4f getMatrix(Matrix4f dest) {
++        if (Config.isShaders() && Shaders.isRenderingHand()) {
++            this.isMatrixDirty = true;
++        }
 +
          if (!this.isMatrixDirty) {
              return dest.set(this.matrix);
@@ -56,18 +56,18 @@
          float near = this.zFar;
          float far = this.zNear;
          boolean zZeroToOne = RenderSystem.getDevice().getDeviceInfo().isZZeroToOne();
-+      this.matrix.identity();
-+      if (Config.isShaders() && this == Config.getGameRenderer().hudProjection) {
-+         Shaders.applyHandDepth(this.matrix);
-+      }
++        this.matrix.identity();
++        if (Config.isShaders() && this == Config.getGameRenderer().hudProjection) {
++            Shaders.applyHandDepth(this.matrix);
++        }
 +
          return this.projectionType == ProjectionType.PERSPECTIVE
 -            ? dest.set(this.matrix.setPerspective(this.perspectiveFov * (float) (Math.PI / 180.0), this.width / this.height, near, far, zZeroToOne))
 -            : dest.set(
 -                this.matrix.setOrtho(0.0F, this.width, this.orthoInvertY ? this.height : 0.0F, this.orthoInvertY ? 0.0F : this.height, near, far, zZeroToOne)
 -            );
-+         ? dest.set(this.matrix.perspective(this.perspectiveFov * (float) (Math.PI / 180.0), this.width / this.height, near, far, zZeroToOne))
-+         : dest.set(this.matrix.ortho(0.0F, this.width, this.orthoInvertY ? this.height : 0.0F, this.orthoInvertY ? 0.0F : this.height, near, far, zZeroToOne));
++            ? dest.set(this.matrix.perspective(this.perspectiveFov * (float) (Math.PI / 180.0), this.width / this.height, near, far, zZeroToOne))
++            : dest.set(this.matrix.ortho(0.0F, this.width, this.orthoInvertY ? this.height : 0.0F, this.orthoInvertY ? 0.0F : this.height, near, far, zZeroToOne));
      }
  
      public long getMatrixVersion() {

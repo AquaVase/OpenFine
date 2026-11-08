@@ -3,87 +3,87 @@ package net.optifine.reflect;
 import net.optifine.Log;
 
 public class ReflectorClass implements IResolvable {
-   private String targetClassName = null;
-   private boolean checked = false;
-   private Class targetClass = null;
+    private String targetClassName = null;
+    private boolean checked = false;
+    private Class targetClass = null;
 
-   public ReflectorClass(String targetClassName) {
-      this.targetClassName = targetClassName;
-      ReflectorResolver.register(this);
-   }
+    public ReflectorClass(String targetClassName) {
+        this.targetClassName = targetClassName;
+        ReflectorResolver.register(this);
+    }
 
-   public ReflectorClass(Class targetClass) {
-      this.targetClass = targetClass;
-      this.targetClassName = targetClass.getName();
-      this.checked = true;
-   }
+    public ReflectorClass(Class targetClass) {
+        this.targetClass = targetClass;
+        this.targetClassName = targetClass.getName();
+        this.checked = true;
+    }
 
-   public Class getTargetClass() {
-      if (this.checked) {
-         return this.targetClass;
-      }
+    public Class getTargetClass() {
+        if (this.checked) {
+            return this.targetClass;
+        }
 
-      this.checked = true;
+        this.checked = true;
 
-      try {
-         this.targetClass = Class.forName(this.targetClassName);
-      } catch (ClassNotFoundException e) {
-         Log.log("(Reflector) Class not present: " + this.targetClassName);
-      } catch (Throwable e) {
-         e.printStackTrace();
-      }
+        try {
+            this.targetClass = Class.forName(this.targetClassName);
+        } catch (ClassNotFoundException e) {
+            Log.log("(Reflector) Class not present: " + this.targetClassName);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
 
-      return this.targetClass;
-   }
+        return this.targetClass;
+    }
 
-   public boolean exists() {
-      return this.getTargetClass() != null;
-   }
+    public boolean exists() {
+        return this.getTargetClass() != null;
+    }
 
-   public String getTargetClassName() {
-      return this.targetClassName;
-   }
+    public String getTargetClassName() {
+        return this.targetClassName;
+    }
 
-   public boolean isInstance(Object obj) {
-      return this.getTargetClass() == null ? false : this.getTargetClass().isInstance(obj);
-   }
+    public boolean isInstance(Object obj) {
+        return this.getTargetClass() == null ? false : this.getTargetClass().isInstance(obj);
+    }
 
-   public ReflectorField makeField(String name) {
-      return new ReflectorField(this, name);
-   }
+    public ReflectorField makeField(String name) {
+        return new ReflectorField(this, name);
+    }
 
-   public ReflectorField makeField(Class type) {
-      return new ReflectorField(this, type);
-   }
+    public ReflectorField makeField(Class type) {
+        return new ReflectorField(this, type);
+    }
 
-   public ReflectorField makeField(Class type, int index) {
-      return new ReflectorField(this, type, index);
-   }
+    public ReflectorField makeField(Class type, int index) {
+        return new ReflectorField(this, type, index);
+    }
 
-   public ReflectorField makeField(IFieldLocator loc) {
-      return new ReflectorField(loc);
-   }
+    public ReflectorField makeField(IFieldLocator loc) {
+        return new ReflectorField(loc);
+    }
 
-   public ReflectorField makeFieldTypes(Class preType, Class type, Class postTypes, String errorName) {
-      return this.getTargetClass() == null
-         ? null
-         : new ReflectorField(new FieldLocatorTypes(this.getTargetClass(), new Class[]{preType}, type, new Class[]{postTypes}, errorName));
-   }
+    public ReflectorField makeFieldTypes(Class preType, Class type, Class postTypes, String errorName) {
+        return this.getTargetClass() == null
+            ? null
+            : new ReflectorField(new FieldLocatorTypes(this.getTargetClass(), new Class[]{preType}, type, new Class[]{postTypes}, errorName));
+    }
 
-   public ReflectorMethod makeMethod(String name) {
-      return new ReflectorMethod(this, name);
-   }
+    public ReflectorMethod makeMethod(String name) {
+        return new ReflectorMethod(this, name);
+    }
 
-   public ReflectorMethod makeMethod(String name, Class[] paramTypes) {
-      return new ReflectorMethod(this, name, paramTypes);
-   }
+    public ReflectorMethod makeMethod(String name, Class[] paramTypes) {
+        return new ReflectorMethod(this, name, paramTypes);
+    }
 
-   public ReflectorConstructor makeConstructor(Class[] paramTypes) {
-      return new ReflectorConstructor(this, paramTypes);
-   }
+    public ReflectorConstructor makeConstructor(Class[] paramTypes) {
+        return new ReflectorConstructor(this, paramTypes);
+    }
 
-   @Override
-   public void resolve() {
-      Class cls = this.getTargetClass();
-   }
+    @Override
+    public void resolve() {
+        Class cls = this.getTargetClass();
+    }
 }

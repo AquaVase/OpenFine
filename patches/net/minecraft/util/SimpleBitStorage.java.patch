@@ -15,7 +15,7 @@
          5
      };
 -    private final long[] data;
-+   private long[] data;
++    private long[] data;
      private final int bits;
      private final long mask;
      private final int size;
@@ -23,11 +23,11 @@
      private final int divideMul;
      private final int divideAdd;
      private final int divideShift;
-+   private boolean dataFromCache = false;
-+   private static ArrayCaches dataCaches = new ArrayCaches(new int[]{256, 342, 410, 456}, long.class, 256);
++    private boolean dataFromCache = false;
++    private static ArrayCaches dataCaches = new ArrayCaches(new int[]{256, 342, 410, 456}, long.class, 256);
  
 -    public SimpleBitStorage(final int bits, final int size, final int[] values) {
-+   public SimpleBitStorage(int bits, int size, int[] values) {
++    public SimpleBitStorage(int bits, int size, int[] values) {
          this(bits, size);
          int outputIndex = 0;
  
@@ -36,12 +36,12 @@
      }
  
 -    public SimpleBitStorage(final int bits, final int size) {
-+   public SimpleBitStorage(int bits, int size) {
++    public SimpleBitStorage(int bits, int size) {
          this(bits, size, (long[])null);
      }
  
 -    public SimpleBitStorage(final int bits, final int size, final long @Nullable [] data) {
-+   public SimpleBitStorage(int bits, int size, long[] data) {
++    public SimpleBitStorage(int bits, int size, long[] data) {
          Validate.inclusiveBetween(1L, 32L, bits);
          this.size = size;
          this.bits = bits;
@@ -50,7 +50,7 @@
      }
  
 -    private int cellIndex(final int bitIndex) {
-+   private int cellIndex(int bitIndex) {
++    private int cellIndex(int bitIndex) {
          long mul = Integer.toUnsignedLong(this.divideMul);
          long add = Integer.toUnsignedLong(this.divideAdd);
          return (int)(bitIndex * mul + add >> 32 >> this.divideShift);
@@ -58,7 +58,7 @@
  
      @Override
 -    public int getAndSet(final int index, final int value) {
-+   public int getAndSet(int index, int value) {
++    public int getAndSet(int index, int value) {
          Validate.inclusiveBetween(0L, this.size - 1, index);
          Validate.inclusiveBetween(0L, this.mask, value);
          int cellIndex = this.cellIndex(index);
@@ -67,7 +67,7 @@
  
      @Override
 -    public void set(final int index, final int value) {
-+   public void set(int index, int value) {
++    public void set(int index, int value) {
          Validate.inclusiveBetween(0L, this.size - 1, index);
          Validate.inclusiveBetween(0L, this.mask, value);
          int cellIndex = this.cellIndex(index);
@@ -76,7 +76,7 @@
  
      @Override
 -    public int get(final int index) {
-+   public int get(int index) {
++    public int get(int index) {
          Validate.inclusiveBetween(0L, this.size - 1, index);
          int cellIndex = this.cellIndex(index);
          long cellValue = this.data[cellIndex];
@@ -85,7 +85,7 @@
  
      @Override
 -    public void getAll(final IntConsumer output) {
-+   public void getAll(IntConsumer output) {
++    public void getAll(IntConsumer output) {
          int count = 0;
  
          for (long cellValue : this.data) {
@@ -94,7 +94,7 @@
  
      @Override
 -    public void unpack(final int[] output) {
-+   public void unpack(int[] output) {
++    public void unpack(int[] output) {
          int dataLength = this.data.length;
          int outputOffset = 0;
  
@@ -103,25 +103,25 @@
      @Override
      public BitStorage copy() {
 -        return new SimpleBitStorage(this.bits, this.size, (long[])this.data.clone());
-+      long[] dataCopy = (long[])dataCaches.allocate(this.data.length);
-+      System.arraycopy(this.data, 0, dataCopy, 0, this.data.length);
-+      SimpleBitStorage sbs = new SimpleBitStorage(this.bits, this.size, dataCopy);
-+      sbs.dataFromCache = true;
-+      return sbs;
++        long[] dataCopy = (long[])dataCaches.allocate(this.data.length);
++        System.arraycopy(this.data, 0, dataCopy, 0, this.data.length);
++        SimpleBitStorage sbs = new SimpleBitStorage(this.bits, this.size, dataCopy);
++        sbs.dataFromCache = true;
++        return sbs;
      }
  
-+   @Override
-+   public void finish() {
-+      if (this.dataFromCache) {
-+         dataCaches.free(this.data);
-+         this.data = null;
-+         this.dataFromCache = false;
-+      }
-+   }
++    @Override
++    public void finish() {
++        if (this.dataFromCache) {
++            dataCaches.free(this.data);
++            this.data = null;
++            this.dataFromCache = false;
++        }
++    }
 +
      public static class InitializationException extends RuntimeException {
 -        private InitializationException(final String message) {
-+      private InitializationException(String message) {
++        private InitializationException(String message) {
              super(message);
          }
      }

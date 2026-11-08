@@ -18,11 +18,11 @@
      private int nextBlock;
      private int capacity;
 -    private @Nullable T lastUniform;
-+   private T lastUniform;
++    private T lastUniform;
      private final String label;
  
 -    public DynamicUniformStorage(final String label, final int uboSize, final int initialCapacity) {
-+   public DynamicUniformStorage(String label, int uboSize, int initialCapacity) {
++    public DynamicUniformStorage(String label, int uboSize, int initialCapacity) {
          GpuDevice device = RenderSystem.getDevice();
          this.blockSize = Mth.roundToward(uboSize, device.getDeviceInfo().limits().minUniformOffsetAlignment());
          this.capacity = Mth.smallestEncompassingPowerOfTwo(initialCapacity);
@@ -31,7 +31,7 @@
      }
  
 -    private void resizeBuffers(final int newCapacity) {
-+   private void resizeBuffers(int newCapacity) {
++    private void resizeBuffers(int newCapacity) {
          this.capacity = newCapacity;
          this.nextBlock = 0;
          this.lastUniform = null;
@@ -40,10 +40,10 @@
      }
  
 -    public GpuBufferSlice writeUniform(final T uniform) {
-+   public GpuBufferSlice writeUniform(T uniform) {
++    public GpuBufferSlice writeUniform(T uniform) {
          if (this.lastUniform != null && this.lastUniform.equals(uniform)) {
 -            return this.ringBuffer.currentBuffer().slice((this.nextBlock - 1) * this.blockSize, this.blockSize);
-+         return this.ringBuffer.currentBuffer().slice((this.nextBlock - 1) * this.blockSize, this.blockSize, uniform);
++            return this.ringBuffer.currentBuffer().slice((this.nextBlock - 1) * this.blockSize, this.blockSize, uniform);
          }
  
          if (this.nextBlock >= this.capacity) {
@@ -52,11 +52,11 @@
          this.nextBlock++;
          this.lastUniform = uniform;
 -        return this.ringBuffer.currentBuffer().slice(offset, this.blockSize);
-+      return this.ringBuffer.currentBuffer().slice(offset, this.blockSize, uniform);
++        return this.ringBuffer.currentBuffer().slice(offset, this.blockSize, uniform);
      }
  
 -    public GpuBufferSlice[] writeUniforms(final T[] uniforms) {
-+   public GpuBufferSlice[] writeUniforms(T[] uniforms) {
++    public GpuBufferSlice[] writeUniforms(T[] uniforms) {
          if (uniforms.length == 0) {
              return new GpuBufferSlice[0];
          }
@@ -65,7 +65,7 @@
              for (int i = 0; i < uniforms.length; i++) {
                  T uniform = uniforms[i];
 -                result[i] = this.ringBuffer.currentBuffer().slice(firstOffset + i * this.blockSize, this.blockSize);
-+            result[i] = this.ringBuffer.currentBuffer().slice(firstOffset + i * this.blockSize, this.blockSize, uniform);
++                result[i] = this.ringBuffer.currentBuffer().slice(firstOffset + i * this.blockSize, this.blockSize, uniform);
                  byteBuffer.position(i * this.blockSize);
                  uniform.write(byteBuffer);
              }
@@ -76,7 +76,7 @@
 -    @OnlyIn(Dist.CLIENT)
      public interface DynamicUniform {
 -        void write(ByteBuffer byteBuffer);
-+      void write(ByteBuffer var1);
++        void write(ByteBuffer var1);
      }
 -}
 \ No newline at end of file

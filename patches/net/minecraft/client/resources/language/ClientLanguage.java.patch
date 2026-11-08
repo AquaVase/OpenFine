@@ -16,13 +16,13 @@
      private final boolean defaultRightToLeft;
  
 -    private ClientLanguage(final Map<String, String> storage, final boolean defaultRightToLeft) {
-+   private ClientLanguage(Map<String, String> storage, boolean defaultRightToLeft) {
++    private ClientLanguage(Map<String, String> storage, boolean defaultRightToLeft) {
          this.storage = storage;
          this.defaultRightToLeft = defaultRightToLeft;
      }
  
 -    public static ClientLanguage loadFrom(final ResourceManager resourceManager, final List<String> languageStack, final boolean defaultRightToLeft) {
-+   public static ClientLanguage loadFrom(ResourceManager resourceManager, List<String> languageStack, boolean defaultRightToLeft) {
++    public static ClientLanguage loadFrom(ResourceManager resourceManager, List<String> languageStack, boolean defaultRightToLeft) {
          Map<String, String> translations = new HashMap<>();
  
          for (String languageCode : languageStack) {
@@ -30,7 +30,7 @@
                  try {
                      Identifier location = Identifier.fromNamespaceAndPath(namespace, path);
                      appendFrom(languageCode, resourceManager.getResourceStack(location), translations);
-+               Lang.loadResources(resourceManager, languageCode, translations);
++                    Lang.loadResources(resourceManager, languageCode, translations);
                  } catch (Exception e) {
                      LOGGER.warn("Skipped language file: {}:{} ({})", namespace, path, e.toString());
                  }
@@ -39,7 +39,7 @@
      }
  
 -    private static void appendFrom(final String languageCode, final List<Resource> resources, final Map<String, String> translations) {
-+   private static void appendFrom(String languageCode, List<Resource> resources, Map<String, String> translations) {
++    private static void appendFrom(String languageCode, List<Resource> resources, Map<String, String> translations) {
          for (Resource resource : resources) {
              try (InputStream inputStream = resource.open()) {
                  Language.loadFromJson(inputStream, translations::put);
@@ -48,13 +48,13 @@
  
      @Override
 -    public String getOrDefault(final String key, final String defaultValue) {
-+   public String getOrDefault(String key, String defaultValue) {
++    public String getOrDefault(String key, String defaultValue) {
          return this.storage.getOrDefault(key, defaultValue);
      }
  
      @Override
 -    public boolean has(final String key) {
-+   public boolean has(String key) {
++    public boolean has(String key) {
          return this.storage.containsKey(key);
      }
  
@@ -63,13 +63,13 @@
  
      @Override
 -    public FormattedCharSequence getVisualOrder(final FormattedText logicalOrderText) {
-+   public FormattedCharSequence getVisualOrder(FormattedText logicalOrderText) {
++    public FormattedCharSequence getVisualOrder(FormattedText logicalOrderText) {
          return FormattedBidiReorder.reorder(logicalOrderText, this.defaultRightToLeft);
      }
 -}
 \ No newline at end of file
 +
-+   public Map<String, String> getLanguageData() {
-+      return this.storage;
-+   }
++    public Map<String, String> getLanguageData() {
++        return this.storage;
++    }
 +}

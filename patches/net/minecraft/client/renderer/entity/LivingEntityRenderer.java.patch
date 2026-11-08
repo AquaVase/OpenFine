@@ -32,13 +32,13 @@
      implements RenderLayerParent<S, M> {
      private static final float EYE_BED_OFFSET = 0.1F;
 -    protected M model;
-+   public M model;
++    public M model;
      protected final ItemModelResolver itemModelResolver;
      protected final List<RenderLayer<S, M>> layers = Lists.newArrayList();
-+   public static final boolean animateModelLiving = Boolean.getBoolean("animate.model.living");
++    public static final boolean animateModelLiving = Boolean.getBoolean("animate.model.living");
  
 -    public LivingEntityRenderer(final EntityRendererProvider.Context context, final M model, final float shadow) {
-+   public LivingEntityRenderer(Context context, M model, float shadow) {
++    public LivingEntityRenderer(Context context, M model, float shadow) {
          super(context);
          this.itemModelResolver = context.getItemModelResolver();
          this.model = model;
@@ -46,7 +46,7 @@
      }
  
 -    protected final boolean addLayer(final RenderLayer<S, M> layer) {
-+   public final boolean addLayer(RenderLayer<S, M> layer) {
++    public final boolean addLayer(RenderLayer<S, M> layer) {
          return this.layers.add(layer);
      }
  
@@ -55,108 +55,154 @@
      }
  
 -    protected AABB getBoundingBoxForCulling(final T entity) {
-+   protected AABB getBoundingBoxForCulling(T entity) {
++    protected AABB getBoundingBoxForCulling(T entity) {
          AABB aabb = super.getBoundingBoxForCulling(entity);
          if (entity.getItemBySlot(EquipmentSlot.HEAD).is(Items.DRAGON_HEAD)) {
              float extraSize = 0.5F;
-@@ -72,7 +75,13 @@
+@@ -72,76 +75,104 @@
          }
      }
  
 -    public void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
-+   public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
-+      if (!Reflector.ForgeEventFactoryClient_onRenderLivingPre.exists()
-+         || !Reflector.ForgeEventFactoryClient_onRenderLivingPre.callBoolean(state, this, poseStack, submitNodeCollector, camera)) {
-+         if (animateModelLiving) {
-+            state.walkAnimationSpeed = 1.5F;
-+         }
-+
-         poseStack.pushPose();
-         if (state.hasPose(Pose.SLEEPING)) {
-             Direction bedOrientation = state.bedOrientation;
-@@ -92,7 +101,8 @@
-         boolean forceTransparent = !isBodyVisible && !state.isInvisibleToPlayer;
-         RenderType renderType = this.getRenderType(state, isBodyVisible, forceTransparent, state.appearsGlowing());
-         if (renderType != null) {
--            int overlayCoords = getOverlayCoords(state, this.getWhiteOverlayProgress(state));
-+            state.overlayProgress = this.getWhiteOverlayProgress(state);
-+            int overlayCoords = getOverlayCoords(state, state.overlayProgress);
-             int baseColor = forceTransparent ? 654311423 : -1;
-             int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
-             submitNodeCollector.submitModel(
-@@ -104,44 +114,65 @@
-             this.model.setupAnim(state);
- 
-             for (RenderLayer<S, M> layer : this.layers) {
-+               state.renderLayer = layer;
-                 layer.submit(poseStack, submitNodeCollector, state.lightCoords, state, state.yRot, state.xRot);
-+               state.renderLayer = null;
+-        poseStack.pushPose();
+-        if (state.hasPose(Pose.SLEEPING)) {
+-            Direction bedOrientation = state.bedOrientation;
+-            if (bedOrientation != null) {
+-                float headOffset = state.eyeHeight - 0.1F;
+-                poseStack.translate(-bedOrientation.getStepX() * headOffset, 0.0F, -bedOrientation.getStepZ() * headOffset);
++    public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++        if (!Reflector.ForgeEventFactoryClient_onRenderLivingPre.exists()
++            || !Reflector.ForgeEventFactoryClient_onRenderLivingPre.callBoolean(state, this, poseStack, submitNodeCollector, camera)) {
++            if (animateModelLiving) {
++                state.walkAnimationSpeed = 1.5F;
              }
-         }
+-        }
  
-         poseStack.popPose();
-         super.submit(state, poseStack, submitNodeCollector, camera);
-+         if (Reflector.ForgeEventFactoryClient_onRenderLivingPost.exists()) {
-+            Reflector.ForgeEventFactoryClient_onRenderLivingPost.callVoid(state, this, poseStack, submitNodeCollector, camera);
+-        float scale = state.scale;
+-        poseStack.scale(scale, scale, scale);
+-        this.setupRotations(state, poseStack, state.bodyRot, scale);
+-        poseStack.scale(-1.0F, -1.0F, 1.0F);
+-        this.scale(state, poseStack);
+-        poseStack.translate(0.0F, -1.501F, 0.0F);
+-        boolean isBodyVisible = this.isBodyVisible(state);
+-        boolean forceTransparent = !isBodyVisible && !state.isInvisibleToPlayer;
+-        RenderType renderType = this.getRenderType(state, isBodyVisible, forceTransparent, state.appearsGlowing());
+-        if (renderType != null) {
+-            int overlayCoords = getOverlayCoords(state, this.getWhiteOverlayProgress(state));
+-            int baseColor = forceTransparent ? 654311423 : -1;
+-            int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
+-            submitNodeCollector.submitModel(
+-                this.model, state, poseStack, renderType, state.lightCoords, overlayCoords, tintedColor, null, state.outlineColor, null
+-            );
+-        }
++            poseStack.pushPose();
++            if (state.hasPose(Pose.SLEEPING)) {
++                Direction bedOrientation = state.bedOrientation;
++                if (bedOrientation != null) {
++                    float headOffset = state.eyeHeight - 0.1F;
++                    poseStack.translate(-bedOrientation.getStepX() * headOffset, 0.0F, -bedOrientation.getStepZ() * headOffset);
++                }
++            }
+ 
+-        if (this.shouldRenderLayers(state) && !this.layers.isEmpty()) {
+-            this.model.setupAnim(state);
++            float scale = state.scale;
++            poseStack.scale(scale, scale, scale);
++            this.setupRotations(state, poseStack, state.bodyRot, scale);
++            poseStack.scale(-1.0F, -1.0F, 1.0F);
++            this.scale(state, poseStack);
++            poseStack.translate(0.0F, -1.501F, 0.0F);
++            boolean isBodyVisible = this.isBodyVisible(state);
++            boolean forceTransparent = !isBodyVisible && !state.isInvisibleToPlayer;
++            RenderType renderType = this.getRenderType(state, isBodyVisible, forceTransparent, state.appearsGlowing());
++            if (renderType != null) {
++                state.overlayProgress = this.getWhiteOverlayProgress(state);
++                int overlayCoords = getOverlayCoords(state, state.overlayProgress);
++                int baseColor = forceTransparent ? 654311423 : -1;
++                int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
++                submitNodeCollector.submitModel(
++                    this.model, state, poseStack, renderType, state.lightCoords, overlayCoords, tintedColor, null, state.outlineColor, null
++                );
++            }
+ 
+-            for (RenderLayer<S, M> layer : this.layers) {
+-                layer.submit(poseStack, submitNodeCollector, state.lightCoords, state, state.yRot, state.xRot);
++            if (this.shouldRenderLayers(state) && !this.layers.isEmpty()) {
++                this.model.setupAnim(state);
++
++                for (RenderLayer<S, M> layer : this.layers) {
++                    state.renderLayer = layer;
++                    layer.submit(poseStack, submitNodeCollector, state.lightCoords, state, state.yRot, state.xRot);
++                    state.renderLayer = null;
++                }
+             }
+-        }
+ 
+-        poseStack.popPose();
+-        super.submit(state, poseStack, submitNodeCollector, camera);
++            poseStack.popPose();
++            super.submit(state, poseStack, submitNodeCollector, camera);
++            if (Reflector.ForgeEventFactoryClient_onRenderLivingPost.exists()) {
++                Reflector.ForgeEventFactoryClient_onRenderLivingPost.callVoid(state, this, poseStack, submitNodeCollector, camera);
++            }
++        }
      }
-+      }
-+   }
  
 -    protected boolean shouldRenderLayers(final S state) {
-+   protected boolean shouldRenderLayers(S state) {
++    protected boolean shouldRenderLayers(S state) {
          return true;
      }
  
 -    protected int getModelTint(final S state) {
-+   protected int getModelTint(S state) {
++    protected int getModelTint(S state) {
          return -1;
      }
  
 -    public abstract Identifier getTextureLocation(final S state);
-+   public abstract Identifier getTextureLocation(S var1);
++    public abstract Identifier getTextureLocation(S var1);
  
 -    protected @Nullable RenderType getRenderType(final S state, final boolean isBodyVisible, final boolean forceTransparent, final boolean appearGlowing) {
-+   protected RenderType getRenderType(S state, boolean isBodyVisible, boolean forceTransparent, boolean appearGlowing) {
++    protected RenderType getRenderType(S state, boolean isBodyVisible, boolean forceTransparent, boolean appearGlowing) {
          Identifier texture = this.getTextureLocation(state);
-+      if (this.model.locationTextureCustom != null) {
-+         texture = this.model.locationTextureCustom;
-+      } else if (this.getLocationTextureCustom() != null) {
-+         texture = this.getLocationTextureCustom();
-+      }
++        if (this.model.locationTextureCustom != null) {
++            texture = this.model.locationTextureCustom;
++        } else if (this.getLocationTextureCustom() != null) {
++            texture = this.getLocationTextureCustom();
++        }
 +
          if (forceTransparent) {
              return RenderTypes.entityTranslucentCullItemTarget(texture);
 -        } else if (isBodyVisible) {
-+      }
++        }
 +
-+      if (isBodyVisible) {
++        if (isBodyVisible) {
              return this.model.renderType(texture);
 -        } else {
 -            return appearGlowing ? RenderTypes.outline(texture) : null;
          }
 +
-+      if (appearGlowing) {
-+         Minecraft mc = Config.getMinecraft();
-+         if (!mc.levelExtractor.shouldShowEntityOutlines(mc.gameRenderer.mainCamera())) {
-+            return this.model.renderType(texture);
++        if (appearGlowing) {
++            Minecraft mc = Config.getMinecraft();
++            if (!mc.levelExtractor.shouldShowEntityOutlines(mc.gameRenderer.mainCamera())) {
++                return this.model.renderType(texture);
++            }
++        }
++
++        return appearGlowing ? RenderTypes.outline(texture) : null;
      }
-+      }
  
 -    public static int getOverlayCoords(final LivingEntityRenderState state, final float whiteOverlayProgress) {
-+      return appearGlowing ? RenderTypes.outline(texture) : null;
-+   }
-+
-+   public static int getOverlayCoords(LivingEntityRenderState state, float whiteOverlayProgress) {
++    public static int getOverlayCoords(LivingEntityRenderState state, float whiteOverlayProgress) {
          return OverlayTexture.pack(OverlayTexture.u(whiteOverlayProgress), OverlayTexture.v(state.hasRedOverlay));
      }
  
 -    protected boolean isBodyVisible(final S state) {
-+   protected boolean isBodyVisible(S state) {
++    protected boolean isBodyVisible(S state) {
          return !state.isInvisible;
      }
  
 -    private static float sleepDirectionToRotation(final Direction direction) {
-+   private static float sleepDirectionToRotation(Direction direction) {
++    private static float sleepDirectionToRotation(Direction direction) {
          return switch (direction) {
              case SOUTH -> 90.0F;
              case WEST -> 0.0F;
@@ -165,12 +211,12 @@
      }
  
 -    protected boolean isShaking(final S state) {
-+   protected boolean isShaking(S state) {
++    protected boolean isShaking(S state) {
          return state.isFullyFrozen;
      }
  
 -    protected void setupRotations(final S state, final PoseStack poseStack, float bodyRot, final float entityScale) {
-+   protected void setupRotations(S state, PoseStack poseStack, float bodyRot, float entityScale) {
++    protected void setupRotations(S state, PoseStack poseStack, float bodyRot, float entityScale) {
          if (this.isShaking(state)) {
              bodyRot += (float)(Math.cos(Mth.floor(state.ageInTicks) * 3.25F) * Math.PI * 0.4F);
          }
@@ -179,16 +225,16 @@
      }
  
 -    protected float getWhiteOverlayProgress(final S state) {
-+   protected float getWhiteOverlayProgress(S state) {
++    protected float getWhiteOverlayProgress(S state) {
          return 0.0F;
      }
  
 -    protected void scale(final S state, final PoseStack poseStack) {
-+   protected void scale(S state, PoseStack poseStack) {
++    protected void scale(S state, PoseStack poseStack) {
      }
  
 -    protected boolean shouldShowName(final T entity, final double distanceToCameraSq) {
-+   protected boolean shouldShowName(T entity, double distanceToCameraSq) {
++    protected boolean shouldShowName(T entity, double distanceToCameraSq) {
          if (entity.isDiscrete()) {
              float maxDist = 32.0F;
              if (distanceToCameraSq >= 1024.0) {
@@ -197,7 +243,7 @@
              Team myTeam = player.getTeam();
              if (team != null) {
 -                Team.Visibility visibility = team.getNameTagVisibility();
-+            Visibility visibility = team.getNameTagVisibility();
++                Visibility visibility = team.getNameTagVisibility();
  
                  return switch (visibility) {
                      case ALWAYS -> isVisibleToPlayer;
@@ -206,23 +252,23 @@
      }
  
 -    public boolean isEntityUpsideDown(final T mob) {
-+   public boolean isEntityUpsideDown(T mob) {
++    public boolean isEntityUpsideDown(T mob) {
          Component customName = mob.getCustomName();
          return customName != null && isUpsideDownName(customName.getString());
      }
  
 -    protected static boolean isUpsideDownName(final String name) {
-+   protected static boolean isUpsideDownName(String name) {
++    protected static boolean isUpsideDownName(String name) {
          return "Dinnerbone".equals(name) || "Grumm".equals(name);
      }
  
 -    protected float getShadowRadius(final S state) {
-+   protected float getShadowRadius(S state) {
++    protected float getShadowRadius(S state) {
          return super.getShadowRadius(state) * state.scale;
      }
  
 -    public void extractRenderState(final T entity, final S state, final float partialTicks) {
-+   public void extractRenderState(T entity, S state, float partialTicks) {
++    public void extractRenderState(T entity, S state, float partialTicks) {
          super.extractRenderState(entity, state, partialTicks);
          float headRot = Mth.rotLerp(partialTicks, entity.yHeadRotO, entity.yHeadRot);
          state.bodyRot = solveBodyRot(entity, headRot, partialTicks);
@@ -230,9 +276,9 @@
          state.isFullyFrozen = entity.isFullyFrozen();
          state.isBaby = entity.isBaby();
          state.isInWater = entity.isInWater();
-+      if (Reflector.ForgeEntity_isInWaterOrSwimmable.exists()) {
-+         state.isInWater = Reflector.callBoolean(entity, Reflector.ForgeEntity_isInWaterOrSwimmable);
-+      }
++        if (Reflector.ForgeEntity_isInWaterOrSwimmable.exists()) {
++            state.isInWater = Reflector.callBoolean(entity, Reflector.ForgeEntity_isInWaterOrSwimmable);
++        }
 +
          state.isAutoSpinAttack = entity.isAutoSpinAttack();
          state.ticksSinceKineticHitFeedback = entity.getTicksSinceLastKineticHitFeedback(partialTicks);
@@ -242,14 +288,14 @@
      }
  
 -    protected void extractNameTags(final T entity, final S state, final float partialTicks) {
-+   protected void extractNameTags(T entity, S state, float partialTicks) {
++    protected void extractNameTags(T entity, S state, float partialTicks) {
          double nameTagDistance = entity.getAttribute(Attributes.NAME_TAG_DISTANCE).getValue();
          double belowNameDistance = entity.getAttribute(Attributes.BELOW_NAME_DISTANCE).getValue();
          super.extractNameTags(entity, state, partialTicks, nameTagDistance, belowNameDistance);
      }
  
 -    private static float solveBodyRot(final LivingEntity entity, final float headRot, final float partialTicks) {
-+   private static float solveBodyRot(LivingEntity entity, float headRot, float partialTicks) {
++    private static float solveBodyRot(LivingEntity entity, float headRot, float partialTicks) {
          if (entity.getVehicle() instanceof LivingEntity riding) {
              float bodyRot = Mth.rotLerp(partialTicks, riding.yBodyRotO, riding.yBodyRot);
              float maxHeadDiff = 85.0F;
@@ -260,52 +306,52 @@
 -}
 \ No newline at end of file
 +
-+   public <T extends RenderLayer> T getLayer(Class<T> cls) {
-+      List<T> list = this.getLayers(cls);
-+      return list.isEmpty() ? null : list.get(0);
-+   }
++    public <T extends RenderLayer> T getLayer(Class<T> cls) {
++        List<T> list = this.getLayers(cls);
++        return list.isEmpty() ? null : list.get(0);
++    }
 +
-+   public <T extends RenderLayer> List<T> getLayers(Class<T> cls) {
-+      List<RenderLayer> list = new ArrayList<>();
++    public <T extends RenderLayer> List<T> getLayers(Class<T> cls) {
++        List<RenderLayer> list = new ArrayList<>();
 +
-+      for (RenderLayer layer : this.layers) {
-+         if (cls.isInstance(layer)) {
-+            list.add(layer);
-+         }
-+      }
++        for (RenderLayer layer : this.layers) {
++            if (cls.isInstance(layer)) {
++                list.add(layer);
++            }
++        }
 +
-+      return (List<T>)list;
-+   }
++        return (List<T>)list;
++    }
 +
-+   public void removeLayers(Class cls) {
-+      Iterator it = this.layers.iterator();
++    public void removeLayers(Class cls) {
++        Iterator it = this.layers.iterator();
 +
-+      while (it.hasNext()) {
-+         RenderLayer layer = (RenderLayer)it.next();
-+         if (cls.isInstance(layer)) {
-+            it.remove();
-+         }
-+      }
-+   }
++        while (it.hasNext()) {
++            RenderLayer layer = (RenderLayer)it.next();
++            if (cls.isInstance(layer)) {
++                it.remove();
++            }
++        }
++    }
 +
-+   public void replaceLayer(Class cls, RenderLayer layer) {
-+      int index = this.getLayerIndex(cls);
-+      this.removeLayers(cls);
-+      if (index >= 0) {
-+         this.layers.add(index, layer);
-+      } else {
-+         this.layers.add(layer);
-+      }
-+   }
++    public void replaceLayer(Class cls, RenderLayer layer) {
++        int index = this.getLayerIndex(cls);
++        this.removeLayers(cls);
++        if (index >= 0) {
++            this.layers.add(index, layer);
++        } else {
++            this.layers.add(layer);
++        }
++    }
 +
-+   public int getLayerIndex(Class cls) {
-+      for (int i = 0; i < this.layers.size(); i++) {
-+         RenderLayer layer = this.layers.get(i);
-+         if (cls.isInstance(layer)) {
-+            return i;
-+         }
-+      }
++    public int getLayerIndex(Class cls) {
++        for (int i = 0; i < this.layers.size(); i++) {
++            RenderLayer layer = this.layers.get(i);
++            if (cls.isInstance(layer)) {
++                return i;
++            }
++        }
 +
-+      return -1;
-+   }
++        return -1;
++    }
 +}

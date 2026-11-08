@@ -24,10 +24,10 @@
  public class PaintingRenderer extends EntityRenderer<Painting, PaintingRenderState> {
      private static final Identifier BACK_SPRITE_LOCATION = Identifier.withDefaultNamespace("back");
      private final TextureAtlas paintingsAtlas;
-+   int[] maxBrightnessArray = new int[0];
++    int[] maxBrightnessArray = new int[0];
  
 -    public PaintingRenderer(final EntityRendererProvider.Context context) {
-+   public PaintingRenderer(Context context) {
++    public PaintingRenderer(Context context) {
          super(context);
          this.paintingsAtlas = context.getAtlas(AtlasIds.PAINTINGS);
      }
@@ -35,17 +35,17 @@
 -    public void submit(
 -        final PaintingRenderState state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera
 -    ) {
-+   public void submit(PaintingRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    public void submit(PaintingRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          PaintingVariant variant = state.variant;
          if (variant != null) {
              poseStack.pushPose();
              poseStack.mulPose(Axis.YP.rotationDegrees(180 - state.direction.get2DDataValue() * 90));
              TextureAtlasSprite frontSprite = this.paintingsAtlas.getSprite(variant.assetId());
-+         if (EmissiveTextures.isActive()) {
-+            EmissiveTextures.beginRender();
-+         }
++            if (EmissiveTextures.isActive()) {
++                EmissiveTextures.beginRender();
++            }
 +
-+         frontSprite = TextureUtils.getCustomSprite(frontSprite);
++            frontSprite = TextureUtils.getCustomSprite(frontSprite);
              TextureAtlasSprite backSprite = this.paintingsAtlas.getSprite(BACK_SPRITE_LOCATION);
              this.renderPainting(
                  poseStack,
@@ -53,25 +53,25 @@
                  frontSprite,
                  backSprite
              );
-+         if (EmissiveTextures.hasEmissive()) {
-+            EmissiveTextures.beginRenderEmissive();
-+            frontSprite = TextureUtils.getCustomSprite(frontSprite);
-+            this.renderPainting(
-+               poseStack,
-+               submitNodeCollector,
-+               RenderTypes.entityCutoutZOffset(backSprite.atlasLocation()),
-+               this.getMaxBrightness(state.lightCoordsPerBlock),
-+               variant.width(),
-+               variant.height(),
-+               frontSprite,
-+               backSprite
-+            );
-+            EmissiveTextures.endRenderEmissive();
-+         }
++            if (EmissiveTextures.hasEmissive()) {
++                EmissiveTextures.beginRenderEmissive();
++                frontSprite = TextureUtils.getCustomSprite(frontSprite);
++                this.renderPainting(
++                    poseStack,
++                    submitNodeCollector,
++                    RenderTypes.entityCutoutZOffset(backSprite.atlasLocation()),
++                    this.getMaxBrightness(state.lightCoordsPerBlock),
++                    variant.width(),
++                    variant.height(),
++                    frontSprite,
++                    backSprite
++                );
++                EmissiveTextures.endRenderEmissive();
++            }
 +
-+         if (EmissiveTextures.isActive()) {
-+            EmissiveTextures.endRender();
-+         }
++            if (EmissiveTextures.isActive()) {
++                EmissiveTextures.endRender();
++            }
 +
              poseStack.popPose();
              super.submit(state, poseStack, submitNodeCollector, camera);
@@ -81,7 +81,7 @@
      }
  
 -    public void extractRenderState(final Painting entity, final PaintingRenderState state, final float partialTicks) {
-+   public void extractRenderState(Painting entity, PaintingRenderState state, float partialTicks) {
++    public void extractRenderState(Painting entity, PaintingRenderState state, float partialTicks) {
          super.extractRenderState(entity, state, partialTicks);
          Direction direction = entity.getDirection();
          PaintingVariant variant = entity.getVariant().value();
@@ -97,14 +97,14 @@
 -        final int height,
 -        final TextureAtlasSprite front,
 -        final TextureAtlasSprite back
-+      PoseStack poseStack,
-+      SubmitNodeCollector submitNodeCollector,
-+      RenderType renderType,
-+      int[] lightCoordsMap,
-+      int width,
-+      int height,
-+      TextureAtlasSprite front,
-+      TextureAtlasSprite back
++        PoseStack poseStack,
++        SubmitNodeCollector submitNodeCollector,
++        RenderType renderType,
++        int[] lightCoordsMap,
++        int width,
++        int height,
++        TextureAtlasSprite front,
++        TextureAtlasSprite back
      ) {
          submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
              float offsetX = -width / 2.0F;
@@ -125,18 +125,18 @@
 -        final int nz,
 -        final int lightCoords
 -    ) {
-+   private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float u, float v, float z, int nx, int ny, int nz, int lightCoords) {
++    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float u, float v, float z, int nx, int ny, int nz, int lightCoords) {
          buffer.addVertex(pose, x, y, z).setColor(-1).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(lightCoords).setNormal(pose, nx, ny, nz);
      }
 -}
 \ No newline at end of file
 +
-+   private int[] getMaxBrightness(int[] arr) {
-+      if (this.maxBrightnessArray.length < arr.length) {
-+         this.maxBrightnessArray = new int[arr.length];
-+         Arrays.fill(this.maxBrightnessArray, Lightmap.MAX_BRIGHTNESS);
-+      }
++    private int[] getMaxBrightness(int[] arr) {
++        if (this.maxBrightnessArray.length < arr.length) {
++            this.maxBrightnessArray = new int[arr.length];
++            Arrays.fill(this.maxBrightnessArray, Lightmap.MAX_BRIGHTNESS);
++        }
 +
-+      return this.maxBrightnessArray;
-+   }
++        return this.maxBrightnessArray;
++    }
 +}

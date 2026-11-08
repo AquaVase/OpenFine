@@ -12,29 +12,29 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterZombie extends ModelAdapterAgeableHumanoid {
-   public ModelAdapterZombie() {
-      super(EntityTypes.ZOMBIE, "zombie", ModelLayers.ZOMBIE);
-   }
+    public ModelAdapterZombie() {
+        super(EntityTypes.ZOMBIE, "zombie", ModelLayers.ZOMBIE);
+    }
 
-   protected ModelAdapterZombie(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterZombie(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterZombie ma = new ModelAdapterZombie(this.getEntityType(), "zombie_baby", ModelLayers.ZOMBIE_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterZombie ma = new ModelAdapterZombie(this.getEntityType(), "zombie_baby", ModelLayers.ZOMBIE_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new ZombieModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new ZombieModel(root);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new ZombieRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new ZombieRenderer(context);
+    }
 }

@@ -16,7 +16,7 @@
 -@OnlyIn(Dist.CLIENT)
  public abstract class VertexArrayCache {
 -    public static VertexArrayCache create(final GLCapabilities capabilities, final GlDebugLabel debugLabels, final Set<String> enabledExtensions) {
-+   public static VertexArrayCache create(GLCapabilities capabilities, GlDebugLabel debugLabels, Set<String> enabledExtensions) {
++    public static VertexArrayCache create(GLCapabilities capabilities, GlDebugLabel debugLabels, Set<String> enabledExtensions) {
          if (capabilities.GL_ARB_vertex_attrib_binding && GlDevice.USE_GL_ARB_vertex_attrib_binding) {
              enabledExtensions.add("GL_ARB_vertex_attrib_binding");
              return new VertexArrayCache.Separate(debugLabels);
@@ -29,84 +29,102 @@
 -        final @Nullable GpuBufferSlice[] vertexBuffers,
 -        final VertexArrayCache.@Nullable VertexArray lastBoundVertexArray
 -    );
-+   public abstract VertexArrayCache.VertexArray bindVertexArray(VertexFormat[] var1, GpuBufferSlice[] var2, VertexArrayCache.VertexArray var3);
++    public abstract VertexArrayCache.VertexArray bindVertexArray(VertexFormat[] var1, GpuBufferSlice[] var2, VertexArrayCache.VertexArray var3);
  
 -    @OnlyIn(Dist.CLIENT)
 -    private static class Emulated extends VertexArrayCache {
 -        private final Map<List<@Nullable VertexFormat>, VertexArrayCache.VertexArray> cache = new HashMap<>();
-+   public static class Emulated extends VertexArrayCache {
-+      private final Map<List<VertexFormat>, VertexArrayCache.VertexArray> cache = new HashMap<>();
++    public static class Emulated extends VertexArrayCache {
++        private final Map<List<VertexFormat>, VertexArrayCache.VertexArray> cache = new HashMap<>();
          private final GlDebugLabel debugLabels;
  
 -        public Emulated(final GlDebugLabel debugLabels) {
-+      public Emulated(GlDebugLabel debugLabels) {
++        public Emulated(GlDebugLabel debugLabels) {
              this.debugLabels = debugLabels;
          }
  
          @Override
          public VertexArrayCache.VertexArray bindVertexArray(
 -            final VertexFormat[] vertexBindings, final GpuBufferSlice[] vertexBuffers, final VertexArrayCache.VertexArray lastBoundVertexArray
-+         VertexFormat[] vertexBindings, GpuBufferSlice[] vertexBuffers, VertexArrayCache.VertexArray lastBoundVertexArray
++            VertexFormat[] vertexBindings, GpuBufferSlice[] vertexBuffers, VertexArrayCache.VertexArray lastBoundVertexArray
          ) {
              List<VertexFormat> listBindings = Arrays.asList(vertexBindings);
              VertexArrayCache.VertexArray vertexArray = this.cache.get(listBindings);
-@@ -68,25 +61,30 @@
+@@ -68,50 +61,59 @@
              return vertexArray;
          }
  
 -        private static void setupCombinedAttributes(
 -            final @Nullable VertexFormat[] vertexBindings, final boolean enable, final @Nullable GpuBufferSlice[] vertexBuffers
 -        ) {
-+      public static void setupCombinedAttributes(VertexFormat[] vertexBindings, boolean enable, GpuBufferSlice[] vertexBuffers) {
++        public static void setupCombinedAttributes(VertexFormat[] vertexBindings, boolean enable, GpuBufferSlice[] vertexBuffers) {
              int attributeIndex = 0;
  
              for (int i = 0; i < vertexBindings.length; i++) {
                  VertexFormat vertexBinding = vertexBindings[i];
                  if (vertexBinding != null) {
-+               boolean vertexBufferOk = vertexBuffers != null && vertexBuffers[i] != null;
-+               if (vertexBufferOk) {
-                     GlBuffer buffer = (GlBuffer)vertexBuffers[i].buffer();
-                     GlStateManager._glBindBuffer(34962, buffer.handle());
-+               }
+-                    GlBuffer buffer = (GlBuffer)vertexBuffers[i].buffer();
+-                    GlStateManager._glBindBuffer(34962, buffer.handle());
++                    boolean vertexBufferOk = vertexBuffers != null && vertexBuffers[i] != null;
++                    if (vertexBufferOk) {
++                        GlBuffer buffer = (GlBuffer)vertexBuffers[i].buffer();
++                        GlStateManager._glBindBuffer(34962, buffer.handle());
++                    }
 +
                      int vertexSize = vertexBinding.getVertexSize();
  
                      for (VertexFormatElement element : vertexBinding.getElements()) {
 -                        long totalOffset = vertexBuffers[i].offset() + element.offset();
-+                  long vertexBufferOffset = vertexBufferOk ? vertexBuffers[i].offset() : 0L;
-+                  long totalOffset = vertexBufferOffset + element.offset();
++                        long vertexBufferOffset = vertexBufferOk ? vertexBuffers[i].offset() : 0L;
++                        long totalOffset = vertexBufferOffset + element.offset();
                          int glExternalId = GlConst.toGlExternalId(element.format());
                          int glType = GlConst.toGlType(element.format());
                          boolean isIntegerFormat = GlConst.isGlFormatInteger(glExternalId);
                          boolean isNormalizedFormat = GlConst.isFormatNormalized(element.format());
                          int channelCount = GlConst.glFormatChannelCount(glExternalId);
-+                  attributeIndex = element.attributeIndex();
-+                  if (attributeIndex >= 0) {
-                         if (enable) {
-                             GlStateManager._enableVertexAttribArray(attributeIndex);
+-                        if (enable) {
+-                            GlStateManager._enableVertexAttribArray(attributeIndex);
+-                        }
++                        attributeIndex = element.attributeIndex();
++                        if (attributeIndex >= 0) {
++                            if (enable) {
++                                GlStateManager._enableVertexAttribArray(attributeIndex);
++                            }
+ 
+-                        if (isIntegerFormat) {
+-                            GlStateManager._vertexAttribIPointer(attributeIndex, channelCount, glType, vertexSize, totalOffset);
+-                        } else {
+-                            GlStateManager._vertexAttribPointer(attributeIndex, channelCount, glType, isNormalizedFormat, vertexSize, totalOffset);
++                            if (isIntegerFormat) {
++                                GlStateManager._vertexAttribIPointer(attributeIndex, channelCount, glType, vertexSize, totalOffset);
++                            } else {
++                                GlStateManager._vertexAttribPointer(attributeIndex, channelCount, glType, isNormalizedFormat, vertexSize, totalOffset);
++                            }
++
++                            GL33C.glVertexAttribDivisor(attributeIndex, vertexBinding.getStepRate());
++                            attributeIndex++;
                          }
-@@ -101,17 +99,21 @@
-                         attributeIndex++;
++                    }
+ 
+-                        GL33C.glVertexAttribDivisor(attributeIndex, vertexBinding.getStepRate());
+-                        attributeIndex++;
++                    if (Config.isShaders() && vertexBinding.getIntegerSize() == 18) {
++                        ShadersRender.setupArrayPointersVbo(enable);
                      }
                  }
-+
-+               if (Config.isShaders() && vertexBinding.getIntegerSize() == 18) {
-+                  ShadersRender.setupArrayPointersVbo(enable);
              }
          }
      }
-+      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      private static class Separate extends VertexArrayCache {
 -        private final Map<List<@Nullable VertexFormat>, VertexArrayCache.VertexArray> cache = new HashMap<>();
-+      private final Map<List<VertexFormat>, VertexArrayCache.VertexArray> cache = new HashMap<>();
++        private final Map<List<VertexFormat>, VertexArrayCache.VertexArray> cache = new HashMap<>();
          private final GlDebugLabel debugLabels;
          private final boolean needsMesaWorkaround;
  
 -        public Separate(final GlDebugLabel debugLabels) {
-+      public Separate(GlDebugLabel debugLabels) {
++        public Separate(GlDebugLabel debugLabels) {
              this.debugLabels = debugLabels;
              if ("Mesa".equals(GlStateManager._getString(7936))) {
                  String version = GlStateManager._getString(7938);
@@ -115,27 +133,47 @@
          @Override
          public VertexArrayCache.VertexArray bindVertexArray(
 -            final VertexFormat[] vertexBindings, final GpuBufferSlice[] vertexBuffers, final VertexArrayCache.VertexArray lastBoundVertexArray
-+         VertexFormat[] vertexBindings, GpuBufferSlice[] vertexBuffers, VertexArrayCache.VertexArray lastBoundVertexArray
++            VertexFormat[] vertexBindings, GpuBufferSlice[] vertexBuffers, VertexArrayCache.VertexArray lastBoundVertexArray
          ) {
              List<VertexFormat> listBindings = Arrays.asList(vertexBindings);
              VertexArrayCache.VertexArray vertexArray = this.cache.get(listBindings);
-@@ -137,6 +139,8 @@
+@@ -137,20 +139,23 @@
                      if (vertexBinding != null) {
                          for (VertexFormatElement element : vertexBinding.getElements()) {
                              if (element != null) {
-+                        attribLocation = element.attributeIndex();
-+                        if (attribLocation >= 0) {
-                                 GlStateManager._enableVertexAttribArray(attribLocation);
-                                 int glExternalId = GlConst.toGlExternalId(element.format());
-                                 int glType = GlConst.toGlType(element.format());
-@@ -153,6 +157,7 @@
-                                 attribLocation++;
+-                                GlStateManager._enableVertexAttribArray(attribLocation);
+-                                int glExternalId = GlConst.toGlExternalId(element.format());
+-                                int glType = GlConst.toGlType(element.format());
+-                                boolean isIntegerFormat = GlConst.isGlFormatInteger(glExternalId);
+-                                boolean isNormalizedFormat = GlConst.isFormatNormalized(element.format());
+-                                int channelCount = GlConst.glFormatChannelCount(glExternalId);
+-                                if (isIntegerFormat) {
+-                                    ARBVertexAttribBinding.glVertexAttribIFormat(attribLocation, channelCount, glType, element.offset());
+-                                } else {
+-                                    ARBVertexAttribBinding.glVertexAttribFormat(attribLocation, channelCount, glType, isNormalizedFormat, element.offset());
+-                                }
++                                attribLocation = element.attributeIndex();
++                                if (attribLocation >= 0) {
++                                    GlStateManager._enableVertexAttribArray(attribLocation);
++                                    int glExternalId = GlConst.toGlExternalId(element.format());
++                                    int glType = GlConst.toGlType(element.format());
++                                    boolean isIntegerFormat = GlConst.isGlFormatInteger(glExternalId);
++                                    boolean isNormalizedFormat = GlConst.isFormatNormalized(element.format());
++                                    int channelCount = GlConst.glFormatChannelCount(glExternalId);
++                                    if (isIntegerFormat) {
++                                        ARBVertexAttribBinding.glVertexAttribIFormat(attribLocation, channelCount, glType, element.offset());
++                                    } else {
++                                        ARBVertexAttribBinding.glVertexAttribFormat(attribLocation, channelCount, glType, isNormalizedFormat, element.offset());
++                                    }
+ 
+-                                ARBVertexAttribBinding.glVertexAttribBinding(attribLocation, i);
+-                                attribLocation++;
++                                    ARBVertexAttribBinding.glVertexAttribBinding(attribLocation, i);
++                                    attribLocation++;
++                                }
                              }
                          }
-+                  }
  
-                         ARBVertexAttribBinding.glVertexBindingDivisor(i, vertexBinding.getStepRate());
-                     }
 @@ -191,16 +196,15 @@
          }
      }
@@ -148,7 +186,7 @@
          final String formatName;
  
 -        private VertexArray(final int id, final @Nullable VertexFormat[] vertexBindings) {
-+      private VertexArray(int id, VertexFormat[] vertexBindings) {
++        private VertexArray(int id, VertexFormat[] vertexBindings) {
              this.id = id;
              this.formatName = Arrays.stream(vertexBindings).filter(Objects::nonNull).map(VertexFormat::toString).collect(Collectors.joining(", "));
          }

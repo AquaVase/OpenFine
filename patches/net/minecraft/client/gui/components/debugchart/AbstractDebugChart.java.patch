@@ -20,29 +20,29 @@
      protected final SampleStorage sampleStorage;
  
 -    protected AbstractDebugChart(final Font font, final SampleStorage sampleStorage) {
-+   protected AbstractDebugChart(Font font, SampleStorage sampleStorage) {
++    protected AbstractDebugChart(Font font, SampleStorage sampleStorage) {
          this.font = font;
          this.sampleStorage = sampleStorage;
      }
  
 -    public int getWidth(final int maxWidth) {
-+   public int getWidth(int maxWidth) {
++    public int getWidth(int maxWidth) {
          return Math.min(this.sampleStorage.capacity() + 2, maxWidth);
      }
  
      public int getFullHeight() {
 -        return 60 + 9;
-+      return 69;
++        return 69;
      }
  
 -    public void extractRenderState(final GuiGraphicsExtractor graphics, final int left, final int width) {
-+   public void extractRenderState(GuiGraphicsExtractor graphics, int left, int width) {
-+      if (this instanceof TpsDebugChart) {
-+         Minecraft mc = Minecraft.getInstance();
-+         int widthScaledOF = 512 / mc.getWindow().getGuiScale();
-+         left = Math.max(left, widthScaledOF);
-+         width = mc.getWindow().getGuiScaledWidth() - left;
-+      }
++    public void extractRenderState(GuiGraphicsExtractor graphics, int left, int width) {
++        if (this instanceof TpsDebugChart) {
++            Minecraft mc = Minecraft.getInstance();
++            int widthScaledOF = 512 / mc.getWindow().getGuiScale();
++            left = Math.max(left, widthScaledOF);
++            width = mc.getWindow().getGuiScaledWidth() - left;
++        }
 +
          int bottom = graphics.guiHeight();
          graphics.fill(left, bottom - 60, left + width, bottom, -1873784752);
@@ -52,13 +52,13 @@
      }
  
 -    protected void extractSampleBars(final GuiGraphicsExtractor graphics, final int bottom, final int currentX, final int sampleIndex) {
-+   protected void extractSampleBars(GuiGraphicsExtractor graphics, int bottom, int currentX, int sampleIndex) {
++    protected void extractSampleBars(GuiGraphicsExtractor graphics, int bottom, int currentX, int sampleIndex) {
          this.extractMainSampleBar(graphics, bottom, currentX, sampleIndex);
          this.extractAdditionalSampleBars(graphics, bottom, currentX, sampleIndex);
      }
  
 -    protected void extractMainSampleBar(final GuiGraphicsExtractor graphics, final int bottom, final int currentX, final int sampleIndex) {
-+   protected void extractMainSampleBar(GuiGraphicsExtractor graphics, int bottom, int currentX, int sampleIndex) {
++    protected void extractMainSampleBar(GuiGraphicsExtractor graphics, int bottom, int currentX, int sampleIndex) {
          long value = this.sampleStorage.get(sampleIndex);
          int sampleHeight = this.getSampleHeight(value);
          int color = this.getSampleColor(value);
@@ -66,37 +66,37 @@
      }
  
 -    protected void extractAdditionalSampleBars(final GuiGraphicsExtractor graphics, final int bottom, final int currentX, final int sampleIndex) {
-+   protected void extractAdditionalSampleBars(GuiGraphicsExtractor graphics, int bottom, int currentX, int sampleIndex) {
++    protected void extractAdditionalSampleBars(GuiGraphicsExtractor graphics, int bottom, int currentX, int sampleIndex) {
      }
  
 -    protected long getValueForAggregation(final int sampleIndex) {
-+   protected long getValueForAggregation(int sampleIndex) {
++    protected long getValueForAggregation(int sampleIndex) {
          return this.sampleStorage.get(sampleIndex);
      }
  
 -    protected void extractAdditionalLinesAndLabels(final GuiGraphicsExtractor graphics, final int left, final int width, final int bottom) {
-+   protected void extractAdditionalLinesAndLabels(GuiGraphicsExtractor graphics, int left, int width, int bottom) {
++    protected void extractAdditionalLinesAndLabels(GuiGraphicsExtractor graphics, int left, int width, int bottom) {
      }
  
 -    protected void extractStringWithShade(final GuiGraphicsExtractor graphics, final String str, final int x, final int y) {
-+   protected void extractStringWithShade(GuiGraphicsExtractor graphics, String str, int x, int y) {
++    protected void extractStringWithShade(GuiGraphicsExtractor graphics, String str, int x, int y) {
          graphics.fill(x, y, x + this.font.width(str) + 1, y + 9, -1873784752);
          graphics.text(this.font, str, x + 1, y + 1, -2039584, false);
      }
  
 -    protected abstract String toDisplayString(double sample);
-+   protected abstract String toDisplayString(double var1);
++    protected abstract String toDisplayString(double var1);
  
 -    protected abstract int getSampleHeight(double sample);
-+   protected abstract int getSampleHeight(double var1);
++    protected abstract int getSampleHeight(double var1);
  
 -    protected abstract int getSampleColor(long sample);
-+   protected abstract int getSampleColor(long var1);
++    protected abstract int getSampleColor(long var1);
  
 -    protected int getSampleColor(
 -        double sample, final double min, final int minColor, final double mid, final int midColor, final double max, final int maxColor
 -    ) {
-+   protected int getSampleColor(double sample, double min, int minColor, double mid, int midColor, double max, int maxColor) {
++    protected int getSampleColor(double sample, double min, int minColor, double mid, int midColor, double max, int maxColor) {
          sample = Mth.clamp(sample, min, max);
          return sample < mid
              ? ARGB.srgbLerp((float)((sample - min) / (mid - min)), minColor, midColor)

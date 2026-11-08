@@ -14,7 +14,7 @@
      private final BlockPos cameraSectionCenter;
  
 -    public Octree(final SectionPos cameraSection, final int renderDistance, final int sectionsPerChunk, final int minBlockY) {
-+   public Octree(SectionPos cameraSection, int renderDistance, int sectionsPerChunk, int minBlockY) {
++    public Octree(SectionPos cameraSection, int renderDistance, int sectionsPerChunk, int minBlockY) {
          int visibleAreaDiameterInSections = renderDistance * 2 + 1;
          int boundingBoxSizeInSections = Mth.smallestEncompassingPowerOfTwo(visibleAreaDiameterInSections);
          int distanceToBBEdgeInBlocks = renderDistance * 16;
@@ -23,19 +23,19 @@
      }
  
 -    public boolean add(final SectionRenderDispatcher.RenderSection section) {
-+   public boolean add(SectionRenderDispatcher.RenderSection section) {
++    public boolean add(SectionRenderDispatcher.RenderSection section) {
          return this.root.add(section);
      }
  
 -    public void visitNodes(final Octree.OctreeVisitor visitor, final Frustum frustum, final int closeDistance) {
-+   public void visitNodes(Octree.OctreeVisitor visitor, Frustum frustum, int closeDistance) {
++    public void visitNodes(Octree.OctreeVisitor visitor, Frustum frustum, int closeDistance) {
          this.root.visitNodes(visitor, false, frustum, 0, closeDistance, true);
      }
  
 -    private boolean isClose(
 -        final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ, final int closeDistance
 -    ) {
-+   private boolean isClose(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int closeDistance) {
++    private boolean isClose(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int closeDistance) {
          int cameraX = this.cameraSectionCenter.getX();
          int cameraY = this.cameraSectionCenter.getY();
          int cameraZ = this.cameraSectionCenter.getZ();
@@ -44,10 +44,10 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   @Override
-+   public String toString() {
-+      return this.cameraSectionCenter + "";
-+   }
++    @Override
++    public String toString() {
++        return this.cameraSectionCenter + "";
++    }
 +
      private enum AxisSorting {
          XYZ(4, 2, 1),
@@ -57,14 +57,14 @@
          private final int zShift;
  
 -        AxisSorting(final int xShift, final int yShift, final int zShift) {
-+      AxisSorting(int xShift, int yShift, int zShift) {
++        AxisSorting(int xShift, int yShift, int zShift) {
              this.xShift = xShift;
              this.yShift = yShift;
              this.zShift = zShift;
          }
  
 -        public static Octree.AxisSorting getAxisSorting(final int absXDiff, final int absYDiff, final int absZDiff) {
-+      public static Octree.AxisSorting getAxisSorting(int absXDiff, int absYDiff, int absZDiff) {
++        public static Octree.AxisSorting getAxisSorting(int absXDiff, int absYDiff, int absZDiff) {
              if (absXDiff > absYDiff && absXDiff > absZDiff) {
                  return absYDiff > absZDiff ? XYZ : XZY;
              } else if (absYDiff > absXDiff && absYDiff > absZDiff) {
@@ -75,7 +75,7 @@
 -    @OnlyIn(Dist.CLIENT)
      private class Branch implements Octree.Node {
 -        private final Octree.@Nullable Node[] nodes = new Octree.Node[8];
-+      private final Octree.Node[] nodes = new Octree.Node[8];
++        private final Octree.Node[] nodes = new Octree.Node[8];
          private final BoundingBox boundingBox;
          private final int bbCenterX;
          private final int bbCenterY;
@@ -84,7 +84,7 @@
          private final boolean cameraZDiffNegative;
  
 -        public Branch(final BoundingBox boundingBox) {
-+      public Branch(BoundingBox boundingBox) {
++        public Branch(BoundingBox boundingBox) {
              this.boundingBox = boundingBox;
              this.bbCenterX = this.boundingBox.minX() + this.boundingBox.getXSpan() / 2;
              this.bbCenterY = this.boundingBox.minY() + this.boundingBox.getYSpan() / 2;
@@ -93,7 +93,7 @@
          }
  
 -        public boolean add(final SectionRenderDispatcher.RenderSection section) {
-+      public boolean add(SectionRenderDispatcher.RenderSection section) {
++        public boolean add(SectionRenderDispatcher.RenderSection section) {
              long sectionNode = section.getSectionNode();
              boolean sectionXDiffNegative = SectionPos.sectionToBlockCoord(SectionPos.x(sectionNode)) - this.bbCenterX < 0;
              boolean sectionYDiffNegative = SectionPos.sectionToBlockCoord(SectionPos.y(sectionNode)) - this.bbCenterY < 0;
@@ -104,7 +104,7 @@
 -        private static int getNodeIndex(
 -            final Octree.AxisSorting sorting, final boolean xDiffsOppositeSides, final boolean yDiffsOppositeSides, final boolean zDiffsOppositeSides
 -        ) {
-+      private static int getNodeIndex(Octree.AxisSorting sorting, boolean xDiffsOppositeSides, boolean yDiffsOppositeSides, boolean zDiffsOppositeSides) {
++        private static int getNodeIndex(Octree.AxisSorting sorting, boolean xDiffsOppositeSides, boolean yDiffsOppositeSides, boolean zDiffsOppositeSides) {
              int index = 0;
              if (xDiffsOppositeSides) {
                  index += sorting.xShift;
@@ -113,7 +113,7 @@
          }
  
 -        private BoundingBox createChildBoundingBox(final boolean sectionXDiffNegative, final boolean sectionYDiffNegative, final boolean sectionZDiffNegative) {
-+      private BoundingBox createChildBoundingBox(boolean sectionXDiffNegative, boolean sectionYDiffNegative, boolean sectionZDiffNegative) {
++        private BoundingBox createChildBoundingBox(boolean sectionXDiffNegative, boolean sectionYDiffNegative, boolean sectionZDiffNegative) {
              int minX;
              int maxX;
              if (sectionXDiffNegative) {
@@ -124,7 +124,7 @@
 -        public void visitNodes(
 -            final Octree.OctreeVisitor visitor, boolean skipFrustumCheck, final Frustum frustum, final int depth, final int closeDistance, boolean isClose
 -        ) {
-+      public void visitNodes(Octree.OctreeVisitor visitor, boolean skipFrustumCheck, Frustum frustum, int depth, int closeDistance, boolean isClose) {
++        public void visitNodes(Octree.OctreeVisitor visitor, boolean skipFrustumCheck, Frustum frustum, int depth, int closeDistance, boolean isClose) {
              boolean isVisible = skipFrustumCheck;
              if (!skipFrustumCheck) {
                  int checkResult = frustum.cubeInFrustum(this.boundingBox);
@@ -133,7 +133,7 @@
  
          @Override
 -        public SectionRenderDispatcher.@Nullable RenderSection getSection() {
-+      public SectionRenderDispatcher.RenderSection getSection() {
++        public SectionRenderDispatcher.RenderSection getSection() {
              return null;
          }
  
@@ -142,18 +142,18 @@
              );
          }
 +
-+      @Override
-+      public String toString() {
-+         return this.boundingBox + "";
++        @Override
++        public String toString() {
++            return this.boundingBox + "";
++        }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      private final class Leaf implements Octree.Node {
          private final SectionRenderDispatcher.RenderSection section;
  
 -        private Leaf(final SectionRenderDispatcher.RenderSection section) {
-+      private Leaf(SectionRenderDispatcher.RenderSection section) {
++        private Leaf(SectionRenderDispatcher.RenderSection section) {
              this.section = section;
          }
  
@@ -166,14 +166,14 @@
 -            final int closeDistance,
 -            boolean isClose
 -        ) {
-+      public void visitNodes(Octree.OctreeVisitor visitor, boolean skipFrustumCheck, Frustum frustum, int depth, int closeDistance, boolean isClose) {
++        public void visitNodes(Octree.OctreeVisitor visitor, boolean skipFrustumCheck, Frustum frustum, int depth, int closeDistance, boolean isClose) {
              AABB boundingBox = this.section.getBoundingBox();
              if (skipFrustumCheck || frustum.isVisible(this.getSection().getBoundingBox())) {
                  isClose = isClose
 -                    && Octree.this.isClose(
 -                        boundingBox.minX, boundingBox.minY, boundingBox.minZ, boundingBox.maxX, boundingBox.maxY, boundingBox.maxZ, closeDistance
 -                    );
-+               && Octree.this.isClose(boundingBox.minX, boundingBox.minY, boundingBox.minZ, boundingBox.maxX, boundingBox.maxY, boundingBox.maxZ, closeDistance);
++                    && Octree.this.isClose(boundingBox.minX, boundingBox.minY, boundingBox.minZ, boundingBox.maxX, boundingBox.maxY, boundingBox.maxZ, closeDistance);
                  visitor.visit(this, skipFrustumCheck, depth, isClose);
              }
          }
@@ -182,19 +182,19 @@
              return this.section.getBoundingBox();
          }
 +
-+      @Override
-+      public String toString() {
-+         return this.section + "";
++        @Override
++        public String toString() {
++            return this.section + "";
++        }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      public interface Node {
 -        void visitNodes(Octree.OctreeVisitor visitor, boolean skipFrustumCheck, Frustum frustum, int depth, final int closeDistance, boolean isClose);
-+      void visitNodes(Octree.OctreeVisitor var1, boolean var2, Frustum var3, int var4, int var5, boolean var6);
++        void visitNodes(Octree.OctreeVisitor var1, boolean var2, Frustum var3, int var4, int var5, boolean var6);
  
 -        SectionRenderDispatcher.@Nullable RenderSection getSection();
-+      SectionRenderDispatcher.RenderSection getSection();
++        SectionRenderDispatcher.RenderSection getSection();
  
          AABB getAABB();
      }
@@ -203,7 +203,7 @@
 -    @OnlyIn(Dist.CLIENT)
      public interface OctreeVisitor {
 -        void visit(final Octree.Node node, final boolean fullyVisible, int depth, boolean isClose);
-+      void visit(Octree.Node var1, boolean var2, int var3, boolean var4);
++        void visit(Octree.Node var1, boolean var2, int var3, boolean var4);
      }
 -}
 \ No newline at end of file

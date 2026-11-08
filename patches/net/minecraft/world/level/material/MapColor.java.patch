@@ -8,7 +8,7 @@
  
  public class MapColor {
 -    private static final @Nullable MapColor[] MATERIAL_COLORS = new MapColor[64];
-+   public static final MapColor[] MATERIAL_COLORS = new MapColor[64];
++    public static final MapColor[] MATERIAL_COLORS = new MapColor[64];
      public static final MapColor NONE = new MapColor(0, 0);
      public static final MapColor GRASS = new MapColor(1, 8368696);
      public static final MapColor SAND = new MapColor(2, 16247203);
@@ -17,11 +17,11 @@
      public static final MapColor RAW_IRON = new MapColor(60, 14200723);
      public static final MapColor GLOW_LICHEN = new MapColor(61, 8365974);
 -    public final int col;
-+   public int col;
++    public int col;
      public final int id;
  
 -    private MapColor(final int id, final int col) {
-+   private MapColor(int id, int col) {
++    private MapColor(int id, int col) {
          if (id >= 0 && id <= 63) {
              this.id = id;
              this.col = col;
@@ -30,30 +30,30 @@
      }
  
 -    public int calculateARGBColor(final MapColor.Brightness brightness) {
-+   public int calculateARGBColor(MapColor.Brightness brightness) {
++    public int calculateARGBColor(MapColor.Brightness brightness) {
          return this == NONE ? 0 : ARGB.scaleRGB(ARGB.opaque(this.col), brightness.modifier);
      }
  
 -    public static MapColor byId(final int id) {
-+   public static MapColor byId(int id) {
++    public static MapColor byId(int id) {
          Preconditions.checkPositionIndex(id, MATERIAL_COLORS.length, "material id");
          return byIdUnsafe(id);
      }
  
 -    private static MapColor byIdUnsafe(final int id) {
-+   private static MapColor byIdUnsafe(int id) {
++    private static MapColor byIdUnsafe(int id) {
          MapColor result = MATERIAL_COLORS[id];
          return result != null ? result : NONE;
      }
  
 -    public static int getColorFromPackedId(final int packedId) {
-+   public static int getColorFromPackedId(int packedId) {
++    public static int getColorFromPackedId(int packedId) {
          int val = packedId & 0xFF;
          return byIdUnsafe(val >> 2).calculateARGBColor(MapColor.Brightness.byIdUnsafe(val & 3));
      }
  
 -    public byte getPackedId(final MapColor.Brightness brightness) {
-+   public byte getPackedId(MapColor.Brightness brightness) {
++    public byte getPackedId(MapColor.Brightness brightness) {
          return (byte)(this.id << 2 | brightness.id & 3);
      }
  
@@ -62,19 +62,19 @@
          public final int modifier;
  
 -        Brightness(final int id, final int modifier) {
-+      Brightness(int id, int modifier) {
++        Brightness(int id, int modifier) {
              this.id = id;
              this.modifier = modifier;
          }
  
 -        public static MapColor.Brightness byId(final int id) {
-+      public static MapColor.Brightness byId(int id) {
++        public static MapColor.Brightness byId(int id) {
              Preconditions.checkPositionIndex(id, VALUES.length, "brightness id");
              return byIdUnsafe(id);
          }
  
 -        private static MapColor.Brightness byIdUnsafe(final int id) {
-+      private static MapColor.Brightness byIdUnsafe(int id) {
++        private static MapColor.Brightness byIdUnsafe(int id) {
              return VALUES[id];
          }
      }

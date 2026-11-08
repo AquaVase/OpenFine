@@ -10,26 +10,26 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterWitherArmor extends ModelAdapterWither {
-   public ModelAdapterWitherArmor() {
-      super(EntityTypes.WITHER, "wither_armor", ModelLayers.WITHER_ARMOR);
-   }
+    public ModelAdapterWitherArmor() {
+        super(EntityTypes.WITHER, "wither_armor", ModelLayers.WITHER_ARMOR);
+    }
 
-   @Override
-   protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
-      WitherBossRenderer witherRenderer = (WitherBossRenderer)renderer;
-      WitherArmorLayer layer = new WitherArmorLayer(witherRenderer, this.getContext().getModelSet());
-      layer.model = (WitherBossModel)modelBase;
-      renderer.replaceLayer(WitherArmorLayer.class, layer);
-   }
+    @Override
+    protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
+        WitherBossRenderer witherRenderer = (WitherBossRenderer)renderer;
+        WitherArmorLayer layer = new WitherArmorLayer(witherRenderer, this.getContext().getModelSet());
+        layer.model = (WitherBossModel)modelBase;
+        renderer.replaceLayer(WitherArmorLayer.class, layer);
+    }
 
-   @Override
-   public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
-      WitherBossRenderer renderer = (WitherBossRenderer)er;
+    @Override
+    public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
+        WitherBossRenderer renderer = (WitherBossRenderer)er;
 
-      for (WitherArmorLayer layer : renderer.getLayers(WitherArmorLayer.class)) {
-         layer.customTextureLocation = textureLocation;
-      }
+        for (WitherArmorLayer layer : renderer.getLayers(WitherArmorLayer.class)) {
+            layer.customTextureLocation = textureLocation;
+        }
 
-      return true;
-   }
+        return true;
+    }
 }

@@ -12,7 +12,7 @@
      protected boolean isFrozen = false;
  
 -    public void setTickRate(final float rate) {
-+   public void setTickRate(float rate) {
++    public void setTickRate(float rate) {
          this.tickrate = Math.max(rate, 1.0F);
          this.nanosecondsPerTick = (long)((double)TimeUtil.NANOSECONDS_PER_SECOND / this.tickrate);
      }
@@ -21,7 +21,7 @@
      }
  
 -    public void setFrozenTicksToRun(final int timeout) {
-+   public void setFrozenTicksToRun(int timeout) {
++    public void setFrozenTicksToRun(int timeout) {
          this.frozenTicksToRun = timeout;
      }
  
@@ -30,7 +30,7 @@
      }
  
 -    public void setFrozen(final boolean state) {
-+   public void setFrozen(boolean state) {
++    public void setFrozen(boolean state) {
          this.isFrozen = state;
      }
  
@@ -40,26 +40,26 @@
  
 -    public boolean isEntityFrozen(final Entity entity) {
 -        return !this.runsNormally() && !(entity instanceof Player) && entity.countPlayerPassengers() <= 0;
-+   public boolean isEntityFrozen(Entity entity) {
-+      return !this.runsNormally() && !(entity instanceof Player) && !this.hasPlayerPassengers(entity);
++    public boolean isEntityFrozen(Entity entity) {
++        return !this.runsNormally() && !(entity instanceof Player) && !this.hasPlayerPassengers(entity);
      }
 -}
 \ No newline at end of file
 +
-+   private boolean hasPlayerPassengers(Entity entity) {
-+      List<Entity> passengers = entity.getPassengers();
++    private boolean hasPlayerPassengers(Entity entity) {
++        List<Entity> passengers = entity.getPassengers();
 +
-+      for (int i = 0; i < passengers.size(); i++) {
-+         Entity passenger = passengers.get(i);
-+         if (passenger instanceof Player) {
-+            return true;
-+         }
++        for (int i = 0; i < passengers.size(); i++) {
++            Entity passenger = passengers.get(i);
++            if (passenger instanceof Player) {
++                return true;
++            }
 +
-+         if (this.hasPlayerPassengers(passenger)) {
-+            return true;
-+         }
-+      }
++            if (this.hasPlayerPassengers(passenger)) {
++                return true;
++            }
++        }
 +
-+      return false;
-+   }
++        return false;
++    }
 +}

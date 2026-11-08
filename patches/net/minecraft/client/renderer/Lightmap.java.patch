@@ -37,30 +37,30 @@
      private final GpuTexture texture;
      private final GpuTextureView textureView;
      private final MappableRingBuffer ubo;
-+   private boolean custom = false;
-+   public static final int MAX_BRIGHTNESS = LightCoordsUtil.pack(15, 15);
-+   public static final int VANILLA_EMISSIVE_BRIGHTNESS = 15794417;
-+   private final DynamicTexture dynamicTexture;
-+   private final NativeImage dynamicImage;
-+   private final DynamicTexture whiteTexture;
-+   public static final Identifier LIGHTMAP_LOCATION = Identifier.withDefaultNamespace("dynamic/light_map_1");
++    private boolean custom = false;
++    public static final int MAX_BRIGHTNESS = LightCoordsUtil.pack(15, 15);
++    public static final int VANILLA_EMISSIVE_BRIGHTNESS = 15794417;
++    private final DynamicTexture dynamicTexture;
++    private final NativeImage dynamicImage;
++    private final DynamicTexture whiteTexture;
++    public static final Identifier LIGHTMAP_LOCATION = Identifier.withDefaultNamespace("dynamic/light_map_1");
  
      public Lightmap() {
          GpuDevice device = RenderSystem.getDevice();
-+      this.dynamicTexture = new DynamicTexture("Lightmap", 16, 16, true);
-+      this.dynamicImage = this.dynamicTexture.getPixels();
-+      this.dynamicImage.fillRect(0, 0, 16, 16, -1);
-+      this.dynamicTexture.upload();
-+      Minecraft.getInstance().getTextureManager().register(LIGHTMAP_LOCATION, this.dynamicTexture);
++        this.dynamicTexture = new DynamicTexture("Lightmap", 16, 16, true);
++        this.dynamicImage = this.dynamicTexture.getPixels();
++        this.dynamicImage.fillRect(0, 0, 16, 16, -1);
++        this.dynamicTexture.upload();
++        Minecraft.getInstance().getTextureManager().register(LIGHTMAP_LOCATION, this.dynamicTexture);
          this.texture = device.createTexture("Lightmap", 13, GpuFormat.RGBA8_UNORM, 16, 16, 1, 1);
 -        this.textureView = device.createTextureView(this.texture);
-+      this.texture.setUsage(this.texture.usage() | 12);
-+      this.textureView = this.dynamicTexture.getTextureView();
++        this.texture.setUsage(this.texture.usage() | 12);
++        this.textureView = this.dynamicTexture.getTextureView();
          device.createCommandEncoder().clearColorTexture(this.texture, CLEAR_COLOR);
          this.ubo = new MappableRingBuffer(() -> "Lightmap UBO", 130, LIGHTMAP_UBO_SIZE);
-+      this.whiteTexture = new DynamicTexture("White Texture", 16, 16, true);
-+      this.whiteTexture.getPixels().fillRect(0, 0, 16, 16, -1);
-+      this.whiteTexture.upload();
++        this.whiteTexture = new DynamicTexture("White Texture", 16, 16, true);
++        this.whiteTexture.getPixels().fillRect(0, 0, 16, 16, -1);
++        this.whiteTexture.upload();
      }
  
      public GpuTextureView getTextureView() {
@@ -68,34 +68,34 @@
          this.texture.close();
          this.textureView.close();
          this.ubo.close();
-+      this.dynamicTexture.close();
-+      this.whiteTexture.close();
++        this.dynamicTexture.close();
++        this.whiteTexture.close();
      }
  
 -    public void render(final LightmapRenderState renderState) {
-+   public void render(LightmapRenderState renderState) {
++    public void render(LightmapRenderState renderState) {
          if (renderState.needsUpdate) {
              ProfilerFiller profiler = Profiler.get();
              profiler.push("lightmap");
-+         this.custom = false;
-+         if (Config.isCustomColors()) {
-+            float blockLightFlicker = renderState.blockFactor - 1.4F;
-+            float partialTicks = 0.0F;
-+            Minecraft mc = Minecraft.getInstance();
-+            boolean nightVision = mc.player.hasEffect(MobEffects.NIGHT_VISION) || mc.player.hasEffect(MobEffects.CONDUIT_POWER);
-+            float darkGammaFactor = this.getDarknessGammaFactor(partialTicks);
-+            float darkLightFactor = renderState.darknessEffectScale;
-+            float darkLight = darkGammaFactor * 0.25F + darkLightFactor * 0.75F;
-+            if (CustomColors.updateLightmap(mc.level, blockLightFlicker, this.dynamicImage, nightVision, darkLight, partialTicks)) {
-+               this.dynamicTexture.upload();
-+               renderState.needsUpdate = false;
-+               profiler.pop();
-+               this.custom = true;
-+               return;
++            this.custom = false;
++            if (Config.isCustomColors()) {
++                float blockLightFlicker = renderState.blockFactor - 1.4F;
++                float partialTicks = 0.0F;
++                Minecraft mc = Minecraft.getInstance();
++                boolean nightVision = mc.player.hasEffect(MobEffects.NIGHT_VISION) || mc.player.hasEffect(MobEffects.CONDUIT_POWER);
++                float darkGammaFactor = this.getDarknessGammaFactor(partialTicks);
++                float darkLightFactor = renderState.darknessEffectScale;
++                float darkLight = darkGammaFactor * 0.25F + darkLightFactor * 0.75F;
++                if (CustomColors.updateLightmap(mc.level, blockLightFlicker, this.dynamicImage, nightVision, darkLight, partialTicks)) {
++                    this.dynamicTexture.upload();
++                    renderState.needsUpdate = false;
++                    profiler.pop();
++                    this.custom = true;
++                    return;
++                }
 +            }
-+         }
 +
-+         this.custom = false;
++            this.custom = false;
              CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
  
              try (GpuBufferSlice.MappedView view = this.ubo.currentBuffer().map(false, true)) {
@@ -104,7 +104,7 @@
      }
  
 -    public static float getBrightness(final DimensionType dimensionType, final int level) {
-+   public static float getBrightness(DimensionType dimensionType, int level) {
++    public static float getBrightness(DimensionType dimensionType, int level) {
          float v = level / 15.0F;
          float curvedV = v / (4.0F - 3.0F * v);
          return Mth.lerp(dimensionType.ambientLight(), curvedV, 1.0F);
@@ -112,13 +112,13 @@
 -}
 \ No newline at end of file
 +
-+   public boolean isCustom() {
-+      return this.custom;
-+   }
++    public boolean isCustom() {
++        return this.custom;
++    }
 +
-+   public float getDarknessGammaFactor(float partialTicks) {
-+      Minecraft mc = Minecraft.getInstance();
-+      float darknessScale = mc.options.darknessEffectScale().get().floatValue();
-+      return mc.player.getEffectBlendFactor(MobEffects.DARKNESS, partialTicks) * darknessScale;
-+   }
++    public float getDarknessGammaFactor(float partialTicks) {
++        Minecraft mc = Minecraft.getInstance();
++        float darknessScale = mc.options.darknessEffectScale().get().floatValue();
++        return mc.player.getEffectBlendFactor(MobEffects.DARKNESS, partialTicks) * darknessScale;
++    }
 +}

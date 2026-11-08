@@ -45,8 +45,8 @@
      private final BlockStateModelSet blockModelSet;
      private final FluidStateModelSet fluidModelSet;
      private final BlockColors blockColors;
-+   protected SectionRenderDispatcher sectionRenderDispatcher;
-+   public static final boolean FORGE = Reflector.ForgeHooksClient.exists();
++    protected SectionRenderDispatcher sectionRenderDispatcher;
++    public static final boolean FORGE = Reflector.ForgeHooksClient.exists();
  
      public SectionCompiler(
 -        final boolean ambientOcclusion,
@@ -54,7 +54,7 @@
 -        final BlockStateModelSet blockModelSet,
 -        final FluidStateModelSet fluidModelSet,
 -        final BlockColors blockColors
-+      boolean ambientOcclusion, boolean cutoutLeaves, BlockStateModelSet blockModelSet, FluidStateModelSet fluidModelSet, BlockColors blockColors
++        boolean ambientOcclusion, boolean cutoutLeaves, BlockStateModelSet blockModelSet, FluidStateModelSet fluidModelSet, BlockColors blockColors
      ) {
          this.ambientOcclusion = ambientOcclusion;
          this.cutoutLeaves = cutoutLeaves;
@@ -62,56 +62,56 @@
          this.blockColors = blockColors;
      }
  
-+   public SectionCompiler.Results compile(SectionPos sectionPos, RenderSectionRegion region, VertexSorting vertexSorting, SectionBufferBuilderPack builders) {
-+      ChunkCacheOF chunkCacheOF = region.makeChunkCacheOF();
-+      return this.compile(sectionPos, chunkCacheOF, vertexSorting, builders, 0, 0, 0);
-+   }
++    public SectionCompiler.Results compile(SectionPos sectionPos, RenderSectionRegion region, VertexSorting vertexSorting, SectionBufferBuilderPack builders) {
++        ChunkCacheOF chunkCacheOF = region.makeChunkCacheOF();
++        return this.compile(sectionPos, chunkCacheOF, vertexSorting, builders, 0, 0, 0);
++    }
 +
      public SectionCompiler.Results compile(
 -        final SectionPos sectionPos, final RenderSectionRegion region, final VertexSorting vertexSorting, final SectionBufferBuilderPack builders
-+      SectionPos sectionPos, ChunkCacheOF region, VertexSorting vertexSorting, SectionBufferBuilderPack builders, int regionDX, int regionDY, int regionDZ
++        SectionPos sectionPos, ChunkCacheOF region, VertexSorting vertexSorting, SectionBufferBuilderPack builders, int regionDX, int regionDY, int regionDZ
      ) {
-+      if (FORGE) {
-+         Minecraft.getInstance().level.getModelDataManager().getAt(sectionPos);
-+      } else {
-+         Map<BlockPos, ModelData> modelDataMap = null;
-+      }
++        if (FORGE) {
++            Minecraft.getInstance().level.getModelDataManager().getAt(sectionPos);
++        } else {
++            Map<BlockPos, ModelData> modelDataMap = null;
++        }
 +
          SectionCompiler.Results results = new SectionCompiler.Results();
          BlockPos minPos = sectionPos.origin();
          BlockPos maxPos = minPos.offset(15, 15, 15);
          VisGraph visGraph = new VisGraph();
-+      SectionRenderDispatcher.renderChunksUpdated++;
-+      region.renderStart();
-+      boolean shaders = Config.isShaders();
-+      boolean shadersMidBlock = shaders && Shaders.useMidBlockAttrib;
++        SectionRenderDispatcher.renderChunksUpdated++;
++        region.renderStart();
++        boolean shaders = Config.isShaders();
++        boolean shadersMidBlock = shaders && Shaders.useMidBlockAttrib;
          BlockModelLighter.enableCaching();
 -        ModelBlockRenderer blockRenderer = new ModelBlockRenderer(this.ambientOcclusion, true, this.blockColors);
 -        FluidRenderer fluidRenderer = new FluidRenderer(this.fluidModelSet);
-+      ModelBlockRenderer blockRenderer = builders.getModelBlockRenderer(this.ambientOcclusion, true, this.blockColors);
-+      FluidRenderer fluidRenderer = builders.getFluidRenderer(this.fluidModelSet);
++        ModelBlockRenderer blockRenderer = builders.getModelBlockRenderer(this.ambientOcclusion, true, this.blockColors);
++        FluidRenderer fluidRenderer = builders.getFluidRenderer(this.fluidModelSet);
          Map<ChunkSectionLayer, BufferBuilder> startedLayers = new EnumMap<>(ChunkSectionLayer.class);
          BlockQuadOutput quadOutput = (x, y, z, quad, instance) -> {
-+         if (RegionLayerRenderer.canRenderLayer(quad.materialInfo().layer())) {
-+            x += regionDX;
-+            y += regionDY;
-+            z += regionDZ;
-+         }
++            if (RegionLayerRenderer.canRenderLayer(quad.materialInfo().layer())) {
++                x += regionDX;
++                y += regionDY;
++                z += regionDZ;
++            }
 +
              BufferBuilder builder = this.getOrBeginLayer(startedLayers, builders, quad.materialInfo().layer());
              builder.putBlockBakedQuad(x, y, z, quad, instance);
          };
          BlockQuadOutput opaqueQuadOutput = (x, y, z, quad, instance) -> {
-+         x += regionDX;
-+         y += regionDY;
-+         z += regionDZ;
++            x += regionDX;
++            y += regionDY;
++            z += regionDZ;
              BufferBuilder builder = this.getOrBeginLayer(startedLayers, builders, ChunkSectionLayer.SOLID);
              builder.putBlockBakedQuad(x, y, z, quad, instance);
          };
          FluidRenderer.Output fluidOutput = layerx -> this.getOrBeginLayer(startedLayers, builders, layerx);
  
 -        for (BlockPos pos : BlockPos.betweenClosed(minPos, maxPos)) {
-+      for (BlockPosM pos : BlockPosM.betweenClosedM(minPos, maxPos)) {
++        for (BlockPosM pos : BlockPosM.betweenClosedM(minPos, maxPos)) {
              BlockState blockState = region.getBlockState(pos);
              if (!blockState.isAir()) {
                  try {
@@ -119,25 +119,25 @@
  
                      FluidState fluidState = blockState.getFluidState();
                      if (!fluidState.isEmpty()) {
-+                  RenderEnv renderEnv = fluidRenderer.getRenderEnv(blockState, pos);
-+                  renderEnv.setCompileParams(this, startedLayers, builders);
-+                  region.setRenderEnv(renderEnv);
++                        RenderEnv renderEnv = fluidRenderer.getRenderEnv(blockState, pos);
++                        renderEnv.setCompileParams(this, startedLayers, builders);
++                        region.setRenderEnv(renderEnv);
                          fluidRenderer.tesselate(region, pos, fluidOutput, blockState, fluidState);
                      }
  
                      if (blockState.getRenderShape() == RenderShape.MODEL) {
-+                  RenderEnv renderEnv = blockRenderer.getRenderEnv(blockState, pos);
-+                  renderEnv.setCompileParams(this, startedLayers, builders);
-+                  region.setRenderEnv(renderEnv);
-+                  if (shadersMidBlock) {
-+                     blockRenderer.setMidBlock(
-+                        0.5F + regionDX + SectionPos.sectionRelative(pos.getX()),
-+                        0.5F + regionDY + SectionPos.sectionRelative(pos.getY()),
-+                        0.5F + regionDZ + SectionPos.sectionRelative(pos.getZ())
-+                     );
-+                  }
++                        RenderEnv renderEnv = blockRenderer.getRenderEnv(blockState, pos);
++                        renderEnv.setCompileParams(this, startedLayers, builders);
++                        region.setRenderEnv(renderEnv);
++                        if (shadersMidBlock) {
++                            blockRenderer.setMidBlock(
++                                0.5F + regionDX + SectionPos.sectionRelative(pos.getX()),
++                                0.5F + regionDY + SectionPos.sectionRelative(pos.getY()),
++                                0.5F + regionDZ + SectionPos.sectionRelative(pos.getZ())
++                            );
++                        }
 +
-+                  long randomSeed = !Config.isAlternateBlocks() ? 0L : blockState.getSeed(pos);
++                        long randomSeed = !Config.isAlternateBlocks() ? 0L : blockState.getSeed(pos);
                          blockRenderer.tesselateBlock(
                              ModelBlockRenderer.forceOpaque(this.cutoutLeaves, blockState) ? opaqueQuadOutput : quadOutput,
                              SectionPos.sectionRelative(pos.getX()),
@@ -146,7 +146,7 @@
                              blockState,
                              this.blockModelSet.get(blockState),
 -                            blockState.getSeed(pos)
-+                     randomSeed
++                            randomSeed
                          );
                      }
                  } catch (Throwable t) {
@@ -154,16 +154,16 @@
              }
          }
  
-+      for (ChunkSectionLayer blockrenderlayer : SectionRenderDispatcher.BLOCK_RENDER_LAYERS) {
-+         results.setAnimatedSprites(blockrenderlayer, null);
-+      }
++        for (ChunkSectionLayer blockrenderlayer : SectionRenderDispatcher.BLOCK_RENDER_LAYERS) {
++            results.setAnimatedSprites(blockrenderlayer, null);
++        }
 +
          for (Entry<ChunkSectionLayer, BufferBuilder> entry : startedLayers.entrySet()) {
              ChunkSectionLayer layer = entry.getKey();
-+         BufferBuilder bufferBuilder = entry.getValue();
-+         if (bufferBuilder.animatedSprites != null && !bufferBuilder.animatedSprites.isEmpty()) {
-+            results.setAnimatedSprites(layer, (BitSet)bufferBuilder.animatedSprites.clone());
-+         }
++            BufferBuilder bufferBuilder = entry.getValue();
++            if (bufferBuilder.animatedSprites != null && !bufferBuilder.animatedSprites.isEmpty()) {
++                results.setAnimatedSprites(layer, (BitSet)bufferBuilder.animatedSprites.clone());
++            }
 +
              MeshData mesh = entry.getValue().build();
              if (mesh != null) {
@@ -172,7 +172,7 @@
              }
          }
  
-+      region.renderFinish();
++        region.renderFinish();
          BlockModelLighter.clearCache();
          results.visibilitySet = visGraph.resolve();
          return results;
@@ -181,12 +181,12 @@
 -    private BufferBuilder getOrBeginLayer(
 -        final Map<ChunkSectionLayer, BufferBuilder> startedLayers, final SectionBufferBuilderPack buffers, final ChunkSectionLayer layer
 -    ) {
-+   public BufferBuilder getOrBeginLayer(Map<ChunkSectionLayer, BufferBuilder> startedLayers, SectionBufferBuilderPack buffers, ChunkSectionLayer layer) {
++    public BufferBuilder getOrBeginLayer(Map<ChunkSectionLayer, BufferBuilder> startedLayers, SectionBufferBuilderPack buffers, ChunkSectionLayer layer) {
          BufferBuilder builder = startedLayers.get(layer);
          if (builder == null) {
              ByteBufferBuilder buffer = buffers.buffer(layer);
 -            builder = new BufferBuilder(buffer, PrimitiveTopology.QUADS, layer.vertexFormat());
-+         builder = new BufferBuilder(buffer, PrimitiveTopology.QUADS, layer.vertexFormat(), null, layer);
++            builder = new BufferBuilder(buffer, PrimitiveTopology.QUADS, layer.vertexFormat(), null, layer);
              startedLayers.put(layer, builder);
          }
  
@@ -194,33 +194,33 @@
      }
  
 -    private <E extends BlockEntity> void handleBlockEntity(final SectionCompiler.Results results, final E blockEntity) {
-+   private <E extends BlockEntity> void handleBlockEntity(SectionCompiler.Results results, E blockEntity) {
++    private <E extends BlockEntity> void handleBlockEntity(SectionCompiler.Results results, E blockEntity) {
          results.blockEntities.add(blockEntity);
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   private ChunkSectionLayer fixBlockLayer(BlockGetter worldReader, BlockState blockState, BlockPos blockPos, ChunkSectionLayer layer, boolean isMipmaps) {
-+      if (CustomBlockLayers.isActive()) {
-+         ChunkSectionLayer layerCustom = CustomBlockLayers.getRenderLayer(worldReader, blockState, blockPos);
-+         if (layerCustom != null) {
-+            return layerCustom;
-+         }
-+      }
++    private ChunkSectionLayer fixBlockLayer(BlockGetter worldReader, BlockState blockState, BlockPos blockPos, ChunkSectionLayer layer, boolean isMipmaps) {
++        if (CustomBlockLayers.isActive()) {
++            ChunkSectionLayer layerCustom = CustomBlockLayers.getRenderLayer(worldReader, blockState, blockPos);
++            if (layerCustom != null) {
++                return layerCustom;
++            }
++        }
 +
-+      return layer;
-+   }
++        return layer;
++    }
 +
      public static final class Results {
          public final List<BlockEntity> blockEntities = new ArrayList<>();
          public final Map<ChunkSectionLayer, MeshData> renderedLayers = new EnumMap<>(ChunkSectionLayer.class);
          public VisibilitySet visibilitySet = new VisibilitySet();
 -        public MeshData.@Nullable SortState transparencyState;
-+      public MeshData.SortState transparencyState;
-+      public BitSet[] animatedSprites = new BitSet[ChunkSectionLayer.VALUES.length];
++        public MeshData.SortState transparencyState;
++        public BitSet[] animatedSprites = new BitSet[ChunkSectionLayer.VALUES.length];
  
-+      public void setAnimatedSprites(ChunkSectionLayer layer, BitSet animatedSprites) {
-+         this.animatedSprites[layer.ordinal()] = animatedSprites;
-+      }
++        public void setAnimatedSprites(ChunkSectionLayer layer, BitSet animatedSprites) {
++            this.animatedSprites[layer.ordinal()] = animatedSprites;
++        }
 +
          public void release() {
              this.renderedLayers.values().forEach(MeshData::close);

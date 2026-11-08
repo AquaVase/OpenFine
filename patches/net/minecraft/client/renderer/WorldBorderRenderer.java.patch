@@ -44,7 +44,7 @@
 -        final float halfHeightY,
 -        final float v1,
 -        final float v0
-+      WorldBorderRenderState state, double renderDistance, double cameraZ, double cameraX, float halfHeightY, float v1, float v0
++        WorldBorderRenderState state, double renderDistance, double cameraZ, double cameraX, float halfHeightY, float v1, float v0
      ) {
          try (ByteBufferBuilder byteBufferBuilder = ByteBufferBuilder.exactlySized(DefaultVertexFormat.POSITION_TEX.getVertexSize() * 4 * 4)) {
              double borderMinX = state.minX;
@@ -55,7 +55,7 @@
 -    public void extract(
 -        final WorldBorder border, final float deltaPartialTick, final Vec3 cameraPos, final double renderDistance, final WorldBorderRenderState state
 -    ) {
-+   public void extract(WorldBorder border, float deltaPartialTick, Vec3 cameraPos, double renderDistance, WorldBorderRenderState state) {
++    public void extract(WorldBorder border, float deltaPartialTick, Vec3 cameraPos, double renderDistance, WorldBorderRenderState state) {
          state.minX = border.getMinX(deltaPartialTick);
          state.maxX = border.getMaxX(deltaPartialTick);
          state.minZ = border.getMinZ(deltaPartialTick);
@@ -64,13 +64,13 @@
      }
  
 -    public void render(final WorldBorderRenderState state, final Vec3 cameraPos, final double renderDistance, final double depthFar) {
-+   public void render(WorldBorderRenderState state, Vec3 cameraPos, double renderDistance, double depthFar) {
++    public void render(WorldBorderRenderState state, Vec3 cameraPos, double renderDistance, double depthFar) {
          if (!(state.alpha <= 0.0)) {
-+         if (Config.isShaders()) {
-+            Shaders.pushProgram();
-+            Shaders.useProgram(Shaders.ProgramTexturedLit);
-+            Shaders.setRenderStage(RenderStage.WORLD_BORDER);
-+         }
++            if (Config.isShaders()) {
++                Shaders.pushProgram();
++                Shaders.useProgram(Shaders.ProgramTexturedLit);
++                Shaders.setRenderStage(RenderStage.WORLD_BORDER);
++            }
 +
              double cameraX = cameraPos.x;
              double cameraZ = cameraPos.z;
@@ -79,7 +79,7 @@
                      new Vector3f((float)(this.lastMinX - cameraX), (float)(-cameraPos.y), (float)(this.lastMinZ - cameraZ)),
                      new Matrix4f().translation(offset, offset, 0.0F)
                  );
-+         RenderSystem.setShaderColor(red, green, blue, (float)state.alpha);
++            RenderSystem.setShaderColor(red, green, blue, (float)state.alpha);
  
              try (RenderPass renderPass = RenderSystem.getDevice()
                      .createCommandEncoder()
@@ -88,29 +88,29 @@
                  ArrayList<RenderPass.Draw<WorldBorderRenderer>> draws = new ArrayList<>();
  
 -                for (WorldBorderRenderState.DistancePerDirection distancePerDirection : state.closestBorder(cameraX, cameraZ)) {
-+            for (DistancePerDirection distancePerDirection : state.closestBorder(cameraX, cameraZ)) {
++                for (DistancePerDirection distancePerDirection : state.closestBorder(cameraX, cameraZ)) {
                      if (distancePerDirection.distance() < renderDistance) {
                          int sideIndex = distancePerDirection.direction().get2DDataValue();
                          draws.add(new RenderPass.Draw<>(0, this.worldBorderBuffer, indexBuffer, this.indices.type(), 6 * sideIndex, 6, 0));
-@@ -190,18 +191,24 @@
+@@ -190,6 +191,12 @@
  
                  renderPass.drawMultipleIndexed(draws, null, null, Collections.emptyList(), this);
              }
 +
-+         GlStateManager._blendFuncSeparate(770, 771, 1, 0);
-+         if (Config.isShaders()) {
-+            Shaders.popProgram();
-+            Shaders.setRenderStage(RenderStage.NONE);
++            GlStateManager._blendFuncSeparate(770, 771, 1, 0);
++            if (Config.isShaders()) {
++                Shaders.popProgram();
++                Shaders.setRenderStage(RenderStage.NONE);
++            }
          }
      }
-+   }
  
-     public void invalidate() {
+@@ -197,11 +204,11 @@
          this.needsRebuild = true;
      }
  
 -    private boolean shouldRebuildWorldBorderBuffer(final WorldBorderRenderState state) {
-+   private boolean shouldRebuildWorldBorderBuffer(WorldBorderRenderState state) {
++    private boolean shouldRebuildWorldBorderBuffer(WorldBorderRenderState state) {
          return this.needsRebuild
              || state.minX != this.lastBorderMinX
              || state.minZ != this.lastBorderMinZ

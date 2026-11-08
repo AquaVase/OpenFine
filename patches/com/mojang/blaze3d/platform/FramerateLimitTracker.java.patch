@@ -16,20 +16,20 @@
      private long latestInputTime;
  
 -    public FramerateLimitTracker(final Options options, final Minecraft minecraft) {
-+   public FramerateLimitTracker(Options options, Minecraft minecraft) {
++    public FramerateLimitTracker(Options options, Minecraft minecraft) {
          this.options = options;
          this.minecraft = minecraft;
          this.framerateLimit = options.framerateLimit().get();
      }
  
      public int getFramerateLimit() {
-+      if (Minecraft.getInstance().options.enableVsync().get()) {
-+         this.framerateLimit = 260;
-+      }
++        if (Minecraft.getInstance().options.enableVsync().get()) {
++            this.framerateLimit = 260;
++        }
 +
-+      if (this.framerateLimit <= 0) {
-+         this.framerateLimit = 260;
-+      }
++        if (this.framerateLimit <= 0) {
++            this.framerateLimit = 260;
++        }
          return switch (this.getThrottleReason()) {
              case NONE -> this.framerateLimit;
              case WINDOW_ICONIFIED -> 10;
@@ -40,9 +40,9 @@
 -        return this.minecraft.level != null || this.minecraft.gui.screen() == null && this.minecraft.gui.overlay() == null
 -            ? FramerateLimitTracker.FramerateThrottleReason.NONE
 -            : FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU;
-+      return this.minecraft.level == null && (this.minecraft.gui.screen() != null || this.minecraft.gui.overlay() != null)
-+         ? FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU
-+         : FramerateLimitTracker.FramerateThrottleReason.NONE;
++        return this.minecraft.level == null && (this.minecraft.gui.screen() != null || this.minecraft.gui.overlay() != null)
++            ? FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU
++            : FramerateLimitTracker.FramerateThrottleReason.NONE;
      }
  
      public boolean isHeavilyThrottled() {
@@ -51,7 +51,7 @@
      }
  
 -    public void setFramerateLimit(final int value) {
-+   public void setFramerateLimit(int value) {
++    public void setFramerateLimit(int value) {
          this.framerateLimit = value;
      }
  

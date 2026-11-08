@@ -18,19 +18,19 @@
      private final BlockStateModelPart model;
  
 -    public SingleVariant(final BlockStateModelPart model) {
-+   public SingleVariant(BlockStateModelPart model) {
++    public SingleVariant(BlockStateModelPart model) {
          this.model = model;
      }
  
      @Override
 -    public void collectParts(final RandomSource random, final List<BlockStateModelPart> output) {
-+   public void collectParts(RandomSource random, List<BlockStateModelPart> output) {
++    public void collectParts(RandomSource random, List<BlockStateModelPart> output) {
          output.add(this.model);
      }
  
      @Override
 -    public Material.Baked particleMaterial() {
-+   public Baked particleMaterial() {
++    public Baked particleMaterial() {
          return this.model.particleMaterial();
      }
  
@@ -40,22 +40,22 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record Unbaked(Variant variant) implements BlockStateModel.Unbaked {
-+   public BlockStateModelPart getModel() {
-+      return this.model;
-+   }
++    public BlockStateModelPart getModel() {
++        return this.model;
++    }
 +
-+   public record Unbaked(Variant variant) implements net.minecraft.client.renderer.block.dispatch.BlockStateModel.Unbaked {
++    public record Unbaked(Variant variant) implements net.minecraft.client.renderer.block.dispatch.BlockStateModel.Unbaked {
          public static final Codec<SingleVariant.Unbaked> CODEC = Variant.CODEC.xmap(SingleVariant.Unbaked::new, SingleVariant.Unbaked::variant);
  
          @Override
 -        public BlockStateModel bake(final ModelBaker modelBakery) {
-+      public BlockStateModel bake(ModelBaker modelBakery) {
++        public BlockStateModel bake(ModelBaker modelBakery) {
              return new SingleVariant(this.variant.bake(modelBakery));
          }
  
          @Override
 -        public void resolveDependencies(final ResolvableModel.Resolver resolver) {
-+      public void resolveDependencies(Resolver resolver) {
++        public void resolveDependencies(Resolver resolver) {
              this.variant.resolveDependencies(resolver);
          }
      }

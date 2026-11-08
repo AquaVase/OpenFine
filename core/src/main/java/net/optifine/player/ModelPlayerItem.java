@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.resources.Identifier;
 
 public class ModelPlayerItem extends Model {
-   public ModelPlayerItem(Function<Identifier, RenderType> renderTypeIn) {
-      super(ModelPart.makeRoot(), renderTypeIn);
-   }
+    public ModelPlayerItem(Function<Identifier, RenderType> renderTypeIn) {
+        super(ModelPart.makeRoot(), renderTypeIn);
+    }
 }

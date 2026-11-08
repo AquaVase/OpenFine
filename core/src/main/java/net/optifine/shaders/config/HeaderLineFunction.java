@@ -4,33 +4,33 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HeaderLineFunction extends HeaderLine {
-   private String name;
-   private String text;
-   private Pattern patternLine;
+    private String name;
+    private String text;
+    private Pattern patternLine;
 
-   public HeaderLineFunction(String name, String text) {
-      this.name = name;
-      this.text = text;
-      this.patternLine = Pattern.compile("^\\s*\\w+\\s+" + name + "\\s*\\(.*\\).*$", 32);
-   }
+    public HeaderLineFunction(String name, String text) {
+        this.name = name;
+        this.text = text;
+        this.patternLine = Pattern.compile("^\\s*\\w+\\s+" + name + "\\s*\\(.*\\).*$", 32);
+    }
 
-   @Override
-   public String getText() {
-      return this.text;
-   }
+    @Override
+    public String getText() {
+        return this.text;
+    }
 
-   @Override
-   public boolean matches(String line) {
-      if (!line.contains(this.name)) {
-         return false;
-      }
+    @Override
+    public boolean matches(String line) {
+        if (!line.contains(this.name)) {
+            return false;
+        }
 
-      Matcher m = this.patternLine.matcher(line);
-      return m.matches();
-   }
+        Matcher m = this.patternLine.matcher(line);
+        return m.matches();
+    }
 
-   @Override
-   public String removeFrom(String line) {
-      return null;
-   }
+    @Override
+    public String removeFrom(String line) {
+        return null;
+    }
 }

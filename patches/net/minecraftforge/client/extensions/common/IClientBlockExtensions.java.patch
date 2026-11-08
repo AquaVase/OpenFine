@@ -10,17 +10,17 @@
 +import net.minecraft.world.phys.HitResult;
 +
 +public interface IClientBlockExtensions {
-+   IClientBlockExtensions DUMMY = new IClientBlockExtensions() {};
++    IClientBlockExtensions DUMMY = new IClientBlockExtensions() {};
 +
-+   static IClientBlockExtensions of(BlockState blockState) {
-+      return DUMMY;
-+   }
++    static IClientBlockExtensions of(BlockState blockState) {
++        return DUMMY;
++    }
 +
-+   default boolean addDestroyEffects(BlockState state, Level Level, BlockPos pos, ParticleEngine manager) {
-+      return false;
-+   }
++    default boolean addDestroyEffects(BlockState state, Level Level, BlockPos pos, ParticleEngine manager) {
++        return false;
++    }
 +
-+   default boolean addHitEffects(BlockState state, Level Level, HitResult target, ParticleEngine manager) {
-+      return false;
-+   }
++    default boolean addHitEffects(BlockState state, Level Level, HitResult target, ParticleEngine manager) {
++        return false;
++    }
 +}

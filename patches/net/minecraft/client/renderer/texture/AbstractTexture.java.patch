@@ -19,8 +19,8 @@
  public abstract class AbstractTexture implements AutoCloseable {
 -    protected @Nullable GpuTexture texture;
 -    protected @Nullable GpuTextureView textureView;
-+   protected GpuTexture texture;
-+   protected GpuTextureView textureView;
++    protected GpuTexture texture;
++    protected GpuTextureView textureView;
      protected GpuSampler sampler = RenderSystem.getSamplerCache()
          .getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, false);
  
@@ -28,7 +28,7 @@
      protected void releaseTextures() {
          if (this.texture != null) {
              this.texture.close();
-+         this.texture.setParentTexture(null);
++            this.texture.setParentTexture(null);
              this.texture = null;
          }
  
@@ -39,34 +39,34 @@
 -}
 \ No newline at end of file
 +
-+   public MultiTexID getMultiTexID() {
-+      return this.texture.getMultiTexID();
-+   }
++    public MultiTexID getMultiTexID() {
++        return this.texture.getMultiTexID();
++    }
 +
-+   public int getGlTextureId() {
-+      return this.texture.getGlTextureId();
-+   }
++    public int getGlTextureId() {
++        return this.texture.getGlTextureId();
++    }
 +
-+   public GlTexture getGlTexture() {
-+      return (GlTexture)this.texture;
-+   }
++    public GlTexture getGlTexture() {
++        return (GlTexture)this.texture;
++    }
 +
-+   public void bindTexture() {
-+      this.texture.bindTexture();
-+   }
++    public void bindTexture() {
++        this.texture.bindTexture();
++    }
 +
-+   public void deleteGlTexture() {
-+      if (this.texture != null) {
-+         this.texture.deleteGlTexture();
-+      }
-+   }
++    public void deleteGlTexture() {
++        if (this.texture != null) {
++            this.texture.deleteGlTexture();
++        }
++    }
 +
-+   public boolean hasGlTexture() {
-+      return this.texture != null;
-+   }
++    public boolean hasGlTexture() {
++        return this.texture != null;
++    }
 +
-+   @Override
-+   public String toString() {
-+      return this.texture + "";
-+   }
++    @Override
++    public String toString() {
++        return this.texture + "";
++    }
 +}

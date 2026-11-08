@@ -6,6 +6,6 @@
 +import net.minecraftforge.fluids.FluidType;
 +
 +public interface IForgeLivingEntity extends IForgeEntity {
-+   default void jumpInFluid(FluidType type) {
-+   }
++    default void jumpInFluid(FluidType type) {
++    }
 +}

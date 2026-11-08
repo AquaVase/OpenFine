@@ -25,33 +25,33 @@
 -        final @Nullable LevelChunk clientChunk,
 -        final @Nullable LevelChunk serverChunk
 -    ) {
-+   public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
++    public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
          Minecraft minecraft = Minecraft.getInstance();
          int framerateLimit = minecraft.getFramerateLimitTracker().getFramerateLimit();
 -        Optional<GpuSurface.Configuration> surfaceConfiguration = minecraft.windowSurface().currentConfiguration();
-+      Optional<Configuration> surfaceConfiguration = minecraft.windowSurface().currentConfiguration();
++        Optional<Configuration> surfaceConfiguration = minecraft.windowSurface().currentConfiguration();
          displayer.addPriorityLine(
              String.format(
                  Locale.ROOT,
 -                "%d fps T: %s%s",
 -                minecraft.getFps(),
-+            "%s T: %s%s",
-+            Config.getFpsString(),
++                "%s T: %s%s",
++                Config.getFpsString(),
                  framerateLimit == 260 ? "inf" : framerateLimit,
 -                presentModeName(surfaceConfiguration.map(GpuSurface.Configuration::presentMode).orElse(null))
-+            presentModeName(surfaceConfiguration.map(Configuration::presentMode).orElse(null))
++                presentModeName(surfaceConfiguration.map(Configuration::presentMode).orElse(null))
              )
          );
      }
  
      @Override
 -    public boolean isAllowed(final boolean reducedDebugInfo) {
-+   public boolean isAllowed(boolean reducedDebugInfo) {
++    public boolean isAllowed(boolean reducedDebugInfo) {
          return true;
      }
  
 -    private static String presentModeName(final GpuSurface.@Nullable PresentMode mode) {
-+   private static String presentModeName(PresentMode mode) {
++    private static String presentModeName(PresentMode mode) {
          return switch (mode) {
              case null -> "";
              case IMMEDIATE -> " (immediate)";

@@ -18,11 +18,11 @@
  public class TridentSpecialRenderer implements NoDataSpecialModelRenderer {
      public static final Transformation DEFAULT_TRANSFORMATION = new Transformation(null, null, new Vector3f(1.0F, -1.0F, -1.0F), null);
 -    private final TridentModel model;
-+   private TridentModel model;
-+   private boolean modelUpdated;
++    private TridentModel model;
++    private boolean modelUpdated;
  
 -    public TridentSpecialRenderer(final TridentModel model) {
-+   public TridentSpecialRenderer(TridentModel model) {
++    public TridentSpecialRenderer(TridentModel model) {
          this.model = model;
      }
  
@@ -35,11 +35,11 @@
 -        final boolean hasFoil,
 -        final int outlineColor
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
-+      if (CustomEntityModels.isActive() && !this.modelUpdated) {
-+         this.model = ArrayUtils.firstNonNull(CustomStaticModels.getTridentModel(), this.model);
-+         this.modelUpdated = true;
-+      }
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
++        if (CustomEntityModels.isActive() && !this.modelUpdated) {
++            this.model = ArrayUtils.firstNonNull(CustomStaticModels.getTridentModel(), this.model);
++            this.modelUpdated = true;
++        }
 +
          submitNodeCollector.order(0).submitModel(this.model, Unit.INSTANCE, poseStack, TridentModel.TEXTURE, lightCoords, overlayCoords, outlineColor, null);
          if (hasFoil) {
@@ -49,7 +49,7 @@
  
      @Override
 -    public void getExtents(final Consumer<Vector3fc> output) {
-+   public void getExtents(Consumer<Vector3fc> output) {
++    public void getExtents(Consumer<Vector3fc> output) {
          PoseStack poseStack = new PoseStack();
          this.model.root().getExtentsForGui(poseStack, output);
      }
@@ -63,7 +63,7 @@
          }
  
 -        public TridentSpecialRenderer bake(final SpecialModelRenderer.BakingContext context) {
-+      public TridentSpecialRenderer bake(BakingContext context) {
++        public TridentSpecialRenderer bake(BakingContext context) {
              return new TridentSpecialRenderer(new TridentModel(context.entityModelSet().bakeLayer(ModelLayers.TRIDENT)));
          }
      }

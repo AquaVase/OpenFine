@@ -11,50 +11,50 @@ import net.optifine.ChunkPosComparator;
 import net.optifine.SectionPosComparator;
 
 public class SectionUtils {
-   public static Collection<SectionRenderDispatcher.RenderSection> getSortedDist(List<SectionRenderDispatcher.RenderSection> listSections, LocalPlayer player) {
-      if (listSections.size() <= 1) {
-         return listSections;
-      }
+    public static Collection<SectionRenderDispatcher.RenderSection> getSortedDist(List<SectionRenderDispatcher.RenderSection> listSections, LocalPlayer player) {
+        if (listSections.size() <= 1) {
+            return listSections;
+        }
 
-      SectionPos playerSectionPos = SectionPos.of(player.blockPosition());
-      SectionPosComparator comp = new SectionPosComparator(playerSectionPos);
-      PriorityQueue<SectionRenderDispatcher.RenderSection> queue = new PriorityQueue<>(listSections.size(), comp);
+        SectionPos playerSectionPos = SectionPos.of(player.blockPosition());
+        SectionPosComparator comp = new SectionPosComparator(playerSectionPos);
+        PriorityQueue<SectionRenderDispatcher.RenderSection> queue = new PriorityQueue<>(listSections.size(), comp);
 
-      for (SectionRenderDispatcher.RenderSection rs : listSections) {
-         queue.add(rs);
-      }
+        for (SectionRenderDispatcher.RenderSection rs : listSections) {
+            queue.add(rs);
+        }
 
-      return queue;
-   }
+        return queue;
+    }
 
-   public static Collection<SectionRenderDispatcher.RenderSection> getSortedDistDir(
-      List<SectionRenderDispatcher.RenderSection> listSections, LocalPlayer player
-   ) {
-      if (listSections.size() <= 1) {
-         return listSections;
-      }
+    public static Collection<SectionRenderDispatcher.RenderSection> getSortedDistDir(
+        List<SectionRenderDispatcher.RenderSection> listSections, LocalPlayer player
+    ) {
+        if (listSections.size() <= 1) {
+            return listSections;
+        }
 
-      float playerYaw = player.getYRot() + 90.0F;
+        float playerYaw = player.getYRot() + 90.0F;
 
-      while (playerYaw <= -180.0F) {
-         playerYaw += 360.0F;
-      }
+        while (playerYaw <= -180.0F) {
+            playerYaw += 360.0F;
+        }
 
-      while (playerYaw > 180.0F) {
-         playerYaw -= 360.0F;
-      }
+        while (playerYaw > 180.0F) {
+            playerYaw -= 360.0F;
+        }
 
-      double playerYawRad = playerYaw * (Math.PI / 180.0);
-      double playerPitch = player.getXRot();
-      double playerPitchRad = playerPitch * (Math.PI / 180.0);
-      ChunkPos playerChunkPos = player.chunkPosition();
-      ChunkPosComparator comp = new ChunkPosComparator(playerChunkPos.x(), playerChunkPos.z(), playerYawRad, playerPitchRad);
-      PriorityQueue<SectionRenderDispatcher.RenderSection> queue = new PriorityQueue<>(listSections.size(), comp);
+        double playerYawRad = playerYaw * (Math.PI / 180.0);
+        double playerPitch = player.getXRot();
+        double playerPitchRad = playerPitch * (Math.PI / 180.0);
+        ChunkPos playerChunkPos = player.chunkPosition();
+        ChunkPosComparator comp = new ChunkPosComparator(playerChunkPos.x(), playerChunkPos.z(), playerYawRad, playerPitchRad);
+        PriorityQueue<SectionRenderDispatcher.RenderSection> queue = new PriorityQueue<>(listSections.size(), comp);
 
-      for (SectionRenderDispatcher.RenderSection rs : listSections) {
-         queue.add(rs);
-      }
+        for (SectionRenderDispatcher.RenderSection rs : listSections) {
+            queue.add(rs);
+        }
 
-      return queue;
-   }
+        return queue;
+    }
 }

@@ -10,18 +10,18 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterVindicator extends ModelAdapterIllager {
-   public ModelAdapterVindicator() {
-      super(EntityTypes.VINDICATOR, "vindicator", ModelLayers.VINDICATOR);
-      this.setAlias("vindication_illager");
-   }
+    public ModelAdapterVindicator() {
+        super(EntityTypes.VINDICATOR, "vindicator", ModelLayers.VINDICATOR);
+        this.setAlias("vindication_illager");
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new IllagerModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new IllagerModel(root);
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new VindicatorRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new VindicatorRenderer(context);
+    }
 }

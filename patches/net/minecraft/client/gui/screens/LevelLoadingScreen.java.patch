@@ -19,7 +19,7 @@
      private long lastNarration = -1L;
      private LevelLoadingScreen.Reason reason;
 -    private @Nullable TextureAtlasSprite cachedNetherPortalSprite;
-+   private TextureAtlasSprite cachedNetherPortalSprite;
++    private TextureAtlasSprite cachedNetherPortalSprite;
      private static final Object2IntMap<ChunkStatus> COLORS = Util.make(new Object2IntOpenHashMap<>(), map -> {
          map.defaultReturnValue(0);
          map.put(ChunkStatus.EMPTY, 5526612);
@@ -27,17 +27,17 @@
          map.put(ChunkStatus.SPAWN, 15884384);
          map.put(ChunkStatus.FULL, 16777215);
      });
-+   private CustomLoadingScreen customLoadingScreen = CustomLoadingScreens.getCustomLoadingScreen();
++    private CustomLoadingScreen customLoadingScreen = CustomLoadingScreens.getCustomLoadingScreen();
  
 -    public LevelLoadingScreen(final LevelLoadTracker loadTracker, final LevelLoadingScreen.Reason reason) {
-+   public LevelLoadingScreen(LevelLoadTracker loadTracker, LevelLoadingScreen.Reason reason) {
++    public LevelLoadingScreen(LevelLoadTracker loadTracker, LevelLoadingScreen.Reason reason) {
          super(GameNarrator.NO_TITLE);
          this.loadTracker = loadTracker;
          this.reason = reason;
      }
  
 -    public void update(final LevelLoadTracker loadTracker, final LevelLoadingScreen.Reason reason) {
-+   public void update(LevelLoadTracker loadTracker, LevelLoadingScreen.Reason reason) {
++    public void update(LevelLoadTracker loadTracker, LevelLoadingScreen.Reason reason) {
          this.loadTracker = loadTracker;
          this.reason = reason;
      }
@@ -46,7 +46,7 @@
  
      @Override
 -    protected void updateNarratedWidget(final NarrationElementOutput output) {
-+   protected void updateNarratedWidget(NarrationElementOutput output) {
++    protected void updateNarratedWidget(NarrationElementOutput output) {
          if (this.loadTracker.hasProgress()) {
              output.add(NarratedElementType.TITLE, Component.translatable("loading.progress", Mth.floor(this.loadTracker.serverProgress() * 100.0F)));
          }
@@ -55,7 +55,7 @@
  
      @Override
 -    public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
-+   public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
++    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
          super.extractRenderState(graphics, mouseX, mouseY, a);
          long current = Util.getMillis();
          if (current - this.lastNarration > 2000L) {
@@ -64,7 +64,7 @@
              int size = 2;
              extractChunksForRendering(graphics, xCenter, yCenter, 2, 0, statusView);
 -            textTop = yCenter - statusView.radius() * 2 - 9 * 3;
-+         textTop = yCenter - statusView.radius() * 2 - 27;
++            textTop = yCenter - statusView.radius() * 2 - 27;
          } else {
              textTop = yCenter - 50;
          }
@@ -73,7 +73,7 @@
      }
  
 -    private void drawProgressBar(final GuiGraphicsExtractor graphics, final int left, final int top, final int width, final int height, final float progress) {
-+   private void drawProgressBar(GuiGraphicsExtractor graphics, int left, int top, int width, int height, float progress) {
++    private void drawProgressBar(GuiGraphicsExtractor graphics, int left, int top, int width, int height, float progress) {
          graphics.fill(left, top, left + width, top + height, -16777216);
          graphics.fill(left, top, left + Math.round(progress * width), top + height, -16711936);
      }
@@ -81,30 +81,61 @@
 -    public static void extractChunksForRendering(
 -        final GuiGraphicsExtractor graphics, final int xCenter, final int yCenter, final int size, final int margin, final ChunkLoadStatusView statusView
 -    ) {
-+   public static void extractChunksForRendering(GuiGraphicsExtractor graphics, int xCenter, int yCenter, int size, int margin, ChunkLoadStatusView statusView) {
++    public static void extractChunksForRendering(GuiGraphicsExtractor graphics, int xCenter, int yCenter, int size, int margin, ChunkLoadStatusView statusView) {
          int width = size + margin;
          int diameter = statusView.radius() * 2 + 1;
          int totalWidth = diameter * width - margin;
-@@ -146,7 +143,10 @@
+@@ -146,26 +143,30 @@
      }
  
      @Override
 -    public void extractBackground(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
-+   public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-+      if (this.customLoadingScreen != null) {
-+         this.customLoadingScreen.drawBackground(this.width, this.height);
-+      } else {
-         switch (this.reason) {
-             case NETHER_PORTAL:
-                 graphics.blitSprite(
-@@ -168,6 +168,7 @@
-                 this.extractMenuBackground(graphics);
+-        switch (this.reason) {
+-            case NETHER_PORTAL:
+-                graphics.blitSprite(
+-                    RenderPipelines.GUI_OPAQUE_TEXTURED_BACKGROUND, this.getNetherPortalSprite(), 0, 0, graphics.guiWidth(), graphics.guiHeight()
+-                );
+-                break;
+-            case END_PORTAL:
+-                TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+-                AbstractTexture skyTexture = textureManager.getTexture(AbstractEndPortalRenderer.END_SKY_LOCATION);
+-                AbstractTexture portalTexture = textureManager.getTexture(AbstractEndPortalRenderer.END_PORTAL_LOCATION);
+-                TextureSetup textureSetup = TextureSetup.doubleTexture(
+-                    skyTexture.getTextureView(), skyTexture.getSampler(), portalTexture.getTextureView(), portalTexture.getSampler()
+-                );
+-                graphics.fill(RenderPipelines.END_PORTAL, textureSetup, 0, 0, this.width, this.height);
+-                break;
+-            case OTHER:
+-                this.extractPanorama(graphics, a);
+-                this.extractBlurredBackground(graphics);
+-                this.extractMenuBackground(graphics);
++    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
++        if (this.customLoadingScreen != null) {
++            this.customLoadingScreen.drawBackground(this.width, this.height);
++        } else {
++            switch (this.reason) {
++                case NETHER_PORTAL:
++                    graphics.blitSprite(
++                        RenderPipelines.GUI_OPAQUE_TEXTURED_BACKGROUND, this.getNetherPortalSprite(), 0, 0, graphics.guiWidth(), graphics.guiHeight()
++                    );
++                    break;
++                case END_PORTAL:
++                    TextureManager textureManager = Minecraft.getInstance().getTextureManager();
++                    AbstractTexture skyTexture = textureManager.getTexture(AbstractEndPortalRenderer.END_SKY_LOCATION);
++                    AbstractTexture portalTexture = textureManager.getTexture(AbstractEndPortalRenderer.END_PORTAL_LOCATION);
++                    TextureSetup textureSetup = TextureSetup.doubleTexture(
++                        skyTexture.getTextureView(), skyTexture.getSampler(), portalTexture.getTextureView(), portalTexture.getSampler()
++                    );
++                    graphics.fill(RenderPipelines.END_PORTAL, textureSetup, 0, 0, this.width, this.height);
++                    break;
++                case OTHER:
++                    this.extractPanorama(graphics, a);
++                    this.extractBlurredBackground(graphics);
++                    this.extractMenuBackground(graphics);
++            }
          }
      }
-+   }
  
-     private TextureAtlasSprite getNetherPortalSprite() {
-         if (this.cachedNetherPortalSprite != null) {
 @@ -193,10 +194,9 @@
          return false;
      }

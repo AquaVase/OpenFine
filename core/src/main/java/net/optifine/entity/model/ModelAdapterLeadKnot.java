@@ -11,27 +11,27 @@ import net.minecraft.world.entity.EntityTypes;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterLeadKnot extends ModelAdapterEntity {
-   public ModelAdapterLeadKnot() {
-      super(EntityTypes.LEASH_KNOT, "lead_knot", ModelLayers.LEASH_KNOT);
-   }
+    public ModelAdapterLeadKnot() {
+        super(EntityTypes.LEASH_KNOT, "lead_knot", ModelLayers.LEASH_KNOT);
+    }
 
-   @Override
-   public Model makeModel(ModelPart root) {
-      return new LeashKnotModel(root);
-   }
+    @Override
+    public Model makeModel(ModelPart root) {
+        return new LeashKnotModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("knot", "knot");
-      map.put("root", "root");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("knot", "knot");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   public IEntityRenderer makeEntityRender(Model modelBase, RendererCache rendererCache, int index) {
-      LeashKnotRenderer render = new LeashKnotRenderer(this.getContext());
-      this.setModel(render, Reflector.RenderLeashKnot_leashKnotModel, "LeashKnotRenderer.model", modelBase);
-      return render;
-   }
+    @Override
+    public IEntityRenderer makeEntityRender(Model modelBase, RendererCache rendererCache, int index) {
+        LeashKnotRenderer render = new LeashKnotRenderer(this.getContext());
+        this.setModel(render, Reflector.RenderLeashKnot_leashKnotModel, "LeashKnotRenderer.model", modelBase);
+        return render;
+    }
 }

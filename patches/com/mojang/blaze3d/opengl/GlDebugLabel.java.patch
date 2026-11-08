@@ -18,52 +18,52 @@
      private static final Logger LOGGER = LogUtils.getLogger();
  
 -    public void applyLabel(final GlBuffer buffer, final @Nullable Supplier<String> label) {
-+   public void applyLabel(GlBuffer buffer, Supplier<String> label) {
++    public void applyLabel(GlBuffer buffer, Supplier<String> label) {
      }
  
 -    public void applyLabel(final GlTexture texture) {
-+   public void applyLabel(GlTexture texture) {
++    public void applyLabel(GlTexture texture) {
      }
  
 -    public void applyLabel(final GlShaderModule shaderModule) {
-+   public void applyLabel(GlShaderModule shaderModule) {
++    public void applyLabel(GlShaderModule shaderModule) {
      }
  
 -    public void applyLabel(final GlProgram program) {
-+   public void applyLabel(GlProgram program) {
++    public void applyLabel(GlProgram program) {
      }
  
 -    public void applyLabel(final VertexArrayCache.VertexArray vertexArray) {
-+   public void applyLabel(VertexArrayCache.VertexArray vertexArray) {
++    public void applyLabel(VertexArrayCache.VertexArray vertexArray) {
      }
  
 -    public void pushDebugGroup(final Supplier<String> label) {
-+   public void pushDebugGroup(Supplier<String> label) {
++    public void pushDebugGroup(Supplier<String> label) {
      }
  
      public void popDebugGroup() {
      }
  
 -    public static GlDebugLabel create(final GLCapabilities caps, final boolean wantsLabels, final Set<String> enabledExtensions) {
-+   public void applyLabelBuffer(int id, String labelIn) {
-+   }
++    public void applyLabelBuffer(int id, String labelIn) {
++    }
 +
-+   public void applyLabelTexture(int id, String labelIn) {
-+   }
++    public void applyLabelTexture(int id, String labelIn) {
++    }
 +
-+   public void applyLabelShader(int id, String labelIn) {
-+   }
++    public void applyLabelShader(int id, String labelIn) {
++    }
 +
-+   public void applyLabelProgram(int id, String labelIn) {
-+   }
++    public void applyLabelProgram(int id, String labelIn) {
++    }
 +
-+   public void applyLabelVertexArray(int id, String labelIn) {
-+   }
++    public void applyLabelVertexArray(int id, String labelIn) {
++    }
 +
-+   public void applyLabelFramebuffer(int id, String labelIn) {
-+   }
++    public void applyLabelFramebuffer(int id, String labelIn) {
++    }
 +
-+   public static GlDebugLabel create(GLCapabilities caps, boolean wantsLabels, Set<String> enabledExtensions) {
++    public static GlDebugLabel create(GLCapabilities caps, boolean wantsLabels, Set<String> enabledExtensions) {
          if (wantsLabels) {
              if (caps.GL_KHR_debug && GlDevice.USE_GL_KHR_debug) {
                  enabledExtensions.add("GL_KHR_debug");
@@ -77,20 +77,20 @@
  
          @Override
 -        public void applyLabel(final GlBuffer buffer, final @Nullable Supplier<String> label) {
-+      public void applyLabel(GlBuffer buffer, Supplier<String> label) {
++        public void applyLabel(GlBuffer buffer, Supplier<String> label) {
              if (label != null) {
 -                KHRDebug.glObjectLabel(33504, buffer.handle(), StringUtil.truncateStringIfNecessary(label.get(), this.maxLabelLength, true));
-+            String labelStr = "Buf: " + label.get();
-+            KHRDebug.glObjectLabel(33504, buffer.handle(), StringUtil.truncateStringIfNecessary(labelStr, this.maxLabelLength, true));
++                String labelStr = "Buf: " + label.get();
++                KHRDebug.glObjectLabel(33504, buffer.handle(), StringUtil.truncateStringIfNecessary(labelStr, this.maxLabelLength, true));
              }
          }
  
          @Override
 -        public void applyLabel(final GlTexture texture) {
 -            KHRDebug.glObjectLabel(5890, texture.id, StringUtil.truncateStringIfNecessary(texture.getLabel(), this.maxLabelLength, true));
-+      public void applyLabel(GlTexture texture) {
-+         String label = "Tex: " + texture.getLabel();
-+         KHRDebug.glObjectLabel(5890, texture.id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        public void applyLabel(GlTexture texture) {
++            String label = "Tex: " + texture.getLabel();
++            KHRDebug.glObjectLabel(5890, texture.id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
          }
  
          @Override
@@ -98,30 +98,30 @@
 -            KHRDebug.glObjectLabel(
 -                33505, shaderModule.getShaderId(), StringUtil.truncateStringIfNecessary(shaderModule.getDebugLabel(), this.maxLabelLength, true)
 -            );
-+      public void applyLabel(GlShaderModule shaderModule) {
-+         String label = "Sh: " + shaderModule.getDebugLabel();
-+         KHRDebug.glObjectLabel(33505, shaderModule.getShaderId(), StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        public void applyLabel(GlShaderModule shaderModule) {
++            String label = "Sh: " + shaderModule.getDebugLabel();
++            KHRDebug.glObjectLabel(33505, shaderModule.getShaderId(), StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
          }
  
          @Override
 -        public void applyLabel(final GlProgram program) {
 -            KHRDebug.glObjectLabel(33506, program.getProgramId(), StringUtil.truncateStringIfNecessary(program.getDebugLabel(), this.maxLabelLength, true));
-+      public void applyLabel(GlProgram program) {
-+         String label = "Prog: " + program.getDebugLabel();
-+         KHRDebug.glObjectLabel(33506, program.getProgramId(), StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        public void applyLabel(GlProgram program) {
++            String label = "Prog: " + program.getDebugLabel();
++            KHRDebug.glObjectLabel(33506, program.getProgramId(), StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
          }
  
          @Override
 -        public void applyLabel(final VertexArrayCache.VertexArray vertexArray) {
 -            KHRDebug.glObjectLabel(32884, vertexArray.id, StringUtil.truncateStringIfNecessary(vertexArray.formatName, this.maxLabelLength, true));
-+      public void applyLabel(VertexArrayCache.VertexArray vertexArray) {
-+         String label = "VA: " + vertexArray.formatName;
-+         KHRDebug.glObjectLabel(32884, vertexArray.id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        public void applyLabel(VertexArrayCache.VertexArray vertexArray) {
++            String label = "VA: " + vertexArray.formatName;
++            KHRDebug.glObjectLabel(32884, vertexArray.id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
          }
  
          @Override
 -        public void pushDebugGroup(final Supplier<String> label) {
-+      public void pushDebugGroup(Supplier<String> label) {
++        public void pushDebugGroup(Supplier<String> label) {
              KHRDebug.glPushDebugGroup(33354, 0, label.get());
          }
  
@@ -130,44 +130,44 @@
              return true;
          }
 +
-+      @Override
-+      public void applyLabelBuffer(int id, String labelIn) {
-+         String label = "Buf: " + labelIn;
-+         KHRDebug.glObjectLabel(33504, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        @Override
++        public void applyLabelBuffer(int id, String labelIn) {
++            String label = "Buf: " + labelIn;
++            KHRDebug.glObjectLabel(33504, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        }
++
++        @Override
++        public void applyLabelTexture(int id, String labelIn) {
++            String label = "Tex: " + labelIn;
++            KHRDebug.glObjectLabel(5890, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        }
++
++        @Override
++        public void applyLabelShader(int id, String labelIn) {
++            String label = "Sh: " + labelIn;
++            KHRDebug.glObjectLabel(33505, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        }
++
++        @Override
++        public void applyLabelProgram(int id, String labelIn) {
++            String label = "Prog: " + labelIn;
++            KHRDebug.glObjectLabel(33506, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        }
++
++        @Override
++        public void applyLabelVertexArray(int id, String labelIn) {
++            String label = "VA: " + labelIn;
++            KHRDebug.glObjectLabel(32884, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        }
++
++        @Override
++        public void applyLabelFramebuffer(int id, String labelIn) {
++            String label = "FB: " + labelIn;
++            KHRDebug.glObjectLabel(36160, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
++        }
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+      @Override
-+      public void applyLabelTexture(int id, String labelIn) {
-+         String label = "Tex: " + labelIn;
-+         KHRDebug.glObjectLabel(5890, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
-+      }
-+
-+      @Override
-+      public void applyLabelShader(int id, String labelIn) {
-+         String label = "Sh: " + labelIn;
-+         KHRDebug.glObjectLabel(33505, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
-+      }
-+
-+      @Override
-+      public void applyLabelProgram(int id, String labelIn) {
-+         String label = "Prog: " + labelIn;
-+         KHRDebug.glObjectLabel(33506, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
-+      }
-+
-+      @Override
-+      public void applyLabelVertexArray(int id, String labelIn) {
-+         String label = "VA: " + labelIn;
-+         KHRDebug.glObjectLabel(32884, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
-+      }
-+
-+      @Override
-+      public void applyLabelFramebuffer(int id, String labelIn) {
-+         String label = "FB: " + labelIn;
-+         KHRDebug.glObjectLabel(36160, id, StringUtil.truncateStringIfNecessary(label, this.maxLabelLength, true));
-+      }
-+   }
-+
      private static class Empty extends GlDebugLabel {
      }
  
@@ -175,44 +175,44 @@
      private static class Ext extends GlDebugLabel {
          @Override
 -        public void applyLabel(final GlBuffer buffer, final @Nullable Supplier<String> label) {
-+      public void applyLabel(GlBuffer buffer, Supplier<String> label) {
++        public void applyLabel(GlBuffer buffer, Supplier<String> label) {
              if (label != null) {
 -                EXTDebugLabel.glLabelObjectEXT(37201, buffer.handle(), StringUtil.truncateStringIfNecessary(label.get(), 256, true));
-+            String labelStr = "Buf: " + label.get();
-+            EXTDebugLabel.glLabelObjectEXT(37201, buffer.handle(), StringUtil.truncateStringIfNecessary(labelStr, 256, true));
++                String labelStr = "Buf: " + label.get();
++                EXTDebugLabel.glLabelObjectEXT(37201, buffer.handle(), StringUtil.truncateStringIfNecessary(labelStr, 256, true));
              }
          }
  
          @Override
 -        public void applyLabel(final GlTexture texture) {
 -            EXTDebugLabel.glLabelObjectEXT(5890, texture.id, StringUtil.truncateStringIfNecessary(texture.getLabel(), 256, true));
-+      public void applyLabel(GlTexture texture) {
-+         String label = "Tex: " + texture.getLabel();
-+         EXTDebugLabel.glLabelObjectEXT(5890, texture.id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        public void applyLabel(GlTexture texture) {
++            String label = "Tex: " + texture.getLabel();
++            EXTDebugLabel.glLabelObjectEXT(5890, texture.id, StringUtil.truncateStringIfNecessary(label, 256, true));
          }
  
          @Override
 -        public void applyLabel(final GlShaderModule shaderModule) {
 -            EXTDebugLabel.glLabelObjectEXT(35656, shaderModule.getShaderId(), StringUtil.truncateStringIfNecessary(shaderModule.getDebugLabel(), 256, true));
-+      public void applyLabel(GlShaderModule shaderModule) {
-+         String label = "Sh: " + shaderModule.getDebugLabel();
-+         EXTDebugLabel.glLabelObjectEXT(35656, shaderModule.getShaderId(), StringUtil.truncateStringIfNecessary(label, 256, true));
++        public void applyLabel(GlShaderModule shaderModule) {
++            String label = "Sh: " + shaderModule.getDebugLabel();
++            EXTDebugLabel.glLabelObjectEXT(35656, shaderModule.getShaderId(), StringUtil.truncateStringIfNecessary(label, 256, true));
          }
  
          @Override
 -        public void applyLabel(final GlProgram program) {
 -            EXTDebugLabel.glLabelObjectEXT(35648, program.getProgramId(), StringUtil.truncateStringIfNecessary(program.getDebugLabel(), 256, true));
-+      public void applyLabel(GlProgram program) {
-+         String label = "Prog: " + program.getDebugLabel();
-+         EXTDebugLabel.glLabelObjectEXT(35648, program.getProgramId(), StringUtil.truncateStringIfNecessary(label, 256, true));
++        public void applyLabel(GlProgram program) {
++            String label = "Prog: " + program.getDebugLabel();
++            EXTDebugLabel.glLabelObjectEXT(35648, program.getProgramId(), StringUtil.truncateStringIfNecessary(label, 256, true));
          }
  
          @Override
 -        public void applyLabel(final VertexArrayCache.VertexArray vertexArray) {
 -            EXTDebugLabel.glLabelObjectEXT(32884, vertexArray.id, StringUtil.truncateStringIfNecessary(vertexArray.formatName, 256, true));
-+      public void applyLabel(VertexArrayCache.VertexArray vertexArray) {
-+         String label = "VA: " + vertexArray.formatName;
-+         EXTDebugLabel.glLabelObjectEXT(32884, vertexArray.id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        public void applyLabel(VertexArrayCache.VertexArray vertexArray) {
++            String label = "VA: " + vertexArray.formatName;
++            EXTDebugLabel.glLabelObjectEXT(32884, vertexArray.id, StringUtil.truncateStringIfNecessary(label, 256, true));
          }
  
          @Override
@@ -220,36 +220,36 @@
              return true;
          }
 +
-+      @Override
-+      public void applyLabelBuffer(int id, String labelIn) {
-+         String label = "Buf: " + labelIn;
-+         EXTDebugLabel.glLabelObjectEXT(37201, id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        @Override
++        public void applyLabelBuffer(int id, String labelIn) {
++            String label = "Buf: " + labelIn;
++            EXTDebugLabel.glLabelObjectEXT(37201, id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        }
++
++        @Override
++        public void applyLabelTexture(int id, String labelIn) {
++            String label = "Tex: " + labelIn;
++            EXTDebugLabel.glLabelObjectEXT(5890, id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        }
++
++        @Override
++        public void applyLabelProgram(int id, String labelIn) {
++            String label = "Prog: " + labelIn;
++            EXTDebugLabel.glLabelObjectEXT(35648, id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        }
++
++        @Override
++        public void applyLabelVertexArray(int id, String labelIn) {
++            String label = "VA: " + labelIn;
++            EXTDebugLabel.glLabelObjectEXT(32884, id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        }
++
++        @Override
++        public void applyLabelFramebuffer(int id, String labelIn) {
++            String label = "FB: " + labelIn;
++            EXTDebugLabel.glLabelObjectEXT(36160, id, StringUtil.truncateStringIfNecessary(label, 256, true));
++        }
      }
 -}
 \ No newline at end of file
-+
-+      @Override
-+      public void applyLabelTexture(int id, String labelIn) {
-+         String label = "Tex: " + labelIn;
-+         EXTDebugLabel.glLabelObjectEXT(5890, id, StringUtil.truncateStringIfNecessary(label, 256, true));
-+      }
-+
-+      @Override
-+      public void applyLabelProgram(int id, String labelIn) {
-+         String label = "Prog: " + labelIn;
-+         EXTDebugLabel.glLabelObjectEXT(35648, id, StringUtil.truncateStringIfNecessary(label, 256, true));
-+      }
-+
-+      @Override
-+      public void applyLabelVertexArray(int id, String labelIn) {
-+         String label = "VA: " + labelIn;
-+         EXTDebugLabel.glLabelObjectEXT(32884, id, StringUtil.truncateStringIfNecessary(label, 256, true));
-+      }
-+
-+      @Override
-+      public void applyLabelFramebuffer(int id, String labelIn) {
-+         String label = "FB: " + labelIn;
-+         EXTDebugLabel.glLabelObjectEXT(36160, id, StringUtil.truncateStringIfNecessary(label, 256, true));
-+      }
-+   }
 +}

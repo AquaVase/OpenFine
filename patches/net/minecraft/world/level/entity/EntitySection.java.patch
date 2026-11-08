@@ -18,54 +18,54 @@
      private Visibility chunkStatus;
  
 -    public EntitySection(final Class<T> entityClass, final Visibility chunkStatus) {
-+   public EntitySection(Class<T> entityClass, Visibility chunkStatus) {
++    public EntitySection(Class<T> entityClass, Visibility chunkStatus) {
          this.chunkStatus = chunkStatus;
          this.storage = new ClassInstanceMultiMap<>(entityClass);
      }
  
 -    public void add(final T entity) {
-+   public void add(T entity) {
++    public void add(T entity) {
          this.storage.add(entity);
      }
  
 -    public boolean remove(final T entity) {
-+   public boolean remove(T entity) {
++    public boolean remove(T entity) {
          return this.storage.remove(entity);
      }
  
 -    public AbortableIterationConsumer.Continuation getEntities(final AABB bb, final AbortableIterationConsumer<T> entities) {
-+   public Continuation getEntities(AABB bb, AbortableIterationConsumer<T> entities) {
++    public Continuation getEntities(AABB bb, AbortableIterationConsumer<T> entities) {
          for (T entity : this.storage) {
              if (entity.getBoundingBox().intersects(bb) && entities.accept(entity).shouldAbort()) {
 -                return AbortableIterationConsumer.Continuation.ABORT;
-+            return Continuation.ABORT;
++                return Continuation.ABORT;
              }
          }
  
 -        return AbortableIterationConsumer.Continuation.CONTINUE;
-+      return Continuation.CONTINUE;
++        return Continuation.CONTINUE;
      }
  
 -    public <U extends T> AbortableIterationConsumer.Continuation getEntities(
 -        final EntityTypeTest<T, U> type, final AABB bb, final AbortableIterationConsumer<? super U> consumer
 -    ) {
-+   public <U extends T> Continuation getEntities(EntityTypeTest<T, U> type, AABB bb, AbortableIterationConsumer<? super U> consumer) {
++    public <U extends T> Continuation getEntities(EntityTypeTest<T, U> type, AABB bb, AbortableIterationConsumer<? super U> consumer) {
          Collection<? extends T> foundEntities = this.storage.find(type.getBaseClass());
          if (foundEntities.isEmpty()) {
 -            return AbortableIterationConsumer.Continuation.CONTINUE;
-+         return Continuation.CONTINUE;
++            return Continuation.CONTINUE;
          }
  
          for (T entity : foundEntities) {
              U maybeEntity = (U)type.tryCast(entity);
              if (maybeEntity != null && entity.getBoundingBox().intersects(bb) && consumer.accept(maybeEntity).shouldAbort()) {
 -                return AbortableIterationConsumer.Continuation.ABORT;
-+            return Continuation.ABORT;
++                return Continuation.ABORT;
              }
          }
  
 -        return AbortableIterationConsumer.Continuation.CONTINUE;
-+      return Continuation.CONTINUE;
++        return Continuation.CONTINUE;
      }
  
      public boolean isEmpty() {
@@ -74,7 +74,7 @@
      }
  
 -    public Visibility updateChunkStatus(final Visibility chunkStatus) {
-+   public Visibility updateChunkStatus(Visibility chunkStatus) {
++    public Visibility updateChunkStatus(Visibility chunkStatus) {
          Visibility prev = this.chunkStatus;
          this.chunkStatus = chunkStatus;
          return prev;
@@ -85,7 +85,7 @@
 -}
 \ No newline at end of file
 +
-+   public List<T> getEntityList() {
-+      return this.storage.getValues();
-+   }
++    public List<T> getEntityList() {
++        return this.storage.getValues();
++    }
 +}

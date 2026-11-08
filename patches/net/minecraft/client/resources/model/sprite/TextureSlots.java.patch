@@ -18,12 +18,12 @@
      private final Map<String, Material> resolvedValues;
  
 -    private TextureSlots(final Map<String, Material> resolvedValues) {
-+   public TextureSlots(Map<String, Material> resolvedValues) {
++    public TextureSlots(Map<String, Material> resolvedValues) {
          this.resolvedValues = resolvedValues;
      }
  
 -    public @Nullable Material getMaterial(String reference) {
-+   public Material getMaterial(String reference) {
++    public Material getMaterial(String reference) {
          if (isTextureReference(reference)) {
              reference = reference.substring(1);
          }
@@ -32,12 +32,12 @@
      }
  
 -    private static boolean isTextureReference(final String texture) {
-+   private static boolean isTextureReference(String texture) {
++    private static boolean isTextureReference(String texture) {
          return texture.charAt(0) == '#';
      }
  
 -    public static TextureSlots.Data parseTextureMap(final JsonObject texturesObject) {
-+   public static TextureSlots.Data parseTextureMap(JsonObject texturesObject) {
++    public static TextureSlots.Data parseTextureMap(JsonObject texturesObject) {
          TextureSlots.Data.Builder builder = new TextureSlots.Data.Builder();
  
          for (Entry<String, JsonElement> entry : texturesObject.entrySet()) {
@@ -46,26 +46,26 @@
      }
  
 -    private static void parseEntry(final String slot, final JsonElement value, final TextureSlots.Data.Builder output) {
-+   private static void parseEntry(String slot, JsonElement value, TextureSlots.Data.Builder output) {
++    private static void parseEntry(String slot, JsonElement value, TextureSlots.Data.Builder output) {
          if (GsonHelper.isStringValue(value) && isTextureReference(value.getAsString())) {
              output.addReference(slot, value.getAsString().substring(1));
          } else {
 -            output.addTexture(slot, Material.CODEC.parse(JsonOps.INSTANCE, value).getOrThrow(JsonParseException::new));
-+         Material material = Material.CODEC.parse(JsonOps.INSTANCE, value).getOrThrow(JsonParseException::new);
-+         material = ModelManager.fixMaterial(material);
-+         output.addTexture(slot, material);
++            Material material = Material.CODEC.parse(JsonOps.INSTANCE, value).getOrThrow(JsonParseException::new);
++            material = ModelManager.fixMaterial(material);
++            output.addTexture(slot, material);
          }
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public Map<String, Material> getResolvedValues() {
-+      return this.resolvedValues;
-+   }
++    public Map<String, Material> getResolvedValues() {
++        return this.resolvedValues;
++    }
 +
-+   @Override
-+   public String toString() {
-+      return this.resolvedValues + "";
-+   }
++    @Override
++    public String toString() {
++        return this.resolvedValues + "";
++    }
 +
      public record Data(Map<String, TextureSlots.SlotContents> values) {
          public static final TextureSlots.Data EMPTY = new TextureSlots.Data(Map.of());
@@ -75,13 +75,13 @@
              private final Map<String, TextureSlots.SlotContents> textureMap = new HashMap<>();
  
 -            public TextureSlots.Data.Builder addReference(final String slot, final String reference) {
-+         public TextureSlots.Data.Builder addReference(String slot, String reference) {
++            public TextureSlots.Data.Builder addReference(String slot, String reference) {
                  this.textureMap.put(slot, new TextureSlots.Reference(reference));
                  return this;
              }
  
 -            public TextureSlots.Data.Builder addTexture(final String slot, final Material material) {
-+         public TextureSlots.Data.Builder addTexture(String slot, Material material) {
++            public TextureSlots.Data.Builder addTexture(String slot, Material material) {
                  this.textureMap.put(slot, new TextureSlots.Value(material));
                  return this;
              }
@@ -99,19 +99,19 @@
          private final List<TextureSlots.Data> entries = new ArrayList<>();
  
 -        public TextureSlots.Resolver addLast(final TextureSlots.Data data) {
-+      public TextureSlots.Resolver addLast(TextureSlots.Data data) {
++        public TextureSlots.Resolver addLast(TextureSlots.Data data) {
              this.entries.addLast(data);
              return this;
          }
  
 -        public TextureSlots.Resolver addFirst(final TextureSlots.Data data) {
-+      public TextureSlots.Resolver addFirst(TextureSlots.Data data) {
++        public TextureSlots.Resolver addFirst(TextureSlots.Data data) {
              this.entries.addFirst(data);
              return this;
          }
  
 -        public TextureSlots resolve(final ModelDebugName debugNameProvider) {
-+      public TextureSlots resolve(ModelDebugName debugNameProvider) {
++        public TextureSlots resolve(ModelDebugName debugNameProvider) {
              if (this.entries.isEmpty()) {
                  return TextureSlots.EMPTY;
              }

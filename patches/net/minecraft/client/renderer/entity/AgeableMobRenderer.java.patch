@@ -16,11 +16,11 @@
  public abstract class AgeableMobRenderer<T extends Mob, S extends LivingEntityRenderState, M extends EntityModel<? super S>> extends MobRenderer<T, S, M> {
 -    private final M adultModel;
 -    private final M babyModel;
-+   private M adultModel;
-+   private M babyModel;
++    private M adultModel;
++    private M babyModel;
  
 -    public AgeableMobRenderer(final EntityRendererProvider.Context context, final M adultModel, final M babyModel, final float shadow) {
-+   public AgeableMobRenderer(Context context, M adultModel, M babyModel, float shadow) {
++    public AgeableMobRenderer(Context context, M adultModel, M babyModel, float shadow) {
          super(context, adultModel, shadow);
          this.adultModel = adultModel;
          this.babyModel = babyModel;
@@ -28,27 +28,27 @@
  
      @Override
 -    public void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
-+   public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    public void submit(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          this.model = state.isBaby ? this.babyModel : this.adultModel;
          super.submit(state, poseStack, submitNodeCollector, camera);
      }
 -}
 \ No newline at end of file
 +
-+   public M getAdultModel() {
-+      return this.adultModel;
-+   }
++    public M getAdultModel() {
++        return this.adultModel;
++    }
 +
-+   public M getBabyModel() {
-+      return this.babyModel;
-+   }
++    public M getBabyModel() {
++        return this.babyModel;
++    }
 +
-+   public void setAdultModel(M adultModel) {
-+      this.adultModel = adultModel;
-+      super.model = adultModel;
-+   }
++    public void setAdultModel(M adultModel) {
++        this.adultModel = adultModel;
++        super.model = adultModel;
++    }
 +
-+   public void setBabyModel(M babyModel) {
-+      this.babyModel = babyModel;
-+   }
++    public void setBabyModel(M babyModel) {
++        this.babyModel = babyModel;
++    }
 +}

@@ -25,9 +25,9 @@
      private final List<FrameBufferCache.CacheKey> fboKeys = new ArrayList<>();
      protected boolean closed;
      private int views;
-+   public MultiTexID multiTex;
-+   private GlSampler sampler = new GlSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, 1, OptionalDouble.empty());
-+   private final boolean stencilEnabled;
++    public MultiTexID multiTex;
++    private GlSampler sampler = new GlSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, 1, OptionalDouble.empty());
++    private final boolean stencilEnabled;
  
      protected GlTexture(
 -        final @GpuTexture.Usage int usage,
@@ -39,35 +39,35 @@
 -        final int mipLevels,
 -        final int id,
 -        final FrameBufferCache frameBufferCache
-+      @GpuTexture.Usage int usage,
-+      String label,
-+      GpuFormat format,
-+      int width,
-+      int height,
-+      int depthOrLayers,
-+      int mipLevels,
-+      int id,
-+      FrameBufferCache frameBufferCache
++        @GpuTexture.Usage int usage,
++        String label,
++        GpuFormat format,
++        int width,
++        int height,
++        int depthOrLayers,
++        int mipLevels,
++        int id,
++        FrameBufferCache frameBufferCache
      ) {
-+      this(usage, label, format, width, height, depthOrLayers, mipLevels, id, frameBufferCache, false);
-+   }
++        this(usage, label, format, width, height, depthOrLayers, mipLevels, id, frameBufferCache, false);
++    }
 +
-+   protected GlTexture(
-+      @GpuTexture.Usage int usage,
-+      String label,
-+      GpuFormat format,
-+      int width,
-+      int height,
-+      int depthOrLayers,
-+      int mipLevels,
-+      int id,
-+      FrameBufferCache frameBufferCache,
-+      boolean stencil
-+   ) {
++    protected GlTexture(
++        @GpuTexture.Usage int usage,
++        String label,
++        GpuFormat format,
++        int width,
++        int height,
++        int depthOrLayers,
++        int mipLevels,
++        int id,
++        FrameBufferCache frameBufferCache,
++        boolean stencil
++    ) {
          super(usage, label, format, width, height, depthOrLayers, mipLevels);
          this.id = id;
          this.frameBufferCache = frameBufferCache;
-+      this.stencilEnabled = stencil;
++        this.stencilEnabled = stencil;
      }
  
      @Override
@@ -75,7 +75,7 @@
          }
  
          GlStateManager._deleteTexture(this.id);
-+      ShadersTex.deleteTextures(this, this.id);
++        ShadersTex.deleteTextures(this, this.id);
      }
  
      @Override
@@ -84,13 +84,13 @@
  
      @Override
 -    public void addAssociatedFbo(final FrameBufferCache.CacheKey fboKey) {
-+   public void addAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
++    public void addAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
          this.fboKeys.add(fboKey);
      }
  
      @Override
 -    public void removeAssociatedFbo(final FrameBufferCache.CacheKey fboKey) {
-+   public void removeAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
++    public void removeAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
          this.fboKeys.remove(fboKey);
      }
  
@@ -101,110 +101,110 @@
 -}
 \ No newline at end of file
 +
-+   @Override
-+   public MultiTexID getMultiTexID() {
-+      return ShadersTex.getMultiTexID(this);
-+   }
++    @Override
++    public MultiTexID getMultiTexID() {
++        return ShadersTex.getMultiTexID(this);
++    }
 +
-+   @Override
-+   public int getGlTextureId() {
-+      return this.glId();
-+   }
++    @Override
++    public int getGlTextureId() {
++        return this.glId();
++    }
 +
-+   @Override
-+   public void bindTexture() {
-+      GlStateManager._bindTexture(this.glId());
-+   }
++    @Override
++    public void bindTexture() {
++        GlStateManager._bindTexture(this.glId());
++    }
 +
-+   @Override
-+   public void deleteGlTexture() {
-+      this.close();
-+   }
++    @Override
++    public void deleteGlTexture() {
++        this.close();
++    }
 +
-+   @Override
-+   public boolean isStencilEnabled() {
-+      return this.stencilEnabled;
-+   }
++    @Override
++    public boolean isStencilEnabled() {
++        return this.stencilEnabled;
++    }
 +
-+   public static String usageToString(int usageIn) {
-+      StringBuilder sb = new StringBuilder();
-+      if ((usageIn & 2) != 0) {
-+         sb.append("S");
-+      }
++    public static String usageToString(int usageIn) {
++        StringBuilder sb = new StringBuilder();
++        if ((usageIn & 2) != 0) {
++            sb.append("S");
++        }
 +
-+      if ((usageIn & 1) != 0) {
-+         sb.append("D");
-+      }
++        if ((usageIn & 1) != 0) {
++            sb.append("D");
++        }
 +
-+      if ((usageIn & 4) != 0) {
-+         sb.append("T");
-+      }
++        if ((usageIn & 4) != 0) {
++            sb.append("T");
++        }
 +
-+      if ((usageIn & 8) != 0) {
-+         sb.append("A");
-+      }
++        if ((usageIn & 8) != 0) {
++            sb.append("A");
++        }
 +
-+      if ((usageIn & 16) != 0) {
-+         sb.append("C");
-+      }
++        if ((usageIn & 16) != 0) {
++            sb.append("C");
++        }
 +
-+      if (sb.isEmpty()) {
-+         sb.append("0x" + Integer.toHexString(usageIn));
-+      }
++        if (sb.isEmpty()) {
++            sb.append("0x" + Integer.toHexString(usageIn));
++        }
 +
-+      return sb.toString();
-+   }
++        return sb.toString();
++    }
 +
-+   public void applySampler(GlSampler samplerIn) {
-+      if (!this.sampler.matches(samplerIn)) {
-+         DirectStateAccess dsa = RenderSystem.getGlDevice().directStateAccess();
-+         if (this.sampler.getAddressModeU() != samplerIn.getAddressModeU()) {
-+            dsa.texParameter(this.id, 10242, GlConst.toGl(samplerIn.getAddressModeU()));
-+         }
-+
-+         if (this.sampler.getAddressModeV() != samplerIn.getAddressModeV()) {
-+            dsa.texParameter(this.id, 10243, GlConst.toGl(samplerIn.getAddressModeV()));
-+         }
-+
-+         if (this.sampler.getMinFilter() != samplerIn.getMinFilter()) {
-+            if (samplerIn.getMinFilter() == FilterMode.NEAREST) {
-+               dsa.texParameter(this.id, 10241, 9986);
-+            } else if (samplerIn.getMinFilter() == FilterMode.LINEAR) {
-+               dsa.texParameter(this.id, 10241, 9987);
++    public void applySampler(GlSampler samplerIn) {
++        if (!this.sampler.matches(samplerIn)) {
++            DirectStateAccess dsa = RenderSystem.getGlDevice().directStateAccess();
++            if (this.sampler.getAddressModeU() != samplerIn.getAddressModeU()) {
++                dsa.texParameter(this.id, 10242, GlConst.toGl(samplerIn.getAddressModeU()));
 +            }
-+         }
 +
-+         if (this.sampler.getMagFilter() != samplerIn.getMagFilter()) {
-+            if (samplerIn.getMagFilter() == FilterMode.NEAREST) {
-+               dsa.texParameter(this.id, 10240, 9728);
-+            } else if (samplerIn.getMagFilter() == FilterMode.LINEAR) {
-+               dsa.texParameter(this.id, 10240, 9729);
++            if (this.sampler.getAddressModeV() != samplerIn.getAddressModeV()) {
++                dsa.texParameter(this.id, 10243, GlConst.toGl(samplerIn.getAddressModeV()));
 +            }
-+         }
 +
-+         if (this.sampler.getMaxAnisotropy() != samplerIn.getMaxAnisotropy() && !Config.isAnisotropicFiltering()) {
-+            dsa.texParameter(this.id, 34046, samplerIn.getMaxAnisotropy());
-+         }
-+
-+         if (!this.sampler.getMaxLod().equals(samplerIn.getMaxLod())) {
-+            if (samplerIn.getMaxLod().isPresent()) {
-+               dsa.texParameter(this.id, 33083, (float)samplerIn.getMaxLod().getAsDouble());
-+            } else {
-+               dsa.texParameter(this.id, 33083, 1000.0F);
++            if (this.sampler.getMinFilter() != samplerIn.getMinFilter()) {
++                if (samplerIn.getMinFilter() == FilterMode.NEAREST) {
++                    dsa.texParameter(this.id, 10241, 9986);
++                } else if (samplerIn.getMinFilter() == FilterMode.LINEAR) {
++                    dsa.texParameter(this.id, 10241, 9987);
++                }
 +            }
-+         }
 +
-+         this.sampler = samplerIn;
-+      }
-+   }
++            if (this.sampler.getMagFilter() != samplerIn.getMagFilter()) {
++                if (samplerIn.getMagFilter() == FilterMode.NEAREST) {
++                    dsa.texParameter(this.id, 10240, 9728);
++                } else if (samplerIn.getMagFilter() == FilterMode.LINEAR) {
++                    dsa.texParameter(this.id, 10240, 9729);
++                }
++            }
 +
-+   public boolean hasFramebuffer(int framebufferIn) {
-+      return this.frameBufferCache.hasFramebuffer(this.fboKeys, framebufferIn);
-+   }
++            if (this.sampler.getMaxAnisotropy() != samplerIn.getMaxAnisotropy() && !Config.isAnisotropicFiltering()) {
++                dsa.texParameter(this.id, 34046, samplerIn.getMaxAnisotropy());
++            }
 +
-+   @Override
-+   public String toString() {
-+      String fboStr = this.fboKeys.size() > 0 ? this.frameBufferCache.getFramebuffer(this.fboKeys.get(0)) + "" : "";
-+      return this.getLabel() + ", " + this.getWidth(0) + "x" + this.getHeight(0) + ", " + usageToString(this.usage()) + ", fbo: " + fboStr;
-+   }
++            if (!this.sampler.getMaxLod().equals(samplerIn.getMaxLod())) {
++                if (samplerIn.getMaxLod().isPresent()) {
++                    dsa.texParameter(this.id, 33083, (float)samplerIn.getMaxLod().getAsDouble());
++                } else {
++                    dsa.texParameter(this.id, 33083, 1000.0F);
++                }
++            }
++
++            this.sampler = samplerIn;
++        }
++    }
++
++    public boolean hasFramebuffer(int framebufferIn) {
++        return this.frameBufferCache.hasFramebuffer(this.fboKeys, framebufferIn);
++    }
++
++    @Override
++    public String toString() {
++        String fboStr = this.fboKeys.size() > 0 ? this.frameBufferCache.getFramebuffer(this.fboKeys.get(0)) + "" : "";
++        return this.getLabel() + ", " + this.getWidth(0) + "x" + this.getHeight(0) + ", " + usageToString(this.usage()) + ", fbo: " + fboStr;
++    }
 +}

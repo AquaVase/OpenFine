@@ -18,12 +18,12 @@
      extends RenderLayer<S, RM> {
      private final EquipmentLayerRenderer equipmentRenderer;
 -    private final EquipmentClientInfo.LayerType layer;
-+   private final LayerType layer;
++    private final LayerType layer;
      private final Function<S, ItemStack> itemGetter;
 -    private final EM adultModel;
 -    private final @Nullable EM babyModel;
-+   public EM adultModel;
-+   public EM babyModel;
++    public EM adultModel;
++    public EM babyModel;
      private final int order;
  
      public SimpleEquipmentLayer(
@@ -34,13 +34,13 @@
 -        final EM adultModel,
 -        final @Nullable EM babyModel,
 -        final int order
-+      RenderLayerParent<S, RM> renderer,
-+      EquipmentLayerRenderer equipmentRenderer,
-+      LayerType layer,
-+      Function<S, ItemStack> itemGetter,
-+      EM adultModel,
-+      EM babyModel,
-+      int order
++        RenderLayerParent<S, RM> renderer,
++        EquipmentLayerRenderer equipmentRenderer,
++        LayerType layer,
++        Function<S, ItemStack> itemGetter,
++        EM adultModel,
++        EM babyModel,
++        int order
      ) {
          super(renderer);
          this.equipmentRenderer = equipmentRenderer;
@@ -54,12 +54,12 @@
 -        final Function<S, ItemStack> itemGetter,
 -        final EM adultModel,
 -        final @Nullable EM babyModel
-+      RenderLayerParent<S, RM> renderer,
-+      EquipmentLayerRenderer equipmentRenderer,
-+      LayerType layer,
-+      Function<S, ItemStack> itemGetter,
-+      EM adultModel,
-+      EM babyModel
++        RenderLayerParent<S, RM> renderer,
++        EquipmentLayerRenderer equipmentRenderer,
++        LayerType layer,
++        Function<S, ItemStack> itemGetter,
++        EM adultModel,
++        EM babyModel
      ) {
          this(renderer, equipmentRenderer, layer, itemGetter, adultModel, babyModel, 0);
      }
@@ -67,7 +67,7 @@
 -    public void submit(
 -        final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final S state, final float yRot, final float xRot
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, float yRot, float xRot) {
          ItemStack equipment = this.itemGetter.apply(state);
          Equippable equippable = equipment.get(DataComponents.EQUIPPABLE);
          if (equippable != null && !equippable.assetId().isEmpty() && (!state.isBaby || this.babyModel != null)) {
@@ -78,7 +78,7 @@
 -}
 \ No newline at end of file
 +
-+   public LayerType getLayerType() {
-+      return this.layer;
-+   }
++    public LayerType getLayerType() {
++        return this.layer;
++    }
 +}

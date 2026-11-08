@@ -13,26 +13,26 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterCamelHusk extends ModelAdapterLiving {
-   public ModelAdapterCamelHusk() {
-      super(EntityTypes.CAMEL_HUSK, "camel_husk", ModelLayers.CAMEL);
-   }
+    public ModelAdapterCamelHusk() {
+        super(EntityTypes.CAMEL_HUSK, "camel_husk", ModelLayers.CAMEL);
+    }
 
-   protected ModelAdapterCamelHusk(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterCamelHusk(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new AdultCamelModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new AdultCamelModel(root);
+    }
 
-   @Override
-   protected Map<String, String> makeMapParts() {
-      return ModelAdapterCamel.makeMapPartsStatic();
-   }
+    @Override
+    protected Map<String, String> makeMapParts() {
+        return ModelAdapterCamel.makeMapPartsStatic();
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new CamelHuskRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new CamelHuskRenderer(context);
+    }
 }

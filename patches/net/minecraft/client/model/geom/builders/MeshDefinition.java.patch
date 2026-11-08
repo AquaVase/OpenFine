@@ -16,22 +16,22 @@
      }
  
 -    private MeshDefinition(final PartDefinition root) {
-+   private MeshDefinition(PartDefinition root) {
++    private MeshDefinition(PartDefinition root) {
          this.root = root;
      }
  
      public PartDefinition getRoot() {
-+      this.root.setName("root");
++        this.root.setName("root");
          return this.root;
      }
  
 -    public MeshDefinition transformed(final UnaryOperator<PartPose> function) {
-+   public MeshDefinition transformed(UnaryOperator<PartPose> function) {
++    public MeshDefinition transformed(UnaryOperator<PartPose> function) {
          return new MeshDefinition(this.root.transformed(function));
      }
  
 -    public MeshDefinition apply(final MeshTransformer transformer) {
-+   public MeshDefinition apply(MeshTransformer transformer) {
++    public MeshDefinition apply(MeshTransformer transformer) {
          return transformer.apply(this);
      }
 -}

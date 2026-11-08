@@ -11,34 +11,34 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterBoggedOuter extends ModelAdapterSkeleton {
-   public ModelAdapterBoggedOuter() {
-      super(EntityTypes.BOGGED, "bogged_outer", ModelLayers.BOGGED_OUTER_LAYER);
-   }
+    public ModelAdapterBoggedOuter() {
+        super(EntityTypes.BOGGED, "bogged_outer", ModelLayers.BOGGED_OUTER_LAYER);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SkeletonModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SkeletonModel(root);
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      BoggedRenderer boggedRenderer = (BoggedRenderer)renderer;
-      Identifier BOGGED_OUTER_LAYER_LOCATION = Identifier.withDefaultNamespace("textures/entity/skeleton/bogged_overlay.png");
-      SkeletonClothingLayer layer = new SkeletonClothingLayer<>(
-         boggedRenderer, this.getContext().getModelSet(), ModelLayers.BOGGED_OUTER_LAYER, BOGGED_OUTER_LAYER_LOCATION
-      );
-      layer.layerModel = (SkeletonModel)modelBase;
-      boggedRenderer.replaceLayer(SkeletonClothingLayer.class, layer);
-   }
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        BoggedRenderer boggedRenderer = (BoggedRenderer)renderer;
+        Identifier BOGGED_OUTER_LAYER_LOCATION = Identifier.withDefaultNamespace("textures/entity/skeleton/bogged_overlay.png");
+        SkeletonClothingLayer layer = new SkeletonClothingLayer<>(
+            boggedRenderer, this.getContext().getModelSet(), ModelLayers.BOGGED_OUTER_LAYER, BOGGED_OUTER_LAYER_LOCATION
+        );
+        layer.layerModel = (SkeletonModel)modelBase;
+        boggedRenderer.replaceLayer(SkeletonClothingLayer.class, layer);
+    }
 
-   @Override
-   public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
-      BoggedRenderer renderer = (BoggedRenderer)er;
+    @Override
+    public boolean setTextureLocation(IEntityRenderer er, Identifier textureLocation) {
+        BoggedRenderer renderer = (BoggedRenderer)er;
 
-      for (SkeletonClothingLayer layer : renderer.getLayers(SkeletonClothingLayer.class)) {
-         layer.clothesLocation = textureLocation;
-      }
+        for (SkeletonClothingLayer layer : renderer.getLayers(SkeletonClothingLayer.class)) {
+            layer.clothesLocation = textureLocation;
+        }
 
-      return true;
-   }
+        return true;
+    }
 }

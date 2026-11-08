@@ -7,12 +7,12 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterCaveSpider extends ModelAdapterSpider {
-   public ModelAdapterCaveSpider() {
-      super(EntityTypes.CAVE_SPIDER, "cave_spider", ModelLayers.CAVE_SPIDER);
-   }
+    public ModelAdapterCaveSpider() {
+        super(EntityTypes.CAVE_SPIDER, "cave_spider", ModelLayers.CAVE_SPIDER);
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new CaveSpiderRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new CaveSpiderRenderer(context);
+    }
 }

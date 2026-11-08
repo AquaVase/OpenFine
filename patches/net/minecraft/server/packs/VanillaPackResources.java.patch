@@ -28,7 +28,7 @@
      private final PackLocationInfo location;
      private final ResourceMetadata builtInMetadata;
 -    private @Nullable ResourceMetadata resourceMetadata;
-+   private ResourceMetadata resourceMetadata;
++    private ResourceMetadata resourceMetadata;
      private final Set<String> namespaces;
      private final List<Path> rootPaths;
      private final Map<PackType, List<Path>> pathsForType;
@@ -39,7 +39,7 @@
 -        final Set<String> namespaces,
 -        final List<Path> rootPaths,
 -        final Map<PackType, List<Path>> pathsForType
-+      PackLocationInfo location, ResourceMetadata metadata, Set<String> namespaces, List<Path> rootPaths, Map<PackType, List<Path>> pathsForType
++        PackLocationInfo location, ResourceMetadata metadata, Set<String> namespaces, List<Path> rootPaths, Map<PackType, List<Path>> pathsForType
      ) {
          this.location = location;
          this.builtInMetadata = metadata;
@@ -48,7 +48,7 @@
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getRootResource(final String... path) {
-+   public IoSupplier<InputStream> getRootResource(String... path) {
++    public IoSupplier<InputStream> getRootResource(String... path) {
          FileUtil.validatePath(path);
          List<String> pathList = List.of(path);
  
@@ -57,7 +57,7 @@
      }
  
 -    public void listRawPaths(final PackType type, final Identifier resource, final Consumer<Path> output) {
-+   public void listRawPaths(PackType type, Identifier resource, Consumer<Path> output) {
++    public void listRawPaths(PackType type, Identifier resource, Consumer<Path> output) {
          FileUtil.decomposePath(resource.getPath()).ifSuccess(decomposedPath -> {
              String namespace = resource.getNamespace();
  
@@ -66,23 +66,23 @@
  
      @Override
 -    public void listResources(final PackType type, final String namespace, final String directory, final PackResources.ResourceOutput output) {
-+   public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
-+      ResourceOutput outputOF = (locIn, suppIn) -> {
-+         if (locIn.getPath().startsWith("models/block/template_glass_pane")) {
-+            IoSupplier<InputStream> suppOF = this.getResourceOF(type, locIn);
-+            if (suppOF != null) {
-+               suppIn = suppOF;
++    public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
++        ResourceOutput outputOF = (locIn, suppIn) -> {
++            if (locIn.getPath().startsWith("models/block/template_glass_pane")) {
++                IoSupplier<InputStream> suppOF = this.getResourceOF(type, locIn);
++                if (suppOF != null) {
++                    suppIn = suppOF;
++                }
 +            }
-+         }
 +
-+         output.accept(locIn, suppIn);
-+      };
++            output.accept(locIn, suppIn);
++        };
          FileUtil.decomposePath(directory).ifSuccess(decomposedPath -> {
              List<Path> paths = this.pathsForType.get(type);
              int pathsSize = paths.size();
              if (pathsSize == 1) {
 -                getResources(output, namespace, paths.get(0), (List<String>)decomposedPath);
-+            getResources(outputOF, namespace, paths.get(0), (List<String>)decomposedPath);
++                getResources(outputOF, namespace, paths.get(0), (List<String>)decomposedPath);
              } else if (pathsSize > 1) {
                  Map<Identifier, IoSupplier<InputStream>> resources = new HashMap<>();
  
@@ -91,30 +91,30 @@
                  Path lastPath = paths.get(pathsSize - 1);
                  if (resources.isEmpty()) {
 -                    getResources(output, namespace, lastPath, (List<String>)decomposedPath);
-+               getResources(outputOF, namespace, lastPath, (List<String>)decomposedPath);
++                    getResources(outputOF, namespace, lastPath, (List<String>)decomposedPath);
                  } else {
                      getResources(resources::putIfAbsent, namespace, lastPath, (List<String>)decomposedPath);
 -                    resources.forEach(output);
-+               resources.forEach(outputOF);
++                    resources.forEach(outputOF);
                  }
              }
          }).ifError(error -> LOGGER.error("Invalid path {}: {}", directory, error.message()));
      }
  
 -    private static void getResources(final PackResources.ResourceOutput result, final String namespace, final Path root, final List<String> directory) {
-+   private static void getResources(ResourceOutput result, String namespace, Path root, List<String> directory) {
++    private static void getResources(ResourceOutput result, String namespace, Path root, List<String> directory) {
          Path namespaceDir = root.resolve(namespace);
          PathPackResources.listPath(namespace, namespaceDir, directory, result);
      }
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getResource(final PackType type, final Identifier location) {
-+   public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
-+      IoSupplier<InputStream> res = this.getResourcesImpl(type, location);
-+      return res != null ? res : this.getResourceOF(type, location);
-+   }
++    public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
++        IoSupplier<InputStream> res = this.getResourcesImpl(type, location);
++        return res != null ? res : this.getResourceOF(type, location);
++    }
 +
-+   public @Nullable IoSupplier<InputStream> getResourcesImpl(PackType type, Identifier location) {
++    public @Nullable IoSupplier<InputStream> getResourcesImpl(PackType type, Identifier location) {
          return FileUtil.decomposePath(location.getPath()).mapOrElse(decomposedPath -> {
              String namespace = location.getNamespace();
  
@@ -123,13 +123,13 @@
  
      @Override
 -    public Set<String> getNamespaces(final PackType type) {
-+   public Set<String> getNamespaces(PackType type) {
++    public Set<String> getNamespaces(PackType type) {
          return this.namespaces;
      }
  
      @Override
 -    public <T> @Nullable T getMetadataSection(final MetadataSectionType<T> metadataSerializer) {
-+   public <T> T getMetadataSection(MetadataSectionType<T> metadataSerializer) {
++    public <T> T getMetadataSection(MetadataSectionType<T> metadataSerializer) {
          try {
              if (this.resourceMetadata == null) {
                  this.resourceMetadata = AbstractPackResources.loadMetadata(this);
@@ -140,14 +140,14 @@
 -}
 \ No newline at end of file
 +
-+   public IoSupplier<InputStream> getResourceOF(PackType type, Identifier locationIn) {
-+      String pathStr = "/" + type.getDirectory() + "/" + locationIn.getNamespace() + "/" + locationIn.getPath();
-+      InputStream is = ReflectorForge.getOptiFineResourceStream(pathStr);
-+      if (is != null) {
-+         return () -> is;
-+      }
++    public IoSupplier<InputStream> getResourceOF(PackType type, Identifier locationIn) {
++        String pathStr = "/" + type.getDirectory() + "/" + locationIn.getNamespace() + "/" + locationIn.getPath();
++        InputStream is = ReflectorForge.getOptiFineResourceStream(pathStr);
++        if (is != null) {
++            return () -> is;
++        }
 +
-+      URL url = VanillaPackResources.class.getResource(pathStr);
-+      return url != null ? () -> url.openStream() : null;
-+   }
++        URL url = VanillaPackResources.class.getResource(pathStr);
++        return url != null ? () -> url.openStream() : null;
++    }
 +}

@@ -30,10 +30,10 @@
      private final CommandEncoderBackend backend;
      private boolean isInRenderPass;
 -    private final @Nullable TracyGpuProfiler profiler;
-+   private final TracyGpuProfiler profiler;
++    private final TracyGpuProfiler profiler;
  
 -    public CommandEncoder(final @Nullable TracyGpuProfiler profiler, final GpuDeviceBackend device, final CommandEncoderBackend backend) {
-+   public CommandEncoder(TracyGpuProfiler profiler, GpuDeviceBackend device, CommandEncoderBackend backend) {
++    public CommandEncoder(TracyGpuProfiler profiler, GpuDeviceBackend device, CommandEncoderBackend backend) {
          this.profiler = profiler;
          this.device = device;
          this.backend = backend;
@@ -42,7 +42,7 @@
      }
  
 -    public RenderPass createRenderPass(final Supplier<String> label, final GpuTextureView colorTexture, final Optional<Vector4fc> clearColor) {
-+   public RenderPass createRenderPass(Supplier<String> label, GpuTextureView colorTexture, Optional<Vector4fc> clearColor) {
++    public RenderPass createRenderPass(Supplier<String> label, GpuTextureView colorTexture, Optional<Vector4fc> clearColor) {
          return this.createRenderPass(label, colorTexture, clearColor, null, OptionalDouble.empty());
      }
  
@@ -52,7 +52,7 @@
 -        final Optional<Vector4fc> clearColor,
 -        final @Nullable GpuTextureView depthTexture,
 -        final OptionalDouble clearDepth
-+      Supplier<String> label, GpuTextureView colorTexture, Optional<Vector4fc> clearColor, GpuTextureView depthTexture, OptionalDouble clearDepth
++        Supplier<String> label, GpuTextureView colorTexture, Optional<Vector4fc> clearColor, GpuTextureView depthTexture, OptionalDouble clearDepth
      ) {
          return this.createRenderPass(
              label, colorTexture, clearColor, depthTexture, clearDepth, new RenderPass.RenderArea(0, 0, colorTexture.getWidth(0), colorTexture.getHeight(0))
@@ -66,12 +66,12 @@
 -        final @Nullable GpuTextureView depthTexture,
 -        final OptionalDouble clearDepth,
 -        final RenderPass.RenderArea renderArea
-+      Supplier<String> label,
-+      GpuTextureView colorTexture,
-+      Optional<Vector4fc> clearColor,
-+      GpuTextureView depthTexture,
-+      OptionalDouble clearDepth,
-+      RenderPass.RenderArea renderArea
++        Supplier<String> label,
++        GpuTextureView colorTexture,
++        Optional<Vector4fc> clearColor,
++        GpuTextureView depthTexture,
++        OptionalDouble clearDepth,
++        RenderPass.RenderArea renderArea
      ) {
          RenderPassDescriptor descriptor = RenderPassDescriptor.create(label).withColorAttachment(colorTexture, clearColor);
          if (depthTexture != null) {
@@ -80,7 +80,7 @@
      }
  
 -    public RenderPass createRenderPass(final RenderPassDescriptor descriptor) {
-+   public RenderPass createRenderPass(RenderPassDescriptor descriptor) {
++    public RenderPass createRenderPass(RenderPassDescriptor descriptor) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before creating a new one!");
          }
@@ -89,7 +89,7 @@
          int attachmentHeight;
          if (colorAttachmentCount != 0) {
 -            RenderPassDescriptor.Attachment<Optional<Vector4fc>> firstAttachment = descriptor.colorAttachments.getFirst();
-+         Attachment<Optional<Vector4fc>> firstAttachment = descriptor.colorAttachments.getFirst();
++            Attachment<Optional<Vector4fc>> firstAttachment = descriptor.colorAttachments.getFirst();
              assert firstAttachment != null;
              attachmentWidth = firstAttachment.textureView().getWidth(0);
              attachmentHeight = firstAttachment.textureView().getHeight(0);
@@ -98,7 +98,7 @@
              && descriptor.renderArea.y() + descriptor.renderArea.height() <= attachmentHeight) {
              for (int i = 0; i < colorAttachmentCount; i++) {
 -                RenderPassDescriptor.Attachment<Optional<Vector4fc>> colorAttachment = descriptor.colorAttachments.get(i);
-+            Attachment<Optional<Vector4fc>> colorAttachment = descriptor.colorAttachments.get(i);
++                Attachment<Optional<Vector4fc>> colorAttachment = descriptor.colorAttachments.get(i);
                  if (colorAttachment != null) {
                      GpuTextureView colorTexture = colorAttachment.textureView();
                      if (colorTexture.isClosed()) {
@@ -107,7 +107,7 @@
      }
  
 -    public void clearColorTexture(final GpuTexture colorTexture, final Vector4fc clearColor) {
-+   public void clearColorTexture(GpuTexture colorTexture, Vector4fc clearColor) {
++    public void clearColorTexture(GpuTexture colorTexture, Vector4fc clearColor) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before creating a new one!");
          }
@@ -116,7 +116,7 @@
      }
  
 -    public void clearColorAndDepthTextures(final GpuTexture colorTexture, final Vector4fc clearColor, final GpuTexture depthTexture, final double clearDepth) {
-+   public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth) {
++    public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before creating a new one!");
          }
@@ -132,7 +132,7 @@
 -        final int regionY,
 -        final int regionWidth,
 -        final int regionHeight
-+      GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth, int regionX, int regionY, int regionWidth, int regionHeight
++        GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth, int regionX, int regionY, int regionWidth, int regionHeight
      ) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before creating a new one!");
@@ -141,7 +141,7 @@
      }
  
 -    public void clearDepthTexture(final GpuTexture depthTexture, final double clearDepth) {
-+   public void clearDepthTexture(GpuTexture depthTexture, double clearDepth) {
++    public void clearDepthTexture(GpuTexture depthTexture, double clearDepth) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before creating a new one!");
          }
@@ -150,7 +150,7 @@
      }
  
 -    public void writeToBuffer(final GpuBufferSlice destination, final ByteBuffer data) {
-+   public void writeToBuffer(GpuBufferSlice destination, ByteBuffer data) {
++    public void writeToBuffer(GpuBufferSlice destination, ByteBuffer data) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
          }
@@ -159,7 +159,7 @@
      }
  
 -    public void copyToBuffer(final GpuBufferSlice source, final GpuBufferSlice target) {
-+   public void copyToBuffer(GpuBufferSlice source, GpuBufferSlice target) {
++    public void copyToBuffer(GpuBufferSlice source, GpuBufferSlice target) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
          }
@@ -168,7 +168,7 @@
      }
  
 -    public void writeToTexture(final GpuTexture destination, final NativeImage source) {
-+   public void writeToTexture(GpuTexture destination, NativeImage source) {
++    public void writeToTexture(GpuTexture destination, NativeImage source) {
          int width = destination.getWidth(0);
          int height = destination.getHeight(0);
          if (source.getWidth() == width && source.getHeight() == height) {
@@ -179,13 +179,13 @@
 -    public void writeToTexture(
 -        final GpuTexture destination, final NativeImage source, final int mipLevel, final int depthOrLayer, final int destX, final int destY
 -    ) {
-+   public void writeToTexture(GpuTexture destination, NativeImage source, int mipLevel, int depthOrLayer, int destX, int destY) {
++    public void writeToTexture(GpuTexture destination, NativeImage source, int mipLevel, int depthOrLayer, int destX, int destY) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
          }
  
 -        if (destination.getFormat().componentType() != GpuFormat.ComponentType.UNORM_8) {
-+      if (destination.getFormat().componentType() != ComponentType.UNORM_8) {
++        if (destination.getFormat().componentType() != ComponentType.UNORM_8) {
              throw new IllegalArgumentException("Destination texture for NativeImage writes must have component type of UNORM_8");
          }
  
@@ -194,10 +194,10 @@
                  throw new IllegalArgumentException(
                      "Dest texture ("
 -                        + source.getWidth()
-+                  + destination.getWidth()
++                        + destination.getWidth()
                          + "x"
 -                        + source.getHeight()
-+                  + destination.getHeight()
++                        + destination.getHeight()
                          + ") is not large enough to write a rectangle of "
                          + source.getWidth()
                          + "x"
@@ -215,7 +215,7 @@
 -        final int width,
 -        final int height
 -    ) {
-+   public void writeToTexture(GpuTexture destination, ByteBuffer source, int mipLevel, int depthOrLayer, int destX, int destY, int width, int height) {
++    public void writeToTexture(GpuTexture destination, ByteBuffer source, int mipLevel, int depthOrLayer, int destX, int destY, int width, int height) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
          }
@@ -235,18 +235,18 @@
 -        final int copyHeight,
 -        final int mipLevel,
 -        final int arrayLayer
-+      GpuBufferSlice source,
-+      int sourceX,
-+      int sourceY,
-+      int sourceWidth,
-+      int sourceHeight,
-+      GpuTexture destination,
-+      int destinationX,
-+      int destinationY,
-+      int copyWidth,
-+      int copyHeight,
-+      int mipLevel,
-+      int arrayLayer
++        GpuBufferSlice source,
++        int sourceX,
++        int sourceY,
++        int sourceWidth,
++        int sourceHeight,
++        GpuTexture destination,
++        int destinationX,
++        int destinationY,
++        int copyWidth,
++        int copyHeight,
++        int mipLevel,
++        int arrayLayer
      ) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
@@ -255,7 +255,7 @@
      }
  
 -    public void copyTextureToBuffer(final GpuTexture source, final GpuBuffer destination, final long offset, final Runnable callback, final int mipLevel) {
-+   public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel) {
++    public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
          }
@@ -274,7 +274,7 @@
 -        final int width,
 -        final int height
 -    ) {
-+   public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel, int x, int y, int width, int height) {
++    public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel, int x, int y, int width, int height) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
          }
@@ -291,7 +291,7 @@
 -        final int sourceY,
 -        final int width,
 -        final int height
-+      GpuTexture source, GpuTexture destination, int mipLevel, int destX, int destY, int sourceX, int sourceY, int width, int height
++        GpuTexture source, GpuTexture destination, int mipLevel, int destX, int destY, int sourceX, int sourceY, int width, int height
      ) {
          if (this.isInRenderPass) {
              throw new IllegalStateException("Close the existing render pass before performing additional commands");
@@ -300,7 +300,7 @@
      }
  
 -    public void writeTimestamp(final GpuQueryPool pool, final int index) {
-+   public void writeTimestamp(GpuQueryPool pool, int index) {
++    public void writeTimestamp(GpuQueryPool pool, int index) {
          if (index >= 0 && index <= pool.size()) {
              this.backend.writeTimestamp(pool, index);
          } else {
@@ -309,7 +309,7 @@
      }
  
 -    private void verifyColorTexture(final GpuTexture colorTexture) {
-+   private void verifyColorTexture(GpuTexture colorTexture) {
++    private void verifyColorTexture(GpuTexture colorTexture) {
          if (!colorTexture.getFormat().hasColorAspect()) {
              throw new IllegalStateException("Trying to clear a non-color texture as color");
          }
@@ -318,7 +318,7 @@
      }
  
 -    private void verifyDepthTexture(final GpuTexture depthTexture) {
-+   private void verifyDepthTexture(GpuTexture depthTexture) {
++    private void verifyDepthTexture(GpuTexture depthTexture) {
          if (!depthTexture.getFormat().hasDepthAspect()) {
              throw new IllegalStateException("Trying to clear a non-depth texture as depth");
          }
@@ -327,7 +327,7 @@
      }
  
 -    private void verifyRegion(final GpuTexture colorTexture, final int regionX, final int regionY, final int regionWidth, final int regionHeight) {
-+   private void verifyRegion(GpuTexture colorTexture, int regionX, int regionY, int regionWidth, int regionHeight) {
++    private void verifyRegion(GpuTexture colorTexture, int regionX, int regionY, int regionWidth, int regionHeight) {
          if (regionX < 0 || regionX >= colorTexture.getWidth(0)) {
              throw new IllegalArgumentException("regionX should not be outside of the texture");
          }

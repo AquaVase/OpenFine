@@ -11,31 +11,31 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterHorseArmor extends ModelAdapterHorse {
-   public ModelAdapterHorseArmor() {
-      super(EntityTypes.HORSE, "horse_armor", ModelLayers.HORSE_ARMOR);
-   }
+    public ModelAdapterHorseArmor() {
+        super(EntityTypes.HORSE, "horse_armor", ModelLayers.HORSE_ARMOR);
+    }
 
-   protected ModelAdapterHorseArmor(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterHorseArmor(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      return null;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        return null;
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      HorseModel horseModel = (HorseModel)modelBase;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        HorseModel horseModel = (HorseModel)modelBase;
 
-      for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
-         if (layer.getLayerType() == LayerType.HORSE_BODY) {
-            if (this.isBaby()) {
-               layer.babyModel = horseModel;
-            } else {
-               layer.adultModel = horseModel;
+        for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
+            if (layer.getLayerType() == LayerType.HORSE_BODY) {
+                if (this.isBaby()) {
+                    layer.babyModel = horseModel;
+                } else {
+                    layer.adultModel = horseModel;
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

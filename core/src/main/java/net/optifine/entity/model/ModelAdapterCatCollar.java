@@ -11,31 +11,31 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterCatCollar extends ModelAdapterCat {
-   public ModelAdapterCatCollar() {
-      super(EntityTypes.CAT, "cat_collar", ModelLayers.CAT_COLLAR);
-      this.setAlias("cat");
-   }
+    public ModelAdapterCatCollar() {
+        super(EntityTypes.CAT, "cat_collar", ModelLayers.CAT_COLLAR);
+        this.setAlias("cat");
+    }
 
-   protected ModelAdapterCatCollar(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterCatCollar(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterCatCollar ma = new ModelAdapterCatCollar(this.getEntityType(), "cat_baby_collar", ModelLayers.CAT_BABY_COLLAR);
-      ma.setBaby(true);
-      ma.setAliases(this.getName(), "cat");
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterCatCollar ma = new ModelAdapterCatCollar(this.getEntityType(), "cat_baby_collar", ModelLayers.CAT_BABY_COLLAR);
+        ma.setBaby(true);
+        ma.setAliases(this.getName(), "cat");
+        return ma;
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      for (CatCollarLayer layer : (java.lang.Iterable<CatCollarLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, CatCollarLayer.class))) {
-         if (this.isBaby()) {
-            layer.babyModel = (BabyCatModel)modelBase;
-         } else {
-            layer.adultModel = (AdultCatModel)modelBase;
-         }
-      }
-   }
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        for (CatCollarLayer layer : (java.lang.Iterable<CatCollarLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, CatCollarLayer.class))) {
+            if (this.isBaby()) {
+                layer.babyModel = (BabyCatModel)modelBase;
+            } else {
+                layer.adultModel = (AdultCatModel)modelBase;
+            }
+        }
+    }
 }

@@ -11,22 +11,22 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterGiant extends ModelAdapterLiving {
-   public ModelAdapterGiant() {
-      super(EntityTypes.GIANT, "giant", ModelLayers.GIANT);
-   }
+    public ModelAdapterGiant() {
+        super(EntityTypes.GIANT, "giant", ModelLayers.GIANT);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new GiantZombieModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new GiantZombieModel(root);
+    }
 
-   @Override
-   protected Map<String, String> makeMapParts() {
-      return ModelAdapterHumanoid.makeStaticMapParts();
-   }
+    @Override
+    protected Map<String, String> makeMapParts() {
+        return ModelAdapterHumanoid.makeStaticMapParts();
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new GiantMobRenderer(context, 6.0F);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new GiantMobRenderer(context, 6.0F);
+    }
 }

@@ -9,5 +9,5 @@
 +
 +@FunctionalInterface
 +public interface ISkyRenderHandler {
-+   void render(int var1, float var2, PoseStack var3, ClientLevel var4, Minecraft var5);
++    void render(int var1, float var2, PoseStack var3, ClientLevel var4, Minecraft var5);
 +}

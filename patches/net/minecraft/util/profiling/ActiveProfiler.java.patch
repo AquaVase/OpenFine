@@ -21,22 +21,22 @@
      private String path = "";
      private boolean started;
 -    private ActiveProfiler.@Nullable PathEntry currentEntry;
-+   private ActiveProfiler.PathEntry currentEntry;
++    private ActiveProfiler.PathEntry currentEntry;
      private final BooleanSupplier suppressWarnings;
      private final Set<Pair<String, MetricCategory>> chartedPaths = new ObjectArraySet<>();
-+   private boolean clientProfiler = false;
-+   private boolean lagometerActive = false;
-+   private static final String SCHEDULED_EXECUTABLES = "scheduledExecutables";
-+   private static final String TICK = "tick";
-+   private static final String SOUND = "sound";
-+   private static final int HASH_SCHEDULED_EXECUTABLES = "scheduledExecutables".hashCode();
-+   private static final int HASH_TICK = "tick".hashCode();
-+   private static final int HASH_SOUND = "sound".hashCode();
-+   private static final ReflectorClass MINECRAFT = new ReflectorClass(Minecraft.class);
-+   private static final ReflectorField Minecraft_timeTracker = new ReflectorField(MINECRAFT, ContinuousProfiler.class);
++    private boolean clientProfiler = false;
++    private boolean lagometerActive = false;
++    private static final String SCHEDULED_EXECUTABLES = "scheduledExecutables";
++    private static final String TICK = "tick";
++    private static final String SOUND = "sound";
++    private static final int HASH_SCHEDULED_EXECUTABLES = "scheduledExecutables".hashCode();
++    private static final int HASH_TICK = "tick".hashCode();
++    private static final int HASH_SOUND = "sound".hashCode();
++    private static final ReflectorClass MINECRAFT = new ReflectorClass(Minecraft.class);
++    private static final ReflectorField Minecraft_timeTracker = new ReflectorField(MINECRAFT, ContinuousProfiler.class);
  
 -    public ActiveProfiler(final LongSupplier getRealTime, final IntSupplier getTickTime, final BooleanSupplier suppressWarnings) {
-+   public ActiveProfiler(LongSupplier getRealTime, IntSupplier getTickTime, BooleanSupplier suppressWarnings) {
++    public ActiveProfiler(LongSupplier getRealTime, IntSupplier getTickTime, BooleanSupplier suppressWarnings) {
          this.startTimeNano = getRealTime.getAsLong();
          this.getRealTime = getRealTime;
          this.startTimeTicks = getTickTime.getAsInt();
@@ -44,9 +44,9 @@
  
      @Override
      public void startTick() {
-+      ContinuousProfiler timeTracker = (ContinuousProfiler)Reflector.getFieldValue(Minecraft.getInstance(), Minecraft_timeTracker);
-+      this.clientProfiler = timeTracker != null && timeTracker.getFiller() == this;
-+      this.lagometerActive = this.clientProfiler && Lagometer.isActive();
++        ContinuousProfiler timeTracker = (ContinuousProfiler)Reflector.getFieldValue(Minecraft.getInstance(), Minecraft_timeTracker);
++        this.clientProfiler = timeTracker != null && timeTracker.getFiller() == this;
++        this.lagometerActive = this.clientProfiler && Lagometer.isActive();
          if (this.started) {
              LOGGER.error("Profiler tick already started - missing endTick()?");
          } else {
@@ -55,16 +55,16 @@
  
      @Override
 -    public void push(final String name) {
-+   public void push(String name) {
-+      if (this.lagometerActive) {
-+         int hashName = name.hashCode();
-+         if (hashName == HASH_SCHEDULED_EXECUTABLES && name.equals("scheduledExecutables")) {
-+            Lagometer.timerScheduledExecutables.start();
-+         } else if (hashName == HASH_TICK && name.equals("tick") && Config.isMinecraftThread()) {
-+            Lagometer.timerScheduledExecutables.end();
-+            Lagometer.timerTick.start();
-+         }
-+      }
++    public void push(String name) {
++        if (this.lagometerActive) {
++            int hashName = name.hashCode();
++            if (hashName == HASH_SCHEDULED_EXECUTABLES && name.equals("scheduledExecutables")) {
++                Lagometer.timerScheduledExecutables.start();
++            } else if (hashName == HASH_TICK && name.equals("tick") && Config.isMinecraftThread()) {
++                Lagometer.timerScheduledExecutables.end();
++                Lagometer.timerTick.start();
++            }
++        }
 +
          if (!this.started) {
              LOGGER.error("Cannot push '{}' to profiler if profiler tick hasn't started - missing startTick()?", name);
@@ -74,13 +74,13 @@
  
      @Override
 -    public void push(final Supplier<String> name) {
-+   public void push(Supplier<String> name) {
++    public void push(Supplier<String> name) {
          this.push(name.get());
      }
  
      @Override
 -    public void markForCharting(final MetricCategory category) {
-+   public void markForCharting(MetricCategory category) {
++    public void markForCharting(MetricCategory category) {
          this.chartedPaths.add(Pair.of(this.path, category));
      }
  
@@ -88,8 +88,8 @@
              this.paths.removeLast();
              long time = endTime - startTime;
              ActiveProfiler.PathEntry currentEntry = this.getCurrentEntry();
-+         currentEntry.accumulatedDuration = (currentEntry.accumulatedDuration * 49L + time) / 50L;
-+         currentEntry.count = 1L;
++            currentEntry.accumulatedDuration = (currentEntry.accumulatedDuration * 49L + time) / 50L;
++            currentEntry.count = 1L;
              currentEntry.accumulatedDuration += time;
              currentEntry.count++;
              currentEntry.maxDuration = Math.max(currentEntry.maxDuration, time);
@@ -98,13 +98,13 @@
  
      @Override
 -    public void popPush(final String name) {
-+   public void popPush(String name) {
-+      if (this.lagometerActive) {
-+         int hashName = name.hashCode();
-+         if (hashName == HASH_SOUND && name.equals("sound")) {
-+            Lagometer.timerTick.end();
-+         }
-+      }
++    public void popPush(String name) {
++        if (this.lagometerActive) {
++            int hashName = name.hashCode();
++            if (hashName == HASH_SOUND && name.equals("sound")) {
++                Lagometer.timerTick.end();
++            }
++        }
 +
          this.pop();
          this.push(name);
@@ -112,7 +112,7 @@
  
      @Override
 -    public void popPush(final Supplier<String> name) {
-+   public void popPush(Supplier<String> name) {
++    public void popPush(Supplier<String> name) {
          this.pop();
          this.push(name);
      }
@@ -121,13 +121,13 @@
  
      @Override
 -    public void incrementCounter(final String name, final int amount) {
-+   public void incrementCounter(String name, int amount) {
++    public void incrementCounter(String name, int amount) {
          this.getCurrentEntry().counters.addTo(name, amount);
      }
  
      @Override
 -    public void incrementCounter(final Supplier<String> name, final int amount) {
-+   public void incrementCounter(Supplier<String> name, int amount) {
++    public void incrementCounter(Supplier<String> name, int amount) {
          this.getCurrentEntry().counters.addTo(name.get(), amount);
      }
  
@@ -136,7 +136,7 @@
  
      @Override
 -    public ActiveProfiler.@Nullable PathEntry getEntry(final String path) {
-+   public ActiveProfiler.PathEntry getEntry(String path) {
++    public ActiveProfiler.PathEntry getEntry(String path) {
          return this.entries.get(path);
      }
  

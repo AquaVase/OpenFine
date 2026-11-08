@@ -5,12 +5,12 @@ import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.world.entity.EntityType;
 
 public abstract class ModelAdapterAgeableHumanoid extends ModelAdapterAgeable {
-   protected ModelAdapterAgeableHumanoid(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    protected ModelAdapterAgeableHumanoid(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      return ModelAdapterHumanoid.makeStaticMapParts();
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        return ModelAdapterHumanoid.makeStaticMapParts();
+    }
 }

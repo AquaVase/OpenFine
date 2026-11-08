@@ -39,42 +39,50 @@
 -        final Vec3 cameraPosition,
 -        final ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress
 -    ) {
-+   public void extractRenderState(T blockEntity, S state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
++    public void extractRenderState(T blockEntity, S state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
          BlockEntityRenderer.super.extractRenderState(blockEntity, state, partialTicks, cameraPosition, breakProgress);
          state.facesToShow.clear();
  
-@@ -58,10 +53,15 @@
+@@ -58,25 +53,31 @@
          }
      }
  
 -    protected static void submitCube(
 -        final Collection<Direction> facesToShow, final RenderType renderType, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector
 -    ) {
-+   protected static void submitCube(Collection<Direction> facesToShow, RenderType renderType, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
++    protected static void submitCube(Collection<Direction> facesToShow, RenderType renderType, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
          if (!facesToShow.isEmpty()) {
-+         if (Config.isShaders()) {
-+            RenderType renderTypeShaders = RenderTypes.entitySolid(END_PORTAL_LOCATION);
-+            submitNodeCollector.submitCustomGeometry(poseStack, renderTypeShaders, (matrixIn, bufferIn) -> {
-+               float offsetUp = renderType == RenderTypes.endPortal() ? 0.75F : 1.0F;
-+               ShadersRender.renderEndPortal(facesToShow, offsetUp, matrixIn, bufferIn, Lightmap.MAX_BRIGHTNESS, OverlayTexture.NO_OVERLAY);
-+            });
-+         } else {
-             submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
-                 for (Direction direction : facesToShow) {
-                     for (Vector3fc faceVertex : FACES.get(direction)) {
-@@ -71,12 +71,13 @@
-             });
+-            submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
+-                for (Direction direction : facesToShow) {
+-                    for (Vector3fc faceVertex : FACES.get(direction)) {
+-                        buffer.addVertex(pose, faceVertex);
++            if (Config.isShaders()) {
++                RenderType renderTypeShaders = RenderTypes.entitySolid(END_PORTAL_LOCATION);
++                submitNodeCollector.submitCustomGeometry(poseStack, renderTypeShaders, (matrixIn, bufferIn) -> {
++                    float offsetUp = renderType == RenderTypes.endPortal() ? 0.75F : 1.0F;
++                    ShadersRender.renderEndPortal(facesToShow, offsetUp, matrixIn, bufferIn, Lightmap.MAX_BRIGHTNESS, OverlayTexture.NO_OVERLAY);
++                });
++            } else {
++                submitNodeCollector.submitCustomGeometry(poseStack, renderType, (pose, buffer) -> {
++                    for (Direction direction : facesToShow) {
++                        for (Vector3fc faceVertex : FACES.get(direction)) {
++                            buffer.addVertex(pose, faceVertex);
++                        }
+                     }
+-                }
+-            });
++                });
++            }
          }
      }
-+   }
  
 -    public static void submitSpecial(final RenderType renderType, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector) {
-+   public static void submitSpecial(RenderType renderType, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
++    public static void submitSpecial(RenderType renderType, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
          submitCube(ALL_FACES, renderType, poseStack, submitNodeCollector);
      }
  
 -    public static void getExtents(final Consumer<Vector3fc> output) {
-+   public static void getExtents(Consumer<Vector3fc> output) {
++    public static void getExtents(Consumer<Vector3fc> output) {
          FACES.values().forEach(vertices -> vertices.forEach(output));
      }
 -}

@@ -1,10 +1,10 @@
 package optifine.xdelta;
 
 public class DeltaException extends Exception {
-   public DeltaException() {
-   }
+    public DeltaException() {
+    }
 
-   public DeltaException(String msg) {
-      super(msg);
-   }
+    public DeltaException(String msg) {
+        super(msg);
+    }
 }

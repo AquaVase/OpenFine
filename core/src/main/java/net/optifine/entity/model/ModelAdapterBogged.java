@@ -11,24 +11,24 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterBogged extends ModelAdapterSkeleton {
-   public ModelAdapterBogged() {
-      super(EntityTypes.BOGGED, "bogged", ModelLayers.BOGGED);
-   }
+    public ModelAdapterBogged() {
+        super(EntityTypes.BOGGED, "bogged", ModelLayers.BOGGED);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new BoggedModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new BoggedModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      map.put("mushrooms", "mushrooms");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        map.put("mushrooms", "mushrooms");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new BoggedRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new BoggedRenderer(context);
+    }
 }

@@ -25,64 +25,64 @@
 -    private final int vertexSize;
 -    private final int stepRate;
 -    private final List<VertexFormatElement> elementValues;
-+   private Map<String, VertexFormatElement> elements = new Object2ObjectArrayMap<>(16);
-+   private int vertexSize;
-+   private int stepRate;
-+   private List<VertexFormatElement> elementValues;
-+   private String name;
-+   private VertexFormatElement positionElement;
-+   private VertexFormatElement normalElement;
-+   private VertexFormatElement colorElement;
-+   private VertexFormatElement[] uvElements = new VertexFormatElement[3];
-+   private boolean extended;
-+   private ImmutableMap<String, VertexFormatElement> elementMapping;
++    private Map<String, VertexFormatElement> elements = new Object2ObjectArrayMap<>(16);
++    private int vertexSize;
++    private int stepRate;
++    private List<VertexFormatElement> elementValues;
++    private String name;
++    private VertexFormatElement positionElement;
++    private VertexFormatElement normalElement;
++    private VertexFormatElement colorElement;
++    private VertexFormatElement[] uvElements = new VertexFormatElement[3];
++    private boolean extended;
++    private ImmutableMap<String, VertexFormatElement> elementMapping;
  
 -    private VertexFormat(final List<VertexFormatElement> elements, final int vertexSize, final int stepRate) {
-+   private VertexFormat(List<VertexFormatElement> elements, int vertexSize, int stepRate) {
++    private VertexFormat(List<VertexFormatElement> elements, int vertexSize, int stepRate) {
          this.vertexSize = vertexSize;
          this.stepRate = stepRate;
  
          for (VertexFormatElement element : elements) {
              this.elements.putIfAbsent(element.name(), element);
-+         if (element.name().equals("Position")) {
-+            this.positionElement = element;
-+         } else if (element.name().equals("Normal")) {
-+            this.normalElement = element;
-+         } else if (element.name().equals("Color")) {
-+            this.colorElement = element;
-+         } else if (element.name().equals("UV0")) {
-+            this.uvElements[0] = element;
-+         } else if (element.name().equals("UV1")) {
-+            this.uvElements[1] = element;
-+         } else if (element.name().equals("UV2")) {
-+            this.uvElements[2] = element;
++            if (element.name().equals("Position")) {
++                this.positionElement = element;
++            } else if (element.name().equals("Normal")) {
++                this.normalElement = element;
++            } else if (element.name().equals("Color")) {
++                this.colorElement = element;
++            } else if (element.name().equals("UV0")) {
++                this.uvElements[0] = element;
++            } else if (element.name().equals("UV1")) {
++                this.uvElements[1] = element;
++            } else if (element.name().equals("UV2")) {
++                this.uvElements[2] = element;
++            }
          }
-+      }
  
          this.elementValues = elements;
-+      ImmutableMap.Builder<String, VertexFormatElement> elementMappingBuilder = ImmutableMap.builder();
++        ImmutableMap.Builder<String, VertexFormatElement> elementMappingBuilder = ImmutableMap.builder();
 +
-+      for (VertexFormatElement element : elements) {
-+         elementMappingBuilder.put(element.name(), element);
++        for (VertexFormatElement element : elements) {
++            elementMappingBuilder.put(element.name(), element);
++        }
++
++        this.elementMapping = elementMappingBuilder.buildOrThrow();
      }
  
 -    public static VertexFormat.Builder builder(final int stepRate) {
-+      this.elementMapping = elementMappingBuilder.buildOrThrow();
-+   }
-+
-+   public static VertexFormat.Builder builder(int stepRate) {
++    public static VertexFormat.Builder builder(int stepRate) {
          return new VertexFormat.Builder(stepRate);
      }
  
      @Override
      public String toString() {
 -        return "VertexFormat" + this.elementValues.stream().map(VertexFormatElement::name).collect(Collectors.joining(", ", "[", "]"));
-+      return "VertexFormat "
-+         + this.name
-+         + ", "
-+         + this.vertexSize
-+         + "B, "
-+         + this.elementValues.stream().map(VertexFormatElement::name).collect(Collectors.joining(", ", "[", "]"));
++        return "VertexFormat "
++            + this.name
++            + ", "
++            + this.vertexSize
++            + "B, "
++            + this.elementValues.stream().map(VertexFormatElement::name).collect(Collectors.joining(", ", "[", "]"));
      }
  
      public int getVertexSize() {
@@ -91,18 +91,18 @@
      }
  
 -    public @Nullable VertexFormatElement getElement(final String attributeName) {
-+   public VertexFormatElement getElement(String attributeName) {
++    public VertexFormatElement getElement(String attributeName) {
          return this.elements.get(attributeName);
      }
  
 -    public boolean contains(final String attributeName) {
-+   public boolean contains(String attributeName) {
++    public boolean contains(String attributeName) {
          return this.elements.containsKey(attributeName);
      }
  
      @Override
 -    public boolean equals(final Object o) {
-+   public boolean equals(Object o) {
++    public boolean equals(Object o) {
          return this == o ? true : o instanceof VertexFormat format && this.elements.equals(format.elements) && this.vertexSize == format.vertexSize;
      }
  
@@ -111,85 +111,85 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public int getOffset(int index) {
-+      return this.elementValues.get(index).offset();
-+   }
++    public int getOffset(int index) {
++        return this.elementValues.get(index).offset();
++    }
 +
-+   public boolean hasPosition() {
-+      return this.positionElement != null;
-+   }
++    public boolean hasPosition() {
++        return this.positionElement != null;
++    }
 +
-+   public int getPositionOffset() {
-+      return this.positionElement.offset();
-+   }
++    public int getPositionOffset() {
++        return this.positionElement.offset();
++    }
 +
-+   public boolean hasNormal() {
-+      return this.normalElement != null;
-+   }
++    public boolean hasNormal() {
++        return this.normalElement != null;
++    }
 +
-+   public int getNormalOffset() {
-+      return this.normalElement.offset();
-+   }
++    public int getNormalOffset() {
++        return this.normalElement.offset();
++    }
 +
-+   public boolean hasColor() {
-+      return this.colorElement != null;
-+   }
++    public boolean hasColor() {
++        return this.colorElement != null;
++    }
 +
-+   public int getColorOffset() {
-+      return this.colorElement.offset();
-+   }
++    public int getColorOffset() {
++        return this.colorElement.offset();
++    }
 +
-+   public boolean hasUV(int id) {
-+      return this.uvElements[id] != null;
-+   }
++    public boolean hasUV(int id) {
++        return this.uvElements[id] != null;
++    }
 +
-+   public int getUvOffsetById(int id) {
-+      return this.uvElements[id].offset();
-+   }
++    public int getUvOffsetById(int id) {
++        return this.uvElements[id].offset();
++    }
 +
-+   public String getName() {
-+      return this.name;
-+   }
++    public String getName() {
++        return this.name;
++    }
 +
-+   public void setName(String name) {
-+      this.name = name;
-+   }
++    public void setName(String name) {
++        this.name = name;
++    }
 +
-+   public void copyFrom(VertexFormat vf) {
-+      this.elements = vf.elements;
-+      this.vertexSize = vf.vertexSize;
-+      this.stepRate = vf.stepRate;
-+      this.elementValues = vf.elementValues;
-+      this.name = vf.name;
-+      this.positionElement = vf.positionElement;
-+      this.normalElement = vf.normalElement;
-+      this.colorElement = vf.colorElement;
-+      this.uvElements = vf.uvElements;
-+      this.extended = vf.extended;
-+      this.elementMapping = vf.elementMapping;
-+   }
++    public void copyFrom(VertexFormat vf) {
++        this.elements = vf.elements;
++        this.vertexSize = vf.vertexSize;
++        this.stepRate = vf.stepRate;
++        this.elementValues = vf.elementValues;
++        this.name = vf.name;
++        this.positionElement = vf.positionElement;
++        this.normalElement = vf.normalElement;
++        this.colorElement = vf.colorElement;
++        this.uvElements = vf.uvElements;
++        this.extended = vf.extended;
++        this.elementMapping = vf.elementMapping;
++    }
 +
-+   public VertexFormat duplicate() {
-+      VertexFormat.Builder vfb = builder(this.stepRate);
-+      vfb.addAll(this);
-+      return vfb.build();
-+   }
++    public VertexFormat duplicate() {
++        VertexFormat.Builder vfb = builder(this.stepRate);
++        vfb.addAll(this);
++        return vfb.build();
++    }
 +
-+   public ImmutableMap<String, VertexFormatElement> getElementMapping() {
-+      return this.elementMapping;
-+   }
++    public ImmutableMap<String, VertexFormatElement> getElementMapping() {
++        return this.elementMapping;
++    }
 +
-+   public int getIntegerSize() {
-+      return this.getVertexSize() / 4;
-+   }
++    public int getIntegerSize() {
++        return this.getVertexSize() / 4;
++    }
 +
-+   public boolean isExtended() {
-+      return this.extended;
-+   }
++    public boolean isExtended() {
++        return this.extended;
++    }
 +
-+   public void setExtended(boolean extended) {
-+      this.extended = extended;
-+   }
++    public void setExtended(boolean extended) {
++        this.extended = extended;
++    }
 +
      public static class Builder {
          private final List<VertexFormatElement> elements = new ArrayList<>(16);
@@ -197,12 +197,12 @@
          private final int stepRate;
  
 -        private Builder(final int stepRate) {
-+      public Builder(int stepRate) {
++        public Builder(int stepRate) {
              this.stepRate = stepRate;
          }
  
 -        private void createAttribute(final String name, final int offset, final GpuFormat elementFormat) {
-+      private void createAttribute(String name, int offset, GpuFormat elementFormat) {
++        private void createAttribute(String name, int offset, GpuFormat elementFormat) {
              if (this.elements.size() >= 16) {
                  throw new IllegalArgumentException("Having more than 16 attributes are not supported");
              }
@@ -211,7 +211,7 @@
          }
  
 -        private void validateUniqueName(final String name) {
-+      private void validateUniqueName(String name) {
++        private void validateUniqueName(String name) {
              for (VertexFormatElement element : this.elements) {
                  if (element.name().equals(name)) {
                      throw new IllegalArgumentException("Another vertex attribute exists with the name " + name);
@@ -220,7 +220,7 @@
          }
  
 -        public VertexFormat.Builder addAttribute(final String name, final GpuFormat elementFormat) {
-+      public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat) {
++        public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat) {
              this.validateUniqueName(name);
              this.createAttribute(name, this.offset, elementFormat);
              this.offset = this.offset + elementFormat.blockSize();
@@ -228,7 +228,7 @@
          }
  
 -        public VertexFormat.Builder addAttribute(final String name, final int stride, final GpuFormat elementFormat) {
-+      public VertexFormat.Builder addAttribute(String name, int stride, GpuFormat elementFormat) {
++        public VertexFormat.Builder addAttribute(String name, int stride, GpuFormat elementFormat) {
              this.validateUniqueName(name);
              this.createAttribute(name, this.offset, elementFormat);
              this.offset += stride;
@@ -236,7 +236,7 @@
          }
  
 -        public VertexFormat.Builder addAttribute(final String name, final GpuFormat elementFormat, final int columnCount) {
-+      public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat, int columnCount) {
++        public VertexFormat.Builder addAttribute(String name, GpuFormat elementFormat, int columnCount) {
              this.validateUniqueName(name);
  
              for (int i = 0; i < columnCount; i++) {
@@ -245,7 +245,7 @@
          }
  
 -        public VertexFormat.Builder addAttribute(final String name, final int offset, final int stride, final GpuFormat elementFormat, final int columnCount) {
-+      public VertexFormat.Builder addAttribute(String name, int offset, int stride, GpuFormat elementFormat, int columnCount) {
++        public VertexFormat.Builder addAttribute(String name, int offset, int stride, GpuFormat elementFormat, int columnCount) {
              this.validateUniqueName(name);
              int offsetTracker = offset;
  
@@ -254,18 +254,18 @@
              }
          }
 +
-+      public VertexFormat.Builder addAll(VertexFormat vf) {
-+         for (VertexFormatElement vfe : vf.getElements()) {
-+            this.addAttribute(vfe.name(), vfe.format());
++        public VertexFormat.Builder addAll(VertexFormat vf) {
++            for (VertexFormatElement vfe : vf.getElements()) {
++                this.addAttribute(vfe.name(), vfe.format());
++            }
++
++            while (this.offset < vf.getVertexSize()) {
++                this.addAttribute("Padding" + this.offset, GpuFormat.R8_SINT);
++            }
++
++            return this;
++        }
      }
 -}
 \ No newline at end of file
-+
-+         while (this.offset < vf.getVertexSize()) {
-+            this.addAttribute("Padding" + this.offset, GpuFormat.R8_SINT);
-+         }
-+
-+         return this;
-+      }
-+   }
 +}

@@ -22,28 +22,28 @@
          i -> i.group(
 -                Identifier.CODEC.fieldOf("resource").forGetter(SingleFile::resourceId),
 -                Identifier.CODEC.optionalFieldOf("sprite").forGetter(SingleFile::spriteId)
-+            Identifier.CODEC.fieldOf("resource").forGetter(SingleFile::resourceId), Identifier.CODEC.optionalFieldOf("sprite").forGetter(SingleFile::spriteId)
++                Identifier.CODEC.fieldOf("resource").forGetter(SingleFile::resourceId), Identifier.CODEC.optionalFieldOf("sprite").forGetter(SingleFile::spriteId)
              )
              .apply(i, SingleFile::new)
      );
-+   public static final String PREFIX_VIRTUAL = "_virtual_/";
++    public static final String PREFIX_VIRTUAL = "_virtual_/";
  
 -    public SingleFile(final Identifier resourceId) {
-+   public SingleFile(Identifier resourceId) {
++    public SingleFile(Identifier resourceId) {
          this(resourceId, Optional.empty());
      }
  
      @Override
 -    public void run(final ResourceManager resourceManager, final SpriteSource.Output output) {
-+   public void run(ResourceManager resourceManager, Output output) {
++    public void run(ResourceManager resourceManager, Output output) {
          Identifier fullResourceId = TEXTURE_ID_CONVERTER.idToFile(this.resourceId);
-+      if (TextureAtlas.isAbsoluteLocation(this.resourceId)) {
-+         fullResourceId = new Identifier(this.resourceId.getNamespace(), this.resourceId.getPath() + ".png");
-+      }
++        if (TextureAtlas.isAbsoluteLocation(this.resourceId)) {
++            fullResourceId = new Identifier(this.resourceId.getNamespace(), this.resourceId.getPath() + ".png");
++        }
 +
-+      if (this.resourceId.getPath().startsWith("_virtual_/")) {
-+         fullResourceId = new Identifier(this.resourceId.getNamespace(), "textures/" + StrUtils.removePrefix(this.resourceId.getPath(), "_virtual_/") + ".png");
-+      }
++        if (this.resourceId.getPath().startsWith("_virtual_/")) {
++            fullResourceId = new Identifier(this.resourceId.getNamespace(), "textures/" + StrUtils.removePrefix(this.resourceId.getPath(), "_virtual_/") + ".png");
++        }
 +
          Optional<Resource> resource = resourceManager.getResource(fullResourceId);
          if (resource.isPresent()) {

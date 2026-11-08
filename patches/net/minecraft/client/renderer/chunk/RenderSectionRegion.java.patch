@@ -24,17 +24,17 @@
      private final ClientLevel level;
      private final CardinalLighting cardinalLighting;
      private final LevelLightEngine lightEngine;
-+   private SectionPos sectionPos;
-+   private RenderRegionCache regionCache;
++    private SectionPos sectionPos;
++    private RenderRegionCache regionCache;
  
 -    public RenderSectionRegion(final ClientLevel level, final int minSectionX, final int minSectionY, final int minSectionZ, final SectionCopy[] sections) {
-+   public RenderSectionRegion(ClientLevel level, int minSectionX, int minSectionY, int minSectionZ, SectionCopy[] sections) {
-+      this(level, minSectionX, minSectionY, minSectionZ, sections, null, null);
-+   }
++    public RenderSectionRegion(ClientLevel level, int minSectionX, int minSectionY, int minSectionZ, SectionCopy[] sections) {
++        this(level, minSectionX, minSectionY, minSectionZ, sections, null, null);
++    }
 +
-+   public RenderSectionRegion(
-+      ClientLevel level, int minSectionX, int minSectionY, int minSectionZ, SectionCopy[] sections, SectionPos sectionPosIn, RenderRegionCache regionCacheIn
-+   ) {
++    public RenderSectionRegion(
++        ClientLevel level, int minSectionX, int minSectionY, int minSectionZ, SectionCopy[] sections, SectionPos sectionPosIn, RenderRegionCache regionCacheIn
++    ) {
          this.level = level;
          this.minSectionX = minSectionX;
          this.minSectionY = minSectionY;
@@ -42,8 +42,8 @@
          this.sections = sections;
          this.cardinalLighting = level.cardinalLighting();
          this.lightEngine = level.getLightEngine();
-+      this.sectionPos = sectionPosIn;
-+      this.regionCache = regionCacheIn;
++        this.sectionPos = sectionPosIn;
++        this.regionCache = regionCacheIn;
      }
  
      @Override
@@ -51,8 +51,8 @@
 -        return this.getSection(
 -                SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ())
 -            )
-+   public BlockState getBlockState(BlockPos pos) {
-+      return this.getSection(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ()))
++    public BlockState getBlockState(BlockPos pos) {
++        return this.getSection(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ()))
              .getBlockState(pos);
      }
  
@@ -61,8 +61,8 @@
 -        return this.getSection(
 -                SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ())
 -            )
-+   public FluidState getFluidState(BlockPos pos) {
-+      return this.getSection(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ()))
++    public FluidState getFluidState(BlockPos pos) {
++        return this.getSection(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ()))
              .getBlockState(pos)
              .getFluidState();
      }
@@ -74,19 +74,19 @@
 -        return this.getSection(
 -                SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ())
 -            )
-+   public BlockEntity getBlockEntity(BlockPos pos) {
-+      return this.getSection(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ()))
++    public BlockEntity getBlockEntity(BlockPos pos) {
++        return this.getSection(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getY()), SectionPos.blockToSectionCoord(pos.getZ()))
              .getBlockEntity(pos);
      }
  
 -    private SectionCopy getSection(final int sectionX, final int sectionY, final int sectionZ) {
-+   public SectionCopy getSection(int sectionX, int sectionY, int sectionZ) {
++    public SectionCopy getSection(int sectionX, int sectionY, int sectionZ) {
          return this.sections[index(this.minSectionX, this.minSectionY, this.minSectionZ, sectionX, sectionY, sectionZ)];
      }
  
      @Override
 -    public int getBlockTint(final BlockPos pos, final ColorResolver resolver) {
-+   public int getBlockTint(BlockPos pos, ColorResolver resolver) {
++    public int getBlockTint(BlockPos pos, ColorResolver resolver) {
          return this.level.getBlockTint(pos, resolver);
      }
  
@@ -95,46 +95,46 @@
      }
  
 -    public static int index(final int minSectionX, final int minSectionY, final int minSectionZ, final int sectionX, final int sectionY, final int sectionZ) {
-+   public static int index(int minSectionX, int minSectionY, int minSectionZ, int sectionX, int sectionY, int sectionZ) {
++    public static int index(int minSectionX, int minSectionY, int minSectionZ, int sectionX, int sectionY, int sectionZ) {
          return sectionX - minSectionX + (sectionY - minSectionY) * 3 + (sectionZ - minSectionZ) * 3 * 3;
      }
 -}
 \ No newline at end of file
 +
-+   public Biome getBiome(BlockPos pos) {
-+      return this.level.getBiome(pos).value();
-+   }
++    public Biome getBiome(BlockPos pos) {
++        return this.level.getBiome(pos).value();
++    }
 +
-+   public LevelChunk getLevelChunk(int cx, int cy, int cz) {
-+      return this.getSection(cx, cy, cz).getChunk();
-+   }
++    public LevelChunk getLevelChunk(int cx, int cy, int cz) {
++        return this.getSection(cx, cy, cz).getChunk();
++    }
 +
-+   public ChunkCacheOF makeChunkCacheOF() {
-+      return this.sectionPos == null ? null : new ChunkCacheOF(this, this.sectionPos);
-+   }
++    public ChunkCacheOF makeChunkCacheOF() {
++        return this.sectionPos == null ? null : new ChunkCacheOF(this, this.sectionPos);
++    }
 +
-+   public int getMinChunkX() {
-+      return this.minSectionX;
-+   }
++    public int getMinChunkX() {
++        return this.minSectionX;
++    }
 +
-+   public int getMinChunkY() {
-+      return this.minSectionY;
-+   }
++    public int getMinChunkY() {
++        return this.minSectionY;
++    }
 +
-+   public int getMinChunkZ() {
-+      return this.minSectionZ;
-+   }
++    public int getMinChunkZ() {
++        return this.minSectionZ;
++    }
 +
-+   public RenderRegionCache getRegionCache() {
-+      return this.regionCache;
-+   }
++    public RenderRegionCache getRegionCache() {
++        return this.regionCache;
++    }
 +
-+   public ModelDataManager getModelDataManager() {
-+      if (this.level instanceof ClientLevel) {
-+         ClientLevel clientWorld = this.level;
-+         return clientWorld.getModelDataManager();
-+      } else {
-+         return null;
-+      }
-+   }
++    public ModelDataManager getModelDataManager() {
++        if (this.level instanceof ClientLevel) {
++            ClientLevel clientWorld = this.level;
++            return clientWorld.getModelDataManager();
++        } else {
++            return null;
++        }
++    }
 +}

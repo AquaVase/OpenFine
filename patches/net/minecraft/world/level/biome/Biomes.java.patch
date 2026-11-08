@@ -10,7 +10,7 @@
  import net.minecraft.resources.ResourceKey;
  
  public abstract class Biomes {
-+   private static Set<ResourceKey<Biome>> biomeKeys = new LinkedHashSet<>();
++    private static Set<ResourceKey<Biome>> biomeKeys = new LinkedHashSet<>();
      public static final ResourceKey<Biome> THE_VOID = register("the_void");
      public static final ResourceKey<Biome> PLAINS = register("plains");
      public static final ResourceKey<Biome> SUNFLOWER_PLAINS = register("sunflower_plains");
@@ -20,15 +20,15 @@
  
 -    private static ResourceKey<Biome> register(final String name) {
 -        return ResourceKey.create(Registries.BIOME, Identifier.withDefaultNamespace(name));
-+   private static ResourceKey<Biome> register(String name) {
-+      ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, Identifier.withDefaultNamespace(name));
-+      biomeKeys.add(key);
-+      return key;
++    private static ResourceKey<Biome> register(String name) {
++        ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, Identifier.withDefaultNamespace(name));
++        biomeKeys.add(key);
++        return key;
      }
 -}
 \ No newline at end of file
 +
-+   public static Set<ResourceKey<Biome>> getBiomeKeys() {
-+      return new LinkedHashSet<>(biomeKeys);
-+   }
++    public static Set<ResourceKey<Biome>> getBiomeKeys() {
++        return new LinkedHashSet<>(biomeKeys);
++    }
 +}

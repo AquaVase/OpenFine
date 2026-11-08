@@ -9,24 +9,24 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterZoglin extends ModelAdapterHoglin {
-   public ModelAdapterZoglin() {
-      this(EntityTypes.ZOGLIN, "zoglin", ModelLayers.ZOGLIN);
-   }
+    public ModelAdapterZoglin() {
+        this(EntityTypes.ZOGLIN, "zoglin", ModelLayers.ZOGLIN);
+    }
 
-   protected ModelAdapterZoglin(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterZoglin(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterAgeable ma = new ModelAdapterZoglin(this.getEntityType(), "zoglin_baby", ModelLayers.ZOGLIN_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterAgeable ma = new ModelAdapterZoglin(this.getEntityType(), "zoglin_baby", ModelLayers.ZOGLIN_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new ZoglinRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new ZoglinRenderer(context);
+    }
 }

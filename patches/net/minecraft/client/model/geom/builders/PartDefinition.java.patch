@@ -12,23 +12,23 @@
      private final List<CubeDefinition> cubes;
      private final PartPose partPose;
      private final Map<String, PartDefinition> children = Maps.newHashMap();
-+   private String name;
++    private String name;
  
 -    PartDefinition(final List<CubeDefinition> cubes, final PartPose partPose) {
-+   PartDefinition(List<CubeDefinition> cubes, PartPose partPose) {
++    PartDefinition(List<CubeDefinition> cubes, PartPose partPose) {
          this.cubes = cubes;
          this.partPose = partPose;
      }
  
 -    public PartDefinition addOrReplaceChild(final String name, final CubeListBuilder cubes, final PartPose partPose) {
-+   public PartDefinition addOrReplaceChild(String name, CubeListBuilder cubes, PartPose partPose) {
++    public PartDefinition addOrReplaceChild(String name, CubeListBuilder cubes, PartPose partPose) {
          PartDefinition child = new PartDefinition(cubes.getCubes(), partPose);
          return this.addOrReplaceChild(name, child);
      }
  
 -    public PartDefinition addOrReplaceChild(final String name, final PartDefinition child) {
-+   public PartDefinition addOrReplaceChild(String name, PartDefinition child) {
-+      child.setName(name);
++    public PartDefinition addOrReplaceChild(String name, PartDefinition child) {
++        child.setName(name);
          PartDefinition previous = this.children.put(name, child);
          if (previous != null) {
              child.children.putAll(previous.children);
@@ -37,7 +37,7 @@
      }
  
 -    public PartDefinition clearChild(final String name) {
-+   public PartDefinition clearChild(String name) {
++    public PartDefinition clearChild(String name) {
          PartDefinition child = this.children.get(name);
          if (child == null) {
              throw new IllegalArgumentException("No child with name: " + name);
@@ -46,7 +46,7 @@
      }
  
 -    public void retainPartsAndChildren(final Set<String> parts) {
-+   public void retainPartsAndChildren(Set<String> parts) {
++    public void retainPartsAndChildren(Set<String> parts) {
          for (Entry<String, PartDefinition> entry : this.children.entrySet()) {
              PartDefinition child = entry.getValue();
              if (!parts.contains(entry.getKey())) {
@@ -55,7 +55,7 @@
      }
  
 -    public void retainExactParts(final Set<String> parts) {
-+   public void retainExactParts(Set<String> parts) {
++    public void retainExactParts(Set<String> parts) {
          for (Entry<String, PartDefinition> entry : this.children.entrySet()) {
              PartDefinition child = entry.getValue();
              if (parts.contains(entry.getKey())) {
@@ -64,7 +64,7 @@
      }
  
 -    public ModelPart bake(final int texScaleX, final int texScaleY) {
-+   public ModelPart bake(int texScaleX, int texScaleY) {
++    public ModelPart bake(int texScaleX, int texScaleY) {
          Object2ObjectArrayMap<String, ModelPart> bakedChildren = this.children
              .entrySet()
              .stream()
@@ -72,12 +72,12 @@
          ModelPart result = new ModelPart(bakedCubes, bakedChildren);
          result.setInitialPose(this.partPose);
          result.loadPose(this.partPose);
-+      result.setName(this.name);
++        result.setName(this.name);
          return result;
      }
  
 -    public PartDefinition getChild(final String name) {
-+   public PartDefinition getChild(String name) {
++    public PartDefinition getChild(String name) {
          return this.children.get(name);
      }
  
@@ -86,7 +86,7 @@
      }
  
 -    public PartDefinition transformed(final UnaryOperator<PartPose> function) {
-+   public PartDefinition transformed(UnaryOperator<PartPose> function) {
++    public PartDefinition transformed(UnaryOperator<PartPose> function) {
          PartDefinition newPart = new PartDefinition(this.cubes, function.apply(this.partPose));
          newPart.children.putAll(this.children);
          return newPart;
@@ -94,11 +94,11 @@
 -}
 \ No newline at end of file
 +
-+   public String getName() {
-+      return this.name;
-+   }
++    public String getName() {
++        return this.name;
++    }
 +
-+   public void setName(String name) {
-+      this.name = name;
-+   }
++    public void setName(String name) {
++        this.name = name;
++    }
 +}

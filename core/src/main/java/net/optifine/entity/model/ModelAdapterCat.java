@@ -13,29 +13,29 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterCat extends ModelAdapterOcelot {
-   public ModelAdapterCat() {
-      super(EntityTypes.CAT, "cat", ModelLayers.CAT);
-   }
+    public ModelAdapterCat() {
+        super(EntityTypes.CAT, "cat", ModelLayers.CAT);
+    }
 
-   protected ModelAdapterCat(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterCat(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterCat ma = new ModelAdapterCat(this.getEntityType(), "cat_baby", ModelLayers.CAT_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterCat ma = new ModelAdapterCat(this.getEntityType(), "cat_baby", ModelLayers.CAT_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return this.isBaby() ? new BabyCatModel(root) : new AdultCatModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return this.isBaby() ? new BabyCatModel(root) : new AdultCatModel(root);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new CatRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new CatRenderer(context);
+    }
 }

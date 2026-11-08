@@ -67,7 +67,7 @@
      private static final FileToIdConverter MODEL_LISTER = FileToIdConverter.json("models");
      private Map<Identifier, ItemModel> bakedItemStackModels = Map.of();
 -    private Map<Identifier, ClientItem.Properties> itemProperties = Map.of();
-+   private Map<Identifier, Properties> itemProperties = Map.of();
++    private Map<Identifier, Properties> itemProperties = Map.of();
      private final AtlasManager atlasManager;
      private final PlayerSkinRenderCache playerSkinRenderCache;
      private final BlockColors blockColors;
@@ -76,30 +76,30 @@
 -    private @Nullable BlockStateModelSet blockStateModelSet;
 -    private @Nullable BlockModelSet blockModelSet;
 -    private @Nullable FluidStateModelSet fluidStateModelSet;
-+   private BlockStateModelSet blockStateModelSet;
-+   private BlockModelSet blockModelSet;
-+   private FluidStateModelSet fluidStateModelSet;
++    private BlockStateModelSet blockStateModelSet;
++    private BlockModelSet blockModelSet;
++    private FluidStateModelSet fluidStateModelSet;
      private Object2IntMap<BlockState> modelGroups = Object2IntMaps.emptyMap();
-+   private Map<Identifier, ItemModel> bakedItemStackModelsView = Map.of();
-+   private ModelBakery modelBakery;
-+   private static ThreadLocal<Identifier> parsedModelLocation = new ThreadLocal<>();
++    private Map<Identifier, ItemModel> bakedItemStackModelsView = Map.of();
++    private ModelBakery modelBakery;
++    private static ThreadLocal<Identifier> parsedModelLocation = new ThreadLocal<>();
  
 -    public ModelManager(final BlockColors blockColors, final AtlasManager atlasManager, final PlayerSkinRenderCache playerSkinRenderCache) {
-+   public ModelManager(BlockColors blockColors, AtlasManager atlasManager, PlayerSkinRenderCache playerSkinRenderCache) {
++    public ModelManager(BlockColors blockColors, AtlasManager atlasManager, PlayerSkinRenderCache playerSkinRenderCache) {
          this.blockColors = blockColors;
          this.atlasManager = atlasManager;
          this.playerSkinRenderCache = playerSkinRenderCache;
      }
  
 -    public ItemModel getItemModel(final Identifier id) {
-+   public ItemModel getItemModel(Identifier id) {
++    public ItemModel getItemModel(Identifier id) {
          return this.bakedItemStackModels.getOrDefault(id, this.missingModels.item());
      }
  
 -    public ClientItem.Properties getItemProperties(final Identifier id) {
 -        return this.itemProperties.getOrDefault(id, ClientItem.Properties.DEFAULT);
-+   public Properties getItemProperties(Identifier id) {
-+      return this.itemProperties.getOrDefault(id, Properties.DEFAULT);
++    public Properties getItemProperties(Identifier id) {
++        return this.itemProperties.getOrDefault(id, Properties.DEFAULT);
      }
  
      public BlockStateModelSet getBlockStateModelSet() {
@@ -113,34 +113,34 @@
 -        final PreparableReloadListener.PreparationBarrier preparationBarrier,
 -        final Executor reloadExecutor
 -    ) {
-+   public final CompletableFuture<Void> reload(SharedState currentReload, Executor taskExecutor, PreparationBarrier preparationBarrier, Executor reloadExecutor) {
++    public final CompletableFuture<Void> reload(SharedState currentReload, Executor taskExecutor, PreparationBarrier preparationBarrier, Executor reloadExecutor) {
          ResourceManager manager = currentReload.resourceManager();
          CompletableFuture<EntityModelSet> entityModelSet = CompletableFuture.supplyAsync(EntityModelSet::vanilla, taskExecutor);
          CompletableFuture<Map<Identifier, UnbakedModel>> modelCache = loadBlockModels(manager, taskExecutor);
 -        CompletableFuture<BlockStateModelLoader.LoadedModels> blockStateModels = BlockStateModelLoader.loadBlockStates(manager, taskExecutor);
 -        CompletableFuture<Map<BlockState, BlockModel.Unbaked>> blockModelContents = CompletableFuture.supplyAsync(
-+      CompletableFuture<LoadedModels> blockStateModels = BlockStateModelLoader.loadBlockStates(manager, taskExecutor);
-+      CompletableFuture<Map<BlockState, Unbaked>> blockModelContents = CompletableFuture.supplyAsync(
++        CompletableFuture<LoadedModels> blockStateModels = BlockStateModelLoader.loadBlockStates(manager, taskExecutor);
++        CompletableFuture<Map<BlockState, Unbaked>> blockModelContents = CompletableFuture.supplyAsync(
              () -> BuiltInBlockModels.createBlockModels(this.blockColors), taskExecutor
          );
          CompletableFuture<ClientItemInfoLoader.LoadedClientInfos> itemStackModels = ClientItemInfoLoader.scheduleLoad(manager, taskExecutor);
 -        CompletableFuture<ModelManager.ResolvedModels> modelDiscovery = CompletableFuture.allOf(modelCache, blockStateModels, itemStackModels)
 -            .thenApplyAsync(var3 -> discoverModelDependencies(modelCache.join(), blockStateModels.join(), itemStackModels.join()), taskExecutor);
-+      CompletableFuture<ModelManager.ResolvedModels> modelDiscoveryImpl = CompletableFuture.allOf(modelCache, blockStateModels, itemStackModels)
-+         .thenApplyAsync(var3x -> discoverModelDependencies(modelCache.join(), blockStateModels.join(), itemStackModels.join()), taskExecutor);
-+      CompletableFuture<ModelManager.ResolvedModels> modelDiscovery = modelDiscoveryImpl.whenComplete(
-+         (resIn, excIn) -> TextureUtils.setModelLoadingException(excIn)
-+      );
++        CompletableFuture<ModelManager.ResolvedModels> modelDiscoveryImpl = CompletableFuture.allOf(modelCache, blockStateModels, itemStackModels)
++            .thenApplyAsync(var3x -> discoverModelDependencies(modelCache.join(), blockStateModels.join(), itemStackModels.join()), taskExecutor);
++        CompletableFuture<ModelManager.ResolvedModels> modelDiscovery = modelDiscoveryImpl.whenComplete(
++            (resIn, excIn) -> TextureUtils.setModelLoadingException(excIn)
++        );
          CompletableFuture<Object2IntMap<BlockState>> modelGroups = blockStateModels.thenApplyAsync(
              models -> buildModelGroups(this.blockColors, models), taskExecutor
          );
 -        AtlasManager.PendingStitchResults pendingStitches = currentReload.get(AtlasManager.PENDING_STITCH);
-+      PendingStitchResults pendingStitches = currentReload.get(AtlasManager.PENDING_STITCH);
++        PendingStitchResults pendingStitches = currentReload.get(AtlasManager.PENDING_STITCH);
          CompletableFuture<SpriteLoader.Preparations> pendingBlockAtlasSprites = pendingStitches.get(AtlasIds.BLOCKS);
          CompletableFuture<SpriteLoader.Preparations> pendingItemAtlasSprites = pendingStitches.get(AtlasIds.ITEMS);
          CompletableFuture<LoadedBlockModels> blockModels = CompletableFuture.allOf(blockModelContents, entityModelSet)
 -            .thenApply(var3 -> new LoadedBlockModels(blockModelContents.join(), entityModelSet.join(), this.atlasManager, this.playerSkinRenderCache));
-+         .thenApply(var3x -> new LoadedBlockModels(blockModelContents.join(), entityModelSet.join(), this.atlasManager, this.playerSkinRenderCache));
++            .thenApply(var3x -> new LoadedBlockModels(blockModelContents.join(), entityModelSet.join(), this.atlasManager, this.playerSkinRenderCache));
          return CompletableFuture.allOf(
                  pendingBlockAtlasSprites,
                  pendingItemAtlasSprites,
@@ -150,7 +150,7 @@
                          LOGGER.debug(
 -                            "Unreferenced models: \n{}",
 -                            unreferencedModels.stream().sorted().map(modelId -> "\t" + modelId + "\n").collect(Collectors.joining())
-+                     "Unreferenced models: \n{}", unreferencedModels.stream().sorted().map(modelId -> "\t" + modelId + "\n").collect(Collectors.joining())
++                            "Unreferenced models: \n{}", unreferencedModels.stream().sorted().map(modelId -> "\t" + modelId + "\n").collect(Collectors.joining())
                          );
                      }
  
@@ -159,12 +159,12 @@
      }
  
 -    private static CompletableFuture<Map<Identifier, UnbakedModel>> loadBlockModels(final ResourceManager manager, final Executor executor) {
-+   private static CompletableFuture<Map<Identifier, UnbakedModel>> loadBlockModels(ResourceManager manager, Executor executor) {
++    private static CompletableFuture<Map<Identifier, UnbakedModel>> loadBlockModels(ResourceManager manager, Executor executor) {
          return CompletableFuture.<Map<Identifier, Resource>>supplyAsync(() -> MODEL_LISTER.listMatchingResources(manager), executor)
              .thenCompose(
                  resources -> {
                      List<CompletableFuture<Pair<Identifier, CuboidModel>>> result = new ArrayList<>(resources.size());
-+               TextureUtils.registerCustomModels((Map<Identifier, Resource>)resources);
++                    TextureUtils.registerCustomModels((Map<Identifier, Resource>)resources);
  
                      for (Entry<Identifier, Resource> resource : resources.entrySet()) {
                          result.add(CompletableFuture.supplyAsync(() -> {
@@ -172,13 +172,13 @@
  
                              try (Reader reader = resource.getValue().openAsReader()) {
 -                                return Pair.of(modelId, CuboidModel.fromStream(reader));
-+                        parsedModelLocation.set(modelId);
-+                        return fixBlockModel(modelId, CuboidModel.fromStream(reader));
++                                parsedModelLocation.set(modelId);
++                                return fixBlockModel(modelId, CuboidModel.fromStream(reader));
                              } catch (Exception e) {
                                  LOGGER.error("Failed to load model {}", resource.getKey(), e);
                                  return null;
-+                     } finally {
-+                        parsedModelLocation.set(null);
++                            } finally {
++                                parsedModelLocation.set(null);
                              }
                          }, executor));
                      }
@@ -189,7 +189,7 @@
 -        final Map<Identifier, UnbakedModel> allModels,
 -        final BlockStateModelLoader.LoadedModels blockStateModels,
 -        final ClientItemInfoLoader.LoadedClientInfos itemInfos
-+      Map<Identifier, UnbakedModel> allModels, LoadedModels blockStateModels, ClientItemInfoLoader.LoadedClientInfos itemInfos
++        Map<Identifier, UnbakedModel> allModels, LoadedModels blockStateModels, ClientItemInfoLoader.LoadedClientInfos itemInfos
      ) {
          try (Zone ignored = Profiler.get().zone("dependencies")) {
              ModelDiscovery result = new ModelDiscovery(allModels, MissingCuboidModel.missingModel());
@@ -197,14 +197,14 @@
              blockStateModels.models().values().forEach(result::addRoot);
              itemInfos.contents().values().forEach(info -> result.addRoot(info.model()));
 -            return new ModelManager.ResolvedModels(result.missingModel(), result.resolve());
-+         ModelManager.ResolvedModels rms = new ModelManager.ResolvedModels(result.missingModel(), result.resolve());
-+         if (Config.isCustomItems()) {
-+            CustomItems.collectModelSprites(rms.models);
-         }
++            ModelManager.ResolvedModels rms = new ModelManager.ResolvedModels(result.missingModel(), result.resolve());
++            if (Config.isCustomItems()) {
++                CustomItems.collectModelSprites(rms.models);
++            }
 +
-+         return rms;
++            return rms;
+         }
      }
-+   }
  
      private static CompletableFuture<ModelManager.ReloadState> loadModels(
 -        final SpriteLoader.Preparations blockAtlas,
@@ -214,13 +214,13 @@
 -        final Object2IntMap<BlockState> modelGroups,
 -        final EntityModelSet entityModelSet,
 -        final Executor taskExecutor
-+      SpriteLoader.Preparations blockAtlas,
-+      SpriteLoader.Preparations itemAtlas,
-+      ModelBakery bakery,
-+      LoadedBlockModels blockModels,
-+      Object2IntMap<BlockState> modelGroups,
-+      EntityModelSet entityModelSet,
-+      Executor taskExecutor
++        SpriteLoader.Preparations blockAtlas,
++        SpriteLoader.Preparations itemAtlas,
++        ModelBakery bakery,
++        LoadedBlockModels blockModels,
++        Object2IntMap<BlockState> modelGroups,
++        EntityModelSet entityModelSet,
++        Executor taskExecutor
      ) {
          MaterialBaker blockItemMaterialBaker = new ModelManager.CombinedBlockItemMaterialBaker(blockAtlas, itemAtlas);
          MaterialBaker blockOnlyMaterialBaker = new ModelManager.BlockOnlyMaterialBaker(blockAtlas);
@@ -228,7 +228,7 @@
          return bakedStateResults.thenCombine(
              bakedModelsFuture,
              (bakingResult, bakedModels) -> {
-+            Reflector.ForgeHooksClient_onModifyBakingResult.call(bakery, bakingResult);
++                Reflector.ForgeHooksClient_onModifyBakingResult.call(bakery, bakingResult);
                  blockItemMaterialBaker.logMissingTextures();
                  Map<Fluid, FluidModel> fluidModels = FluidStateModelSet.bake(blockOnlyMaterialBaker);
                  blockOnlyMaterialBaker.logMissingTextures();
@@ -237,7 +237,7 @@
                  );
                  return new ModelManager.ReloadState(
 -                    bakingResult, modelGroups, modelByStateCache, (Map<BlockState, BlockModel>)bakedModels, fluidModels, entityModelSet
-+               bakingResult, modelGroups, modelByStateCache, (Map<BlockState, BlockModel>)bakedModels, fluidModels, entityModelSet, bakery
++                    bakingResult, modelGroups, modelByStateCache, (Map<BlockState, BlockModel>)bakedModels, fluidModels, entityModelSet, bakery
                  );
              }
          );
@@ -246,7 +246,7 @@
 -    private static Map<BlockState, BlockStateModel> createBlockStateToModelDispatch(
 -        final Map<BlockState, BlockStateModel> bakedModels, final BlockStateModel missingModel
 -    ) {
-+   private static Map<BlockState, BlockStateModel> createBlockStateToModelDispatch(Map<BlockState, BlockStateModel> bakedModels, BlockStateModel missingModel) {
++    private static Map<BlockState, BlockStateModel> createBlockStateToModelDispatch(Map<BlockState, BlockStateModel> bakedModels, BlockStateModel missingModel) {
          try (Zone ignored = Profiler.get().zone("block state dispatch")) {
              Map<BlockState, BlockStateModel> modelByStateCache = new IdentityHashMap<>(bakedModels);
  
@@ -255,22 +255,22 @@
      }
  
 -    private static Object2IntMap<BlockState> buildModelGroups(final BlockColors blockColors, final BlockStateModelLoader.LoadedModels blockStateModels) {
-+   private static Object2IntMap<BlockState> buildModelGroups(BlockColors blockColors, LoadedModels blockStateModels) {
++    private static Object2IntMap<BlockState> buildModelGroups(BlockColors blockColors, LoadedModels blockStateModels) {
          try (Zone ignored = Profiler.get().zone("block groups")) {
              return ModelGroupCollector.build(blockColors, blockStateModels);
          }
      }
  
 -    private void apply(final ModelManager.ReloadState preparations) {
-+   private void apply(ModelManager.ReloadState preparations) {
++    private void apply(ModelManager.ReloadState preparations) {
          ModelBakery.BakingResult bakedModels = preparations.bakedModels;
          this.bakedItemStackModels = bakedModels.itemStackModels();
          this.itemProperties = bakedModels.itemProperties();
          this.modelGroups = preparations.modelGroups;
          this.missingModels = bakedModels.missingModels();
-+      this.bakedItemStackModelsView = Collections.unmodifiableMap(this.bakedItemStackModels);
-+      this.modelBakery = preparations.modelBakery();
-+      Reflector.ForgeHooksClient_onModelBake.call(this, this.modelBakery);
++        this.bakedItemStackModelsView = Collections.unmodifiableMap(this.bakedItemStackModels);
++        this.modelBakery = preparations.modelBakery();
++        Reflector.ForgeHooksClient_onModelBake.call(this, this.modelBakery);
          this.blockStateModelSet = new BlockStateModelSet(preparations.blockStateModels, this.missingModels.block());
          this.blockModelSet = new BlockModelSet(this.blockStateModelSet, preparations.blockModels, this.blockColors);
          this.fluidStateModelSet = new FluidStateModelSet(preparations.fluidModels, this.missingModels.fluid());
@@ -278,7 +278,7 @@
      }
  
 -    public boolean requiresRender(final BlockState oldState, final BlockState newState) {
-+   public boolean requiresRender(BlockState oldState, BlockState newState) {
++    public boolean requiresRender(BlockState oldState, BlockState newState) {
          if (oldState == newState) {
              return false;
          }
@@ -286,63 +286,63 @@
          return true;
      }
  
-+   public ItemModel getMissingItemModel() {
-+      return this.missingModels.item();
-+   }
++    public ItemModel getMissingItemModel() {
++        return this.missingModels.item();
++    }
 +
-+   public ModelBakery.MissingModels getMissingModels() {
-+      return this.missingModels;
-+   }
++    public ModelBakery.MissingModels getMissingModels() {
++        return this.missingModels;
++    }
 +
-+   public AtlasManager getAtlasManager() {
-+      return this.atlasManager;
-+   }
++    public AtlasManager getAtlasManager() {
++        return this.atlasManager;
++    }
 +
-+   private static Pair<Identifier, CuboidModel> fixBlockModel(Identifier locationModelIn, CuboidModel modelIn) {
-+      Identifier parent = resolveRelative(locationModelIn, modelIn.parent());
-+      if (parent != modelIn.parent()) {
-+         modelIn = new CuboidModel(modelIn.geometry(), modelIn.guiLight(), modelIn.ambientOcclusion(), modelIn.transforms(), modelIn.textureSlots(), parent);
-+      }
++    private static Pair<Identifier, CuboidModel> fixBlockModel(Identifier locationModelIn, CuboidModel modelIn) {
++        Identifier parent = resolveRelative(locationModelIn, modelIn.parent());
++        if (parent != modelIn.parent()) {
++            modelIn = new CuboidModel(modelIn.geometry(), modelIn.guiLight(), modelIn.ambientOcclusion(), modelIn.transforms(), modelIn.textureSlots(), parent);
++        }
 +
-+      return new Pair<>(locationModelIn, modelIn);
-+   }
++        return new Pair<>(locationModelIn, modelIn);
++    }
 +
-+   public static Identifier resolveRelative(Identifier locationModelIn, Identifier locationIn) {
-+      if (locationModelIn != null && locationIn != null) {
-+         if (locationIn.getPath().startsWith("./")) {
-+            String basePath = PathUtils.removeLast(locationModelIn.getPath());
-+            String pathFull = StrUtils.replacePrefix(locationIn.getPath(), "./", basePath + "/");
-+            locationIn = locationIn.withPath(pathFull);
-+         }
++    public static Identifier resolveRelative(Identifier locationModelIn, Identifier locationIn) {
++        if (locationModelIn != null && locationIn != null) {
++            if (locationIn.getPath().startsWith("./")) {
++                String basePath = PathUtils.removeLast(locationModelIn.getPath());
++                String pathFull = StrUtils.replacePrefix(locationIn.getPath(), "./", basePath + "/");
++                locationIn = locationIn.withPath(pathFull);
++            }
 +
-+         return locationIn;
-+      } else {
-+         return locationIn;
-+      }
-+   }
++            return locationIn;
++        } else {
++            return locationIn;
++        }
++    }
 +
-+   public static Material fixMaterial(Material materialIn) {
-+      Identifier modelLocation = parsedModelLocation.get();
-+      if (modelLocation != null && modelLocation.isDefaultNamespace() && modelLocation.getPath().startsWith("optifine/cit/")) {
-+         Identifier atlasLoc = TextureAtlas.LOCATION_ITEMS;
-+         Identifier textureLoc = resolveRelative(modelLocation, materialIn.sprite());
-+         if (textureLoc.getPath().startsWith("block/")) {
-+            textureLoc = textureLoc.withPrefix("_virtual_/");
-+         }
++    public static Material fixMaterial(Material materialIn) {
++        Identifier modelLocation = parsedModelLocation.get();
++        if (modelLocation != null && modelLocation.isDefaultNamespace() && modelLocation.getPath().startsWith("optifine/cit/")) {
++            Identifier atlasLoc = TextureAtlas.LOCATION_ITEMS;
++            Identifier textureLoc = resolveRelative(modelLocation, materialIn.sprite());
++            if (textureLoc.getPath().startsWith("block/")) {
++                textureLoc = textureLoc.withPrefix("_virtual_/");
++            }
 +
-+         return new Material(atlasLoc, materialIn.forceTranslucent());
-+      } else {
-+         return materialIn;
-+      }
-+   }
++            return new Material(atlasLoc, materialIn.forceTranslucent());
++        } else {
++            return materialIn;
++        }
++    }
 +
-+   public Map<Identifier, ItemModel> getItemModels() {
-+      return this.bakedItemStackModelsView;
-+   }
++    public Map<Identifier, ItemModel> getItemModels() {
++        return this.bakedItemStackModelsView;
++    }
 +
-+   public ModelBakery getModelBakery() {
-+      return Preconditions.checkNotNull(this.modelBakery, "Attempted to query model bakery before it has been initialized.");
-+   }
++    public ModelBakery getModelBakery() {
++        return Preconditions.checkNotNull(this.modelBakery, "Attempted to query model bakery before it has been initialized.");
++    }
 +
      public Supplier<EntityModelSet> entityModels() {
          return () -> this.entityModelSet;
@@ -353,14 +353,14 @@
          private final SpriteLoader.Preparations blockAtlas;
  
 -        public BlockOnlyMaterialBaker(final SpriteLoader.Preparations blockAtlas) {
-+      public BlockOnlyMaterialBaker(SpriteLoader.Preparations blockAtlas) {
++        public BlockOnlyMaterialBaker(SpriteLoader.Preparations blockAtlas) {
              super(blockAtlas.missing());
              this.blockAtlas = blockAtlas;
          }
  
          @Override
 -        protected Material.@Nullable Baked bake(final Material material) {
-+      protected Baked bake(Material material) {
++        protected Baked bake(Material material) {
              return bakeForAtlas(material, this.blockAtlas);
          }
      }
@@ -371,7 +371,7 @@
          private final SpriteLoader.Preparations itemAtlas;
  
 -        public CombinedBlockItemMaterialBaker(final SpriteLoader.Preparations blockAtlas, final SpriteLoader.Preparations itemAtlas) {
-+      public CombinedBlockItemMaterialBaker(SpriteLoader.Preparations blockAtlas, SpriteLoader.Preparations itemAtlas) {
++        public CombinedBlockItemMaterialBaker(SpriteLoader.Preparations blockAtlas, SpriteLoader.Preparations itemAtlas) {
              super(blockAtlas.missing());
              this.blockAtlas = blockAtlas;
              this.itemAtlas = itemAtlas;
@@ -380,8 +380,8 @@
          @Override
 -        protected Material.@Nullable Baked bake(final Material material) {
 -            Material.Baked itemMaterial = bakeForAtlas(material, this.itemAtlas);
-+      protected Baked bake(Material material) {
-+         Baked itemMaterial = bakeForAtlas(material, this.itemAtlas);
++        protected Baked bake(Material material) {
++            Baked itemMaterial = bakeForAtlas(material, this.itemAtlas);
              return itemMaterial != null ? itemMaterial : bakeForAtlas(material, this.blockAtlas);
          }
      }
@@ -393,20 +393,21 @@
          Map<BlockState, BlockStateModel> blockStateModels,
          Map<BlockState, BlockModel> blockModels,
          Map<Fluid, FluidModel> fluidModels,
-+      EntityModelSet entityModelSet,
-+      ModelBakery modelBakery
-+   ) {
-+      public ReloadState(
-+         ModelBakery.BakingResult bakedModels,
-+         Object2IntMap<BlockState> modelGroups,
-+         Map<BlockState, BlockStateModel> blockStateModels,
-+         Map<BlockState, BlockModel> blockModels,
-+         Map<Fluid, FluidModel> fluidModels,
-         EntityModelSet entityModelSet
+-        EntityModelSet entityModelSet
++        EntityModelSet entityModelSet,
++        ModelBakery modelBakery
      ) {
-+         this(bakedModels, modelGroups, blockStateModels, blockModels, fluidModels, entityModelSet, null);
++        public ReloadState(
++            ModelBakery.BakingResult bakedModels,
++            Object2IntMap<BlockState> modelGroups,
++            Map<BlockState, BlockStateModel> blockStateModels,
++            Map<BlockState, BlockModel> blockModels,
++            Map<Fluid, FluidModel> fluidModels,
++            EntityModelSet entityModelSet
++        ) {
++            this(bakedModels, modelGroups, blockStateModels, blockModels, fluidModels, entityModelSet, null);
++        }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      private record ResolvedModels(ResolvedModel missing, Map<Identifier, ResolvedModel> models) {

@@ -10,33 +10,33 @@
 +import net.minecraft.world.effect.MobEffectInstance;
 +
 +public interface IClientMobEffectExtensions {
-+   IClientMobEffectExtensions DUMMY = new IClientMobEffectExtensions() {};
++    IClientMobEffectExtensions DUMMY = new IClientMobEffectExtensions() {};
 +
-+   static IClientMobEffectExtensions of(MobEffectInstance mobeffectinstance) {
-+      return DUMMY;
-+   }
++    static IClientMobEffectExtensions of(MobEffectInstance mobeffectinstance) {
++        return DUMMY;
++    }
 +
-+   static IClientMobEffectExtensions of(MobEffect effect) {
-+      return DUMMY;
-+   }
++    static IClientMobEffectExtensions of(MobEffect effect) {
++        return DUMMY;
++    }
 +
-+   default boolean isVisibleInInventory(MobEffectInstance instance) {
-+      return true;
-+   }
++    default boolean isVisibleInInventory(MobEffectInstance instance) {
++        return true;
++    }
 +
-+   default boolean isVisibleInGui(MobEffectInstance instance) {
-+      return true;
-+   }
++    default boolean isVisibleInGui(MobEffectInstance instance) {
++        return true;
++    }
 +
-+   default boolean renderInventoryIcon(MobEffectInstance instance, EffectsInInventory screen, GuiGraphicsExtractor guiGraphics, int x, int y, int blitOffset) {
-+      return false;
-+   }
++    default boolean renderInventoryIcon(MobEffectInstance instance, EffectsInInventory screen, GuiGraphicsExtractor guiGraphics, int x, int y, int blitOffset) {
++        return false;
++    }
 +
-+   default boolean renderInventoryText(MobEffectInstance instance, EffectsInInventory screen, GuiGraphicsExtractor guiGraphics, int x, int y, int blitOffset) {
-+      return false;
-+   }
++    default boolean renderInventoryText(MobEffectInstance instance, EffectsInInventory screen, GuiGraphicsExtractor guiGraphics, int x, int y, int blitOffset) {
++        return false;
++    }
 +
-+   default boolean extractGuiIcon(MobEffectInstance instance, Hud hud, GuiGraphicsExtractor guiGraphics, int x, int y, float z, float alpha) {
-+      return false;
-+   }
++    default boolean extractGuiIcon(MobEffectInstance instance, Hud hud, GuiGraphicsExtractor guiGraphics, int x, int y, float z, float alpha) {
++        return false;
++    }
 +}

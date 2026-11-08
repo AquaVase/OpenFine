@@ -9,16 +9,16 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterParched extends ModelAdapterSkeleton {
-   public ModelAdapterParched() {
-      super(EntityTypes.PARCHED, "parched", ModelLayers.PARCHED);
-   }
+    public ModelAdapterParched() {
+        super(EntityTypes.PARCHED, "parched", ModelLayers.PARCHED);
+    }
 
-   public ModelAdapterParched(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    public ModelAdapterParched(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new ParchedRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new ParchedRenderer(context);
+    }
 }

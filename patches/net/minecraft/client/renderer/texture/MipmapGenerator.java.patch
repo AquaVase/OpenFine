@@ -18,7 +18,7 @@
      }
  
 -    private static float alphaTestCoverage(final NativeImage image, final float alphaRef, final float alphaScale) {
-+   private static float alphaTestCoverage(NativeImage image, float alphaRef, float alphaScale) {
++    private static float alphaTestCoverage(NativeImage image, float alphaRef, float alphaScale) {
          int width = image.getWidth();
          int height = image.getHeight();
          float coverage = 0.0F;
@@ -27,7 +27,7 @@
      }
  
 -    private static void scaleAlphaToCoverage(final NativeImage image, final float desiredCoverage, final float alphaRef, final float alphaCutoffBias) {
-+   private static void scaleAlphaToCoverage(NativeImage image, float desiredCoverage, float alphaRef, float alphaCutoffBias) {
++    private static void scaleAlphaToCoverage(NativeImage image, float desiredCoverage, float alphaRef, float alphaCutoffBias) {
          float minAlphaScale = 0.0F;
          float maxAlphaScale = 4.0F;
          float alphaScale = 1.0F;
@@ -38,82 +38,92 @@
 -        final Identifier name,
 -        final NativeImage[] currentMips,
 -        final int newMipLevel,
-+      Identifier name, NativeImage[] currentMips, int newMipLevel, MipmapStrategy mipmapStrategy, float alphaCutoffBias, Transparency transparency
-+   ) {
-+      return generateMipLevels(name, currentMips, newMipLevel, mipmapStrategy, alphaCutoffBias, transparency, null);
-+   }
++        Identifier name, NativeImage[] currentMips, int newMipLevel, MipmapStrategy mipmapStrategy, float alphaCutoffBias, Transparency transparency
++    ) {
++        return generateMipLevels(name, currentMips, newMipLevel, mipmapStrategy, alphaCutoffBias, transparency, null);
++    }
 +
-+   public static NativeImage[] generateMipLevels(
-+      Identifier name,
-+      NativeImage[] currentMips,
-+      int newMipLevel,
++    public static NativeImage[] generateMipLevels(
++        Identifier name,
++        NativeImage[] currentMips,
++        int newMipLevel,
          MipmapStrategy mipmapStrategy,
 -        final float alphaCutoffBias,
 -        final Transparency transparency
-+      float alphaCutoffBias,
-+      Transparency transparency,
-+      IColorBlender colorBlender
++        float alphaCutoffBias,
++        Transparency transparency,
++        IColorBlender colorBlender
      ) {
          if (mipmapStrategy == MipmapStrategy.AUTO) {
              mipmapStrategy = transparency.hasTransparent() ? MipmapStrategy.CUTOUT : MipmapStrategy.MEAN;
          }
  
 -        if (currentMips.length == 1 && !name.getPath().startsWith("item/")) {
-+      if (currentMips.length == 1 && !name.getPath().startsWith("item/") && colorBlender == null) {
++        if (currentMips.length == 1 && !name.getPath().startsWith("item/") && colorBlender == null) {
              if (mipmapStrategy == MipmapStrategy.CUTOUT || mipmapStrategy == MipmapStrategy.STRICT_CUTOUT) {
 -                TextureUtil.solidify(currentMips[0]);
-+            TextureAtlasSprite.fixTransparentColor(currentMips[0]);
++                TextureAtlasSprite.fixTransparentColor(currentMips[0]);
              } else if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
                  TextureUtil.fillEmptyAreasWithDarkColor(currentMips[0]);
              }
-@@ -128,18 +134,34 @@
+@@ -128,31 +134,48 @@
                  result[level] = currentMips[level];
              } else {
                  NativeImage lastData = result[level - 1];
 -                NativeImage data = new NativeImage(lastData.getWidth() >> 1, lastData.getHeight() >> 1, false);
-+            int widthNext = Math.max(lastData.getWidth() >> 1, 1);
-+            int heightNext = Math.max(lastData.getHeight() >> 1, 1);
-+            NativeImage data = new NativeImage(widthNext, heightNext, false);
++                int widthNext = Math.max(lastData.getWidth() >> 1, 1);
++                int heightNext = Math.max(lastData.getHeight() >> 1, 1);
++                NativeImage data = new NativeImage(widthNext, heightNext, false);
                  int width = data.getWidth();
                  int height = data.getHeight();
  
                  for (int x = 0; x < width; x++) {
                      for (int y = 0; y < height; y++) {
-+                  if (colorBlender != null) {
-+                     data.setPixelABGR(
-+                        x,
-+                        y,
-+                        colorBlender.blend(
-+                           lastData.getPixelABGR(x * 2 + 0, y * 2 + 0),
-+                           lastData.getPixelABGR(x * 2 + 1, y * 2 + 0),
-+                           lastData.getPixelABGR(x * 2 + 0, y * 2 + 1),
-+                           lastData.getPixelABGR(x * 2 + 1, y * 2 + 1)
-+                        )
-+                     );
-+                  } else {
-                         int color1 = lastData.getPixel(x * 2 + 0, y * 2 + 0);
-                         int color2 = lastData.getPixel(x * 2 + 1, y * 2 + 0);
-                         int color3 = lastData.getPixel(x * 2 + 0, y * 2 + 1);
-                         int color4 = lastData.getPixel(x * 2 + 1, y * 2 + 1);
-                         int color;
+-                        int color1 = lastData.getPixel(x * 2 + 0, y * 2 + 0);
+-                        int color2 = lastData.getPixel(x * 2 + 1, y * 2 + 0);
+-                        int color3 = lastData.getPixel(x * 2 + 0, y * 2 + 1);
+-                        int color4 = lastData.getPixel(x * 2 + 1, y * 2 + 1);
+-                        int color;
 -                        if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
-+                     if (Boolean.TRUE) {
-+                        color = Mipmaps.alphaBlend(color1, color2, color3, color4);
-+                     } else if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
-                             color = darkenedAlphaBlend(color1, color2, color3, color4);
+-                            color = darkenedAlphaBlend(color1, color2, color3, color4);
++                        if (colorBlender != null) {
++                            data.setPixelABGR(
++                                x,
++                                y,
++                                colorBlender.blend(
++                                    lastData.getPixelABGR(x * 2 + 0, y * 2 + 0),
++                                    lastData.getPixelABGR(x * 2 + 1, y * 2 + 0),
++                                    lastData.getPixelABGR(x * 2 + 0, y * 2 + 1),
++                                    lastData.getPixelABGR(x * 2 + 1, y * 2 + 1)
++                                )
++                            );
                          } else {
-                             color = ARGB.meanLinear(color1, color2, color3, color4);
-@@ -148,11 +170,12 @@
-                         data.setPixel(x, y, color);
+-                            color = ARGB.meanLinear(color1, color2, color3, color4);
+-                        }
++                            int color1 = lastData.getPixel(x * 2 + 0, y * 2 + 0);
++                            int color2 = lastData.getPixel(x * 2 + 1, y * 2 + 0);
++                            int color3 = lastData.getPixel(x * 2 + 0, y * 2 + 1);
++                            int color4 = lastData.getPixel(x * 2 + 1, y * 2 + 1);
++                            int color;
++                            if (Boolean.TRUE) {
++                                color = Mipmaps.alphaBlend(color1, color2, color3, color4);
++                            } else if (mipmapStrategy == MipmapStrategy.DARK_CUTOUT) {
++                                color = darkenedAlphaBlend(color1, color2, color3, color4);
++                            } else {
++                                color = ARGB.meanLinear(color1, color2, color3, color4);
++                            }
+ 
+-                        data.setPixel(x, y, color);
++                            data.setPixel(x, y, color);
++                        }
                      }
                  }
-+            }
  
                  result[level] = data;
              }
  
 -            if (isCutoutMip) {
-+         if (isCutoutMip && colorBlender == null) {
++            if (isCutoutMip && colorBlender == null) {
                  scaleAlphaToCoverage(result[level], originalCoverage, cutoutRef, alphaCutoffBias);
              }
          }
@@ -122,7 +132,7 @@
      }
  
 -    private static int darkenedAlphaBlend(final int color1, final int color2, final int color3, final int color4) {
-+   private static int darkenedAlphaBlend(int color1, int color2, int color3, int color4) {
++    private static int darkenedAlphaBlend(int color1, int color2, int color3, int color4) {
          float aTotal = 0.0F;
          float rTotal = 0.0F;
          float gTotal = 0.0F;
@@ -133,7 +143,7 @@
 -        return ARGB.color(
 -            ARGB.linearToSrgbChannel(aTotal), ARGB.linearToSrgbChannel(rTotal), ARGB.linearToSrgbChannel(gTotal), ARGB.linearToSrgbChannel(bTotal)
 -        );
-+      return ARGB.color(ARGB.linearToSrgbChannel(aTotal), ARGB.linearToSrgbChannel(rTotal), ARGB.linearToSrgbChannel(gTotal), ARGB.linearToSrgbChannel(bTotal));
++        return ARGB.color(ARGB.linearToSrgbChannel(aTotal), ARGB.linearToSrgbChannel(rTotal), ARGB.linearToSrgbChannel(gTotal), ARGB.linearToSrgbChannel(bTotal));
      }
 -}
 \ No newline at end of file

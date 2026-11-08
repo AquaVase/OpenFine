@@ -8,47 +8,47 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 
 public class ShaderUniformM3 extends ShaderUniformBase {
-   private boolean transpose;
-   private FloatBuffer matrixBuffer = MemoryUtil.memAllocFloat(9);
-   private FloatBuffer tempBuffer = MemoryUtil.memAllocFloat(9);
+    private boolean transpose;
+    private FloatBuffer matrixBuffer = MemoryUtil.memAllocFloat(9);
+    private FloatBuffer tempBuffer = MemoryUtil.memAllocFloat(9);
 
-   public ShaderUniformM3(String name) {
-      super(name);
-   }
+    public ShaderUniformM3(String name) {
+        super(name);
+    }
 
-   public void setValue(Matrix3f matrixIn) {
-      this.transpose = false;
-      this.tempBuffer.clear();
-      MathUtils.store(matrixIn, this.tempBuffer);
-      this.setValue(false, this.tempBuffer);
-   }
+    public void setValue(Matrix3f matrixIn) {
+        this.transpose = false;
+        this.tempBuffer.clear();
+        MathUtils.store(matrixIn, this.tempBuffer);
+        this.setValue(false, this.tempBuffer);
+    }
 
-   public void setValue(boolean transpose, FloatBuffer matrix) {
-      this.transpose = transpose;
-      matrix.mark();
-      this.matrixBuffer.clear();
-      this.matrixBuffer.put(matrix);
-      this.matrixBuffer.rewind();
-      matrix.reset();
-      int location = this.getLocation();
-      if (location >= 0) {
-         flushRenderBuffers();
-         GL20.glUniformMatrix3fv(location, transpose, this.matrixBuffer);
-         this.checkGLError();
-      }
-   }
+    public void setValue(boolean transpose, FloatBuffer matrix) {
+        this.transpose = transpose;
+        matrix.mark();
+        this.matrixBuffer.clear();
+        this.matrixBuffer.put(matrix);
+        this.matrixBuffer.rewind();
+        matrix.reset();
+        int location = this.getLocation();
+        if (location >= 0) {
+            flushRenderBuffers();
+            GL20.glUniformMatrix3fv(location, transpose, this.matrixBuffer);
+            this.checkGLError();
+        }
+    }
 
-   public float getValue(int row, int col) {
-      int index = this.transpose ? col * 3 + row : row * 3 + col;
-      return this.matrixBuffer.get(index);
-   }
+    public float getValue(int row, int col) {
+        int index = this.transpose ? col * 3 + row : row * 3 + col;
+        return this.matrixBuffer.get(index);
+    }
 
-   @Override
-   protected void onProgramSet(int program) {
-   }
+    @Override
+    protected void onProgramSet(int program) {
+    }
 
-   @Override
-   protected void resetValue() {
-      BufferUtil.fill(this.matrixBuffer, 0.0F);
-   }
+    @Override
+    protected void resetValue() {
+        BufferUtil.fill(this.matrixBuffer, 0.0F);
+    }
 }

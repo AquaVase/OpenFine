@@ -14,49 +14,49 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterCamelSaddle extends ModelAdapterCamel {
-   public ModelAdapterCamelSaddle() {
-      super(EntityTypes.CAMEL, "camel_saddle", ModelLayers.CAMEL_SADDLE);
-   }
+    public ModelAdapterCamelSaddle() {
+        super(EntityTypes.CAMEL, "camel_saddle", ModelLayers.CAMEL_SADDLE);
+    }
 
-   protected ModelAdapterCamelSaddle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterCamelSaddle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      return null;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        return null;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new CamelSaddleModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new CamelSaddleModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      return appendSaddleParts(map);
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        return appendSaddleParts(map);
+    }
 
-   public static Map<String, String> appendSaddleParts(Map<String, String> map) {
-      map.put("saddle", "saddle");
-      map.put("reins", "reins");
-      map.put("bridle", "bridle");
-      return map;
-   }
+    public static Map<String, String> appendSaddleParts(Map<String, String> map) {
+        map.put("saddle", "saddle");
+        map.put("reins", "reins");
+        map.put("bridle", "bridle");
+        return map;
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      CamelModel camelModel = (CamelModel)modelBase;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        CamelModel camelModel = (CamelModel)modelBase;
 
-      for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
-         if (layer.getLayerType() == LayerType.CAMEL_SADDLE) {
-            if (this.isBaby()) {
-               layer.babyModel = camelModel;
-            } else {
-               layer.adultModel = camelModel;
+        for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
+            if (layer.getLayerType() == LayerType.CAMEL_SADDLE) {
+                if (this.isBaby()) {
+                    layer.babyModel = camelModel;
+                } else {
+                    layer.adultModel = camelModel;
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

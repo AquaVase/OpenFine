@@ -5,29 +5,29 @@ import net.optifine.texture.ColorBlenderLinear;
 import net.optifine.texture.IColorBlender;
 
 public class TextureFormatLabPbr implements ITextureFormat {
-   private String version;
+    private String version;
 
-   public TextureFormatLabPbr(String ver) {
-      this.version = ver;
-   }
+    public TextureFormatLabPbr(String ver) {
+        this.version = ver;
+    }
 
-   @Override
-   public String getMacroName() {
-      return "LAB_PBR";
-   }
+    @Override
+    public String getMacroName() {
+        return "LAB_PBR";
+    }
 
-   @Override
-   public String getMacroVersion() {
-      return this.version == null ? null : this.version.replace('.', '_');
-   }
+    @Override
+    public String getMacroVersion() {
+        return this.version == null ? null : this.version.replace('.', '_');
+    }
 
-   @Override
-   public IColorBlender getColorBlender(ShadersTextureType typeIn) {
-      return typeIn == ShadersTextureType.SPECULAR ? new ColorBlenderLabPbrSpecular() : new ColorBlenderLinear();
-   }
+    @Override
+    public IColorBlender getColorBlender(ShadersTextureType typeIn) {
+        return typeIn == ShadersTextureType.SPECULAR ? new ColorBlenderLabPbrSpecular() : new ColorBlenderLinear();
+    }
 
-   @Override
-   public boolean isTextureBlend(ShadersTextureType typeIn) {
-      return typeIn != ShadersTextureType.SPECULAR;
-   }
+    @Override
+    public boolean isTextureBlend(ShadersTextureType typeIn) {
+        return typeIn != ShadersTextureType.SPECULAR;
+    }
 }

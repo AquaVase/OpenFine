@@ -68,24 +68,24 @@
 -    private @Nullable GlProgram lastProgram;
 -    private VertexArrayCache.@Nullable VertexArray lastVertexArray;
 -    private final List<@Nullable FrameBufferAttachment> renderPassColorTextures = new ArrayList<>();
-+   private RenderPipeline lastPipeline;
-+   private GlProgram lastProgram;
-+   private VertexArrayCache.VertexArray lastVertexArray;
-+   private final List<FrameBufferAttachment> renderPassColorTextures = new ArrayList<>();
-+   private boolean mainFramebufferEnabled = Config.isMainFramebufferEnabled();
-+   private boolean prevFlushRenderPass;
++    private RenderPipeline lastPipeline;
++    private GlProgram lastProgram;
++    private VertexArrayCache.VertexArray lastVertexArray;
++    private final List<FrameBufferAttachment> renderPassColorTextures = new ArrayList<>();
++    private boolean mainFramebufferEnabled = Config.isMainFramebufferEnabled();
++    private boolean prevFlushRenderPass;
  
 -    protected GlCommandEncoder(final GlDevice device) {
-+   protected GlCommandEncoder(GlDevice device) {
++    protected GlCommandEncoder(GlDevice device) {
          this.device = device;
 -        this.transientMemory = device.getDeviceInfo().features().persistentMapping()
 -            ? new GlTransientMemory.PersistentMapping(device, this)
 -            : new GlTransientMemory.Fallback(device, this);
-+      this.transientMemory = device.getDeviceInfo().features().persistentMapping() ? new PersistentMapping(device, this) : new Fallback(device, this);
++        this.transientMemory = device.getDeviceInfo().features().persistentMapping() ? new PersistentMapping(device, this) : new Fallback(device, this);
          this.readFbo = device.directStateAccess().createFrameBufferObject();
          this.drawFbo = device.directStateAccess().createFrameBufferObject();
-+      device.debugLabels().applyLabelFramebuffer(this.readFbo, "GLCE Read");
-+      device.debugLabels().applyLabelFramebuffer(this.drawFbo, "GLCE Draw");
++        device.debugLabels().applyLabelFramebuffer(this.readFbo, "GLCE Read");
++        device.debugLabels().applyLabelFramebuffer(this.drawFbo, "GLCE Draw");
      }
  
      @Override
@@ -94,7 +94,7 @@
      }
  
 -    public boolean awaitSubmit(final long index, final long timeoutNS) {
-+   public boolean awaitSubmit(long index, long timeoutNS) {
++    public boolean awaitSubmit(long index, long timeoutNS) {
          if (this.currentSubmitIndex > index + 2L) {
              return true;
          }
@@ -103,29 +103,35 @@
  
      @Override
 -    public RenderPassBackend createRenderPass(final RenderPassDescriptor descriptor) {
-+   public RenderPassBackend createRenderPass(RenderPassDescriptor descriptor) {
-+      this.prevFlushRenderPass = RenderUtils.setFlushRenderBuffers(false);
++    public RenderPassBackend createRenderPass(RenderPassDescriptor descriptor) {
++        this.prevFlushRenderPass = RenderUtils.setFlushRenderBuffers(false);
          this.device.debugLabels().pushDebugGroup(descriptor.label());
 -        List<RenderPassDescriptor.Attachment<Optional<Vector4fc>>> colorAttachments = descriptor.colorAttachments();
-+      List<Attachment<Optional<Vector4fc>>> colorAttachments = descriptor.colorAttachments();
++        List<Attachment<Optional<Vector4fc>>> colorAttachments = descriptor.colorAttachments();
          this.renderPassColorTextures.clear();
  
 -        for (RenderPassDescriptor.Attachment<Optional<Vector4fc>> colorAttachment : colorAttachments) {
-+      for (Attachment<Optional<Vector4fc>> colorAttachment : colorAttachments) {
++        for (Attachment<Optional<Vector4fc>> colorAttachment : colorAttachments) {
              this.renderPassColorTextures.add(colorAttachment != null ? (GlTextureView)colorAttachment.textureView() : null);
          }
  
 -        RenderPassDescriptor.Attachment<OptionalDouble> depthAttachment = descriptor.depthAttachment();
-+      Attachment<OptionalDouble> depthAttachment = descriptor.depthAttachment();
-+      boolean bindFramebuffer = this.isBindFramebuffer(descriptor);
-+      if (bindFramebuffer) {
-         int fbo = this.device
-             .frameBufferCache()
-             .getFbo(
-                 this.device.directStateAccess(), this.renderPassColorTextures, depthAttachment == null ? null : (GlTextureView)depthAttachment.textureView()
-             );
-         GlStateManager._glBindFramebuffer(36160, fbo);
-+      }
+-        int fbo = this.device
+-            .frameBufferCache()
+-            .getFbo(
+-                this.device.directStateAccess(), this.renderPassColorTextures, depthAttachment == null ? null : (GlTextureView)depthAttachment.textureView()
+-            );
+-        GlStateManager._glBindFramebuffer(36160, fbo);
++        Attachment<OptionalDouble> depthAttachment = descriptor.depthAttachment();
++        boolean bindFramebuffer = this.isBindFramebuffer(descriptor);
++        if (bindFramebuffer) {
++            int fbo = this.device
++                .frameBufferCache()
++                .getFbo(
++                    this.device.directStateAccess(), this.renderPassColorTextures, depthAttachment == null ? null : (GlTextureView)depthAttachment.textureView()
++                );
++            GlStateManager._glBindFramebuffer(36160, fbo);
++        }
 +
          assert descriptor.renderArea != null;
          GlStateManager._enableScissorTest();
@@ -133,7 +139,7 @@
  
          for (int i = 0; i < colorAttachments.size(); i++) {
 -            RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = colorAttachments.get(i);
-+         Attachment<Optional<Vector4fc>> attachment = colorAttachments.get(i);
++            Attachment<Optional<Vector4fc>> attachment = colorAttachments.get(i);
              if (attachment != null) {
                  Optional<Vector4fc> clearValue = attachment.clearValue();
                  if (clearValue.isPresent()) {
@@ -142,7 +148,7 @@
          int height = 0;
          if (!colorAttachments.isEmpty()) {
 -            for (RenderPassDescriptor.Attachment<Optional<Vector4fc>> colorAttachment : colorAttachments) {
-+         for (Attachment<Optional<Vector4fc>> colorAttachment : colorAttachments) {
++            for (Attachment<Optional<Vector4fc>> colorAttachment : colorAttachments) {
                  if (colorAttachment != null) {
                      GpuTextureView colorTexture = colorAttachment.textureView();
                      width = colorTexture.getWidth(0);
@@ -150,49 +156,56 @@
              height = depthAttachment.textureView().getHeight(0);
          }
  
-+      if (!Shaders.isRenderingWorld && !Shaders.isShadowPass) {
-         GlStateManager._viewport(0, 0, width, height);
-+      }
+-        GlStateManager._viewport(0, 0, width, height);
++        if (!Shaders.isRenderingWorld && !Shaders.isShadowPass) {
++            GlStateManager._viewport(0, 0, width, height);
++        }
 +
          this.lastPipeline = null;
          ScissorState scissorState = new ScissorState();
          scissorState.enable(descriptor.renderArea.x(), descriptor.renderArea.y(), descriptor.renderArea.width(), descriptor.renderArea.height());
 -        return new GlRenderPass(this, this.device, depthAttachment != null, this.renderPassColorTextures.size(), scissorState);
-+      GlRenderPass grp = new GlRenderPass(this, this.device, depthAttachment != null, this.renderPassColorTextures.size(), scissorState);
-+      grp.bindFramebuffer = bindFramebuffer;
-+      return grp;
++        GlRenderPass grp = new GlRenderPass(this, this.device, depthAttachment != null, this.renderPassColorTextures.size(), scissorState);
++        grp.bindFramebuffer = bindFramebuffer;
++        return grp;
      }
  
      @Override
 -    public void clearColorTexture(final GpuTexture colorTexture, final Vector4fc clearColor) {
-+   public void clearColorTexture(GpuTexture colorTexture, Vector4fc clearColor) {
-+      if (this.isBindFramebuffer(colorTexture, null)) {
-         this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)colorTexture).id, 0, 0, 36160);
-+      }
+-        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)colorTexture).id, 0, 0, 36160);
++    public void clearColorTexture(GpuTexture colorTexture, Vector4fc clearColor) {
++        if (this.isBindFramebuffer(colorTexture, null)) {
++            this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)colorTexture).id, 0, 0, 36160);
++        }
 +
          GL33C.glClearColor(clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w());
          GlStateManager._disableScissorTest();
          GlStateManager._colorMask(15);
          GlStateManager._clear(16384);
-+      if (this.isBindFramebuffer(colorTexture, null)) {
-         GlStateManager._glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
-+         if (colorTexture.isStencilEnabled()) {
-+            GlStateManager._glFramebufferTexture2D(36160, 36128, 3553, 0, 0);
-+         }
-+      }
+-        GlStateManager._glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
++        if (this.isBindFramebuffer(colorTexture, null)) {
++            GlStateManager._glFramebufferTexture2D(36160, 36064, 3553, 0, 0);
++            if (colorTexture.isStencilEnabled()) {
++                GlStateManager._glFramebufferTexture2D(36160, 36128, 3553, 0, 0);
++            }
++        }
 +
          GlStateManager._glBindFramebuffer(36160, 0);
      }
  
      @Override
 -    public void clearColorAndDepthTextures(final GpuTexture colorTexture, final Vector4fc clearColor, final GpuTexture depthTexture, final double clearDepth) {
-+   public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth) {
-+      if (this.isBindFramebuffer(colorTexture, depthTexture)) {
-         int fbo = this.device
-             .frameBufferCache()
-             .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
-         GlStateManager._glBindFramebuffer(36160, fbo);
-+      }
+-        int fbo = this.device
+-            .frameBufferCache()
+-            .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
+-        GlStateManager._glBindFramebuffer(36160, fbo);
++    public void clearColorAndDepthTextures(GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth) {
++        if (this.isBindFramebuffer(colorTexture, depthTexture)) {
++            int fbo = this.device
++                .frameBufferCache()
++                .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
++            GlStateManager._glBindFramebuffer(36160, fbo);
++        }
 +
          GlStateManager._disableScissorTest();
          GL33C.glClearDepth(clearDepth);
@@ -209,14 +222,18 @@
 -        final int regionY,
 -        final int regionWidth,
 -        final int regionHeight
-+      GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth, int regionX, int regionY, int regionWidth, int regionHeight
++        GpuTexture colorTexture, Vector4fc clearColor, GpuTexture depthTexture, double clearDepth, int regionX, int regionY, int regionWidth, int regionHeight
      ) {
-+      if (this.isBindFramebuffer(colorTexture, depthTexture)) {
-         int fbo = this.device
-             .frameBufferCache()
-             .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
-         GlStateManager._glBindFramebuffer(36160, fbo);
-+      }
+-        int fbo = this.device
+-            .frameBufferCache()
+-            .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
+-        GlStateManager._glBindFramebuffer(36160, fbo);
++        if (this.isBindFramebuffer(colorTexture, depthTexture)) {
++            int fbo = this.device
++                .frameBufferCache()
++                .getFbo(this.device.directStateAccess(), Collections.singletonList((GlTexture)colorTexture), (GlTexture)depthTexture);
++            GlStateManager._glBindFramebuffer(36160, fbo);
++        }
 +
          GlStateManager._scissorBox(regionX, regionY, regionWidth, regionHeight);
          GlStateManager._enableScissorTest();
@@ -226,27 +243,31 @@
  
      @Override
 -    public void clearDepthTexture(final GpuTexture depthTexture, final double clearDepth) {
-+   public void clearDepthTexture(GpuTexture depthTexture, double clearDepth) {
-+      if (this.isBindFramebuffer(null, depthTexture)) {
-         this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, 0, ((GlTexture)depthTexture).id, 0, 36160);
-         GL33C.glDrawBuffer(0);
-+      }
+-        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, 0, ((GlTexture)depthTexture).id, 0, 36160);
+-        GL33C.glDrawBuffer(0);
++    public void clearDepthTexture(GpuTexture depthTexture, double clearDepth) {
++        if (this.isBindFramebuffer(null, depthTexture)) {
++            this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, 0, ((GlTexture)depthTexture).id, 0, 36160);
++            GL33C.glDrawBuffer(0);
++        }
 +
          GL33C.glClearDepth(clearDepth);
          GlStateManager._depthMask(true);
          GlStateManager._disableScissorTest();
          GlStateManager._clear(256);
-+      if (this.isBindFramebuffer(null, depthTexture)) {
-         GL33C.glDrawBuffer(36064);
-         GlStateManager._glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
-+      }
+-        GL33C.glDrawBuffer(36064);
+-        GlStateManager._glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
++        if (this.isBindFramebuffer(null, depthTexture)) {
++            GL33C.glDrawBuffer(36064);
++            GlStateManager._glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
++        }
 +
          GlStateManager._glBindFramebuffer(36160, 0);
      }
  
      @Override
 -    public void writeToBuffer(final GpuBufferSlice slice, final ByteBuffer data) {
-+   public void writeToBuffer(GpuBufferSlice slice, ByteBuffer data) {
++    public void writeToBuffer(GpuBufferSlice slice, ByteBuffer data) {
          GlBuffer buffer = (GlBuffer)slice.buffer();
          buffer.checkCanBeUsed();
          this.device.directStateAccess().bufferSubData(buffer.handle(), slice.offset(), data, buffer.usage());
@@ -254,7 +275,7 @@
  
      @Override
 -    public void copyToBuffer(final GpuBufferSlice source, final GpuBufferSlice target) {
-+   public void copyToBuffer(GpuBufferSlice source, GpuBufferSlice target) {
++    public void copyToBuffer(GpuBufferSlice source, GpuBufferSlice target) {
          GlBuffer sourceBuffer = (GlBuffer)source.buffer();
          GlBuffer targetBuffer = (GlBuffer)target.buffer();
          sourceBuffer.checkCanBeUsed();
@@ -272,7 +293,7 @@
 -        final int width,
 -        final int height
 -    ) {
-+   public void writeToTexture(GpuTexture destination, ByteBuffer source, int mipLevel, int depthOrLayer, int destX, int destY, int width, int height) {
++    public void writeToTexture(GpuTexture destination, ByteBuffer source, int mipLevel, int depthOrLayer, int destX, int destY, int width, int height) {
          int target;
          if ((destination.usage() & 16) != 0) {
              target = GlConst.CUBEMAP_TARGETS[depthOrLayer % 6];
@@ -292,18 +313,18 @@
 -        final int copyHeight,
 -        final int mipLevel,
 -        final int arrayLayer
-+      GpuBufferSlice source,
-+      int sourceX,
-+      int sourceY,
-+      int sourceWidth,
-+      int sourceHeight,
-+      GpuTexture destination,
-+      int destinationX,
-+      int destinationY,
-+      int copyWidth,
-+      int copyHeight,
-+      int mipLevel,
-+      int arrayLayer
++        GpuBufferSlice source,
++        int sourceX,
++        int sourceY,
++        int sourceWidth,
++        int sourceHeight,
++        GpuTexture destination,
++        int destinationX,
++        int destinationY,
++        int copyWidth,
++        int copyHeight,
++        int mipLevel,
++        int arrayLayer
      ) {
          int target;
          if ((destination.usage() & 16) != 0) {
@@ -312,7 +333,7 @@
  
      @Override
 -    public void copyTextureToBuffer(final GpuTexture source, final GpuBuffer destination, final long offset, final Runnable callback, final int mipLevel) {
-+   public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel) {
++    public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel) {
          this.copyTextureToBuffer(source, destination, offset, callback, mipLevel, 0, 0, source.getWidth(mipLevel), source.getHeight(mipLevel));
      }
  
@@ -328,7 +349,7 @@
 -        final int width,
 -        final int height
 -    ) {
-+   public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel, int x, int y, int width, int height) {
++    public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel, int x, int y, int width, int height) {
          ((GlBuffer)destination).checkCanBeUsed();
          GlStateManager.clearGlErrors();
          this.device.directStateAccess().bindFrameBufferTextures(this.readFbo, ((GlTexture)source).glId(), 0, mipLevel, 36008);
@@ -345,7 +366,7 @@
 -        final int sourceY,
 -        final int width,
 -        final int height
-+      GpuTexture source, GpuTexture destination, int mipLevel, int destX, int destY, int sourceX, int sourceY, int width, int height
++        GpuTexture source, GpuTexture destination, int mipLevel, int destX, int destY, int sourceX, int sourceY, int width, int height
      ) {
          GlStateManager.clearGlErrors();
          GlStateManager._disableScissorTest();
@@ -354,46 +375,57 @@
          int destId = ((GlTexture)destination).glId();
 -        this.device.directStateAccess().bindFrameBufferTextures(this.readFbo, isDepth ? 0 : sourceId, isDepth ? sourceId : 0, 0, 0);
 -        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, isDepth ? 0 : destId, isDepth ? destId : 0, 0, 0);
-+      this.device.directStateAccess().bindFrameBufferTextures(this.readFbo, isDepth ? 0 : sourceId, isDepth ? sourceId : 0, mipLevel, 0);
-+      this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, isDepth ? 0 : destId, isDepth ? destId : 0, mipLevel, 0);
++        this.device.directStateAccess().bindFrameBufferTextures(this.readFbo, isDepth ? 0 : sourceId, isDepth ? sourceId : 0, mipLevel, 0);
++        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, isDepth ? 0 : destId, isDepth ? destId : 0, mipLevel, 0);
          this.device
              .directStateAccess()
 -            .blitFrameBuffers(this.readFbo, this.drawFbo, sourceX, sourceY, width, height, destX, destY, width, height, isDepth ? 256 : 16384, 9728);
-+         .blitFrameBuffers(
-+            this.readFbo,
-+            this.drawFbo,
-+            sourceX,
-+            sourceY,
-+            sourceX + width,
-+            sourceY + height,
-+            destX,
-+            destY,
-+            destX + width,
-+            destY + height,
-+            isDepth ? 256 : 16384,
-+            9728
-+         );
++            .blitFrameBuffers(
++                this.readFbo,
++                this.drawFbo,
++                sourceX,
++                sourceY,
++                sourceX + width,
++                sourceY + height,
++                destX,
++                destY,
++                destX + width,
++                destY + height,
++                isDepth ? 256 : 16384,
++                9728
++            );
          int error = GlStateManager._getError();
          if (error != 0) {
              throw new IllegalStateException(
-@@ -411,7 +439,8 @@
+@@ -411,16 +439,18 @@
          }
      }
  
 -    public void presentTexture(final GpuTextureView textureView, final int swapchainWidth, final int swapchainHeight) {
-+   public void presentTexture(GpuTextureView textureView, int swapchainWidth, int swapchainHeight) {
-+      if (this.isBindFramebuffer(textureView, null)) {
-         int destY = Math.max(0, swapchainHeight - textureView.getHeight(0));
-         int copyWidth = Math.min(swapchainWidth, textureView.getWidth(0));
-         int copyHeight = Math.min(swapchainHeight, textureView.getHeight(0));
-@@ -422,6 +451,7 @@
-         this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)textureView.texture()).glId(), 0, 0, 0);
-         this.device.directStateAccess().blitFrameBuffers(this.drawFbo, 0, 0, 0, copyWidth, copyHeight, 0, destY, copyWidth, copyHeight + destY, 16384, 9728);
+-        int destY = Math.max(0, swapchainHeight - textureView.getHeight(0));
+-        int copyWidth = Math.min(swapchainWidth, textureView.getWidth(0));
+-        int copyHeight = Math.min(swapchainHeight, textureView.getHeight(0));
+-        GlStateManager._disableScissorTest();
+-        GlStateManager._viewport(0, 0, textureView.getWidth(0), textureView.getHeight(0));
+-        GlStateManager._depthMask(true);
+-        GlStateManager._colorMask(15);
+-        this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)textureView.texture()).glId(), 0, 0, 0);
+-        this.device.directStateAccess().blitFrameBuffers(this.drawFbo, 0, 0, 0, copyWidth, copyHeight, 0, destY, copyWidth, copyHeight + destY, 16384, 9728);
++    public void presentTexture(GpuTextureView textureView, int swapchainWidth, int swapchainHeight) {
++        if (this.isBindFramebuffer(textureView, null)) {
++            int destY = Math.max(0, swapchainHeight - textureView.getHeight(0));
++            int copyWidth = Math.min(swapchainWidth, textureView.getWidth(0));
++            int copyHeight = Math.min(swapchainHeight, textureView.getHeight(0));
++            GlStateManager._disableScissorTest();
++            GlStateManager._viewport(0, 0, textureView.getWidth(0), textureView.getHeight(0));
++            GlStateManager._depthMask(true);
++            GlStateManager._colorMask(15);
++            this.device.directStateAccess().bindFrameBufferTextures(this.drawFbo, ((GlTexture)textureView.texture()).glId(), 0, 0, 0);
++            this.device.directStateAccess().blitFrameBuffers(this.drawFbo, 0, 0, 0, copyWidth, copyHeight, 0, destY, copyWidth, copyHeight + destY, 16384, 9728);
++        }
      }
-+   }
  
      @Override
-     public GpuFence createFence() {
 @@ -429,12 +459,12 @@
      }
  
@@ -404,43 +436,85 @@
 -        @Nullable IndexType defaultIndexType,
 -        final Collection<String> dynamicUniforms,
 -        final T uniformArgument
-+      GlRenderPass renderPass,
-+      Collection<RenderPass.Draw<T>> draws,
-+      GpuBuffer defaultIndexBuffer,
-+      IndexType defaultIndexType,
-+      Collection<String> dynamicUniforms,
-+      T uniformArgument
++        GlRenderPass renderPass,
++        Collection<RenderPass.Draw<T>> draws,
++        GpuBuffer defaultIndexBuffer,
++        IndexType defaultIndexType,
++        Collection<String> dynamicUniforms,
++        T uniformArgument
      ) {
          if (this.trySetup(renderPass, dynamicUniforms)) {
              if (defaultIndexType == null) {
-@@ -443,6 +473,7 @@
+@@ -443,40 +473,50 @@
  
              for (RenderPass.Draw<T> draw : draws) {
                  IndexType indexType = draw.indexType() == null ? defaultIndexType : draw.indexType();
-+            if (draw.regionRenderData() == null) {
-                 renderPass.setIndexBuffer(draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), indexType);
-                 renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
-                 if (GlRenderPass.VALIDATION) {
-@@ -471,12 +502,21 @@
-                         throw new IllegalStateException("Vertex buffer at slot " + draw.slot() + " has been closed!");
+-                renderPass.setIndexBuffer(draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), indexType);
+-                renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
+-                if (GlRenderPass.VALIDATION) {
+-                    if (renderPass.indexBuffer == null) {
+-                        throw new IllegalStateException("Missing index buffer");
+-                    }
++                if (draw.regionRenderData() == null) {
++                    renderPass.setIndexBuffer(draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), indexType);
++                    renderPass.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
++                    if (GlRenderPass.VALIDATION) {
++                        if (renderPass.indexBuffer == null) {
++                            throw new IllegalStateException("Missing index buffer");
++                        }
+ 
+-                    ((GlBuffer)renderPass.indexBuffer).checkCanBeUsed();
+-                    if (renderPass.indexBuffer.isClosed()) {
+-                        throw new IllegalStateException("Index buffer has been closed!");
+-                    }
++                        ((GlBuffer)renderPass.indexBuffer).checkCanBeUsed();
++                        if (renderPass.indexBuffer.isClosed()) {
++                            throw new IllegalStateException("Index buffer has been closed!");
++                        }
+ 
+-                    if (draw.slot() < 0 || draw.slot() >= 16) {
+-                        throw new IllegalStateException("Vertex buffer slot must be between 0 and 16");
+-                    }
++                        if (draw.slot() < 0 || draw.slot() >= 16) {
++                            throw new IllegalStateException("Vertex buffer slot must be between 0 and 16");
++                        }
+ 
+-                    if (renderPass.vertexBuffers[draw.slot()] != null) {
+-                        ((GlBuffer)renderPass.vertexBuffers[draw.slot()].buffer()).checkCanBeUsed();
+-                    }
++                        if (renderPass.vertexBuffers[draw.slot()] != null) {
++                            ((GlBuffer)renderPass.vertexBuffers[draw.slot()].buffer()).checkCanBeUsed();
++                        }
+ 
+-                    if (renderPass.vertexBuffers[draw.slot()] == null) {
+-                        throw new IllegalStateException("Missing vertex buffer at slot " + draw.slot());
+-                    }
++                        if (renderPass.vertexBuffers[draw.slot()] == null) {
++                            throw new IllegalStateException("Missing vertex buffer at slot " + draw.slot());
++                        }
+ 
+-                    if (renderPass.vertexBuffers[draw.slot()].buffer().isClosed()) {
+-                        throw new IllegalStateException("Vertex buffer at slot " + draw.slot() + " has been closed!");
++                        if (renderPass.vertexBuffers[draw.slot()].buffer().isClosed()) {
++                            throw new IllegalStateException("Vertex buffer at slot " + draw.slot() + " has been closed!");
++                        }
                      }
                  }
-+            }
  
                  BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer = draw.uniformUploaderConsumer();
                  if (uniformUploaderConsumer != null) {
                      uniformUploaderConsumer.accept(uniformArgument, (name, buffer) -> {
-+                  if (Config.isShaders() && Shaders.activeProgramID > 0) {
-+                     if (name.equals("DynamicTransforms")) {
-+                        Shaders.setDynamicTransforms(buffer);
-+                     } else if (name.equals("ChunkSection")) {
-+                        Shaders.setChunkSectionInfo(buffer);
-+                     }
-+                  }
++                        if (Config.isShaders() && Shaders.activeProgramID > 0) {
++                            if (name.equals("DynamicTransforms")) {
++                                Shaders.setDynamicTransforms(buffer);
++                            } else if (name.equals("ChunkSection")) {
++                                Shaders.setChunkSectionInfo(buffer);
++                            }
++                        }
 +
                          ((GlBuffer)buffer.buffer()).checkCanBeUsed();
 -                        if (renderPass.pipeline.program().getUniform(name) instanceof Uniform.Ubo(int blockBinding)) {
-+                  if (renderPass.pipeline.program().getUniform(name) instanceof Ubo(int blockBinding)) {
++                        if (renderPass.pipeline.program().getUniform(name) instanceof Ubo(int blockBinding)) {
                              GL33C.glBindBufferRange(35345, blockBinding, ((GlBuffer)buffer.buffer()).handle(), buffer.offset(), buffer.length());
                          }
                      });
@@ -448,19 +522,20 @@
                      renderPass.vertexBufferDirty = false;
                  }
  
-+            if (draw.regionRenderData() != null) {
-+               this.drawRegion(renderPass, draw.regionRenderData());
-+            } else if (draw.multiTextureData() != null) {
-+               this.drawMultiTexture(renderPass, draw.baseVertex(), draw.firstIndex(), indexType, draw.multiTextureData());
-+            } else {
-                 this.drawFromBuffers(renderPass, draw.baseVertex(), draw.firstIndex(), draw.indexCount(), indexType, renderPass.pipeline, 1, 0);
+-                this.drawFromBuffers(renderPass, draw.baseVertex(), draw.firstIndex(), draw.indexCount(), indexType, renderPass.pipeline, 1, 0);
++                if (draw.regionRenderData() != null) {
++                    this.drawRegion(renderPass, draw.regionRenderData());
++                } else if (draw.multiTextureData() != null) {
++                    this.drawMultiTexture(renderPass, draw.baseVertex(), draw.firstIndex(), indexType, draw.multiTextureData());
++                } else {
++                    this.drawFromBuffers(renderPass, draw.baseVertex(), draw.firstIndex(), draw.indexCount(), indexType, renderPass.pipeline, 1, 0);
++                }
              }
          }
      }
-+   }
  
 -    private void validateDraw(final GlRenderPass renderPass, final @Nullable IndexType indexType) {
-+   private void validateDraw(GlRenderPass renderPass, IndexType indexType) {
++    private void validateDraw(GlRenderPass renderPass, IndexType indexType) {
          if (GlRenderPass.VALIDATION) {
              if (indexType != null) {
                  if (renderPass.indexBuffer == null) {
@@ -477,25 +552,25 @@
 -        final int instanceCount,
 -        final int firstInstance
 -    ) {
-+   private void drawRegion(GlRenderPass passIn, RegionRenderData dataIn) {
-+      RegionRenderer renderer = dataIn.getRenderer();
-+      PairInt pos = dataIn.getPosition();
-+      renderer.renderRegion(pos);
-+   }
++    private void drawRegion(GlRenderPass passIn, RegionRenderData dataIn) {
++        RegionRenderer renderer = dataIn.getRenderer();
++        PairInt pos = dataIn.getPosition();
++        renderer.renderRegion(pos);
++    }
 +
-+   private void drawMultiTexture(GlRenderPass passIn, int baseVertexIn, int firstIndexIn, IndexType indexTypeIn, MultiTextureData multiTextureData) {
-+      RenderPipeline renderPipeline = passIn.pipeline.info();
-+      this.device
-+         .vertexArrayCache()
-+         .bindVertexArray(renderPipeline.getVertexFormatBindings(), passIn.vertexBuffers, passIn.vertexBufferDirty ? null : this.lastVertexArray);
-+      if (indexTypeIn != null) {
-+         GlStateManager._glBindBuffer(34963, ((GlBuffer)passIn.indexBuffer).handle());
-+      }
++    private void drawMultiTexture(GlRenderPass passIn, int baseVertexIn, int firstIndexIn, IndexType indexTypeIn, MultiTextureData multiTextureData) {
++        RenderPipeline renderPipeline = passIn.pipeline.info();
++        this.device
++            .vertexArrayCache()
++            .bindVertexArray(renderPipeline.getVertexFormatBindings(), passIn.vertexBuffers, passIn.vertexBufferDirty ? null : this.lastVertexArray);
++        if (indexTypeIn != null) {
++            GlStateManager._glBindBuffer(34963, ((GlBuffer)passIn.indexBuffer).handle());
++        }
 +
-+      MultiTextureRenderer.draw(renderPipeline.getPrimitiveTopology(), baseVertexIn, firstIndexIn, GlConst.toGl(indexTypeIn), multiTextureData);
-+   }
++        MultiTextureRenderer.draw(renderPipeline.getPrimitiveTopology(), baseVertexIn, firstIndexIn, GlConst.toGl(indexTypeIn), multiTextureData);
++    }
 +
-+   protected void executeDraw(GlRenderPass renderPass, int baseVertex, int firstIndex, int drawCount, IndexType indexType, int instanceCount, int firstInstance) {
++    protected void executeDraw(GlRenderPass renderPass, int baseVertex, int firstIndex, int drawCount, IndexType indexType, int instanceCount, int firstInstance) {
          if (this.trySetup(renderPass, Collections.emptyList())) {
              this.validateDraw(renderPass, indexType);
              this.lastVertexArray = this.device
@@ -509,7 +584,7 @@
 -        final IntBuffer indexCounts,
 -        final IntBuffer vertexOffsets,
 -        final int drawCount
-+      GlRenderPass renderPass, IndexType indexType, PointerBuffer firstIndexOffsets, IntBuffer indexCounts, IntBuffer vertexOffsets, int drawCount
++        GlRenderPass renderPass, IndexType indexType, PointerBuffer firstIndexOffsets, IntBuffer indexCounts, IntBuffer vertexOffsets, int drawCount
      ) {
          if (this.trySetup(renderPass, Collections.emptyList())) {
              this.validateDraw(renderPass, indexType);
@@ -520,7 +595,7 @@
 -    protected void executeDrawIndirect(
 -        final GlRenderPass renderPass, final @Nullable IndexType indexType, final GlBuffer commands, final long offset, final int drawCount
 -    ) {
-+   protected void executeDrawIndirect(GlRenderPass renderPass, IndexType indexType, GlBuffer commands, long offset, int drawCount) {
++    protected void executeDrawIndirect(GlRenderPass renderPass, IndexType indexType, GlBuffer commands, long offset, int drawCount) {
          if (this.trySetup(renderPass, Collections.emptyList())) {
              this.validateDraw(renderPass, indexType);
              this.lastVertexArray = this.device
@@ -536,14 +611,14 @@
 -        final GlRenderPipeline pipeline,
 -        final int instanceCount,
 -        final int firstInstance
-+      GlRenderPass renderPass,
-+      int baseVertex,
-+      int firstIndex,
-+      int drawCount,
-+      IndexType indexType,
-+      GlRenderPipeline pipeline,
-+      int instanceCount,
-+      int firstInstance
++        GlRenderPass renderPass,
++        int baseVertex,
++        int firstIndex,
++        int drawCount,
++        IndexType indexType,
++        GlRenderPipeline pipeline,
++        int instanceCount,
++        int firstInstance
      ) {
          if (indexType != null) {
              GlStateManager._glBindBuffer(34963, ((GlBuffer)renderPass.indexBuffer).handle());
@@ -552,7 +627,7 @@
      }
  
 -    private boolean trySetup(final GlRenderPass renderPass, final Collection<String> dynamicUniforms) {
-+   private boolean trySetup(GlRenderPass renderPass, Collection<String> dynamicUniforms) {
++    private boolean trySetup(GlRenderPass renderPass, Collection<String> dynamicUniforms) {
          if (GlRenderPass.VALIDATION) {
              if (renderPass.pipeline == null) {
                  throw new IllegalStateException("Can't draw without a render pipeline");
@@ -561,7 +636,7 @@
              }
  
 -            for (BindGroupLayout.UniformDescription uniform : BindGroupLayout.flattenUniforms(renderPass.pipeline.info().getBindGroupLayouts())) {
-+         for (UniformDescription uniform : BindGroupLayout.flattenUniforms(renderPass.pipeline.info().getBindGroupLayouts())) {
++            for (UniformDescription uniform : BindGroupLayout.flattenUniforms(renderPass.pipeline.info().getBindGroupLayouts())) {
                  GpuBufferSlice value = renderPass.uniforms.get(uniform.name());
                  if (!dynamicUniforms.contains(uniform.name())) {
                      if (value == null) {
@@ -570,7 +645,7 @@
  
              for (Entry<String, Uniform> entry : renderPass.pipeline.program().getUniforms().entrySet()) {
 -                if (entry.getValue() instanceof Uniform.Sampler) {
-+            if (entry.getValue() instanceof Sampler) {
++                if (entry.getValue() instanceof Sampler) {
                      String name = entry.getKey();
                      GlRenderPass.TextureViewAndSampler viewAndSampler = renderPass.samplers.get(name);
                      if (viewAndSampler == null) {
@@ -578,15 +653,15 @@
          RenderPipeline pipeline = renderPass.pipeline.info();
          GlProgram glProgram = renderPass.pipeline.program();
          this.applyPipelineState(pipeline);
-+      if (this.lastProgram != null && this.lastProgram.getProgramId() != GlStateManager.getProgram()) {
-+         this.lastProgram = null;
-+      }
++        if (this.lastProgram != null && this.lastProgram.getProgramId() != GlStateManager.getProgram()) {
++            this.lastProgram = null;
++        }
 +
          boolean differentProgram = this.lastProgram != glProgram;
          if (differentProgram) {
-+         if (Config.getMinecraft().gui.overlay() != null) {
-+            GlStateManager._glUseProgram(0);
-+         }
++            if (Config.getMinecraft().gui.overlay() != null) {
++                GlStateManager._glUseProgram(0);
++            }
 +
              GlStateManager._glUseProgram(glProgram.getProgramId());
              this.lastProgram = glProgram;
@@ -596,14 +671,14 @@
              boolean isDirty = renderPass.dirtyUniforms.contains(name);
              switch ((Uniform)entry.getValue()) {
 -                case Uniform.Ubo(int blockBinding):
-+            case Ubo(int blockBinding):
++                case Ubo(int blockBinding):
                      if (isDirty) {
                          GpuBufferSlice bufferView = renderPass.uniforms.get(name);
                          GL33C.glBindBufferRange(35345, blockBinding, ((GlBuffer)bufferView.buffer()).handle(), bufferView.offset(), bufferView.length());
                      }
                      break;
 -                case Uniform.Utb(int location, int samplerIndex, GpuFormat format, int texture):
-+            case Utb(int location, int samplerIndex, GpuFormat format, int texture):
++                case Utb(int location, int samplerIndex, GpuFormat format, int texture):
                      if (differentProgram || isDirty) {
                          GlStateManager._glUniform1i(location, samplerIndex);
                      }
@@ -612,22 +687,22 @@
                      }
                      break;
 -                case Uniform.Sampler(int location, int samplerIndex):
-+            case Sampler(int location, int samplerIndex):
++                case Sampler(int location, int samplerIndex):
                      GlRenderPass.TextureViewAndSampler viewAndSampler = renderPass.samplers.get(name);
                      if (viewAndSampler == null) {
                          break;
                      }
  
                      GlTextureView textureView = viewAndSampler.view();
-+               int textureUnit = this.getTextureUnit(name, samplerIndex);
++                    int textureUnit = this.getTextureUnit(name, samplerIndex);
                      if (differentProgram || isDirty) {
 -                        GlStateManager._glUniform1i(location, samplerIndex);
-+                  GlStateManager._glUniform1i(location, textureUnit);
++                        GlStateManager._glUniform1i(location, textureUnit);
                      }
  
 -                    GlStateManager._activeTexture(33984 + samplerIndex);
-+               boolean texture2d = false;
-+               GlStateManager._activeTexture(33984 + textureUnit);
++                    boolean texture2d = false;
++                    GlStateManager._activeTexture(33984 + textureUnit);
                      GlTexture texture = textureView.texture();
                      int target;
                      if ((texture.usage() & 16) != 0) {
@@ -635,25 +710,26 @@
                          GL33C.glBindTexture(34067, texture.id);
                      } else {
                          target = 3553;
-+                  if (textureUnit == 1 && Shaders.activeProgramID > 0 && Shaders.isOverlayDisabled()) {
-+                     break;
-+                  }
+-                        GlStateManager._bindTexture(texture.id);
++                        if (textureUnit == 1 && Shaders.activeProgramID > 0 && Shaders.isOverlayDisabled()) {
++                            break;
++                        }
 +
-+                  texture2d = true;
-+                  if (Config.isShaders()) {
-+                     ShadersTex.bindTexture(texture);
-+                  } else {
-                         GlStateManager._bindTexture(texture.id);
++                        texture2d = true;
++                        if (Config.isShaders()) {
++                            ShadersTex.bindTexture(texture);
++                        } else {
++                            GlStateManager._bindTexture(texture.id);
++                        }
                      }
-+               }
  
 -                    GL33C.glBindSampler(samplerIndex, viewAndSampler.sampler().getId());
-+               if (!texture2d || !Config.isShaders() && !Config.isMultiTexture()) {
-+                  GL33C.glBindSampler(textureUnit, viewAndSampler.sampler().getId());
-+               } else {
-+                  texture.applySampler(viewAndSampler.sampler());
-+                  GlStateManager.bindSampler(textureUnit, 0);
-+               }
++                    if (!texture2d || !Config.isShaders() && !Config.isMultiTexture()) {
++                        GL33C.glBindSampler(textureUnit, viewAndSampler.sampler().getId());
++                    } else {
++                        texture.applySampler(viewAndSampler.sampler());
++                        GlStateManager.bindSampler(textureUnit, 0);
++                    }
 +
                      GlStateManager._texParameter(target, 33084, textureView.baseMipLevel());
                      GlStateManager._texParameter(target, 33085, textureView.baseMipLevel() + textureView.mipLevels() - 1);
@@ -662,9 +738,10 @@
              drawBuffers[i] = 36064 + i;
          }
  
-+      if (renderPass.bindFramebuffer && GlState.getFramebuffer() == null) {
-         GL33C.glDrawBuffers(drawBuffers);
-+      }
+-        GL33C.glDrawBuffers(drawBuffers);
++        if (renderPass.bindFramebuffer && GlState.getFramebuffer() == null) {
++            GL33C.glDrawBuffers(drawBuffers);
++        }
 +
          if (renderPass.isScissorEnabled()) {
              GlStateManager._enableScissorTest();
@@ -673,25 +750,25 @@
              GlStateManager._disableScissorTest();
          }
  
-+      if (Config.isShaders() && Shaders.activeProgramID > 0) {
-+         GlStateManager._glUseProgram(Shaders.activeProgramID);
-+         boolean prevFlushBuffers = RenderUtils.setFlushRenderBuffers(false);
-+         Shaders.uniform_atlasSize.setValue(Shaders.atlasSizeX, Shaders.atlasSizeY);
-+         RenderUtils.setFlushRenderBuffers(prevFlushBuffers);
++        if (Config.isShaders() && Shaders.activeProgramID > 0) {
++            GlStateManager._glUseProgram(Shaders.activeProgramID);
++            boolean prevFlushBuffers = RenderUtils.setFlushRenderBuffers(false);
++            Shaders.uniform_atlasSize.setValue(Shaders.atlasSizeX, Shaders.atlasSizeY);
++            RenderUtils.setFlushRenderBuffers(prevFlushBuffers);
 +
-+         for (Entry<String, GpuBufferSlice> entry : renderPass.uniforms.entrySet()) {
-+            if (entry.getKey().equals("DynamicTransforms")) {
-+               GpuBufferSlice slice = entry.getValue();
-+               Shaders.setDynamicTransforms(slice);
++            for (Entry<String, GpuBufferSlice> entry : renderPass.uniforms.entrySet()) {
++                if (entry.getKey().equals("DynamicTransforms")) {
++                    GpuBufferSlice slice = entry.getValue();
++                    Shaders.setDynamicTransforms(slice);
++                }
 +            }
-+         }
-+      }
++        }
 +
          return true;
      }
  
 -    private void applyPipelineState(final RenderPipeline pipeline) {
-+   private void applyPipelineState(RenderPipeline pipeline) {
++    private void applyPipelineState(RenderPipeline pipeline) {
          if (this.lastPipeline != pipeline) {
              this.lastPipeline = pipeline;
              DepthStencilState depthStencilState = pipeline.getDepthStencilState();
@@ -699,71 +776,71 @@
  
      @Override
      public void submitRenderPass() {
-+      RenderUtils.setFlushRenderBuffers(this.prevFlushRenderPass);
++        RenderUtils.setFlushRenderBuffers(this.prevFlushRenderPass);
          GlStateManager._glBindFramebuffer(36160, 0);
          this.device.debugLabels().popDebugGroup();
      }
  
      @Override
 -    public void writeTimestamp(final GpuQueryPool pool, final int index) {
-+   public void writeTimestamp(GpuQueryPool pool, int index) {
++    public void writeTimestamp(GpuQueryPool pool, int index) {
          ((GlQueryPool)pool).writeTimestamp(index);
      }
 -}
 \ No newline at end of file
 +
-+   private boolean isBindFramebuffer(RenderPassDescriptor descIn) {
-+      List<? extends Attachment<?>> colorAttachs = descIn.colorAttachments();
-+      Attachment<?> depthAttach = descIn.depthAttachment();
-+      GpuTexture colorTexture = colorAttachs != null && colorAttachs.size() > 0 ? colorAttachs.get(0).textureView().texture() : null;
-+      GpuTexture depthTexture = depthAttach != null ? depthAttach.textureView().texture() : null;
-+      return this.isBindFramebuffer(colorTexture, depthTexture);
-+   }
++    private boolean isBindFramebuffer(RenderPassDescriptor descIn) {
++        List<? extends Attachment<?>> colorAttachs = descIn.colorAttachments();
++        Attachment<?> depthAttach = descIn.depthAttachment();
++        GpuTexture colorTexture = colorAttachs != null && colorAttachs.size() > 0 ? colorAttachs.get(0).textureView().texture() : null;
++        GpuTexture depthTexture = depthAttach != null ? depthAttach.textureView().texture() : null;
++        return this.isBindFramebuffer(colorTexture, depthTexture);
++    }
 +
-+   private boolean isBindFramebuffer(GpuTextureView colorTextureIn, GpuTextureView depthTextureIn) {
-+      GpuTexture colorTexture = colorTextureIn != null ? colorTextureIn.texture() : null;
-+      GpuTexture depthTexture = depthTextureIn != null ? depthTextureIn.texture() : null;
-+      return this.isBindFramebuffer(colorTexture, depthTexture);
-+   }
++    private boolean isBindFramebuffer(GpuTextureView colorTextureIn, GpuTextureView depthTextureIn) {
++        GpuTexture colorTexture = colorTextureIn != null ? colorTextureIn.texture() : null;
++        GpuTexture depthTexture = depthTextureIn != null ? depthTextureIn.texture() : null;
++        return this.isBindFramebuffer(colorTexture, depthTexture);
++    }
 +
-+   private boolean isBindFramebuffer(GpuTexture colorTextureIn, GpuTexture depthTextureIn) {
-+      return this.mainFramebufferEnabled ? true : !this.isMainFramebuffer(colorTextureIn, depthTextureIn);
-+   }
++    private boolean isBindFramebuffer(GpuTexture colorTextureIn, GpuTexture depthTextureIn) {
++        return this.mainFramebufferEnabled ? true : !this.isMainFramebuffer(colorTextureIn, depthTextureIn);
++    }
 +
-+   public boolean isMainFramebuffer(GpuTexture colorTextureIn, GpuTexture depthTextureIn) {
-+      GameRenderer gameRenderer = Minecraft.getInstance().gameRenderer;
-+      if (gameRenderer == null) {
-+         return false;
-+      }
++    public boolean isMainFramebuffer(GpuTexture colorTextureIn, GpuTexture depthTextureIn) {
++        GameRenderer gameRenderer = Minecraft.getInstance().gameRenderer;
++        if (gameRenderer == null) {
++            return false;
++        }
 +
-+      RenderTarget mainTarget = gameRenderer.mainRenderTarget();
-+      return colorTextureIn == mainTarget.getColorTexture() ? true : depthTextureIn == mainTarget.getDepthTexture();
-+   }
++        RenderTarget mainTarget = gameRenderer.mainRenderTarget();
++        return colorTextureIn == mainTarget.getColorTexture() ? true : depthTextureIn == mainTarget.getDepthTexture();
++    }
 +
-+   public void useVanillaProgram() {
-+      if (this.lastProgram != null) {
-+         GlStateManager._glUseProgram(this.lastProgram.getProgramId());
-+      }
-+   }
++    public void useVanillaProgram() {
++        if (this.lastProgram != null) {
++            GlStateManager._glUseProgram(this.lastProgram.getProgramId());
++        }
++    }
 +
-+   public void bindFramebuffer(RenderTarget targetIn) {
-+      GlTexture colorTexture = (GlTexture)targetIn.getColorTexture();
-+      GlTexture depthTexture = (GlTexture)targetIn.getDepthTexture();
-+      int fbo = this.device
-+         .frameBufferCache()
-+         .getFbo(
-+            this.device.directStateAccess(), List.of((GlTexture)targetIn.getColorTexture()), targetIn.useDepth ? (GlTexture)targetIn.getDepthTexture() : null
-+         );
-+      GlStateManager._glBindFramebuffer(36160, fbo);
-+   }
++    public void bindFramebuffer(RenderTarget targetIn) {
++        GlTexture colorTexture = (GlTexture)targetIn.getColorTexture();
++        GlTexture depthTexture = (GlTexture)targetIn.getDepthTexture();
++        int fbo = this.device
++            .frameBufferCache()
++            .getFbo(
++                this.device.directStateAccess(), List.of((GlTexture)targetIn.getColorTexture()), targetIn.useDepth ? (GlTexture)targetIn.getDepthTexture() : null
++            );
++        GlStateManager._glBindFramebuffer(36160, fbo);
++    }
 +
-+   private int getTextureUnit(String sampler, int index) {
-+      if (sampler.equals("Sampler0")) {
-+         return 0;
-+      } else if (sampler.equals("Sampler1")) {
-+         return 1;
-+      } else {
-+         return sampler.equals("Sampler2") ? 2 : index;
-+      }
-+   }
++    private int getTextureUnit(String sampler, int index) {
++        if (sampler.equals("Sampler0")) {
++            return 0;
++        } else if (sampler.equals("Sampler1")) {
++            return 1;
++        } else {
++            return sampler.equals("Sampler2") ? 2 : index;
++        }
++    }
 +}

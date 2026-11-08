@@ -25,9 +25,9 @@
      private final FeatureRendererMap featureRenderers = new FeatureRendererMap();
      private final FeatureRenderDispatcher.PreparedFrame preparedFrame = new FeatureRenderDispatcher.PreparedFrame();
  
-+   public FeatureRenderDispatcher(RenderBuffers renderBuffers, ModelManager modelManager, AtlasManager atlasManager, Font font, GameRenderState gameRenderState) {
-+      this(renderBuffers.stagedVertexBuffer(), modelManager, atlasManager, font, gameRenderState);
-+   }
++    public FeatureRenderDispatcher(RenderBuffers renderBuffers, ModelManager modelManager, AtlasManager atlasManager, Font font, GameRenderState gameRenderState) {
++        this(renderBuffers.stagedVertexBuffer(), modelManager, atlasManager, font, gameRenderState);
++    }
 +
      public FeatureRenderDispatcher(
 -        final RenderBuffers renderBuffers,
@@ -35,14 +35,14 @@
 -        final AtlasManager atlasManager,
 -        final Font font,
 -        final GameRenderState gameRenderState
-+      StagedVertexBuffer stagedVertexBuffer, ModelManager modelManager, AtlasManager atlasManager, Font font, GameRenderState gameRenderState
++        StagedVertexBuffer stagedVertexBuffer, ModelManager modelManager, AtlasManager atlasManager, Font font, GameRenderState gameRenderState
      ) {
          this.modelManager = modelManager;
          this.atlasManager = atlasManager;
          this.font = font;
          this.gameRenderState = gameRenderState;
 -        this.stagedVertexBuffer = renderBuffers.stagedVertexBuffer();
-+      this.stagedVertexBuffer = stagedVertexBuffer;
++        this.stagedVertexBuffer = stagedVertexBuffer;
          this.featureRenderers.put(ShadowFeatureRenderer.TYPE, new ShadowFeatureRenderer());
          this.featureRenderers.put(FlameFeatureRenderer.TYPE, new FlameFeatureRenderer());
          this.featureRenderers.put(ModelFeatureRenderer.TYPE, new ModelFeatureRenderer());
@@ -51,7 +51,7 @@
      }
  
 -    public FeatureRenderDispatcher.PreparedFrame prepareFrame(final SubmitNodeStorage submitNodeStorage) {
-+   public FeatureRenderDispatcher.PreparedFrame prepareFrame(SubmitNodeStorage submitNodeStorage) {
++    public FeatureRenderDispatcher.PreparedFrame prepareFrame(SubmitNodeStorage submitNodeStorage) {
          Minecraft minecraft = Minecraft.getInstance();
          return this.prepareFrameWithContext(
              new FeatureFrameContext(
@@ -60,7 +60,7 @@
      }
  
 -    private FeatureRenderDispatcher.PreparedFrame prepareFrameWithContext(final FeatureFrameContext context, final SubmitNodeStorage submitNodeStorage) {
-+   private FeatureRenderDispatcher.PreparedFrame prepareFrameWithContext(FeatureFrameContext context, SubmitNodeStorage submitNodeStorage) {
++    private FeatureRenderDispatcher.PreparedFrame prepareFrameWithContext(FeatureFrameContext context, SubmitNodeStorage submitNodeStorage) {
          FeatureRenderDispatcher.PreparedFrame frame = this.preparedFrame.begin(context, submitNodeStorage);
          ProfilerFiller profiler = Profiler.get();
          profiler.push("sort");
@@ -69,7 +69,7 @@
      }
  
 -    public void renderAllFeatures(final SubmitNodeStorage submitNodeStorage) {
-+   public void renderAllFeatures(SubmitNodeStorage submitNodeStorage) {
++    public void renderAllFeatures(SubmitNodeStorage submitNodeStorage) {
          try (FeatureRenderDispatcher.PreparedFrame frame = this.prepareFrame(submitNodeStorage)) {
              frame.executeSolid();
              frame.executeTranslucent();
@@ -79,15 +79,15 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    private static class PhaseSubmitGrouper implements FeatureRenderPhase.Output {
-+   private static class PhaseSubmitGrouper implements Output {
++    private static class PhaseSubmitGrouper implements Output {
          private final FeatureRenderDispatcher.PreparedFrame frame;
          private final List<SubmitNode> allSubmits;
          private final List<FeatureRenderDispatcher.PreparedGroup<?>> phaseGroups;
 -        private FeatureRenderDispatcher.@Nullable PreparedGroup<?> lastGroup;
-+      private FeatureRenderDispatcher.PreparedGroup<?> lastGroup;
++        private FeatureRenderDispatcher.PreparedGroup<?> lastGroup;
  
 -        public PhaseSubmitGrouper(final FeatureRenderDispatcher.PreparedFrame frame, final FeatureRenderPhase<?> phase) {
-+      public PhaseSubmitGrouper(FeatureRenderDispatcher.PreparedFrame frame, FeatureRenderPhase<?> phase) {
++        public PhaseSubmitGrouper(FeatureRenderDispatcher.PreparedFrame frame, FeatureRenderPhase<?> phase) {
              this.frame = frame;
              this.allSubmits = frame.allSubmits;
              this.phaseGroups = frame.groupsByPhase.computeIfAbsent(phase, var0 -> new ArrayList<>());
@@ -95,7 +95,7 @@
  
          @Override
 -        public void accept(final SubmitNode submit, final boolean strictlyOrdered) {
-+      public void accept(SubmitNode submit, boolean strictlyOrdered) {
++        public void accept(SubmitNode submit, boolean strictlyOrdered) {
              int index = this.allSubmits.size();
              this.allSubmits.add(submit);
              this.addOrExtendGroup(submit.featureType(), strictlyOrdered, index, index);
@@ -105,7 +105,7 @@
 -        public <Submit extends SubmitNode> void acceptFeatureGroup(
 -            final FeatureRendererType<Submit> featureType, final Collection<Submit> submits, final boolean strictlyOrdered
 -        ) {
-+      public <Submit extends SubmitNode> void acceptFeatureGroup(FeatureRendererType<Submit> featureType, Collection<Submit> submits, boolean strictlyOrdered) {
++        public <Submit extends SubmitNode> void acceptFeatureGroup(FeatureRendererType<Submit> featureType, Collection<Submit> submits, boolean strictlyOrdered) {
              if (!submits.isEmpty()) {
                  for (Submit submit : submits) {
                      if (submit.featureType() != featureType) {
@@ -114,7 +114,7 @@
  
          private <Submit extends SubmitNode> void addOrExtendGroup(
 -            final FeatureRendererType<Submit> featureType, final boolean strictlyOrdered, final int fromInclusive, final int toInclusive
-+         FeatureRendererType<Submit> featureType, boolean strictlyOrdered, int fromInclusive, int toInclusive
++            FeatureRendererType<Submit> featureType, boolean strictlyOrdered, int fromInclusive, int toInclusive
          ) {
              if (this.lastGroup != null && this.lastGroup.featureType == featureType && this.lastGroup.strictlyOrdered == strictlyOrdered) {
                  this.lastGroup.toInclusive = toInclusive;
@@ -122,7 +122,7 @@
 -                List<FeatureRenderDispatcher.PreparedGroup<?>> featureGroups = this.frame
 -                    .groupsByFeature
 -                    .computeIfAbsent(featureType, var0 -> new ArrayList<>());
-+            List<FeatureRenderDispatcher.PreparedGroup<?>> featureGroups = this.frame.groupsByFeature.computeIfAbsent(featureType, var0 -> new ArrayList<>());
++                List<FeatureRenderDispatcher.PreparedGroup<?>> featureGroups = this.frame.groupsByFeature.computeIfAbsent(featureType, var0 -> new ArrayList<>());
                  FeatureRenderDispatcher.PreparedGroup<Submit> group = new FeatureRenderDispatcher.PreparedGroup<>(
                      featureGroups.size(), featureType, strictlyOrdered, fromInclusive, toInclusive
                  );
@@ -134,14 +134,14 @@
      public class PreparedFrame implements AutoCloseable {
 -        private @Nullable FeatureFrameContext context;
 -        private @Nullable SubmitNodeStorage submitNodeStorage;
-+      private FeatureFrameContext context;
-+      private SubmitNodeStorage submitNodeStorage;
++        private FeatureFrameContext context;
++        private SubmitNodeStorage submitNodeStorage;
          private final List<SubmitNode> allSubmits = new ArrayList<>();
          private final Map<FeatureRenderPhase<?>, List<FeatureRenderDispatcher.PreparedGroup<?>>> groupsByPhase = new IdentityHashMap<>();
          private final Map<FeatureRendererType<?>, List<FeatureRenderDispatcher.PreparedGroup<?>>> groupsByFeature = new IdentityHashMap<>();
  
 -        private FeatureRenderDispatcher.PreparedFrame begin(final FeatureFrameContext context, final SubmitNodeStorage submitNodeStorage) {
-+      private FeatureRenderDispatcher.PreparedFrame begin(FeatureFrameContext context, SubmitNodeStorage submitNodeStorage) {
++        private FeatureRenderDispatcher.PreparedFrame begin(FeatureFrameContext context, SubmitNodeStorage submitNodeStorage) {
              if (this.context != null) {
                  throw new IllegalStateException("PreparedFrame already in use");
              }
@@ -150,7 +150,7 @@
          }
  
 -        private void executePhase(final FeatureRenderPhase<?> phase, final FeatureFrameContext context) {
-+      private void executePhase(FeatureRenderPhase<?> phase, FeatureFrameContext context) {
++        private void executePhase(FeatureRenderPhase<?> phase, FeatureFrameContext context) {
              ProfilerFiller profiler = Profiler.get();
  
              for (FeatureRenderDispatcher.PreparedGroup<?> group : this.groupsByPhase.getOrDefault(phase, List.of())) {
@@ -159,7 +159,7 @@
          }
  
 -        private static void clearGroups(final Collection<List<FeatureRenderDispatcher.PreparedGroup<?>>> groupsSet) {
-+      private static void clearGroups(Collection<List<FeatureRenderDispatcher.PreparedGroup<?>>> groupsSet) {
++        private static void clearGroups(Collection<List<FeatureRenderDispatcher.PreparedGroup<?>>> groupsSet) {
              groupsSet.removeIf(groups -> {
                  if (groups.isEmpty()) {
                      return true;
@@ -182,7 +182,7 @@
 -            final int fromInclusive,
 -            final int toInclusive
 -        ) {
-+      public PreparedGroup(int featureGroupIndex, FeatureRendererType<Submit> featureType, boolean strictlyOrdered, int fromInclusive, int toInclusive) {
++        public PreparedGroup(int featureGroupIndex, FeatureRendererType<Submit> featureType, boolean strictlyOrdered, int fromInclusive, int toInclusive) {
              this.featureGroupIndex = featureGroupIndex;
              this.featureType = featureType;
              this.strictlyOrdered = strictlyOrdered;
@@ -191,26 +191,26 @@
          }
  
 -        public void prepare(final FeatureFrameContext context, final FeatureRendererMap featureRenderers, final List<SubmitNode> submits) {
-+      public void prepare(FeatureFrameContext context, FeatureRendererMap featureRenderers, List<SubmitNode> submits) {
++        public void prepare(FeatureFrameContext context, FeatureRendererMap featureRenderers, List<SubmitNode> submits) {
              FeatureRenderer<Submit> featureRenderer = featureRenderers.getOrThrow(this.featureType);
              featureRenderer.prepareGroup(context, this.sliceUnchecked(submits), this.strictlyOrdered);
          }
  
 -        public void execute(final FeatureFrameContext context, final FeatureRendererMap featureRenderers, final List<SubmitNode> submits) {
-+      public void execute(FeatureFrameContext context, FeatureRendererMap featureRenderers, List<SubmitNode> submits) {
-+         if (Config.isShaders()) {
-+            Shaders.preExecuteGroup(this.featureType);
-+         }
++        public void execute(FeatureFrameContext context, FeatureRendererMap featureRenderers, List<SubmitNode> submits) {
++            if (Config.isShaders()) {
++                Shaders.preExecuteGroup(this.featureType);
++            }
 +
              FeatureRenderer<Submit> featureRenderer = featureRenderers.getOrThrow(this.featureType);
              featureRenderer.executeGroup(context, this.featureGroupIndex, this.sliceUnchecked(submits), this.strictlyOrdered);
-+         if (Config.isShaders()) {
-+            Shaders.postExecuteGroup(this.featureType);
++            if (Config.isShaders()) {
++                Shaders.postExecuteGroup(this.featureType);
++            }
          }
-+      }
  
 -        private List<Submit> sliceUnchecked(final List<SubmitNode> submits) {
-+      private List<Submit> sliceUnchecked(List<SubmitNode> submits) {
++        private List<Submit> sliceUnchecked(List<SubmitNode> submits) {
              return (List<Submit>)submits.subList(this.fromInclusive, this.toInclusive + 1);
          }
      }

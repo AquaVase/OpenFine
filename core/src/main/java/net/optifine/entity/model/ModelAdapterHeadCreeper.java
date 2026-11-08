@@ -4,7 +4,7 @@ import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.world.level.block.SkullBlock.Types;
 
 public class ModelAdapterHeadCreeper extends ModelAdapterHead {
-   public ModelAdapterHeadCreeper() {
-      super("head_creeper", ModelLayers.CREEPER_HEAD, Types.CREEPER);
-   }
+    public ModelAdapterHeadCreeper() {
+        super("head_creeper", ModelLayers.CREEPER_HEAD, Types.CREEPER);
+    }
 }

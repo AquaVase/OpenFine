@@ -17,33 +17,33 @@
 +import net.minecraftforge.client.model.data.ModelData;
 +
 +public interface IForgeBlockStateModel {
-+   private BlockStateModel self() {
-+      return (BlockStateModel)this;
-+   }
++    private BlockStateModel self() {
++        return (BlockStateModel)this;
++    }
 +
-+   private BlockStateModel getBakedModel() {
-+      return (BlockStateModel)this;
-+   }
++    private BlockStateModel getBakedModel() {
++        return (BlockStateModel)this;
++    }
 +
-+   default ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData modelData) {
-+      throw new UnsupportedOperationException();
-+   }
++    default ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData modelData) {
++        throw new UnsupportedOperationException();
++    }
 +
-+   default TextureAtlasSprite getParticleIcon(ModelData data) {
-+      throw new UnsupportedOperationException();
-+   }
++    default TextureAtlasSprite getParticleIcon(ModelData data) {
++        throw new UnsupportedOperationException();
++    }
 +
-+   default Collection<ChunkSectionLayer> getRenderTypes(BlockState state, RandomSource rand, ModelData data) {
-+      throw new UnsupportedOperationException();
-+   }
++    default Collection<ChunkSectionLayer> getRenderTypes(BlockState state, RandomSource rand, ModelData data) {
++        throw new UnsupportedOperationException();
++    }
 +
-+   default List<BlockStateModelPart> collectParts(RandomSource random, ModelData data, ChunkSectionLayer renderType) {
-+      List<BlockStateModelPart> list = new ObjectArrayList<>();
-+      this.collectParts(random, list, data, renderType);
-+      return list;
-+   }
++    default List<BlockStateModelPart> collectParts(RandomSource random, ModelData data, ChunkSectionLayer renderType) {
++        List<BlockStateModelPart> list = new ObjectArrayList<>();
++        this.collectParts(random, list, data, renderType);
++        return list;
++    }
 +
-+   default void collectParts(RandomSource random, List<BlockStateModelPart> dest, ModelData data, ChunkSectionLayer renderType) {
-+      this.self().collectParts(random, dest);
-+   }
++    default void collectParts(RandomSource random, List<BlockStateModelPart> dest, ModelData data, ChunkSectionLayer renderType) {
++        this.self().collectParts(random, dest);
++    }
 +}

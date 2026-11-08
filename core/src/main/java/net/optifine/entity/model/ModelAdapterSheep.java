@@ -12,29 +12,29 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterSheep extends ModelAdapterQuadruped {
-   public ModelAdapterSheep() {
-      super(EntityTypes.SHEEP, "sheep", ModelLayers.SHEEP);
-   }
+    public ModelAdapterSheep() {
+        super(EntityTypes.SHEEP, "sheep", ModelLayers.SHEEP);
+    }
 
-   protected ModelAdapterSheep(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterSheep(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterSheep ma = new ModelAdapterSheep(this.getEntityType(), "sheep_baby", ModelLayers.SHEEP_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterSheep ma = new ModelAdapterSheep(this.getEntityType(), "sheep_baby", ModelLayers.SHEEP_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SheepModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SheepModel(root);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new SheepRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new SheepRenderer(context);
+    }
 }

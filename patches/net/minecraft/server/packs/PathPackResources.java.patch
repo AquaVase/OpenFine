@@ -19,24 +19,24 @@
      private static final Logger LOGGER = LogUtils.getLogger();
      private static final Joiner PATH_JOINER = Joiner.on("/");
 -    private final Path root;
-+   public final Path root;
++    public final Path root;
  
 -    public PathPackResources(final PackLocationInfo location, final Path root) {
-+   public PathPackResources(PackLocationInfo location, Path root) {
++    public PathPackResources(PackLocationInfo location, Path root) {
          super(location);
          this.root = root;
      }
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getRootResource(final String... path) {
-+   public IoSupplier<InputStream> getRootResource(String... path) {
++    public IoSupplier<InputStream> getRootResource(String... path) {
          FileUtil.validatePath(path);
          Path pathInRoot = FileUtil.resolvePath(this.root, List.of(path));
          return Files.exists(pathInRoot) ? IoSupplier.create(pathInRoot) : null;
      }
  
 -    public static boolean validatePath(final Path path) {
-+   public static boolean validatePath(Path path) {
++    public static boolean validatePath(Path path) {
          if (!SharedConstants.DEBUG_VALIDATE_RESOURCE_PATH_CASE) {
              return true;
          }
@@ -45,19 +45,19 @@
      }
  
 -    private Path topPackDir(final PackType type) {
-+   private Path topPackDir(PackType type) {
++    private Path topPackDir(PackType type) {
          return this.root.resolve(type.getDirectory());
      }
  
      @Override
 -    public @Nullable IoSupplier<InputStream> getResource(final PackType type, final Identifier location) {
-+   public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
++    public IoSupplier<InputStream> getResource(PackType type, Identifier location) {
          Path topDir = this.topPackDir(type);
          return getResource(topDir, location);
      }
  
 -    public static @Nullable IoSupplier<InputStream> getResource(final Path topDir, final Identifier location) {
-+   public static IoSupplier<InputStream> getResource(Path topDir, Identifier location) {
++    public static IoSupplier<InputStream> getResource(Path topDir, Identifier location) {
          Path namespaceDir = topDir.resolve(location.getNamespace());
          return FileUtil.decomposePath(location.getPath()).mapOrElse(decomposedPath -> {
              Path resolvedPath = FileUtil.resolvePath(namespaceDir, (List<String>)decomposedPath);
@@ -66,19 +66,19 @@
      }
  
 -    private static @Nullable IoSupplier<InputStream> returnFileIfExists(final Path resolvedPath) {
-+   private static IoSupplier<InputStream> returnFileIfExists(Path resolvedPath) {
++    private static IoSupplier<InputStream> returnFileIfExists(Path resolvedPath) {
          return Files.exists(resolvedPath) && validatePath(resolvedPath) ? IoSupplier.create(resolvedPath) : null;
      }
  
      @Override
 -    public void listResources(final PackType type, final String namespace, final String directory, final PackResources.ResourceOutput output) {
-+   public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
++    public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
          Path topDir = this.topPackDir(type);
          listResources(topDir, namespace, directory, output);
      }
  
 -    public static void listResources(final Path topPath, final String namespace, final String directory, final PackResources.ResourceOutput output) {
-+   public static void listResources(Path topPath, String namespace, String directory, ResourceOutput output) {
++    public static void listResources(Path topPath, String namespace, String directory, ResourceOutput output) {
          FileUtil.decomposePath(directory).ifSuccess(decomposedPath -> {
              Path namespaceDir = topPath.resolve(namespace);
              listPath(namespace, namespaceDir, (List<String>)decomposedPath, output);
@@ -86,7 +86,7 @@
      }
  
 -    public static void listPath(final String namespace, final Path topDir, final List<String> decomposedPrefixPath, final PackResources.ResourceOutput output) {
-+   public static void listPath(String namespace, Path topDir, List<String> decomposedPrefixPath, ResourceOutput output) {
++    public static void listPath(String namespace, Path topDir, List<String> decomposedPrefixPath, ResourceOutput output) {
          Path targetPath = FileUtil.resolvePath(topDir, decomposedPrefixPath);
  
          try (Stream<Path> files = Files.find(targetPath, Integer.MAX_VALUE, PathPackResources::isRegularFile)) {
@@ -95,7 +95,7 @@
      }
  
 -    private static boolean isRegularFile(final Path file, final BasicFileAttributes attributes) {
-+   private static boolean isRegularFile(Path file, BasicFileAttributes attributes) {
++    private static boolean isRegularFile(Path file, BasicFileAttributes attributes) {
          return !SharedConstants.IS_RUNNING_IN_IDE
              ? attributes.isRegularFile()
              : attributes.isRegularFile() && !StringUtils.equalsIgnoreCase(file.getFileName().toString(), ".ds_store");
@@ -103,13 +103,13 @@
  
      @Override
 -    public Set<String> getNamespaces(final PackType type) {
-+   public Set<String> getNamespaces(PackType type) {
++    public Set<String> getNamespaces(PackType type) {
          Path assetRoot = this.topPackDir(type);
          return getNamespaces(assetRoot);
      }
  
 -    public static Set<String> getNamespaces(final Path rootDir) {
-+   public static Set<String> getNamespaces(Path rootDir) {
++    public static Set<String> getNamespaces(Path rootDir) {
          Set<String> namespaces = new HashSet<>();
  
          try (DirectoryStream<Path> directDirs = Files.newDirectoryStream(rootDir)) {
@@ -118,23 +118,23 @@
      }
  
 -    public static class PathResourcesSupplier implements Pack.ResourcesSupplier {
-+   public static class PathResourcesSupplier implements ResourcesSupplier {
++    public static class PathResourcesSupplier implements ResourcesSupplier {
          private final Path content;
  
 -        public PathResourcesSupplier(final Path content) {
-+      public PathResourcesSupplier(Path content) {
++        public PathResourcesSupplier(Path content) {
              this.content = content;
          }
  
          @Override
 -        public PackResources openPrimary(final PackLocationInfo location) {
-+      public PackResources openPrimary(PackLocationInfo location) {
++        public PackResources openPrimary(PackLocationInfo location) {
              return new PathPackResources(location, this.content);
          }
  
          @Override
 -        public PackResources openFull(final PackLocationInfo location, final Pack.Metadata metadata) {
-+      public PackResources openFull(PackLocationInfo location, Metadata metadata) {
++        public PackResources openFull(PackLocationInfo location, Metadata metadata) {
              PackResources primary = this.openPrimary(location);
              List<String> overlays = metadata.overlays();
              if (overlays.isEmpty()) {

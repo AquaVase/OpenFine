@@ -21,15 +21,15 @@
      private CloudRenderer.RelativeCameraPos prevRelativeCameraPos = CloudRenderer.RelativeCameraPos.INSIDE_CLOUDS;
 -    private @Nullable CloudStatus prevCloudStatus;
 -    private CloudRenderer.@Nullable TextureData texture;
-+   private CloudStatus prevCloudStatus;
-+   private CloudRenderer.TextureData texture;
++    private CloudStatus prevCloudStatus;
++    private CloudRenderer.TextureData texture;
      private int quadCount = 0;
      private final MappableRingBuffer ubo = new MappableRingBuffer(() -> "Cloud UBO", 130, UBO_SIZE);
 -    private @Nullable MappableRingBuffer utb;
-+   private MappableRingBuffer utb;
++    private MappableRingBuffer utb;
  
 -    protected Optional<CloudRenderer.TextureData> prepare(final ResourceManager manager, final ProfilerFiller profiler) {
-+   protected Optional<CloudRenderer.TextureData> prepare(ResourceManager manager, ProfilerFiller profiler) {
++    protected Optional<CloudRenderer.TextureData> prepare(ResourceManager manager, ProfilerFiller profiler) {
          try (
              InputStream input = manager.open(TEXTURE_LOCATION);
              NativeImage texture = NativeImage.read(input);
@@ -38,7 +38,7 @@
      }
  
 -    private static int getSizeForCloudDistance(final int radiusCells) {
-+   private static int getSizeForCloudDistance(int radiusCells) {
++    private static int getSizeForCloudDistance(int radiusCells) {
          int maxFacesPerCell = 4;
          int maxCells = (radiusCells + 1) * 2 * (radiusCells + 1) * 2 / 2;
          int maxFaces = maxCells * 4 + 54;
@@ -46,44 +46,44 @@
      }
  
 -    protected void apply(final Optional<CloudRenderer.TextureData> preparations, final ResourceManager manager, final ProfilerFiller profiler) {
-+   protected void apply(Optional<CloudRenderer.TextureData> preparations, ResourceManager manager, ProfilerFiller profiler) {
++    protected void apply(Optional<CloudRenderer.TextureData> preparations, ResourceManager manager, ProfilerFiller profiler) {
          this.texture = preparations.orElse(null);
          this.needsRebuild = true;
      }
  
 -    private static boolean isCellEmpty(final int color) {
-+   private static boolean isCellEmpty(int color) {
++    private static boolean isCellEmpty(int color) {
          return ARGB.alpha(color) < 10;
      }
  
 -    private static long packCellData(final int color, final boolean north, final boolean east, final boolean south, final boolean west) {
-+   private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
++    private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
          return (long)color << 4 | (north ? 1 : 0) << 3 | (east ? 1 : 0) << 2 | (south ? 1 : 0) << 1 | (west ? 1 : 0) << 0;
      }
  
 -    private static boolean isNorthEmpty(final long cellData) {
-+   private static boolean isNorthEmpty(long cellData) {
++    private static boolean isNorthEmpty(long cellData) {
          return (cellData >> 3 & 1L) != 0L;
      }
  
 -    private static boolean isEastEmpty(final long cellData) {
-+   private static boolean isEastEmpty(long cellData) {
++    private static boolean isEastEmpty(long cellData) {
          return (cellData >> 2 & 1L) != 0L;
      }
  
 -    private static boolean isSouthEmpty(final long cellData) {
-+   private static boolean isSouthEmpty(long cellData) {
++    private static boolean isSouthEmpty(long cellData) {
          return (cellData >> 1 & 1L) != 0L;
      }
  
 -    private static boolean isWestEmpty(final long cellData) {
-+   private static boolean isWestEmpty(long cellData) {
++    private static boolean isWestEmpty(long cellData) {
          return (cellData >> 0 & 1L) != 0L;
      }
  
-+   public void render(int color, CloudStatus cloudStatus, float bottomY, int range, Vec3 cameraPosition, long gameTime, float partialTicks) {
-+      this.render(color, cloudStatus, bottomY, range, cameraPosition, gameTime, partialTicks, null);
-+   }
++    public void render(int color, CloudStatus cloudStatus, float bottomY, int range, Vec3 cameraPosition, long gameTime, float partialTicks) {
++        this.render(color, cloudStatus, bottomY, range, cameraPosition, gameTime, partialTicks, null);
++    }
 +
      public void render(
 -        final int color,
@@ -93,16 +93,16 @@
 -        final Vec3 cameraPosition,
 -        final long gameTime,
 -        final float partialTicks
-+      int color, CloudStatus cloudStatus, float bottomY, int range, Vec3 cameraPosition, long gameTime, float partialTicks, GpuBufferSlice fogBufferIn
++        int color, CloudStatus cloudStatus, float bottomY, int range, Vec3 cameraPosition, long gameTime, float partialTicks, GpuBufferSlice fogBufferIn
      ) {
          if (this.texture != null) {
-+         if (Config.isShaders()) {
-+            Shaders.beginClouds();
-+         }
++            if (Config.isShaders()) {
++                Shaders.beginClouds();
++            }
 +
-+         if (fogBufferIn != null) {
-+            RenderSystem.setShaderFog(fogBufferIn);
-+         }
++            if (fogBufferIn != null) {
++                RenderSystem.setShaderFog(fogBufferIn);
++            }
 +
              int radiusBlocks = range * 16;
              int radiusCells = Mth.ceil(radiusBlocks / 12.0F);
@@ -112,7 +112,7 @@
              float xInCell = (float)(cloudX - cellX * 12.0F);
              float zInCell = (float)(cloudZ - cellZ * 12.0F);
 -            boolean fancyClouds = cloudStatus == CloudStatus.FANCY;
-+         boolean fancyClouds = Config.isCloudsFancy();
++            boolean fancyClouds = Config.isCloudsFancy();
              RenderPipeline renderPipeline = fancyClouds ? RenderPipelines.CLOUDS : RenderPipelines.FLAT_CLOUDS;
              if (this.needsRebuild
                  || cellX != this.prevCellX
@@ -120,7 +120,7 @@
                          .putVec4(ARGB.vector4fFromARGB32(color))
                          .putVec3(-xInCell, relativeBottomY, -zInCell)
                          .putVec3(12.0F, 4.0F, 12.0F);
-+               RenderSystem.setShaderColor(ARGB.redFloat(color), ARGB.greenFloat(color), ARGB.blueFloat(color), 1.0F);
++                    RenderSystem.setShaderColor(ARGB.redFloat(color), ARGB.greenFloat(color), ARGB.blueFloat(color), 1.0F);
                  }
  
                  GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
@@ -129,11 +129,11 @@
                  }
              }
 +
-+         if (Config.isShaders()) {
-+            Shaders.endClouds();
++            if (Config.isShaders()) {
++                Shaders.endClouds();
++            }
          }
      }
-+   }
  
      private void buildMesh(
 -        final CloudRenderer.RelativeCameraPos relativePos,
@@ -142,7 +142,7 @@
 -        final int centerCellZ,
 -        final boolean extrude,
 -        final int radiusCells
-+      CloudRenderer.RelativeCameraPos relativePos, ByteBuffer faceBuffer, int centerCellX, int centerCellZ, boolean extrude, int radiusCells
++        CloudRenderer.RelativeCameraPos relativePos, ByteBuffer faceBuffer, int centerCellX, int centerCellZ, boolean extrude, int radiusCells
      ) {
          if (this.texture != null) {
              long[] cells = this.texture.cells;
@@ -160,16 +160,16 @@
 -        final int relativeCellZ,
 -        final int textureHeight,
 -        final long[] cells
-+      CloudRenderer.RelativeCameraPos relativePos,
-+      ByteBuffer faceBuffer,
-+      int cellX,
-+      int cellZ,
-+      boolean extrude,
-+      int relativeCellX,
-+      int textureWidth,
-+      int relativeCellZ,
-+      int textureHeight,
-+      long[] cells
++        CloudRenderer.RelativeCameraPos relativePos,
++        ByteBuffer faceBuffer,
++        int cellX,
++        int cellZ,
++        boolean extrude,
++        int relativeCellX,
++        int textureWidth,
++        int relativeCellZ,
++        int textureHeight,
++        long[] cells
      ) {
          int indexX = Math.floorMod(cellX + relativeCellX, textureWidth);
          int indexY = Math.floorMod(cellZ + relativeCellZ, textureHeight);
@@ -178,12 +178,12 @@
      }
  
 -    private void buildFlatCell(final ByteBuffer faceBuffer, final int x, final int z) {
-+   private void buildFlatCell(ByteBuffer faceBuffer, int x, int z) {
++    private void buildFlatCell(ByteBuffer faceBuffer, int x, int z) {
          this.encodeFace(faceBuffer, x, z, Direction.DOWN, 32);
      }
  
 -    private void encodeFace(final ByteBuffer faceBuffer, final int x, final int z, final Direction direction, final int flags) {
-+   private void encodeFace(ByteBuffer faceBuffer, int x, int z, Direction direction, int flags) {
++    private void encodeFace(ByteBuffer faceBuffer, int x, int z, Direction direction, int flags) {
          int dirAndFlags = direction.get3DDataValue() | flags;
          dirAndFlags |= (x & 1) << 7;
          dirAndFlags |= (z & 1) << 6;
@@ -193,7 +193,7 @@
 -    private void buildExtrudedCell(
 -        final CloudRenderer.RelativeCameraPos relativePos, final ByteBuffer faceBuffer, final int x, final int z, final long cellData
 -    ) {
-+   private void buildExtrudedCell(CloudRenderer.RelativeCameraPos relativePos, ByteBuffer faceBuffer, int x, int z, long cellData) {
++    private void buildExtrudedCell(CloudRenderer.RelativeCameraPos relativePos, ByteBuffer faceBuffer, int x, int z, long cellData) {
          if (relativePos != CloudRenderer.RelativeCameraPos.BELOW_CLOUDS) {
              this.encodeFace(faceBuffer, x, z, Direction.UP, 0);
          }

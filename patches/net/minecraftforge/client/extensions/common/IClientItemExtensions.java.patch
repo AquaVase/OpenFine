@@ -10,25 +10,25 @@
 +import net.minecraft.world.item.ItemStack;
 +
 +public interface IClientItemExtensions {
-+   IClientItemExtensions DUMMY = new IClientItemExtensions() {};
++    IClientItemExtensions DUMMY = new IClientItemExtensions() {};
 +
-+   static IClientItemExtensions of(ItemStack itemStack) {
-+      return DUMMY;
-+   }
++    static IClientItemExtensions of(ItemStack itemStack) {
++        return DUMMY;
++    }
 +
-+   default boolean applyForgeHandTransform(
-+      PoseStack poseStack, LocalPlayer player, HumanoidArm arm, ItemStack itemInHand, float partialTick, float equipProcess, float swingProcess
-+   ) {
-+      return false;
-+   }
++    default boolean applyForgeHandTransform(
++        PoseStack poseStack, LocalPlayer player, HumanoidArm arm, ItemStack itemInHand, float partialTick, float equipProcess, float swingProcess
++    ) {
++        return false;
++    }
 +
-+   default Font getFont(ItemStack stack, IClientItemExtensions.FontContext context) {
-+      return null;
-+   }
++    default Font getFont(ItemStack stack, IClientItemExtensions.FontContext context) {
++        return null;
++    }
 +
-+   enum FontContext {
-+      ITEM_COUNT,
-+      TOOLTIP,
-+      SELECTED_ITEM_NAME;
-+   }
++    enum FontContext {
++        ITEM_COUNT,
++        TOOLTIP,
++        SELECTED_ITEM_NAME;
++    }
 +}

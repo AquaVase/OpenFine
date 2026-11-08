@@ -20,7 +20,7 @@
 -    public int getFbo(
 -        final DirectStateAccess dsa, final List<@Nullable FrameBufferAttachment> colorTextures, final @Nullable FrameBufferAttachment depthTexture
 -    ) {
-+   public int getFbo(DirectStateAccess dsa, List<FrameBufferAttachment> colorTextures, FrameBufferAttachment depthTexture) {
++    public int getFbo(DirectStateAccess dsa, List<FrameBufferAttachment> colorTextures, FrameBufferAttachment depthTexture) {
          FrameBufferCache.CacheKey cacheKey = new FrameBufferCache.CacheKey(colorTextures, depthTexture);
          return this.cache.computeIfAbsent(cacheKey, var5 -> this.createFbo(cacheKey, dsa, colorTextures, depthTexture));
      }
@@ -30,7 +30,7 @@
 -        final DirectStateAccess dsa,
 -        final List<@Nullable FrameBufferAttachment> colorAttachments,
 -        final @Nullable FrameBufferAttachment depthAttachment
-+      FrameBufferCache.CacheKey key, DirectStateAccess dsa, List<FrameBufferAttachment> colorAttachments, FrameBufferAttachment depthAttachment
++        FrameBufferCache.CacheKey key, DirectStateAccess dsa, List<FrameBufferAttachment> colorAttachments, FrameBufferAttachment depthAttachment
      ) {
          int fbo = dsa.createFrameBufferObject();
          int colorAttachmentCount = colorAttachments.size();
@@ -38,28 +38,28 @@
          dsa.bindFrameBufferTextures(
              fbo, colorIds, mipLevels, depthAttachment == null ? 0 : depthAttachment.glId(), depthAttachment == null ? 0 : depthAttachment.fboMipLevel(), 0
          );
-+      RenderSystem.getGlDevice().debugLabels().applyLabelFramebuffer(fbo, fbo + "");
++        RenderSystem.getGlDevice().debugLabels().applyLabelFramebuffer(fbo, fbo + "");
          return fbo;
      }
  
 -    public void destroyFbo(final FrameBufferCache.CacheKey key) {
-+   public int getFramebuffer(FrameBufferCache.CacheKey key) {
-+      return this.cache.getInt(key);
-+   }
++    public int getFramebuffer(FrameBufferCache.CacheKey key) {
++        return this.cache.getInt(key);
++    }
 +
-+   public boolean hasFramebuffer(List<FrameBufferCache.CacheKey> keysIn, int framebufferIn) {
-+      for (int i = 0; i < keysIn.size(); i++) {
-+         FrameBufferCache.CacheKey key = keysIn.get(i);
-+         int fbo = this.getFramebuffer(key);
-+         if (fbo == framebufferIn) {
-+            return true;
-+         }
-+      }
++    public boolean hasFramebuffer(List<FrameBufferCache.CacheKey> keysIn, int framebufferIn) {
++        for (int i = 0; i < keysIn.size(); i++) {
++            FrameBufferCache.CacheKey key = keysIn.get(i);
++            int fbo = this.getFramebuffer(key);
++            if (fbo == framebufferIn) {
++                return true;
++            }
++        }
 +
-+      return false;
-+   }
++        return false;
++    }
 +
-+   public void destroyFbo(FrameBufferCache.CacheKey key) {
++    public void destroyFbo(FrameBufferCache.CacheKey key) {
          if (this.cache.containsKey(key)) {
              for (FrameBufferAttachment associatedAttachment : key.associatedAttachments) {
                  if (associatedAttachment != null) {
@@ -72,10 +72,10 @@
          private final int[] data;
          private final int hash;
 -        public final List<@Nullable FrameBufferAttachment> associatedAttachments;
-+      public final List<FrameBufferAttachment> associatedAttachments;
++        public final List<FrameBufferAttachment> associatedAttachments;
  
 -        public CacheKey(final List<@Nullable FrameBufferAttachment> colorAttachments, final @Nullable FrameBufferAttachment depthAttachment) {
-+      public CacheKey(List<FrameBufferAttachment> colorAttachments, FrameBufferAttachment depthAttachment) {
++        public CacheKey(List<FrameBufferAttachment> colorAttachments, FrameBufferAttachment depthAttachment) {
              int colorAttachmentCount = colorAttachments.size();
              this.data = new int[(colorAttachmentCount + (depthAttachment != null ? 1 : 0)) * 2];
  
@@ -84,7 +84,7 @@
  
          @Override
 -        public boolean equals(final Object obj) {
-+      public boolean equals(Object obj) {
++        public boolean equals(Object obj) {
              if (this == obj) {
                  return true;
              } else if (obj instanceof FrameBufferCache.CacheKey other) {

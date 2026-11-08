@@ -1,10 +1,10 @@
 package net.optifine.expr;
 
 public interface IExpressionFloatArray extends IExpression {
-   float[] eval();
+    float[] eval();
 
-   @Override
-   default ExpressionType getExpressionType() {
-      return ExpressionType.FLOAT_ARRAY;
-   }
+    @Override
+    default ExpressionType getExpressionType() {
+        return ExpressionType.FLOAT_ARRAY;
+    }
 }

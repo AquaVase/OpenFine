@@ -3,73 +3,73 @@ package net.optifine.util;
 import net.optifine.Config;
 
 public class CompoundIntKey {
-   private int[] keys;
-   private int hashcode = 0;
+    private int[] keys;
+    private int hashcode = 0;
 
-   public CompoundIntKey(int[] keys) {
-      this.keys = (int[])keys.clone();
-   }
+    public CompoundIntKey(int[] keys) {
+        this.keys = (int[])keys.clone();
+    }
 
-   public CompoundIntKey(int k1, int k2) {
-      this(new int[]{k1, k2});
-   }
+    public CompoundIntKey(int k1, int k2) {
+        this(new int[]{k1, k2});
+    }
 
-   public CompoundIntKey(int k1, int k2, int k3) {
-      this(new int[]{k1, k2, k3});
-   }
+    public CompoundIntKey(int k1, int k2, int k3) {
+        this(new int[]{k1, k2, k3});
+    }
 
-   public CompoundIntKey(int k1, int k2, int k3, int k4) {
-      this(new int[]{k1, k2, k3, k4});
-   }
+    public CompoundIntKey(int k1, int k2, int k3, int k4) {
+        this(new int[]{k1, k2, k3, k4});
+    }
 
-   @Override
-   public int hashCode() {
-      if (this.hashcode == 0) {
-         this.hashcode = 7;
+    @Override
+    public int hashCode() {
+        if (this.hashcode == 0) {
+            this.hashcode = 7;
 
-         for (int i = 0; i < this.keys.length; i++) {
-            int key = this.keys[i];
-            this.hashcode = 31 * this.hashcode + key;
-         }
-      }
-
-      return this.hashcode;
-   }
-
-   @Override
-   public boolean equals(Object obj) {
-      if (obj == null) {
-         return false;
-      } else if (obj == this) {
-         return true;
-      } else if (!(obj instanceof CompoundIntKey ck)) {
-         return false;
-      } else {
-         int[] ckKeys = ck.getKeys();
-         if (ckKeys.length != this.keys.length) {
-            return false;
-         }
-
-         for (int i = 0; i < this.keys.length; i++) {
-            if (this.keys[i] != ckKeys[i]) {
-               return false;
+            for (int i = 0; i < this.keys.length; i++) {
+                int key = this.keys[i];
+                this.hashcode = 31 * this.hashcode + key;
             }
-         }
+        }
 
-         return true;
-      }
-   }
+        return this.hashcode;
+    }
 
-   private int[] getKeys() {
-      return this.keys;
-   }
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        } else if (obj == this) {
+            return true;
+        } else if (!(obj instanceof CompoundIntKey ck)) {
+            return false;
+        } else {
+            int[] ckKeys = ck.getKeys();
+            if (ckKeys.length != this.keys.length) {
+                return false;
+            }
 
-   public int[] getKeysCopy() {
-      return (int[])this.keys.clone();
-   }
+            for (int i = 0; i < this.keys.length; i++) {
+                if (this.keys[i] != ckKeys[i]) {
+                    return false;
+                }
+            }
 
-   @Override
-   public String toString() {
-      return "[" + Config.arrayToString(this.keys) + "]";
-   }
+            return true;
+        }
+    }
+
+    private int[] getKeys() {
+        return this.keys;
+    }
+
+    public int[] getKeysCopy() {
+        return (int[])this.keys.clone();
+    }
+
+    @Override
+    public String toString() {
+        return "[" + Config.arrayToString(this.keys) + "]";
+    }
 }

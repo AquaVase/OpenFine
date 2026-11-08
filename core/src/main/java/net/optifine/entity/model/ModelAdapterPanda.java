@@ -12,29 +12,29 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterPanda extends ModelAdapterQuadruped {
-   public ModelAdapterPanda() {
-      super(EntityTypes.PANDA, "panda", ModelLayers.PANDA);
-   }
+    public ModelAdapterPanda() {
+        super(EntityTypes.PANDA, "panda", ModelLayers.PANDA);
+    }
 
-   protected ModelAdapterPanda(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterPanda(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterPanda ma = new ModelAdapterPanda(this.getEntityType(), "panda_baby", ModelLayers.PANDA_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterPanda ma = new ModelAdapterPanda(this.getEntityType(), "panda_baby", ModelLayers.PANDA_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new PandaModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new PandaModel(root);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new PandaRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new PandaRenderer(context);
+    }
 }

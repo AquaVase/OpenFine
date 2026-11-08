@@ -14,42 +14,42 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterSquid extends ModelAdapterAgeable {
-   public ModelAdapterSquid() {
-      super(EntityTypes.SQUID, "squid", ModelLayers.SQUID);
-   }
+    public ModelAdapterSquid() {
+        super(EntityTypes.SQUID, "squid", ModelLayers.SQUID);
+    }
 
-   protected ModelAdapterSquid(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterSquid(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterSquid ma = new ModelAdapterSquid(this.getEntityType(), "squid_baby", ModelLayers.SQUID_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterSquid ma = new ModelAdapterSquid(this.getEntityType(), "squid_baby", ModelLayers.SQUID_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SquidModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SquidModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "body");
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "body");
 
-      for (int i = 0; i < 8; i++) {
-         map.put("tentacle" + (i + 1), "tentacle" + i);
-      }
+        for (int i = 0; i < 8; i++) {
+            map.put("tentacle" + (i + 1), "tentacle" + i);
+        }
 
-      map.put("root", "root");
-      return map;
-   }
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new SquidRenderer(context, new SquidModel(bakeModelLayer(ModelLayers.SQUID)), new SquidModel(bakeModelLayer(ModelLayers.SQUID_BABY)));
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new SquidRenderer(context, new SquidModel(bakeModelLayer(ModelLayers.SQUID)), new SquidModel(bakeModelLayer(ModelLayers.SQUID_BABY)));
+    }
 }

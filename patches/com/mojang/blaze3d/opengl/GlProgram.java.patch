@@ -31,7 +31,7 @@
      private final String debugLabel;
  
 -    private GlProgram(final int programId, final String debugLabel) {
-+   private GlProgram(int programId, String debugLabel) {
++    private GlProgram(int programId, String debugLabel) {
          this.programId = programId;
          this.debugLabel = debugLabel;
      }
@@ -39,7 +39,7 @@
 -    public static GlProgram link(
 -        final GlShaderModule vertexShader, final GlShaderModule fragmentShader, final @Nullable VertexFormat[] vertexBindings, final String debugLabel
 -    ) throws ShaderManager.CompilationException {
-+   public static GlProgram link(GlShaderModule vertexShader, GlShaderModule fragmentShader, VertexFormat[] vertexBindings, String debugLabel) throws ShaderManager.CompilationException {
++    public static GlProgram link(GlShaderModule vertexShader, GlShaderModule fragmentShader, VertexFormat[] vertexBindings, String debugLabel) throws ShaderManager.CompilationException {
          int programId = GlStateManager.glCreateProgram();
          if (programId <= 0) {
              throw new ShaderManager.CompilationException("Could not create shader program (returned program ID " + programId + ")");
@@ -47,11 +47,11 @@
                  for (VertexFormatElement attribute : vertexFormat.getElements()) {
                      String attributeName = attribute.name();
                      if (!attributeName.equals(previousName)) {
-+                  VertexFormatElement vfe = vertexFormat.getElement(attributeName);
-+                  attributeLocation = vfe.attributeIndex();
-+                  if (attributeLocation < 0) {
-+                     continue;
-+                  }
++                        VertexFormatElement vfe = vertexFormat.getElement(attributeName);
++                        attributeLocation = vfe.attributeIndex();
++                        if (attributeLocation < 0) {
++                            continue;
++                        }
 +
                          GlStateManager._glBindAttribLocation(programId, attributeLocation, attributeName);
                      }
@@ -63,7 +63,7 @@
 -                LOGGER.info(
 -                    "Info log when linking program containing VS {} and FS {}. Log output: {}", vertexShader.getId(), fragmentShader.getId(), linkMessage
 -                );
-+            LOGGER.info("Info log when linking program containing VS {} and FS {}. Log output: {}", vertexShader.getId(), fragmentShader.getId(), linkMessage);
++                LOGGER.info("Info log when linking program containing VS {} and FS {}. Log output: {}", vertexShader.getId(), fragmentShader.getId(), linkMessage);
              }
  
              return new GlProgram(programId, debugLabel);
@@ -72,16 +72,16 @@
      }
  
 -    public void setupBindGroupLayouts(final List<BindGroupLayout> bindGroupLayouts) {
-+   public void setupBindGroupLayouts(List<BindGroupLayout> bindGroupLayouts) {
++    public void setupBindGroupLayouts(List<BindGroupLayout> bindGroupLayouts) {
          BindGroupLayout.ensureCompatible(bindGroupLayouts);
 -        List<BindGroupLayout.UniformDescription> uniforms = BindGroupLayout.flattenUniforms(bindGroupLayouts);
-+      List<UniformDescription> uniforms = BindGroupLayout.flattenUniforms(bindGroupLayouts);
++        List<UniformDescription> uniforms = BindGroupLayout.flattenUniforms(bindGroupLayouts);
          List<String> samplers = BindGroupLayout.flattenSamplers(bindGroupLayouts);
          int nextUboBinding = 0;
          int nextSamplerIndex = 0;
  
 -        for (BindGroupLayout.UniformDescription uniformDescription : uniforms) {
-+      for (UniformDescription uniformDescription : uniforms) {
++        for (UniformDescription uniformDescription : uniforms) {
              String uniformName = uniformDescription.name();
  
              Uniform uniform = switch (uniformDescription.type()) {
@@ -90,7 +90,7 @@
                          int uboBinding = nextUboBinding++;
                          GL33C.glUniformBlockBinding(this.programId, index, uboBinding);
 -                        yield new Uniform.Ubo(uboBinding);
-+                  yield new Ubo(uboBinding);
++                        yield new Ubo(uboBinding);
                      }
                  }
                  case TEXEL_BUFFER -> {
@@ -99,12 +99,12 @@
                      } else {
                          int samplerIndex = nextSamplerIndex++;
 -                        yield new Uniform.Utb(location, samplerIndex, Objects.requireNonNull(uniformDescription.gpuFormat()));
-+                  Utb utb = new Utb(location, samplerIndex, Objects.requireNonNull(uniformDescription.gpuFormat()));
-+                  int texPrev = GlStateManager._getInteger(35884);
-+                  GlStateManager.bindTexture(35882, utb.texture());
-+                  RenderSystem.getGlDevice().debugLabels().applyLabelTexture(utb.texture(), "UTB " + this.getDebugLabel());
-+                  GlStateManager.bindTexture(35882, texPrev);
-+                  yield utb;
++                        Utb utb = new Utb(location, samplerIndex, Objects.requireNonNull(uniformDescription.gpuFormat()));
++                        int texPrev = GlStateManager._getInteger(35884);
++                        GlStateManager.bindTexture(35882, utb.texture());
++                        RenderSystem.getGlDevice().debugLabels().applyLabelTexture(utb.texture(), "UTB " + this.getDebugLabel());
++                        GlStateManager.bindTexture(35882, texPrev);
++                        yield utb;
                      }
                  }
              };
@@ -113,7 +113,7 @@
              } else {
                  int samplerIndex = nextSamplerIndex++;
 -                this.uniformsByName.put(sampler, new Uniform.Sampler(location, samplerIndex));
-+            this.uniformsByName.put(sampler, new Sampler(location, samplerIndex));
++                this.uniformsByName.put(sampler, new Sampler(location, samplerIndex));
              }
          }
  
@@ -122,7 +122,7 @@
                      int uboBinding = nextUboBinding++;
                      GL33C.glUniformBlockBinding(this.programId, i, uboBinding);
 -                    this.uniformsByName.put(name, new Uniform.Ubo(uboBinding));
-+               this.uniformsByName.put(name, new Ubo(uboBinding));
++                    this.uniformsByName.put(name, new Ubo(uboBinding));
                  } else {
                      LOGGER.warn("Found unknown and unsupported uniform {} in {}", name, this.debugLabel);
                  }
@@ -131,7 +131,7 @@
      }
  
 -    public @Nullable Uniform getUniform(final String name) {
-+   public Uniform getUniform(String name) {
++    public Uniform getUniform(String name) {
          RenderSystem.assertOnRenderThread();
          return this.uniformsByName.get(name);
      }

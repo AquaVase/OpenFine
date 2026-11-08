@@ -26,16 +26,16 @@
 -        final RenderSetup.OutlineProperty outlineProperty,
 -        final boolean affectsCrumbling,
 -        final boolean sortOnUpload
-+      RenderPipeline pipeline,
-+      Map<String, RenderSetup.TextureBinding> textures,
-+      boolean useLightmap,
-+      boolean useOverlay,
-+      LayeringTransform layeringTransform,
-+      OutputTarget outputTarget,
-+      TextureTransform textureTransform,
-+      RenderSetup.OutlineProperty outlineProperty,
-+      boolean affectsCrumbling,
-+      boolean sortOnUpload
++        RenderPipeline pipeline,
++        Map<String, RenderSetup.TextureBinding> textures,
++        boolean useLightmap,
++        boolean useOverlay,
++        LayeringTransform layeringTransform,
++        OutputTarget outputTarget,
++        TextureTransform textureTransform,
++        RenderSetup.OutlineProperty outlineProperty,
++        boolean affectsCrumbling,
++        boolean sortOnUpload
      ) {
          this.pipeline = pipeline;
          this.textures = textures;
@@ -44,9 +44,9 @@
      @Override
      public String toString() {
 -        return "RenderSetup[layeringTransform="
-+      return "RenderSetup["
-+         + this.pipeline
-+         + ", layeringTransform="
++        return "RenderSetup["
++            + this.pipeline
++            + ", layeringTransform="
              + this.layeringTransform
              + ", textureTransform="
              + this.textureTransform
@@ -55,29 +55,29 @@
      }
  
 -    public static RenderSetup.RenderSetupBuilder builder(final RenderPipeline pipeline) {
-+   public RenderSetup duplicate() {
-+      Map<String, RenderSetup.TextureBinding> textures2 = new HashMap<>(this.textures);
-+      return new RenderSetup(
-+         this.pipeline,
-+         textures2,
-+         this.useLightmap,
-+         this.useOverlay,
-+         this.layeringTransform,
-+         this.outputTarget,
-+         this.textureTransform,
-+         this.outlineProperty,
-+         this.affectsCrumbling,
-+         this.sortOnUpload
-+      );
-+   }
++    public RenderSetup duplicate() {
++        Map<String, RenderSetup.TextureBinding> textures2 = new HashMap<>(this.textures);
++        return new RenderSetup(
++            this.pipeline,
++            textures2,
++            this.useLightmap,
++            this.useOverlay,
++            this.layeringTransform,
++            this.outputTarget,
++            this.textureTransform,
++            this.outlineProperty,
++            this.affectsCrumbling,
++            this.sortOnUpload
++        );
++    }
 +
-+   public static RenderSetup.RenderSetupBuilder builder(RenderPipeline pipeline) {
++    public static RenderSetup.RenderSetupBuilder builder(RenderPipeline pipeline) {
          return new RenderSetup.RenderSetupBuilder(pipeline);
      }
  
      public List<PreparedRenderType.Texture> prepareTextures(
 -        final TextureManager textureManager, final SamplerCache samplerCache, final GpuTextureView overlayTexture, final GpuTextureView lightmapTexture
-+      TextureManager textureManager, SamplerCache samplerCache, GpuTextureView overlayTexture, GpuTextureView lightmapTexture
++        TextureManager textureManager, SamplerCache samplerCache, GpuTextureView overlayTexture, GpuTextureView lightmapTexture
      ) {
          if (this.textures.isEmpty() && !this.useOverlay && !this.useLightmap) {
              return List.of();
@@ -94,7 +94,7 @@
          private final String name;
  
 -        OutlineProperty(final String name) {
-+      OutlineProperty(String name) {
++        OutlineProperty(String name) {
              this.name = name;
          }
  
@@ -111,18 +111,18 @@
          private final Map<String, RenderSetup.TextureBinding> textures = new HashMap<>();
  
 -        private RenderSetupBuilder(final RenderPipeline pipeline) {
-+      private RenderSetupBuilder(RenderPipeline pipeline) {
++        private RenderSetupBuilder(RenderPipeline pipeline) {
              this.pipeline = pipeline;
          }
  
 -        public RenderSetup.RenderSetupBuilder withTexture(final String name, final Identifier texture) {
-+      public RenderSetup.RenderSetupBuilder withTexture(String name, Identifier texture) {
++        public RenderSetup.RenderSetupBuilder withTexture(String name, Identifier texture) {
              this.textures.put(name, new RenderSetup.TextureBinding(texture, () -> null));
              return this;
          }
  
 -        public RenderSetup.RenderSetupBuilder withTexture(final String name, final Identifier texture, final @Nullable Supplier<GpuSampler> sampler) {
-+      public RenderSetup.RenderSetupBuilder withTexture(String name, Identifier texture, Supplier<GpuSampler> sampler) {
++        public RenderSetup.RenderSetupBuilder withTexture(String name, Identifier texture, Supplier<GpuSampler> sampler) {
              this.textures.put(name, new RenderSetup.TextureBinding(texture, Suppliers.memoize(() -> sampler == null ? null : sampler.get())));
              return this;
          }
@@ -131,25 +131,25 @@
          }
  
 -        public RenderSetup.RenderSetupBuilder setLayeringTransform(final LayeringTransform layeringTransform) {
-+      public RenderSetup.RenderSetupBuilder setLayeringTransform(LayeringTransform layeringTransform) {
++        public RenderSetup.RenderSetupBuilder setLayeringTransform(LayeringTransform layeringTransform) {
              this.layeringTransform = layeringTransform;
              return this;
          }
  
 -        public RenderSetup.RenderSetupBuilder setOutputTarget(final OutputTarget outputTarget) {
-+      public RenderSetup.RenderSetupBuilder setOutputTarget(OutputTarget outputTarget) {
++        public RenderSetup.RenderSetupBuilder setOutputTarget(OutputTarget outputTarget) {
              this.outputTarget = outputTarget;
              return this;
          }
  
 -        public RenderSetup.RenderSetupBuilder setTextureTransform(final TextureTransform textureTransform) {
-+      public RenderSetup.RenderSetupBuilder setTextureTransform(TextureTransform textureTransform) {
++        public RenderSetup.RenderSetupBuilder setTextureTransform(TextureTransform textureTransform) {
              this.textureTransform = textureTransform;
              return this;
          }
  
 -        public RenderSetup.RenderSetupBuilder setOutline(final RenderSetup.OutlineProperty outlineProperty) {
-+      public RenderSetup.RenderSetupBuilder setOutline(RenderSetup.OutlineProperty outlineProperty) {
++        public RenderSetup.RenderSetupBuilder setOutline(RenderSetup.OutlineProperty outlineProperty) {
              this.outlineProperty = outlineProperty;
              return this;
          }
@@ -159,7 +159,7 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    record TextureBinding(Identifier location, Supplier<@Nullable GpuSampler> sampler) {
-+   record TextureBinding(Identifier location, Supplier<GpuSampler> sampler) {
++    record TextureBinding(Identifier location, Supplier<GpuSampler> sampler) {
      }
 -}
 \ No newline at end of file

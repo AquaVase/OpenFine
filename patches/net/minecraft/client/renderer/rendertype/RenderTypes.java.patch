@@ -35,12 +35,13 @@
 -                .useLightmap()
 -                .sortOnUpload()
 -                .createRenderSetup();
-+   private static final Function<Identifier, RenderType> BANNER_PATTERN = Util.memoize(texture -> {
-+      RenderSetup state = RenderSetup.builder(RenderPipelines.BANNER_PATTERN).withTexture("Sampler0", texture).useLightmap().sortOnUpload().createRenderSetup();
-             return RenderType.create("banner_pattern", state);
+-            return RenderType.create("banner_pattern", state);
 -        }
 -    );
-+   });
++    private static final Function<Identifier, RenderType> BANNER_PATTERN = Util.memoize(texture -> {
++        RenderSetup state = RenderSetup.builder(RenderPipelines.BANNER_PATTERN).withTexture("Sampler0", texture).useLightmap().sortOnUpload().createRenderSetup();
++        return RenderType.create("banner_pattern", state);
++    });
      private static final Function<Identifier, RenderType> ENTITY_SHADOW = Util.memoize(
          texture -> {
              RenderSetup state = RenderSetup.builder(RenderPipelines.ENTITY_SHADOW)
@@ -50,7 +51,7 @@
          texture -> RenderType.create(
 -            "text_polygon_offset",
 -            RenderSetup.builder(RenderPipelines.TEXT_POLYGON_OFFSET).withTexture("Sampler0", texture).useLightmap().sortOnUpload().createRenderSetup()
-+         "text_polygon_offset", RenderSetup.builder(RenderPipelines.TEXT_POLYGON_OFFSET).withTexture("Sampler0", texture).useLightmap().createRenderSetup()
++            "text_polygon_offset", RenderSetup.builder(RenderPipelines.TEXT_POLYGON_OFFSET).withTexture("Sampler0", texture).useLightmap().createRenderSetup()
          )
      );
      private static final Function<Identifier, RenderType> TEXT_GRAYSCALE_POLYGON_OFFSET = Util.memoize(
@@ -61,7 +62,7 @@
 -                .useLightmap()
 -                .sortOnUpload()
 -                .createRenderSetup()
-+         RenderSetup.builder(RenderPipelines.TEXT_GRAYSCALE_POLYGON_OFFSET).withTexture("Sampler0", texture).useLightmap().createRenderSetup()
++            RenderSetup.builder(RenderPipelines.TEXT_GRAYSCALE_POLYGON_OFFSET).withTexture("Sampler0", texture).useLightmap().createRenderSetup()
          )
      );
      private static final Function<Identifier, RenderType> TEXT_SEE_THROUGH = Util.memoize(
@@ -70,7 +71,7 @@
          texture -> RenderType.create(
              "text_grayscale_see_through",
 -            RenderSetup.builder(RenderPipelines.TEXT_GRAYSCALE_SEE_THROUGH).withTexture("Sampler0", texture).useLightmap().sortOnUpload().createRenderSetup()
-+         RenderSetup.builder(RenderPipelines.TEXT_GRAYSCALE_SEE_THROUGH).withTexture("Sampler0", texture).useLightmap().createRenderSetup()
++            RenderSetup.builder(RenderPipelines.TEXT_GRAYSCALE_SEE_THROUGH).withTexture("Sampler0", texture).useLightmap().createRenderSetup()
          )
      );
      private static final RenderType LIGHTNING = RenderType.create(
@@ -79,7 +80,7 @@
      );
  
 -    private static RenderSetup createMovingBlockSetup(final RenderPipeline pipeline, final boolean translucent) {
-+   private static RenderSetup createMovingBlockSetup(RenderPipeline pipeline, boolean translucent) {
++    private static RenderSetup createMovingBlockSetup(RenderPipeline pipeline, boolean translucent) {
          RenderSetup.RenderSetupBuilder setup = RenderSetup.builder(pipeline)
              .useLightmap()
              .withTexture(
@@ -87,7 +88,7 @@
                  TextureAtlas.LOCATION_BLOCKS,
 -                () -> RenderSystem.getSamplerCache()
 -                    .getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.NEAREST, true)
-+            () -> RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.NEAREST, true)
++                () -> RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.NEAREST, true)
              )
              .affectsCrumbling()
              .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE);
@@ -96,14 +97,14 @@
      }
  
 -    public static RenderType armorCutoutNoCull(final Identifier texture) {
-+   public static RenderType armorCutoutNoCull(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType armorCutoutNoCull(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ARMOR_CUTOUT_NO_CULL.apply(texture);
      }
  
 -    public static RenderType createArmorDecalCutoutNoCull(final Identifier texture) {
-+   public static RenderType createArmorDecalCutoutNoCull(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType createArmorDecalCutoutNoCull(Identifier texture) {
++        texture = getCustomTexture(texture);
          RenderSetup state = RenderSetup.builder(RenderPipelines.ARMOR_DECAL_CUTOUT_NO_CULL)
              .withTexture("Sampler0", texture)
              .useLightmap()
@@ -112,142 +113,142 @@
      }
  
 -    public static RenderType armorTranslucent(final Identifier texture) {
-+   public static RenderType armorTranslucent(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType armorTranslucent(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ARMOR_TRANSLUCENT.apply(texture);
      }
  
 -    public static RenderType entitySolid(final Identifier texture) {
 -        return ENTITY_SOLID.apply(texture);
-+   public static RenderType entitySolid(Identifier texture) {
-+      texture = getCustomTexture(texture);
-+      return EmissiveTextures.isRenderEmissive() ? ENTITY_CUTOUT_CULL.apply(texture) : ENTITY_SOLID.apply(texture);
++    public static RenderType entitySolid(Identifier texture) {
++        texture = getCustomTexture(texture);
++        return EmissiveTextures.isRenderEmissive() ? ENTITY_CUTOUT_CULL.apply(texture) : ENTITY_SOLID.apply(texture);
      }
  
 -    public static RenderType entitySolidZOffsetForward(final Identifier texture) {
-+   public static RenderType entitySolidZOffsetForward(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entitySolidZOffsetForward(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ENTITY_SOLID_Z_OFFSET_FORWARD.apply(texture);
      }
  
 -    public static RenderType entityCutoutCull(final Identifier texture) {
-+   public static RenderType entityCutoutCull(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityCutoutCull(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ENTITY_CUTOUT_CULL.apply(texture);
      }
  
 -    public static RenderType entityCutout(final Identifier texture, final boolean affectsOutline) {
-+   public static RenderType entityCutout(Identifier texture, boolean affectsOutline) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityCutout(Identifier texture, boolean affectsOutline) {
++        texture = getCustomTexture(texture);
          return ENTITY_CUTOUT.apply(texture, affectsOutline);
      }
  
 -    public static RenderType entityCutout(final Identifier texture) {
-+   public static RenderType entityCutout(Identifier texture) {
++    public static RenderType entityCutout(Identifier texture) {
          return entityCutout(texture, true);
      }
  
 -    public static RenderType entityCutoutZOffset(final Identifier texture, final boolean affectsOutline) {
-+   public static RenderType entityCutoutZOffset(Identifier texture, boolean affectsOutline) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityCutoutZOffset(Identifier texture, boolean affectsOutline) {
++        texture = getCustomTexture(texture);
          return ENTITY_CUTOUT_Z_OFFSET.apply(texture, affectsOutline);
      }
  
 -    public static RenderType entityCutoutZOffset(final Identifier texture) {
-+   public static RenderType entityCutoutZOffset(Identifier texture) {
++    public static RenderType entityCutoutZOffset(Identifier texture) {
          return entityCutoutZOffset(texture, true);
      }
  
 -    public static RenderType entityCutoutDissolve(final Identifier texture, final Identifier maskTexture) {
-+   public static RenderType entityCutoutDissolve(Identifier texture, Identifier maskTexture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityCutoutDissolve(Identifier texture, Identifier maskTexture) {
++        texture = getCustomTexture(texture);
          return ENTITY_CUTOUT_DISSOLVE.apply(texture, maskTexture);
      }
  
 -    public static RenderType entityTranslucentCullItemTarget(final Identifier texture) {
-+   public static RenderType entityTranslucentCullItemTarget(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityTranslucentCullItemTarget(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ENTITY_TRANSLUCENT_CULL_ITEM_TARGET.apply(texture);
      }
  
 -    public static RenderType itemCutout(final Identifier texture) {
-+   public static RenderType itemCutout(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType itemCutout(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ITEM_CUTOUT.apply(texture);
      }
  
 -    public static RenderType itemTranslucent(final Identifier texture) {
-+   public static RenderType itemTranslucent(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType itemTranslucent(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ITEM_TRANSLUCENT.apply(texture);
      }
  
 -    public static RenderType entityTranslucent(final Identifier texture, final boolean affectsOutline) {
-+   public static RenderType entityTranslucent(Identifier texture, boolean affectsOutline) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityTranslucent(Identifier texture, boolean affectsOutline) {
++        texture = getCustomTexture(texture);
          return ENTITY_TRANSLUCENT.apply(texture, affectsOutline);
      }
  
 -    public static RenderType entityTranslucent(final Identifier texture) {
-+   public static RenderType entityTranslucent(Identifier texture) {
++    public static RenderType entityTranslucent(Identifier texture) {
          return entityTranslucent(texture, true);
      }
  
 -    public static RenderType entityTranslucentEmissive(final Identifier texture, final boolean affectsOutline) {
-+   public static RenderType entityTranslucentEmissive(Identifier texture, boolean affectsOutline) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityTranslucentEmissive(Identifier texture, boolean affectsOutline) {
++        texture = getCustomTexture(texture);
          return ENTITY_TRANSLUCENT_EMISSIVE.apply(texture, affectsOutline);
      }
  
 -    public static RenderType entityTranslucentEmissive(final Identifier texture) {
-+   public static RenderType entityTranslucentEmissive(Identifier texture) {
++    public static RenderType entityTranslucentEmissive(Identifier texture) {
          return entityTranslucentEmissive(texture, true);
      }
  
 -    public static RenderType endCrystalBeam(final Identifier texture) {
-+   public static RenderType endCrystalBeam(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType endCrystalBeam(Identifier texture) {
++        texture = getCustomTexture(texture);
          return END_CRYSTAL_BEAM.apply(texture);
      }
  
 -    public static RenderType beaconBeam(final Identifier texture, final boolean translucent) {
-+   public static RenderType beaconBeam(Identifier texture, boolean translucent) {
++    public static RenderType beaconBeam(Identifier texture, boolean translucent) {
          return BEACON_BEAM.apply(texture, translucent);
      }
  
 -    public static RenderType bannerPattern(final Identifier texture) {
-+   public static RenderType bannerPattern(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType bannerPattern(Identifier texture) {
++        texture = getCustomTexture(texture);
          return BANNER_PATTERN.apply(texture);
      }
  
 -    public static RenderType entityShadow(final Identifier texture) {
-+   public static RenderType entityShadow(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType entityShadow(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ENTITY_SHADOW.apply(texture);
      }
  
 -    public static RenderType eyes(final Identifier texture) {
-+   public static RenderType eyes(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType eyes(Identifier texture) {
++        texture = getCustomTexture(texture);
          return EYES.apply(texture);
      }
  
 -    public static RenderType breezeEyes(final Identifier texture) {
-+   public static RenderType breezeEyes(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType breezeEyes(Identifier texture) {
++        texture = getCustomTexture(texture);
          return ENTITY_TRANSLUCENT_EMISSIVE.apply(texture, false);
      }
  
 -    public static RenderType breezeWind(final Identifier texture, final float uOffset, final float vOffset) {
-+   public static RenderType breezeWind(Identifier texture, float uOffset, float vOffset) {
-+      texture = getCustomTexture(texture);
++    public static RenderType breezeWind(Identifier texture, float uOffset, float vOffset) {
++        texture = getCustomTexture(texture);
          return RenderType.create(
              "breeze_wind",
              RenderSetup.builder(RenderPipelines.BREEZE_WIND)
                  .withTexture("Sampler0", texture)
 -                .setTextureTransform(new TextureTransform.OffsetTextureTransform(uOffset, vOffset))
-+            .setTextureTransform(new OffsetTextureTransform(uOffset, vOffset))
++                .setTextureTransform(new OffsetTextureTransform(uOffset, vOffset))
                  .useLightmap()
                  .sortOnUpload()
                  .createRenderSetup()
@@ -255,14 +256,14 @@
      }
  
 -    public static RenderType energySwirl(final Identifier texture, final float uOffset, final float vOffset) {
-+   public static RenderType energySwirl(Identifier texture, float uOffset, float vOffset) {
-+      texture = getCustomTexture(texture);
++    public static RenderType energySwirl(Identifier texture, float uOffset, float vOffset) {
++        texture = getCustomTexture(texture);
          return RenderType.create(
              "energy_swirl",
              RenderSetup.builder(RenderPipelines.ENERGY_SWIRL)
                  .withTexture("Sampler0", texture)
 -                .setTextureTransform(new TextureTransform.OffsetTextureTransform(uOffset, vOffset))
-+            .setTextureTransform(new OffsetTextureTransform(uOffset, vOffset))
++                .setTextureTransform(new OffsetTextureTransform(uOffset, vOffset))
                  .useLightmap()
                  .useOverlay()
                  .sortOnUpload()
@@ -271,8 +272,8 @@
      }
  
 -    public static RenderType outline(final Identifier texture) {
-+   public static RenderType outline(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType outline(Identifier texture) {
++        texture = getCustomTexture(texture);
          return OUTLINE.apply(texture, false);
      }
  
@@ -281,15 +282,15 @@
      }
  
 -    public static RenderType crumbling(final Identifier texture) {
-+   public static RenderType crumbling(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType crumbling(Identifier texture) {
++        texture = getCustomTexture(texture);
          return CRUMBLING.apply(texture);
      }
  
 -    public static RenderType text(final Identifier texture) {
 -        return TEXT.apply(texture);
-+   public static RenderType text(Identifier texture) {
-+      return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getText(texture) : TEXT.apply(texture);
++    public static RenderType text(Identifier texture) {
++        return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getText(texture) : TEXT.apply(texture);
      }
  
      public static RenderType textBackground() {
@@ -298,26 +299,26 @@
  
 -    public static RenderType textGrayscale(final Identifier texture) {
 -        return TEXT_GRAYSCALE.apply(texture);
-+   public static RenderType textGrayscale(Identifier texture) {
-+      return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextIntensity(texture) : TEXT_GRAYSCALE.apply(texture);
++    public static RenderType textGrayscale(Identifier texture) {
++        return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextIntensity(texture) : TEXT_GRAYSCALE.apply(texture);
      }
  
 -    public static RenderType textPolygonOffset(final Identifier texture) {
 -        return TEXT_POLYGON_OFFSET.apply(texture);
-+   public static RenderType textPolygonOffset(Identifier texture) {
-+      return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextPolygonOffset(texture) : TEXT_POLYGON_OFFSET.apply(texture);
++    public static RenderType textPolygonOffset(Identifier texture) {
++        return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextPolygonOffset(texture) : TEXT_POLYGON_OFFSET.apply(texture);
      }
  
 -    public static RenderType textGrayscalePolygonOffset(final Identifier texture) {
 -        return TEXT_GRAYSCALE_POLYGON_OFFSET.apply(texture);
-+   public static RenderType textGrayscalePolygonOffset(Identifier texture) {
-+      return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextIntensityPolygonOffset(texture) : TEXT_GRAYSCALE_POLYGON_OFFSET.apply(texture);
++    public static RenderType textGrayscalePolygonOffset(Identifier texture) {
++        return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextIntensityPolygonOffset(texture) : TEXT_GRAYSCALE_POLYGON_OFFSET.apply(texture);
      }
  
 -    public static RenderType textSeeThrough(final Identifier texture) {
 -        return TEXT_SEE_THROUGH.apply(texture);
-+   public static RenderType textSeeThrough(Identifier texture) {
-+      return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextSeeThrough(texture) : TEXT_SEE_THROUGH.apply(texture);
++    public static RenderType textSeeThrough(Identifier texture) {
++        return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextSeeThrough(texture) : TEXT_SEE_THROUGH.apply(texture);
      }
  
      public static RenderType textBackgroundSeeThrough() {
@@ -326,8 +327,8 @@
  
 -    public static RenderType textGrayscaleSeeThrough(final Identifier texture) {
 -        return TEXT_GRAYSCALE_SEE_THROUGH.apply(texture);
-+   public static RenderType textGrayscaleSeeThrough(Identifier texture) {
-+      return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextIntensitySeeThrough(texture) : TEXT_GRAYSCALE_SEE_THROUGH.apply(texture);
++    public static RenderType textGrayscaleSeeThrough(Identifier texture) {
++        return Reflector.ForgeHooksClient.exists() ? ForgeRenderTypes.getTextIntensitySeeThrough(texture) : TEXT_GRAYSCALE_SEE_THROUGH.apply(texture);
      }
  
      public static RenderType lightning() {
@@ -336,42 +337,42 @@
      }
  
 -    public static RenderType blockScreenEffect(final Identifier texture) {
-+   public static RenderType blockScreenEffect(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType blockScreenEffect(Identifier texture) {
++        texture = getCustomTexture(texture);
          return BLOCK_SCREEN_EFFECT.apply(texture);
      }
  
 -    public static RenderType fireScreenEffect(final Identifier texture) {
-+   public static RenderType fireScreenEffect(Identifier texture) {
-+      texture = getCustomTexture(texture);
++    public static RenderType fireScreenEffect(Identifier texture) {
++        texture = getCustomTexture(texture);
          return FIRE_SCREEN_EFFECT.apply(texture);
      }
 -}
 \ No newline at end of file
 +
-+   public static Identifier getCustomTexture(Identifier locationIn) {
-+      if (Minecraft.getInstance() == null) {
-+         return locationIn;
-+      }
++    public static Identifier getCustomTexture(Identifier locationIn) {
++        if (Minecraft.getInstance() == null) {
++            return locationIn;
++        }
 +
-+      if (Config.isRandomEntities()) {
-+         locationIn = RandomEntities.getTextureLocation(locationIn);
-+      }
++        if (Config.isRandomEntities()) {
++            locationIn = RandomEntities.getTextureLocation(locationIn);
++        }
 +
-+      if (EmissiveTextures.isActive()) {
-+         locationIn = EmissiveTextures.getEmissiveTexture(locationIn);
-+      }
++        if (EmissiveTextures.isActive()) {
++            locationIn = EmissiveTextures.getEmissiveTexture(locationIn);
++        }
 +
-+      return locationIn;
-+   }
++        return locationIn;
++    }
 +
-+   public static RenderType getCustomRenderType(RenderType renderType) {
-+      Identifier textureLoc = renderType.getTextureLocation();
-+      if (textureLoc == null) {
-+         return renderType;
-+      }
++    public static RenderType getCustomRenderType(RenderType renderType) {
++        Identifier textureLoc = renderType.getTextureLocation();
++        if (textureLoc == null) {
++            return renderType;
++        }
 +
-+      Identifier customTextureLoc = getCustomTexture(textureLoc);
-+      return customTextureLoc == null ? renderType : renderType.getTextured(textureLoc);
-+   }
++        Identifier customTextureLoc = getCustomTexture(textureLoc);
++        return customTextureLoc == null ? renderType : renderType.getTextured(textureLoc);
++    }
 +}

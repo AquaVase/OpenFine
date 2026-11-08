@@ -13,38 +13,38 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterGoat extends ModelAdapterQuadruped {
-   public ModelAdapterGoat() {
-      super(EntityTypes.GOAT, "goat", ModelLayers.GOAT);
-   }
+    public ModelAdapterGoat() {
+        super(EntityTypes.GOAT, "goat", ModelLayers.GOAT);
+    }
 
-   protected ModelAdapterGoat(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterGoat(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterGoat ma = new ModelAdapterGoat(this.getEntityType(), "goat_baby", ModelLayers.GOAT_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterGoat ma = new ModelAdapterGoat(this.getEntityType(), "goat_baby", ModelLayers.GOAT_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new GoatModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new GoatModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      map.put("left_horn", "left_horn");
-      map.put("right_horn", "right_horn");
-      map.put("nose", "nose");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        map.put("left_horn", "left_horn");
+        map.put("right_horn", "right_horn");
+        map.put("nose", "nose");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new GoatRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new GoatRenderer(context);
+    }
 }

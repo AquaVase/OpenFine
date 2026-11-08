@@ -35,12 +35,12 @@
      private final long size;
  
 -    public NativeImage(final int width, final int height, final boolean zero) {
-+   public NativeImage(int width, int height, boolean zero) {
++    public NativeImage(int width, int height, boolean zero) {
          this(NativeImage.Format.RGBA, width, height, zero);
      }
  
 -    public NativeImage(final NativeImage.Format format, final int width, final int height, final boolean zero) {
-+   public NativeImage(NativeImage.Format format, int width, int height, boolean zero) {
++    public NativeImage(NativeImage.Format format, int width, int height, boolean zero) {
          if (width > 0 && height > 0) {
              this.format = format;
              this.width = width;
@@ -49,14 +49,14 @@
                  throw new IllegalStateException("Unable to allocate texture of size " + width + "x" + height + " (" + format.components() + " channels)");
              }
 +
-+         NativeMemory.imageAllocated(this);
++            NativeMemory.imageAllocated(this);
          } else {
              throw new IllegalArgumentException("Invalid texture size: " + width + "x" + height);
          }
      }
  
 -    public NativeImage(final NativeImage.Format format, final int width, final int height, final boolean useStbFree, final long pixels) {
-+   public NativeImage(NativeImage.Format format, int width, int height, boolean useStbFree, long pixels) {
++    public NativeImage(NativeImage.Format format, int width, int height, boolean useStbFree, long pixels) {
          if (width > 0 && height > 0) {
              this.format = format;
              this.width = width;
@@ -65,17 +65,17 @@
      }
  
 -    private boolean isOutsideBounds(final int x, final int y) {
-+   private boolean isOutsideBounds(int x, int y) {
++    private boolean isOutsideBounds(int x, int y) {
          return x < 0 || x >= this.width || y < 0 || y >= this.height;
      }
  
 -    public static NativeImage read(final InputStream inputStream) throws IOException {
-+   public static NativeImage read(InputStream inputStream) throws IOException {
++    public static NativeImage read(InputStream inputStream) throws IOException {
          return read(NativeImage.Format.RGBA, inputStream);
      }
  
 -    public static NativeImage read(final NativeImage.@Nullable Format format, final InputStream inputStream) throws IOException {
-+   public static NativeImage read(NativeImage.Format format, InputStream inputStream) throws IOException {
++    public static NativeImage read(NativeImage.Format format, InputStream inputStream) throws IOException {
          ByteBuffer file = null;
  
          try {
@@ -84,12 +84,12 @@
      }
  
 -    public static NativeImage read(final ByteBuffer bytes) throws IOException {
-+   public static NativeImage read(ByteBuffer bytes) throws IOException {
++    public static NativeImage read(ByteBuffer bytes) throws IOException {
          return read(NativeImage.Format.RGBA, bytes);
      }
  
 -    public static NativeImage read(final byte[] bytes) throws IOException {
-+   public static NativeImage read(byte[] bytes) throws IOException {
++    public static NativeImage read(byte[] bytes) throws IOException {
          MemoryStack memoryStack = MemoryStack.stackGet();
          int bytesAvailable = memoryStack.getPointer();
          if (bytesAvailable < bytes.length) {
@@ -98,14 +98,14 @@
      }
  
 -    private static NativeImage putAndRead(final ByteBuffer nativeBuffer, final byte[] bytes) throws IOException {
-+   private static NativeImage putAndRead(ByteBuffer nativeBuffer, byte[] bytes) throws IOException {
++    private static NativeImage putAndRead(ByteBuffer nativeBuffer, byte[] bytes) throws IOException {
          nativeBuffer.put(bytes);
          nativeBuffer.rewind();
          return read(nativeBuffer);
      }
  
 -    public static NativeImage read(final NativeImage.@Nullable Format format, final ByteBuffer bytes) throws IOException {
-+   public static NativeImage read(NativeImage.Format format, ByteBuffer bytes) throws IOException {
++    public static NativeImage read(NativeImage.Format format, ByteBuffer bytes) throws IOException {
          if (format != null && !format.supportedByStb()) {
              throw new UnsupportedOperationException("Don't know how to read format " + format);
          }
@@ -114,9 +114,9 @@
              long address = MemoryUtil.memAddress(pixels);
              MEMORY_POOL.malloc(address, pixels.limit());
 -            return new NativeImage(format == null ? NativeImage.Format.getStbFormat(comp.get(0)) : format, w.get(0), h.get(0), true, address);
-+         NativeImage image = new NativeImage(format == null ? NativeImage.Format.getStbFormat(comp.get(0)) : format, w.get(0), h.get(0), true, address);
-+         NativeMemory.imageAllocated(image);
-+         return image;
++            NativeImage image = new NativeImage(format == null ? NativeImage.Format.getStbFormat(comp.get(0)) : format, w.get(0), h.get(0), true, address);
++            NativeMemory.imageAllocated(image);
++            return image;
          }
      }
  
@@ -124,7 +124,7 @@
              }
  
              MEMORY_POOL.free(this.pixels);
-+         NativeMemory.imageFreed(this);
++            NativeMemory.imageFreed(this);
          }
  
          this.pixels = 0L;
@@ -133,7 +133,7 @@
      }
  
 -    private int getPixelABGR(final int x, final int y) {
-+   public int getPixelABGR(int x, int y) {
++    public int getPixelABGR(int x, int y) {
          if (this.format != NativeImage.Format.RGBA) {
              throw new IllegalArgumentException(String.format(Locale.ROOT, "getPixelRGBA only works on RGBA images; have %s", this.format));
          }
@@ -142,12 +142,12 @@
      }
  
 -    public int getPixel(final int x, final int y) {
-+   public int getPixel(int x, int y) {
++    public int getPixel(int x, int y) {
          return ARGB.fromABGR(this.getPixelABGR(x, y));
      }
  
 -    public void setPixelABGR(final int x, final int y, final int pixel) {
-+   public void setPixelABGR(int x, int y, int pixel) {
++    public void setPixelABGR(int x, int y, int pixel) {
          if (this.format != NativeImage.Format.RGBA) {
              throw new IllegalArgumentException(String.format(Locale.ROOT, "setPixelRGBA only works on RGBA images; have %s", this.format));
          }
@@ -156,12 +156,12 @@
      }
  
 -    public void setPixel(final int x, final int y, final int pixel) {
-+   public void setPixel(int x, int y, int pixel) {
++    public void setPixel(int x, int y, int pixel) {
          this.setPixelABGR(x, y, ARGB.toABGR(pixel));
      }
  
 -    public NativeImage mappedCopy(final IntUnaryOperator function) {
-+   public NativeImage mappedCopy(IntUnaryOperator function) {
++    public NativeImage mappedCopy(IntUnaryOperator function) {
          if (this.format != NativeImage.Format.RGBA) {
              throw new IllegalArgumentException(String.format(Locale.ROOT, "function application only works on RGBA images; have %s", this.format));
          }
@@ -170,7 +170,7 @@
      }
  
 -    public byte getLuminanceOrAlpha(final int x, final int y) {
-+   public byte getLuminanceOrAlpha(int x, int y) {
++    public byte getLuminanceOrAlpha(int x, int y) {
          if (!this.format.hasLuminanceOrAlpha()) {
              throw new IllegalArgumentException(String.format(Locale.ROOT, "no luminance or alpha in %s", this.format));
          }
@@ -179,12 +179,12 @@
      }
  
 -    public void writeToFile(final File file) throws IOException {
-+   public void writeToFile(File file) throws IOException {
++    public void writeToFile(File file) throws IOException {
          this.writeToFile(file.toPath());
      }
  
 -    public boolean copyFromFont(final FT_Face face, final int index) {
-+   public boolean copyFromFont(FT_Face face, int index) {
++    public boolean copyFromFont(FT_Face face, int index) {
          if (this.format.components() != 1) {
              throw new IllegalArgumentException("Can only write fonts into 1-component images.");
          } else if (FreeTypeUtil.checkError(FreeType.FT_Load_Glyph(face, index, 4), "Loading glyph")) {
@@ -193,7 +193,7 @@
      }
  
 -    public void writeToFile(final Path file) throws IOException {
-+   public void writeToFile(Path file) throws IOException {
++    public void writeToFile(Path file) throws IOException {
          if (!this.format.supportedByStb()) {
              throw new UnsupportedOperationException("Don't know how to write format " + this.format);
          }
@@ -202,7 +202,7 @@
      }
  
 -    private boolean writeToChannel(final WritableByteChannel output) throws IOException {
-+   private boolean writeToChannel(WritableByteChannel output) throws IOException {
++    private boolean writeToChannel(WritableByteChannel output) throws IOException {
          NativeImage.WriteCallback writer = new NativeImage.WriteCallback(output);
  
          try {
@@ -211,7 +211,7 @@
      }
  
 -    public void copyFrom(final NativeImage from) {
-+   public void copyFrom(NativeImage from) {
++    public void copyFrom(NativeImage from) {
          if (from.format() != this.format) {
              throw new UnsupportedOperationException("Image formats don't match.");
          }
@@ -220,13 +220,13 @@
                  int fromOffset = y * from.getWidth() * components;
                  int toOffset = y * this.getWidth() * components;
 -                MemoryUtil.memCopy(from.pixels + fromOffset, this.pixels + toOffset, minWidth);
-+            MemoryUtil.memCopy(from.pixels + fromOffset, this.pixels + toOffset, minWidth * components);
++                MemoryUtil.memCopy(from.pixels + fromOffset, this.pixels + toOffset, minWidth * components);
              }
          }
      }
  
 -    public void fillRect(final int xs, final int ys, final int width, final int height, final int pixel) {
-+   public void fillRect(int xs, int ys, int width, int height, int pixel) {
++    public void fillRect(int xs, int ys, int width, int height, int pixel) {
          for (int y = ys; y < ys + height; y++) {
              for (int x = xs; x < xs + width; x++) {
                  this.setPixel(x, y, pixel);
@@ -237,7 +237,7 @@
 -    public void copyRect(
 -        final int startX, final int startY, final int offsetX, final int offsetY, final int sizeX, final int sizeY, final boolean swapX, final boolean swapY
 -    ) {
-+   public void copyRect(int startX, int startY, int offsetX, int offsetY, int sizeX, int sizeY, boolean swapX, boolean swapY) {
++    public void copyRect(int startX, int startY, int offsetX, int offsetY, int sizeX, int sizeY, boolean swapX, boolean swapY) {
          this.copyRect(this, startX, startY, startX + offsetX, startY + offsetY, sizeX, sizeY, swapX, swapY);
      }
  
@@ -252,7 +252,7 @@
 -        final boolean swapX,
 -        final boolean swapY
 -    ) {
-+   public void copyRect(NativeImage target, int sourceX, int sourceY, int targetX, int targetY, int sizeX, int sizeY, boolean swapX, boolean swapY) {
++    public void copyRect(NativeImage target, int sourceX, int sourceY, int targetX, int targetY, int sizeX, int sizeY, boolean swapX, boolean swapY) {
          for (int y = 0; y < sizeY; y++) {
              for (int x = 0; x < sizeX; x++) {
                  int dx = swapX ? sizeX - 1 - x : x;
@@ -261,7 +261,7 @@
      }
  
 -    public void resizeSubRectTo(final int sourceX, final int sourceY, final int sizeX, final int sizeY, final NativeImage to) {
-+   public void resizeSubRectTo(int sourceX, int sourceY, int sizeX, int sizeY, NativeImage to) {
++    public void resizeSubRectTo(int sourceX, int sourceY, int sizeX, int sizeY, NativeImage to) {
          this.checkAllocated();
          if (to.format() != this.format) {
              throw new UnsupportedOperationException("resizeSubRectTo only works for images of the same format.");
@@ -270,96 +270,96 @@
      }
  
 -    public Transparency computeTransparency(final int x0, final int y0, final int x1, final int y1) {
-+   public IntBuffer getBufferRGBA() {
-+      if (this.format != NativeImage.Format.RGBA) {
-+         throw new IllegalArgumentException(String.format("getBuffer only works on RGBA images; have %s", this.format));
-+      }
++    public IntBuffer getBufferRGBA() {
++        if (this.format != NativeImage.Format.RGBA) {
++            throw new IllegalArgumentException(String.format("getBuffer only works on RGBA images; have %s", this.format));
++        }
 +
          this.checkAllocated();
-+      return MemoryUtil.memIntBuffer(this.pixels, (int)this.size);
-+   }
++        return MemoryUtil.memIntBuffer(this.pixels, (int)this.size);
++    }
 +
-+   public long getSize() {
-+      return this.size;
-+   }
++    public long getSize() {
++        return this.size;
++    }
 +
-+   public void downloadFromFramebuffer() {
-+      this.checkAllocated();
-+      this.format.setGlPackAlignment();
-+      GlStateManager._readPixels(0, 0, this.width, this.height, GLConst.toGl(this.format), 5121, this.pixels);
-+   }
++    public void downloadFromFramebuffer() {
++        this.checkAllocated();
++        this.format.setGlPackAlignment();
++        GlStateManager._readPixels(0, 0, this.width, this.height, GLConst.toGl(this.format), 5121, this.pixels);
++    }
 +
-+   public void uploadTextureSub(
-+      int level,
-+      int xOffset,
-+      int yOffset,
-+      int unpackSkipPixels,
-+      int unpackSkipRows,
-+      int widthIn,
-+      int heightIn,
-+      boolean blur,
-+      boolean clamp,
-+      boolean mipmap,
-+      boolean autoClose
-+   ) {
-+      this.uploadTextureSub(level, xOffset, yOffset, unpackSkipPixels, unpackSkipRows, widthIn, heightIn, autoClose);
-+      setMinMagFilters(blur, mipmap);
-+      setClamp(clamp);
-+   }
++    public void uploadTextureSub(
++        int level,
++        int xOffset,
++        int yOffset,
++        int unpackSkipPixels,
++        int unpackSkipRows,
++        int widthIn,
++        int heightIn,
++        boolean blur,
++        boolean clamp,
++        boolean mipmap,
++        boolean autoClose
++    ) {
++        this.uploadTextureSub(level, xOffset, yOffset, unpackSkipPixels, unpackSkipRows, widthIn, heightIn, autoClose);
++        setMinMagFilters(blur, mipmap);
++        setClamp(clamp);
++    }
 +
-+   public void uploadTextureSub(int level, int xOffset, int yOffset, boolean autoClose) {
-+      this.uploadTextureSub(level, xOffset, yOffset, 0, 0, this.width, this.height, autoClose);
-+   }
++    public void uploadTextureSub(int level, int xOffset, int yOffset, boolean autoClose) {
++        this.uploadTextureSub(level, xOffset, yOffset, 0, 0, this.width, this.height, autoClose);
++    }
 +
-+   public void uploadTextureSub(int level, int xOffset, int yOffset, int unpackSkipPixels, int unpackSkipRows, int widthIn, int heightIn, boolean autoClose) {
-+      RenderSystem.assertOnRenderThread();
-+      this.uploadTextureSubRaw(level, xOffset, yOffset, unpackSkipPixels, unpackSkipRows, widthIn, heightIn, autoClose);
-+   }
++    public void uploadTextureSub(int level, int xOffset, int yOffset, int unpackSkipPixels, int unpackSkipRows, int widthIn, int heightIn, boolean autoClose) {
++        RenderSystem.assertOnRenderThread();
++        this.uploadTextureSubRaw(level, xOffset, yOffset, unpackSkipPixels, unpackSkipRows, widthIn, heightIn, autoClose);
++    }
 +
-+   private void uploadTextureSubRaw(int level, int xOffset, int yOffset, int unpackSkipPixels, int unpackSkipRows, int widthIn, int heightIn, boolean autoClose) {
-+      try {
-+         RenderSystem.assertOnRenderThread();
-+         this.checkAllocated();
-+         if (widthIn == this.getWidth()) {
-+            GlStateManager._pixelStore(3314, 0);
-+         } else {
-+            GlStateManager._pixelStore(3314, this.getWidth());
-+         }
++    private void uploadTextureSubRaw(int level, int xOffset, int yOffset, int unpackSkipPixels, int unpackSkipRows, int widthIn, int heightIn, boolean autoClose) {
++        try {
++            RenderSystem.assertOnRenderThread();
++            this.checkAllocated();
++            if (widthIn == this.getWidth()) {
++                GlStateManager._pixelStore(3314, 0);
++            } else {
++                GlStateManager._pixelStore(3314, this.getWidth());
++            }
 +
-+         GlStateManager._pixelStore(3316, unpackSkipPixels);
-+         GlStateManager._pixelStore(3315, unpackSkipRows);
-+         this.format.setGlUnpackAlignment();
-+         GlStateManager._texSubImage2D(3553, level, xOffset, yOffset, widthIn, heightIn, GLConst.toGl(this.format), 5121, this.pixels);
-+      } finally {
-+         if (autoClose) {
-+            this.close();
-+         }
-+      }
-+   }
++            GlStateManager._pixelStore(3316, unpackSkipPixels);
++            GlStateManager._pixelStore(3315, unpackSkipRows);
++            this.format.setGlUnpackAlignment();
++            GlStateManager._texSubImage2D(3553, level, xOffset, yOffset, widthIn, heightIn, GLConst.toGl(this.format), 5121, this.pixels);
++        } finally {
++            if (autoClose) {
++                this.close();
++            }
++        }
++    }
 +
-+   public static void setMinMagFilters(boolean linear, boolean mipmap) {
-+      if (linear) {
-+         GlStateManager.texParameter(3553, 10241, mipmap ? 9987.0F : 9729.0F);
-+         GlStateManager.texParameter(3553, 10240, 9729.0F);
-+      } else {
-+         int mipmapType = Config.getMipmapType();
-+         GlStateManager.texParameter(3553, 10241, mipmap ? mipmapType : 9728.0F);
-+         GlStateManager.texParameter(3553, 10240, 9728.0F);
-+      }
-+   }
++    public static void setMinMagFilters(boolean linear, boolean mipmap) {
++        if (linear) {
++            GlStateManager.texParameter(3553, 10241, mipmap ? 9987.0F : 9729.0F);
++            GlStateManager.texParameter(3553, 10240, 9729.0F);
++        } else {
++            int mipmapType = Config.getMipmapType();
++            GlStateManager.texParameter(3553, 10241, mipmap ? mipmapType : 9728.0F);
++            GlStateManager.texParameter(3553, 10240, 9728.0F);
++        }
++    }
 +
-+   public static void setClamp(boolean clamp) {
-+      if (clamp) {
-+         GlStateManager.texParameter(3553, 10242, 33071.0F);
-+         GlStateManager.texParameter(3553, 10243, 33071.0F);
-+      } else {
-+         GlStateManager.texParameter(3553, 10242, 10497.0F);
-+         GlStateManager.texParameter(3553, 10243, 10497.0F);
-+      }
-+   }
++    public static void setClamp(boolean clamp) {
++        if (clamp) {
++            GlStateManager.texParameter(3553, 10242, 33071.0F);
++            GlStateManager.texParameter(3553, 10243, 33071.0F);
++        } else {
++            GlStateManager.texParameter(3553, 10242, 10497.0F);
++            GlStateManager.texParameter(3553, 10243, 10497.0F);
++        }
++    }
 +
-+   public Transparency computeTransparency(int x0, int y0, int x1, int y1) {
-+      this.checkAllocated();
++    public Transparency computeTransparency(int x0, int y0, int x1, int y1) {
++        this.checkAllocated();
          if (this.format != NativeImage.Format.RGBA) {
              return Transparency.NONE;
          }
@@ -387,18 +387,18 @@
 -            final int luminanceOffset,
 -            final int alphaOffset,
 -            final boolean supportedByStb
-+         int components,
-+         boolean hasRed,
-+         boolean hasGreen,
-+         boolean hasBlue,
-+         boolean hasLuminance,
-+         boolean hasAlpha,
-+         int redOffset,
-+         int greenOffset,
-+         int blueOffset,
-+         int luminanceOffset,
-+         int alphaOffset,
-+         boolean supportedByStb
++            int components,
++            boolean hasRed,
++            boolean hasGreen,
++            boolean hasBlue,
++            boolean hasLuminance,
++            boolean hasAlpha,
++            int redOffset,
++            int greenOffset,
++            int blueOffset,
++            int luminanceOffset,
++            int alphaOffset,
++            boolean supportedByStb
          ) {
              this.components = components;
              this.hasRed = hasRed;
@@ -407,7 +407,7 @@
          }
  
 -        private static NativeImage.Format getStbFormat(final int i) {
-+      private static NativeImage.Format getStbFormat(int i) {
++        private static NativeImage.Format getStbFormat(int i) {
              switch (i) {
                  case 1:
                      return LUMINANCE;
@@ -416,31 +416,31 @@
              }
          }
 +
-+      public void setGlPackAlignment() {
-+         RenderSystem.assertOnRenderThread();
-+         GlStateManager._pixelStore(3333, this.components());
++        public void setGlPackAlignment() {
++            RenderSystem.assertOnRenderThread();
++            GlStateManager._pixelStore(3333, this.components());
++        }
++
++        public void setGlUnpackAlignment() {
++            RenderSystem.assertOnRenderThread();
++            GlStateManager._pixelStore(3317, this.components());
++        }
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+      public void setGlUnpackAlignment() {
-+         RenderSystem.assertOnRenderThread();
-+         GlStateManager._pixelStore(3317, this.components());
-+      }
-+   }
-+
      private static class WriteCallback extends STBIWriteCallback {
          private final WritableByteChannel output;
 -        private @Nullable IOException exception;
-+      private IOException exception;
++        private IOException exception;
  
 -        private WriteCallback(final WritableByteChannel output) {
-+      private WriteCallback(WritableByteChannel output) {
++        private WriteCallback(WritableByteChannel output) {
              this.output = output;
          }
  
          @Override
 -        public void invoke(final long context, final long data, final int size) {
-+      public void invoke(long context, long data, int size) {
++        public void invoke(long context, long data, int size) {
              ByteBuffer dataBuf = getData(data, size);
  
              try {

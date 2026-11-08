@@ -24,12 +24,12 @@
 -@OnlyIn(Dist.CLIENT)
  public class PigRenderer extends MobRenderer<Pig, PigRenderState, PigModel> {
 -    private final Map<PigVariant.ModelType, AdultAndBabyModelPair<PigModel>> models;
-+   private final Map<ModelType, AdultAndBabyModelPair<PigModel>> models;
-+   private AdultAndBabyModelPair<PigModel> warmModels;
-+   private boolean customModels;
++    private final Map<ModelType, AdultAndBabyModelPair<PigModel>> models;
++    private AdultAndBabyModelPair<PigModel> warmModels;
++    private boolean customModels;
  
 -    public PigRenderer(final EntityRendererProvider.Context context) {
-+   public PigRenderer(Context context) {
++    public PigRenderer(Context context) {
          super(context, new PigModel(context.bakeLayer(ModelLayers.PIG)), 0.7F);
          this.models = bakeModels(context);
          this.addLayer(
@@ -40,43 +40,43 @@
 -                state -> state.saddle,
 -                new PigModel(context.bakeLayer(ModelLayers.PIG_SADDLE)),
 -                null
-+            this, context.getEquipmentRenderer(), LayerType.PIG_SADDLE, state -> state.saddle, new PigModel(context.bakeLayer(ModelLayers.PIG_SADDLE)), null
++                this, context.getEquipmentRenderer(), LayerType.PIG_SADDLE, state -> state.saddle, new PigModel(context.bakeLayer(ModelLayers.PIG_SADDLE)), null
              )
          );
-+      this.warmModels = this.models.get(ModelType.NORMAL);
++        this.warmModels = this.models.get(ModelType.NORMAL);
      }
  
 -    private static Map<PigVariant.ModelType, AdultAndBabyModelPair<PigModel>> bakeModels(final EntityRendererProvider.Context context) {
-+   private static Map<ModelType, AdultAndBabyModelPair<PigModel>> bakeModels(Context context) {
++    private static Map<ModelType, AdultAndBabyModelPair<PigModel>> bakeModels(Context context) {
          return Maps.newEnumMap(
              Map.of(
 -                PigVariant.ModelType.NORMAL,
-+            ModelType.NORMAL,
++                ModelType.NORMAL,
                  new AdultAndBabyModelPair<>(new PigModel(context.bakeLayer(ModelLayers.PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY))),
 -                PigVariant.ModelType.COLD,
 -                new AdultAndBabyModelPair<>(
 -                    new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY))
-+            ModelType.COLD,
-+            new AdultAndBabyModelPair<>(new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY)))
-                 )
--            )
+-                )
++                ModelType.COLD,
++                new AdultAndBabyModelPair<>(new ColdPigModel(context.bakeLayer(ModelLayers.COLD_PIG)), new BabyPigModel(context.bakeLayer(ModelLayers.PIG_BABY)))
+             )
          );
      }
  
 -    public void submit(final PigRenderState state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera) {
-+   public void submit(PigRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    public void submit(PigRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          if (state.variant != null) {
              this.model = this.models.get(state.variant.modelAndTexture().model()).getModel(state.isBaby);
-+         if (this.customModels && state.variant.modelAndTexture().asset().id().getPath().endsWith("warm_pig")) {
-+            this.model = this.warmModels.getModel(state.isBaby);
-+         }
++            if (this.customModels && state.variant.modelAndTexture().asset().id().getPath().endsWith("warm_pig")) {
++                this.model = this.warmModels.getModel(state.isBaby);
++            }
 +
              super.submit(state, poseStack, submitNodeCollector, camera);
          }
      }
  
 -    public Identifier getTextureLocation(final PigRenderState state) {
-+   public Identifier getTextureLocation(PigRenderState state) {
++    public Identifier getTextureLocation(PigRenderState state) {
          return state.variant == null
              ? MissingTextureAtlasSprite.getLocation()
              : (state.isBaby ? state.variant.babyTexture().texturePath() : state.variant.modelAndTexture().asset().texturePath());
@@ -85,7 +85,7 @@
      }
  
 -    public void extractRenderState(final Pig entity, final PigRenderState state, final float partialTicks) {
-+   public void extractRenderState(Pig entity, PigRenderState state, float partialTicks) {
++    public void extractRenderState(Pig entity, PigRenderState state, float partialTicks) {
          super.extractRenderState(entity, state, partialTicks);
          state.saddle = entity.getItemBySlot(EquipmentSlot.SADDLE).copy();
          state.variant = entity.getVariant().value();
@@ -93,21 +93,21 @@
 -}
 \ No newline at end of file
 +
-+   public void setModel(PigType typeIn, boolean babyIn, PigModel modelIn) {
-+      if (typeIn == PigType.NORMAL) {
-+         this.setModel(ModelType.NORMAL, babyIn, modelIn);
-+      } else if (typeIn == PigType.COLD) {
-+         this.setModel(ModelType.COLD, babyIn, modelIn);
-+      } else if (typeIn == PigType.WARM) {
-+         this.warmModels = ModelPairUtils.updateModel(this.warmModels, babyIn, modelIn);
-+      }
++    public void setModel(PigType typeIn, boolean babyIn, PigModel modelIn) {
++        if (typeIn == PigType.NORMAL) {
++            this.setModel(ModelType.NORMAL, babyIn, modelIn);
++        } else if (typeIn == PigType.COLD) {
++            this.setModel(ModelType.COLD, babyIn, modelIn);
++        } else if (typeIn == PigType.WARM) {
++            this.warmModels = ModelPairUtils.updateModel(this.warmModels, babyIn, modelIn);
++        }
 +
-+      this.customModels = true;
-+   }
++        this.customModels = true;
++    }
 +
-+   private void setModel(ModelType typeIn, boolean babyIn, PigModel modelIn) {
-+      AdultAndBabyModelPair<PigModel> pair = this.models.get(typeIn);
-+      AdultAndBabyModelPair<PigModel> pair2 = ModelPairUtils.updateModel(pair, babyIn, modelIn);
-+      this.models.put(typeIn, pair2);
-+   }
++    private void setModel(ModelType typeIn, boolean babyIn, PigModel modelIn) {
++        AdultAndBabyModelPair<PigModel> pair = this.models.get(typeIn);
++        AdultAndBabyModelPair<PigModel> pair2 = ModelPairUtils.updateModel(pair, babyIn, modelIn);
++        this.models.put(typeIn, pair2);
++    }
 +}

@@ -25,19 +25,19 @@
      );
  
 -    public PotionContents(final Holder<Potion> potion) {
-+   public PotionContents(Holder<Potion> potion) {
++    public PotionContents(Holder<Potion> potion) {
          this(Optional.of(potion), Optional.empty(), List.of(), Optional.empty());
      }
  
 -    public static ItemStack createItemStack(final Item item, final Holder<Potion> potion) {
-+   public static ItemStack createItemStack(Item item, Holder<Potion> potion) {
++    public static ItemStack createItemStack(Item item, Holder<Potion> potion) {
          ItemStack itemStack = new ItemStack(item);
          itemStack.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
          return itemStack;
      }
  
 -    public boolean is(final Holder<Potion> potion) {
-+   public boolean is(Holder<Potion> potion) {
++    public boolean is(Holder<Potion> potion) {
          return this.potion.isPresent() && this.potion.get().is(potion) && this.customEffects.isEmpty();
      }
  
@@ -46,7 +46,7 @@
      }
  
 -    public void forEachEffect(final Consumer<MobEffectInstance> consumer, final float durationScale) {
-+   public void forEachEffect(Consumer<MobEffectInstance> consumer, float durationScale) {
++    public void forEachEffect(Consumer<MobEffectInstance> consumer, float durationScale) {
          if (this.potion.isPresent()) {
              for (MobEffectInstance effect : this.potion.get().value().getEffects()) {
                  consumer.accept(effect.withScaledDuration(durationScale));
@@ -55,12 +55,12 @@
      }
  
 -    public PotionContents withPotion(final Holder<Potion> potion) {
-+   public PotionContents withPotion(Holder<Potion> potion) {
++    public PotionContents withPotion(Holder<Potion> potion) {
          return new PotionContents(Optional.of(potion), this.customColor, this.customEffects, this.customName);
      }
  
 -    public PotionContents withEffectAdded(final MobEffectInstance effect) {
-+   public PotionContents withEffectAdded(MobEffectInstance effect) {
++    public PotionContents withEffectAdded(MobEffectInstance effect) {
          return new PotionContents(this.potion, this.customColor, Util.copyAndAdd(this.customEffects, effect), this.customName);
      }
  
@@ -69,18 +69,18 @@
      }
  
 -    public int getColorOr(final int defaultColor) {
-+   public int getColorOr(int defaultColor) {
++    public int getColorOr(int defaultColor) {
          return this.customColor.isPresent() ? this.customColor.get() : getColorOptional(this.getAllEffects()).orElse(defaultColor);
      }
  
 -    public Component getName(final String prefix) {
-+   public Component getName(String prefix) {
++    public Component getName(String prefix) {
          String suffix = this.customName.or(() -> this.potion.map(p -> p.value().name())).orElse("empty");
          return Component.translatable(prefix + suffix);
      }
  
 -    public static OptionalInt getColorOptional(final Iterable<MobEffectInstance> effects) {
-+   public static OptionalInt getColorOptional(Iterable<MobEffectInstance> effects) {
++    public static OptionalInt getColorOptional(Iterable<MobEffectInstance> effects) {
          int red = 0;
          int green = 0;
          int blue = 0;
@@ -88,9 +88,9 @@
          for (MobEffectInstance effect : effects) {
              if (effect.isVisible()) {
                  int color = effect.getEffect().value().getColor();
-+            if (Config.isCustomColors()) {
-+               color = CustomColors.getPotionColor(effect.getEffect().value(), color);
-+            }
++                if (Config.isCustomColors()) {
++                    color = CustomColors.getPotionColor(effect.getEffect().value(), color);
++                }
 +
                  int amplifier = effect.getAmplifier() + 1;
                  red += amplifier * ARGB.red(color);
@@ -100,7 +100,7 @@
      }
  
 -    public void applyToLivingEntity(final LivingEntity entity, final float durationScale) {
-+   public void applyToLivingEntity(LivingEntity entity, float durationScale) {
++    public void applyToLivingEntity(LivingEntity entity, float durationScale) {
          if (entity.level() instanceof ServerLevel serverLevel) {
              Player player = entity instanceof Player playerEntity ? playerEntity : null;
              this.forEachEffect(effect -> {
@@ -111,7 +111,7 @@
 -    public static void addPotionTooltip(
 -        final Iterable<MobEffectInstance> effects, final Consumer<Component> lines, final float durationScale, final float tickrate
 -    ) {
-+   public static void addPotionTooltip(Iterable<MobEffectInstance> effects, Consumer<Component> lines, float durationScale, float tickrate) {
++    public static void addPotionTooltip(Iterable<MobEffectInstance> effects, Consumer<Component> lines, float durationScale, float tickrate) {
          List<Pair<Holder<Attribute>, AttributeModifier>> modifiers = Lists.newArrayList();
          boolean noEffects = true;
  
@@ -121,7 +121,7 @@
                  double displayAmount;
 -                if (modifier.operation() != AttributeModifier.Operation.ADD_MULTIPLIED_BASE
 -                    && modifier.operation() != AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL) {
-+            if (modifier.operation() != Operation.ADD_MULTIPLIED_BASE && modifier.operation() != Operation.ADD_MULTIPLIED_TOTAL) {
++                if (modifier.operation() != Operation.ADD_MULTIPLIED_BASE && modifier.operation() != Operation.ADD_MULTIPLIED_TOTAL) {
                      displayAmount = modifier.amount();
                  } else {
                      displayAmount = modifier.amount() * 100.0;
@@ -130,14 +130,14 @@
      }
  
 -    public static MutableComponent getPotionDescription(final Holder<MobEffect> mobEffect, final int amplifier) {
-+   public static MutableComponent getPotionDescription(Holder<MobEffect> mobEffect, int amplifier) {
++    public static MutableComponent getPotionDescription(Holder<MobEffect> mobEffect, int amplifier) {
          MutableComponent line = Component.translatable(mobEffect.value().getDescriptionId());
          return amplifier > 0 ? Component.translatable("potion.withAmplifier", line, Component.translatable("potion.potency." + amplifier)) : line;
      }
  
      @Override
 -    public void onConsume(final Level level, final LivingEntity user, final ItemStack stack, final Consumable consumable) {
-+   public void onConsume(Level level, LivingEntity user, ItemStack stack, Consumable consumable) {
++    public void onConsume(Level level, LivingEntity user, ItemStack stack, Consumable consumable) {
          this.applyToLivingEntity(user, stack.getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F));
      }
  
@@ -145,7 +145,7 @@
 -    public void addToTooltip(
 -        final Item.TooltipContext context, final Consumer<Component> consumer, final TooltipFlag flag, final DataComponentGetter components
 -    ) {
-+   public void addToTooltip(TooltipContext context, Consumer<Component> consumer, TooltipFlag flag, DataComponentGetter components) {
++    public void addToTooltip(TooltipContext context, Consumer<Component> consumer, TooltipFlag flag, DataComponentGetter components) {
          addPotionTooltip(this.getAllEffects(), consumer, components.getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F), context.tickRate());
      }
 -}

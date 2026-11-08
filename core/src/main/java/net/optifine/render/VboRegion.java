@@ -19,284 +19,284 @@ import net.optifine.util.LinkedList;
 import org.lwjgl.PointerBuffer;
 
 public class VboRegion {
-   private ChunkPos chunkPos;
-   private ChunkSectionLayer layer;
-   private int glArrayObjectId;
-   private int glBufferId;
-   private int capacity = 4096;
-   private int positionTop = 0;
-   private int sizeUsed;
-   private LinkedList<VboRange> rangeList = new LinkedList<>();
-   private VboRange compactRangeLast;
-   private PointerBuffer bufferIndexVertex = Config.createDirectPointerBuffer(this.capacity);
-   private IntBuffer bufferCountVertex = Config.createDirectIntBuffer(this.capacity);
-   private final int vertexBytes = DefaultVertexFormat.BLOCK.getVertexSize();
-   private PrimitiveTopology drawMode = PrimitiveTopology.QUADS;
+    private ChunkPos chunkPos;
+    private ChunkSectionLayer layer;
+    private int glArrayObjectId;
+    private int glBufferId;
+    private int capacity = 4096;
+    private int positionTop = 0;
+    private int sizeUsed;
+    private LinkedList<VboRange> rangeList = new LinkedList<>();
+    private VboRange compactRangeLast;
+    private PointerBuffer bufferIndexVertex = Config.createDirectPointerBuffer(this.capacity);
+    private IntBuffer bufferCountVertex = Config.createDirectIntBuffer(this.capacity);
+    private final int vertexBytes = DefaultVertexFormat.BLOCK.getVertexSize();
+    private PrimitiveTopology drawMode = PrimitiveTopology.QUADS;
 
-   public VboRegion(ChunkPos chunkPos, ChunkSectionLayer layer) {
-      this.chunkPos = chunkPos;
-      this.layer = layer;
-      this.glArrayObjectId = GlStateManager._glGenVertexArrays();
-      this.bindVertexArray();
-      RenderSystem.getGlDevice().debugLabels().applyLabelVertexArray(this.glArrayObjectId, "VboRegion " + this.toString());
-      unbindVertexArray();
-      this.glBufferId = GlStateManager._glGenBuffers();
-      this.bindBuffer();
-      long capacityBytes = this.toBytes(this.capacity);
-      GlStateManager._glBufferData(GlStateManager.GL_ARRAY_BUFFER, capacityBytes, GlStateManager.GL_STATIC_DRAW);
-      RenderSystem.getGlDevice().debugLabels().applyLabelBuffer(this.glBufferId, "VboRegion " + this.toString() + ", " + this.capacity);
-      GpuMemory.bufferAllocated(capacityBytes);
-      this.unbindBuffer();
-   }
+    public VboRegion(ChunkPos chunkPos, ChunkSectionLayer layer) {
+        this.chunkPos = chunkPos;
+        this.layer = layer;
+        this.glArrayObjectId = GlStateManager._glGenVertexArrays();
+        this.bindVertexArray();
+        RenderSystem.getGlDevice().debugLabels().applyLabelVertexArray(this.glArrayObjectId, "VboRegion " + this.toString());
+        unbindVertexArray();
+        this.glBufferId = GlStateManager._glGenBuffers();
+        this.bindBuffer();
+        long capacityBytes = this.toBytes(this.capacity);
+        GlStateManager._glBufferData(GlStateManager.GL_ARRAY_BUFFER, capacityBytes, GlStateManager.GL_STATIC_DRAW);
+        RenderSystem.getGlDevice().debugLabels().applyLabelBuffer(this.glBufferId, "VboRegion " + this.toString() + ", " + this.capacity);
+        GpuMemory.bufferAllocated(capacityBytes);
+        this.unbindBuffer();
+    }
 
-   public void bufferData(ByteBuffer data, VboRange range) {
-      if (this.glBufferId >= 0) {
-         int posOld = range.getPosition();
-         int sizeOld = range.getSize();
-         int sizeNew = this.toVertex(data.limit());
-         if (sizeNew <= 0) {
-            if (posOld >= 0) {
-               range.setPosition(-1);
-               range.setSize(0);
-               this.rangeList.remove(range.getNode());
-               this.sizeUsed -= sizeOld;
-            }
-         } else {
-            if (sizeNew > sizeOld) {
-               range.setPosition(this.positionTop);
-               range.setSize(sizeNew);
-               this.positionTop += sizeNew;
-               if (posOld >= 0) {
-                  this.rangeList.remove(range.getNode());
-               }
-
-               this.rangeList.addLast(range.getNode());
-            }
-
-            range.setSize(sizeNew);
-            this.sizeUsed += sizeNew - sizeOld;
-            this.checkVboSize(range.getPositionNext());
-            long positionBytes = this.toBytes(range.getPosition());
-            this.bindVertexArray();
-            this.bindBuffer();
-            GlStateManager._glBufferSubData(GlStateManager.GL_ARRAY_BUFFER, positionBytes, data);
-            this.unbindBuffer();
-            unbindVertexArray();
-            if (this.positionTop > this.sizeUsed * 11 / 10) {
-               this.compactRanges(1);
-            }
-         }
-      }
-   }
-
-   private void compactRanges(int countMax) {
-      if (!this.rangeList.isEmpty()) {
-         VboRange range = this.compactRangeLast;
-         if (range == null || !this.rangeList.contains(range.getNode())) {
-            range = this.rangeList.getFirst().getItem();
-         }
-
-         int posCompact = range.getPosition();
-         VboRange rangePrev = range.getPrev();
-         if (rangePrev == null) {
-            posCompact = 0;
-         } else {
-            posCompact = rangePrev.getPositionNext();
-         }
-
-         int count = 0;
-
-         while (range != null && count < countMax) {
-            count++;
-            if (range.getPosition() == posCompact) {
-               posCompact += range.getSize();
-               range = range.getNext();
+    public void bufferData(ByteBuffer data, VboRange range) {
+        if (this.glBufferId >= 0) {
+            int posOld = range.getPosition();
+            int sizeOld = range.getSize();
+            int sizeNew = this.toVertex(data.limit());
+            if (sizeNew <= 0) {
+                if (posOld >= 0) {
+                    range.setPosition(-1);
+                    range.setSize(0);
+                    this.rangeList.remove(range.getNode());
+                    this.sizeUsed -= sizeOld;
+                }
             } else {
-               int sizeFree = range.getPosition() - posCompact;
-               if (range.getSize() <= sizeFree) {
-                  this.copyVboData(range.getPosition(), posCompact, range.getSize());
-                  range.setPosition(posCompact);
-                  posCompact += range.getSize();
-                  range = range.getNext();
-               } else {
-                  this.checkVboSize(this.positionTop + range.getSize());
-                  this.copyVboData(range.getPosition(), this.positionTop, range.getSize());
-                  range.setPosition(this.positionTop);
-                  this.positionTop = this.positionTop + range.getSize();
-                  VboRange rangeNext = range.getNext();
-                  this.rangeList.remove(range.getNode());
-                  this.rangeList.addLast(range.getNode());
-                  range = rangeNext;
-               }
+                if (sizeNew > sizeOld) {
+                    range.setPosition(this.positionTop);
+                    range.setSize(sizeNew);
+                    this.positionTop += sizeNew;
+                    if (posOld >= 0) {
+                        this.rangeList.remove(range.getNode());
+                    }
+
+                    this.rangeList.addLast(range.getNode());
+                }
+
+                range.setSize(sizeNew);
+                this.sizeUsed += sizeNew - sizeOld;
+                this.checkVboSize(range.getPositionNext());
+                long positionBytes = this.toBytes(range.getPosition());
+                this.bindVertexArray();
+                this.bindBuffer();
+                GlStateManager._glBufferSubData(GlStateManager.GL_ARRAY_BUFFER, positionBytes, data);
+                this.unbindBuffer();
+                unbindVertexArray();
+                if (this.positionTop > this.sizeUsed * 11 / 10) {
+                    this.compactRanges(1);
+                }
             }
-         }
+        }
+    }
 
-         if (range == null) {
-            this.positionTop = this.rangeList.getLast().getItem().getPositionNext();
-         }
+    private void compactRanges(int countMax) {
+        if (!this.rangeList.isEmpty()) {
+            VboRange range = this.compactRangeLast;
+            if (range == null || !this.rangeList.contains(range.getNode())) {
+                range = this.rangeList.getFirst().getItem();
+            }
 
-         this.compactRangeLast = range;
-      }
-   }
+            int posCompact = range.getPosition();
+            VboRange rangePrev = range.getPrev();
+            if (rangePrev == null) {
+                posCompact = 0;
+            } else {
+                posCompact = rangePrev.getPositionNext();
+            }
 
-   private void checkRanges() {
-      int count = 0;
-      int size = 0;
+            int count = 0;
 
-      for (VboRange range = this.rangeList.getFirst().getItem(); range != null; range = range.getNext()) {
-         count++;
-         size += range.getSize();
-         if (range.getPosition() < 0 || range.getSize() <= 0 || range.getPositionNext() > this.positionTop) {
-            throw new RuntimeException("Invalid range: " + range);
-         }
+            while (range != null && count < countMax) {
+                count++;
+                if (range.getPosition() == posCompact) {
+                    posCompact += range.getSize();
+                    range = range.getNext();
+                } else {
+                    int sizeFree = range.getPosition() - posCompact;
+                    if (range.getSize() <= sizeFree) {
+                        this.copyVboData(range.getPosition(), posCompact, range.getSize());
+                        range.setPosition(posCompact);
+                        posCompact += range.getSize();
+                        range = range.getNext();
+                    } else {
+                        this.checkVboSize(this.positionTop + range.getSize());
+                        this.copyVboData(range.getPosition(), this.positionTop, range.getSize());
+                        range.setPosition(this.positionTop);
+                        this.positionTop = this.positionTop + range.getSize();
+                        VboRange rangeNext = range.getNext();
+                        this.rangeList.remove(range.getNode());
+                        this.rangeList.addLast(range.getNode());
+                        range = rangeNext;
+                    }
+                }
+            }
 
-         VboRange rangePrev = range.getPrev();
-         if (rangePrev != null && range.getPosition() < rangePrev.getPositionNext()) {
-            throw new RuntimeException("Invalid range: " + range);
-         }
+            if (range == null) {
+                this.positionTop = this.rangeList.getLast().getItem().getPositionNext();
+            }
 
-         VboRange rangeNext = range.getNext();
-         if (rangeNext != null && range.getPositionNext() > rangeNext.getPosition()) {
-            throw new RuntimeException("Invalid range: " + range);
-         }
-      }
+            this.compactRangeLast = range;
+        }
+    }
 
-      if (count != this.rangeList.getSize()) {
-         throw new RuntimeException("Invalid count: " + count + " <> " + this.rangeList.getSize());
-      }
+    private void checkRanges() {
+        int count = 0;
+        int size = 0;
 
-      if (size != this.sizeUsed) {
-         throw new RuntimeException("Invalid size: " + size + " <> " + this.sizeUsed);
-      }
-   }
+        for (VboRange range = this.rangeList.getFirst().getItem(); range != null; range = range.getNext()) {
+            count++;
+            size += range.getSize();
+            if (range.getPosition() < 0 || range.getSize() <= 0 || range.getPositionNext() > this.positionTop) {
+                throw new RuntimeException("Invalid range: " + range);
+            }
 
-   private void checkVboSize(int sizeMin) {
-      if (this.capacity < sizeMin) {
-         this.expandVbo(sizeMin);
-      }
-   }
+            VboRange rangePrev = range.getPrev();
+            if (rangePrev != null && range.getPosition() < rangePrev.getPositionNext()) {
+                throw new RuntimeException("Invalid range: " + range);
+            }
 
-   private void copyVboData(int posFrom, int posTo, int size) {
-      long posFromBytes = this.toBytes(posFrom);
-      long posToBytes = this.toBytes(posTo);
-      long sizeBytes = this.toBytes(size);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, this.glBufferId);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, this.glBufferId);
-      GlStateManager.copyBufferSubData(GlStateManager.GL_COPY_READ_BUFFER, GlStateManager.GL_COPY_WRITE_BUFFER, posFromBytes, posToBytes, sizeBytes);
-      Config.checkGlError("Copy VBO range");
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, 0);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, 0);
-   }
+            VboRange rangeNext = range.getNext();
+            if (rangeNext != null && range.getPositionNext() > rangeNext.getPosition()) {
+                throw new RuntimeException("Invalid range: " + range);
+            }
+        }
 
-   private void expandVbo(int sizeMin) {
-      int capacityNew = this.capacity * 6 / 4;
+        if (count != this.rangeList.getSize()) {
+            throw new RuntimeException("Invalid count: " + count + " <> " + this.rangeList.getSize());
+        }
 
-      while (capacityNew < sizeMin) {
-         capacityNew = capacityNew * 6 / 4;
-      }
+        if (size != this.sizeUsed) {
+            throw new RuntimeException("Invalid size: " + size + " <> " + this.sizeUsed);
+        }
+    }
 
-      long capacityBytes = this.toBytes(this.capacity);
-      long capacityNewBytes = this.toBytes(capacityNew);
-      int glBufferIdNew = GlStateManager._glGenBuffers();
-      GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, glBufferIdNew);
-      GlStateManager._glBufferData(GlStateManager.GL_ARRAY_BUFFER, capacityNewBytes, GlStateManager.GL_STATIC_DRAW);
-      RenderSystem.getGlDevice().debugLabels().applyLabelBuffer(glBufferIdNew, "VboRegion " + this.toString() + ", " + capacityNewBytes);
-      GpuMemory.bufferAllocated(capacityNewBytes);
-      Config.checkGlError("Expand VBO");
-      GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, 0);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, this.glBufferId);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, glBufferIdNew);
-      GlStateManager.copyBufferSubData(GlStateManager.GL_COPY_READ_BUFFER, GlStateManager.GL_COPY_WRITE_BUFFER, 0L, 0L, capacityBytes);
-      Config.checkGlError("Copy VBO: " + capacityNewBytes);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, 0);
-      GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, 0);
-      GlStateManager._glDeleteBuffers(this.glBufferId);
-      GpuMemory.bufferFreed(capacityBytes);
-      this.bufferIndexVertex = Config.createDirectPointerBuffer(capacityNew);
-      this.bufferCountVertex = Config.createDirectIntBuffer(capacityNew);
-      this.glBufferId = glBufferIdNew;
-      this.capacity = capacityNew;
-   }
+    private void checkVboSize(int sizeMin) {
+        if (this.capacity < sizeMin) {
+            this.expandVbo(sizeMin);
+        }
+    }
 
-   public void bindVertexArray() {
-      GlStateManager._glBindVertexArray(this.glArrayObjectId);
-   }
+    private void copyVboData(int posFrom, int posTo, int size) {
+        long posFromBytes = this.toBytes(posFrom);
+        long posToBytes = this.toBytes(posTo);
+        long sizeBytes = this.toBytes(size);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, this.glBufferId);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, this.glBufferId);
+        GlStateManager.copyBufferSubData(GlStateManager.GL_COPY_READ_BUFFER, GlStateManager.GL_COPY_WRITE_BUFFER, posFromBytes, posToBytes, sizeBytes);
+        Config.checkGlError("Copy VBO range");
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, 0);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, 0);
+    }
 
-   public void bindBuffer() {
-      GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, this.glBufferId);
-   }
+    private void expandVbo(int sizeMin) {
+        int capacityNew = this.capacity * 6 / 4;
 
-   public void drawArrays(PrimitiveTopology drawMode, VboRange range) {
-      if (this.drawMode != drawMode) {
-         if (this.bufferIndexVertex.position() > 0) {
-            throw new IllegalArgumentException("Mixed region draw modes: " + this.drawMode + " != " + drawMode);
-         }
+        while (capacityNew < sizeMin) {
+            capacityNew = capacityNew * 6 / 4;
+        }
 
-         this.drawMode = drawMode;
-      }
+        long capacityBytes = this.toBytes(this.capacity);
+        long capacityNewBytes = this.toBytes(capacityNew);
+        int glBufferIdNew = GlStateManager._glGenBuffers();
+        GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, glBufferIdNew);
+        GlStateManager._glBufferData(GlStateManager.GL_ARRAY_BUFFER, capacityNewBytes, GlStateManager.GL_STATIC_DRAW);
+        RenderSystem.getGlDevice().debugLabels().applyLabelBuffer(glBufferIdNew, "VboRegion " + this.toString() + ", " + capacityNewBytes);
+        GpuMemory.bufferAllocated(capacityNewBytes);
+        Config.checkGlError("Expand VBO");
+        GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, 0);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, this.glBufferId);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, glBufferIdNew);
+        GlStateManager.copyBufferSubData(GlStateManager.GL_COPY_READ_BUFFER, GlStateManager.GL_COPY_WRITE_BUFFER, 0L, 0L, capacityBytes);
+        Config.checkGlError("Copy VBO: " + capacityNewBytes);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, 0);
+        GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, 0);
+        GlStateManager._glDeleteBuffers(this.glBufferId);
+        GpuMemory.bufferFreed(capacityBytes);
+        this.bufferIndexVertex = Config.createDirectPointerBuffer(capacityNew);
+        this.bufferCountVertex = Config.createDirectIntBuffer(capacityNew);
+        this.glBufferId = glBufferIdNew;
+        this.capacity = capacityNew;
+    }
 
-      int indexSize = 4;
-      int pos = drawMode.indexCount(range.getPosition()) * indexSize;
-      this.bufferIndexVertex.put(pos);
-      int count = drawMode.indexCount(range.getSize());
-      this.bufferCountVertex.put(count);
-   }
+    public void bindVertexArray() {
+        GlStateManager._glBindVertexArray(this.glArrayObjectId);
+    }
 
-   public void finishDraw() {
-      this.bindVertexArray();
-      this.bindBuffer();
-      VertexArrayCache.Emulated.setupCombinedAttributes(this.layer.pipeline().getVertexFormatBindings(), true, null);
-      RenderSystem.AutoStorageIndexBuffer autoIndexBuffer = RenderSystem.getSequentialBuffer(this.drawMode);
-      int indexCount = this.drawMode.indexCount(this.positionTop);
-      indexCount = Math.max(indexCount, 65536);
-      GpuBuffer indexBuffer = autoIndexBuffer.getBuffer(indexCount);
-      IndexType indexType = autoIndexBuffer.type();
-      GlStateManager._glBindBuffer(34963, ((GlBuffer)indexBuffer).getHandle());
-      this.bufferIndexVertex.flip();
-      this.bufferCountVertex.flip();
-      GlStateManager.glMultiDrawElements(GlConst.toGl(this.drawMode), this.bufferCountVertex, GlConst.toGl(indexType), this.bufferIndexVertex);
-      this.bufferIndexVertex.limit(this.bufferIndexVertex.capacity());
-      this.bufferCountVertex.limit(this.bufferCountVertex.capacity());
-      if (this.positionTop > this.sizeUsed * 11 / 10) {
-         this.compactRanges(1);
-      }
-   }
+    public void bindBuffer() {
+        GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, this.glBufferId);
+    }
 
-   public void unbindBuffer() {
-      GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, 0);
-   }
+    public void drawArrays(PrimitiveTopology drawMode, VboRange range) {
+        if (this.drawMode != drawMode) {
+            if (this.bufferIndexVertex.position() > 0) {
+                throw new IllegalArgumentException("Mixed region draw modes: " + this.drawMode + " != " + drawMode);
+            }
 
-   public static void unbindVertexArray() {
-      GlStateManager._glBindVertexArray(0);
-   }
+            this.drawMode = drawMode;
+        }
 
-   public void deleteGlBuffers() {
-      if (this.glArrayObjectId >= 0) {
-         GlStateManager.deleteVertexArrays(this.glArrayObjectId);
-         this.glArrayObjectId = -1;
-      }
+        int indexSize = 4;
+        int pos = drawMode.indexCount(range.getPosition()) * indexSize;
+        this.bufferIndexVertex.put(pos);
+        int count = drawMode.indexCount(range.getSize());
+        this.bufferCountVertex.put(count);
+    }
 
-      if (this.glBufferId >= 0) {
-         GlStateManager._glDeleteBuffers(this.glBufferId);
-         GpuMemory.bufferFreed(this.toBytes(this.capacity));
-         this.glBufferId = -1;
-      }
-   }
+    public void finishDraw() {
+        this.bindVertexArray();
+        this.bindBuffer();
+        VertexArrayCache.Emulated.setupCombinedAttributes(this.layer.pipeline().getVertexFormatBindings(), true, null);
+        RenderSystem.AutoStorageIndexBuffer autoIndexBuffer = RenderSystem.getSequentialBuffer(this.drawMode);
+        int indexCount = this.drawMode.indexCount(this.positionTop);
+        indexCount = Math.max(indexCount, 65536);
+        GpuBuffer indexBuffer = autoIndexBuffer.getBuffer(indexCount);
+        IndexType indexType = autoIndexBuffer.type();
+        GlStateManager._glBindBuffer(34963, ((GlBuffer)indexBuffer).getHandle());
+        this.bufferIndexVertex.flip();
+        this.bufferCountVertex.flip();
+        GlStateManager.glMultiDrawElements(GlConst.toGl(this.drawMode), this.bufferCountVertex, GlConst.toGl(indexType), this.bufferIndexVertex);
+        this.bufferIndexVertex.limit(this.bufferIndexVertex.capacity());
+        this.bufferCountVertex.limit(this.bufferCountVertex.capacity());
+        if (this.positionTop > this.sizeUsed * 11 / 10) {
+            this.compactRanges(1);
+        }
+    }
 
-   private long toBytes(int vertex) {
-      return (long)vertex * this.vertexBytes;
-   }
+    public void unbindBuffer() {
+        GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, 0);
+    }
 
-   private int toVertex(long bytes) {
-      return (int)(bytes / this.vertexBytes);
-   }
+    public static void unbindVertexArray() {
+        GlStateManager._glBindVertexArray(0);
+    }
 
-   public int getPositionTop() {
-      return this.positionTop;
-   }
+    public void deleteGlBuffers() {
+        if (this.glArrayObjectId >= 0) {
+            GlStateManager.deleteVertexArrays(this.glArrayObjectId);
+            this.glArrayObjectId = -1;
+        }
 
-   @Override
-   public String toString() {
-      return this.chunkPos + ", " + this.layer;
-   }
+        if (this.glBufferId >= 0) {
+            GlStateManager._glDeleteBuffers(this.glBufferId);
+            GpuMemory.bufferFreed(this.toBytes(this.capacity));
+            this.glBufferId = -1;
+        }
+    }
+
+    private long toBytes(int vertex) {
+        return (long)vertex * this.vertexBytes;
+    }
+
+    private int toVertex(long bytes) {
+        return (int)(bytes / this.vertexBytes);
+    }
+
+    public int getPositionTop() {
+        return this.positionTop;
+    }
+
+    @Override
+    public String toString() {
+        return this.chunkPos + ", " + this.layer;
+    }
 }

@@ -15,36 +15,36 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterDonkey extends ModelAdapterHorse {
-   public ModelAdapterDonkey() {
-      super(EntityTypes.DONKEY, "donkey", ModelLayers.DONKEY);
-   }
+    public ModelAdapterDonkey() {
+        super(EntityTypes.DONKEY, "donkey", ModelLayers.DONKEY);
+    }
 
-   protected ModelAdapterDonkey(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    protected ModelAdapterDonkey(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterDonkey ma = new ModelAdapterDonkey(this.getEntityType(), "donkey_baby", ModelLayers.DONKEY_BABY);
-      ma.setBaby(true);
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterDonkey ma = new ModelAdapterDonkey(this.getEntityType(), "donkey_baby", ModelLayers.DONKEY_BABY);
+        ma.setBaby(true);
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new DonkeyModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new DonkeyModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      map.put("left_chest", "left_chest");
-      map.put("right_chest", "right_chest");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        map.put("left_chest", "left_chest");
+        map.put("right_chest", "right_chest");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new DonkeyRenderer(context, LayerType.DONKEY_SADDLE, ModelLayers.DONKEY_SADDLE, Type.DONKEY, Type.DONKEY_BABY);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new DonkeyRenderer(context, LayerType.DONKEY_SADDLE, ModelLayers.DONKEY_SADDLE, Type.DONKEY, Type.DONKEY_BABY);
+    }
 }

@@ -10,18 +10,18 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterEvoker extends ModelAdapterIllager {
-   public ModelAdapterEvoker() {
-      super(EntityTypes.EVOKER, "evoker", ModelLayers.EVOKER);
-      this.setAlias("evocation_illager");
-   }
+    public ModelAdapterEvoker() {
+        super(EntityTypes.EVOKER, "evoker", ModelLayers.EVOKER);
+        this.setAlias("evocation_illager");
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new IllagerModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new IllagerModel(root);
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new EvokerRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new EvokerRenderer(context);
+    }
 }

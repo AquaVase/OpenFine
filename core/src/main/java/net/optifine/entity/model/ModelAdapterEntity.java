@@ -15,68 +15,68 @@ import net.optifine.entity.model.anim.RenderResolverEntity;
 import net.optifine.reflect.ReflectorField;
 
 public abstract class ModelAdapterEntity extends ModelAdapter {
-   private EntityType entityType;
-   private ModelLayerLocation modelLayer;
-   private Map<String, String> mapParts;
+    private EntityType entityType;
+    private ModelLayerLocation modelLayer;
+    private Map<String, String> mapParts;
 
-   public ModelAdapterEntity(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name);
-      this.entityType = entityType;
-      this.modelLayer = modelLayer;
-      this.mapParts = this.makeMapParts();
-   }
+    public ModelAdapterEntity(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name);
+        this.entityType = entityType;
+        this.modelLayer = modelLayer;
+        this.mapParts = this.makeMapParts();
+    }
 
-   public EntityType getEntityType() {
-      return this.entityType;
-   }
+    public EntityType getEntityType() {
+        return this.entityType;
+    }
 
-   public ModelLayerLocation getModelLayer() {
-      return this.modelLayer;
-   }
+    public ModelLayerLocation getModelLayer() {
+        return this.modelLayer;
+    }
 
-   @Override
-   public final Model makeModel() {
-      ModelPart root = bakeModelLayer(this.modelLayer);
-      return this.makeModel(root);
-   }
+    @Override
+    public final Model makeModel() {
+        ModelPart root = bakeModelLayer(this.modelLayer);
+        return this.makeModel(root);
+    }
 
-   protected abstract Model makeModel(ModelPart var1);
+    protected abstract Model makeModel(ModelPart var1);
 
-   @Override
-   public final ModelPart getModelRenderer(Model model, String modelPart) {
-      return this.getModelRenderer(model.root(), this.mapParts.get(modelPart));
-   }
+    @Override
+    public final ModelPart getModelRenderer(Model model, String modelPart) {
+        return this.getModelRenderer(model.root(), this.mapParts.get(modelPart));
+    }
 
-   @Override
-   public final String[] getModelRendererNames() {
-      return toArray(this.mapParts.keySet());
-   }
+    @Override
+    public final String[] getModelRendererNames() {
+        return toArray(this.mapParts.keySet());
+    }
 
-   protected abstract Map<String, String> makeMapParts();
+    protected abstract Map<String, String> makeMapParts();
 
-   @Override
-   public IRenderResolver getRenderResolver() {
-      return new RenderResolverEntity();
-   }
+    @Override
+    public IRenderResolver getRenderResolver() {
+        return new RenderResolverEntity();
+    }
 
-   public Context getContext() {
-      EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-      return dispatcher.getContext();
-   }
+    public Context getContext() {
+        EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        return dispatcher.getContext();
+    }
 
-   public void setModel(EntityRenderer renderer, ReflectorField modelField, String fieldName, Model model) {
-      if (!modelField.exists()) {
-         throw new IllegalArgumentException("Field not found: " + fieldName);
-      }
+    public void setModel(EntityRenderer renderer, ReflectorField modelField, String fieldName, Model model) {
+        if (!modelField.exists()) {
+            throw new IllegalArgumentException("Field not found: " + fieldName);
+        }
 
-      modelField.setValue(renderer, model);
-   }
+        modelField.setValue(renderer, model);
+    }
 
-   public void setModel(RenderLayer layer, ReflectorField modelField, String fieldName, Model model) {
-      if (!modelField.exists()) {
-         throw new IllegalArgumentException("Field not found: " + fieldName);
-      }
+    public void setModel(RenderLayer layer, ReflectorField modelField, String fieldName, Model model) {
+        if (!modelField.exists()) {
+            throw new IllegalArgumentException("Field not found: " + fieldName);
+        }
 
-      modelField.setValue(layer, model);
-   }
+        modelField.setValue(layer, model);
+    }
 }

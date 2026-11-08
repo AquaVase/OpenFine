@@ -1,9 +1,9 @@
 package net.optifine.shaders;
 
 public interface IShadersFramebuffer {
-   int getGlFramebuffer();
+    int getGlFramebuffer();
 
-   DrawBuffers getDrawBuffers();
+    DrawBuffers getDrawBuffers();
 
-   void setDrawBuffers(DrawBuffers var1);
+    void setDrawBuffers(DrawBuffers var1);
 }

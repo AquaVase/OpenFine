@@ -29,43 +29,43 @@
 -@OnlyIn(Dist.CLIENT)
  public abstract class AbstractClientPlayer extends Player implements ClientAvatarEntity {
 -    private @Nullable PlayerInfo playerInfo;
-+   private PlayerInfo playerInfo;
++    private PlayerInfo playerInfo;
      private final boolean showExtraEars;
      private final ClientAvatarState clientAvatarState = new ClientAvatarState();
-+   private Identifier locationOfCape = null;
-+   private long reloadCapeTimeMs = 0L;
-+   private boolean elytraOfCape = false;
-+   private String nameClear = null;
-+   public ShoulderRidingEntity entityShoulderLeft;
-+   public ShoulderRidingEntity entityShoulderRight;
-+   public ShoulderRidingEntity lastAttachedEntity;
-+   public float capeFlap;
-+   public float capeLean;
-+   public float capeLean2;
-+   private static final Identifier TEXTURE_ELYTRA = new Identifier("textures/entity/elytra.png");
++    private Identifier locationOfCape = null;
++    private long reloadCapeTimeMs = 0L;
++    private boolean elytraOfCape = false;
++    private String nameClear = null;
++    public ShoulderRidingEntity entityShoulderLeft;
++    public ShoulderRidingEntity entityShoulderRight;
++    public ShoulderRidingEntity lastAttachedEntity;
++    public float capeFlap;
++    public float capeLean;
++    public float capeLean2;
++    private static final Identifier TEXTURE_ELYTRA = new Identifier("textures/entity/elytra.png");
  
 -    public AbstractClientPlayer(final ClientLevel level, final GameProfile gameProfile) {
-+   public AbstractClientPlayer(ClientLevel level, GameProfile gameProfile) {
++    public AbstractClientPlayer(ClientLevel level, GameProfile gameProfile) {
          super(level, gameProfile);
          this.showExtraEars = "deadmau5".equals(this.getGameProfile().name());
-+      this.nameClear = gameProfile.name();
-+      if (this.nameClear != null && !this.nameClear.isEmpty()) {
-+         this.nameClear = StringUtil.stripColor(this.nameClear);
++        this.nameClear = gameProfile.name();
++        if (this.nameClear != null && !this.nameClear.isEmpty()) {
++            this.nameClear = StringUtil.stripColor(this.nameClear);
++        }
++
++        CapeUtils.downloadCape(this);
++        PlayerConfigurations.getPlayerConfiguration(this);
      }
  
-+      CapeUtils.downloadCape(this);
-+      PlayerConfigurations.getPlayerConfiguration(this);
-+   }
-+
      @Override
 -    public @Nullable GameType gameMode() {
-+   public GameType gameMode() {
++    public GameType gameMode() {
          PlayerInfo info = this.getPlayerInfo();
          return info != null ? info.getGameMode() : null;
      }
  
 -    protected @Nullable PlayerInfo getPlayerInfo() {
-+   protected PlayerInfo getPlayerInfo() {
++    protected PlayerInfo getPlayerInfo() {
          if (this.playerInfo == null) {
              this.playerInfo = Minecraft.getInstance().getConnection().getPlayerInfo(this.getUUID());
          }
@@ -73,14 +73,14 @@
      public void tick() {
          this.clientAvatarState.tick(this.position(), this.getDeltaMovement());
          super.tick();
-+      if (this.lastAttachedEntity != null) {
-+         RandomEntities.checkEntityShoulder(this.lastAttachedEntity, true);
-+         this.lastAttachedEntity = null;
++        if (this.lastAttachedEntity != null) {
++            RandomEntities.checkEntityShoulder(this.lastAttachedEntity, true);
++            this.lastAttachedEntity = null;
++        }
      }
-+   }
  
 -    protected void addWalkedDistance(final float distance) {
-+   protected void addWalkedDistance(float distance) {
++    protected void addWalkedDistance(float distance) {
          this.clientAvatarState.addWalkDistance(distance);
      }
  
@@ -89,7 +89,7 @@
  
      @Override
 -    public Parrot.@Nullable Variant getParrotVariantOnShoulder(final boolean left) {
-+   public Variant getParrotVariantOnShoulder(boolean left) {
++    public Variant getParrotVariantOnShoulder(boolean left) {
          return (left ? this.getShoulderParrotLeft() : this.getShoulderParrotRight()).orElse(null);
      }
  
@@ -98,7 +98,7 @@
      }
  
 -    public float getFieldOfViewModifier(final boolean firstPerson, final float effectScale) {
-+   public float getFieldOfViewModifier(boolean firstPerson, float effectScale) {
++    public float getFieldOfViewModifier(boolean firstPerson, float effectScale) {
          float modifier = 1.0F;
          if (this.getAbilities().flying) {
              modifier *= 1.1F;
@@ -106,12 +106,12 @@
              }
          }
  
-+      if (Reflector.ForgeEventFactoryClient_fireFovModifierEvent.exists()) {
-+         ComputeFovModifierEvent event = (ComputeFovModifierEvent)Reflector.ForgeEventFactoryClient_fireFovModifierEvent.call(this, modifier, effectScale);
-+         if (event != null) {
-+            return event.getNewFovModifier();
-+         }
-+      }
++        if (Reflector.ForgeEventFactoryClient_fireFovModifierEvent.exists()) {
++            ComputeFovModifierEvent event = (ComputeFovModifierEvent)Reflector.ForgeEventFactoryClient_fireFovModifierEvent.call(this, modifier, effectScale);
++            if (event != null) {
++                return event.getNewFovModifier();
++            }
++        }
 +
          return Mth.lerp(effectScale, 1.0F, modifier);
      }
@@ -123,63 +123,63 @@
 -}
 \ No newline at end of file
 +
-+   public String getNameClear() {
-+      return this.nameClear;
-+   }
++    public String getNameClear() {
++        return this.nameClear;
++    }
 +
-+   public Identifier getLocationOfCape() {
-+      return this.locationOfCape;
-+   }
++    public Identifier getLocationOfCape() {
++        return this.locationOfCape;
++    }
 +
-+   public void setLocationOfCape(Identifier locationOfCape) {
-+      this.locationOfCape = locationOfCape;
-+   }
++    public void setLocationOfCape(Identifier locationOfCape) {
++        this.locationOfCape = locationOfCape;
++    }
 +
-+   public boolean hasElytraCape() {
-+      Identifier loc = this.getLocationCape();
-+      if (loc == null) {
-+         return false;
-+      } else {
-+         return loc == this.locationOfCape ? this.elytraOfCape : true;
-+      }
-+   }
++    public boolean hasElytraCape() {
++        Identifier loc = this.getLocationCape();
++        if (loc == null) {
++            return false;
++        } else {
++            return loc == this.locationOfCape ? this.elytraOfCape : true;
++        }
++    }
 +
-+   public void setElytraOfCape(boolean elytraOfCape) {
-+      this.elytraOfCape = elytraOfCape;
-+   }
++    public void setElytraOfCape(boolean elytraOfCape) {
++        this.elytraOfCape = elytraOfCape;
++    }
 +
-+   public boolean isElytraOfCape() {
-+      return this.elytraOfCape;
-+   }
++    public boolean isElytraOfCape() {
++        return this.elytraOfCape;
++    }
 +
-+   public long getReloadCapeTimeMs() {
-+      return this.reloadCapeTimeMs;
-+   }
++    public long getReloadCapeTimeMs() {
++        return this.reloadCapeTimeMs;
++    }
 +
-+   public void setReloadCapeTimeMs(long reloadCapeTimeMs) {
-+      this.reloadCapeTimeMs = reloadCapeTimeMs;
-+   }
++    public void setReloadCapeTimeMs(long reloadCapeTimeMs) {
++        this.reloadCapeTimeMs = reloadCapeTimeMs;
++    }
 +
-+   public @Nullable Identifier getLocationCape() {
-+      if (!Config.isShowCapes()) {
-+         return null;
-+      }
++    public @Nullable Identifier getLocationCape() {
++        if (!Config.isShowCapes()) {
++            return null;
++        }
 +
-+      if (this.reloadCapeTimeMs != 0L && System.currentTimeMillis() > this.reloadCapeTimeMs) {
-+         CapeUtils.reloadCape(this);
-+         this.reloadCapeTimeMs = 0L;
-+         PlayerConfigurations.setPlayerConfiguration(this.getNameClear(), null);
-+      }
++        if (this.reloadCapeTimeMs != 0L && System.currentTimeMillis() > this.reloadCapeTimeMs) {
++            CapeUtils.reloadCape(this);
++            this.reloadCapeTimeMs = 0L;
++            PlayerConfigurations.setPlayerConfiguration(this.getNameClear(), null);
++        }
 +
-+      return this.locationOfCape != null ? this.locationOfCape : PlayerUtils.getTexturePath(this.getSkin().cape());
-+   }
++        return this.locationOfCape != null ? this.locationOfCape : PlayerUtils.getTexturePath(this.getSkin().cape());
++    }
 +
-+   public Identifier getLocationElytra() {
-+      return this.hasElytraCape() ? this.locationOfCape : PlayerUtils.getTexturePath(this.getSkin().elytra());
-+   }
++    public Identifier getLocationElytra() {
++        return this.hasElytraCape() ? this.locationOfCape : PlayerUtils.getTexturePath(this.getSkin().elytra());
++    }
 +
-+   public Identifier getSkinTextureLocation() {
-+      PlayerInfo playerinfo = this.getPlayerInfo();
-+      return playerinfo == null ? DefaultPlayerSkin.get(this.getUUID()).body().texturePath() : playerinfo.getSkin().body().texturePath();
-+   }
++    public Identifier getSkinTextureLocation() {
++        PlayerInfo playerinfo = this.getPlayerInfo();
++        return playerinfo == null ? DefaultPlayerSkin.get(this.getUUID()).body().texturePath() : playerinfo.getSkin().body().texturePath();
++    }
 +}

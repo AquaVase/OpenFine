@@ -12,40 +12,40 @@ import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterBell extends ModelAdapterBlockEntity {
-   private static Map<String, String> mapParts = makeMapParts();
+    private static Map<String, String> mapParts = makeMapParts();
 
-   public ModelAdapterBell() {
-      super(BlockEntityTypes.BELL, "bell");
-   }
+    public ModelAdapterBell() {
+        super(BlockEntityTypes.BELL, "bell");
+    }
 
-   @Override
-   public Model makeModel() {
-      return new BellModel(bakeModelLayer(ModelLayers.BELL));
-   }
+    @Override
+    public Model makeModel() {
+        return new BellModel(bakeModelLayer(ModelLayers.BELL));
+    }
 
-   @Override
-   public ModelPart getModelRenderer(Model model, String modelPart) {
-      return this.getModelRenderer(model.root(), mapParts.get(modelPart));
-   }
+    @Override
+    public ModelPart getModelRenderer(Model model, String modelPart) {
+        return this.getModelRenderer(model.root(), mapParts.get(modelPart));
+    }
 
-   @Override
-   public String[] getModelRendererNames() {
-      return toArray(mapParts.keySet());
-   }
+    @Override
+    public String[] getModelRendererNames() {
+        return toArray(mapParts.keySet());
+    }
 
-   private static Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "bell_body");
-      map.put("base", "bell_base");
-      map.put("root", "root");
-      return map;
-   }
+    private static Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "bell_body");
+        map.put("base", "bell_base");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   public IEntityRenderer makeEntityRender(Model model, RendererCache rendererCache, int index) {
-      BlockEntityRenderer renderer = rendererCache.get(BlockEntityTypes.BELL, index, () -> new BellRenderer(this.getContext()));
-      BellModel bellModel = (BellModel)model;
-      Reflector.setFieldValue(renderer, Reflector.BellRenderer_model, bellModel);
-      return renderer;
-   }
+    @Override
+    public IEntityRenderer makeEntityRender(Model model, RendererCache rendererCache, int index) {
+        BlockEntityRenderer renderer = rendererCache.get(BlockEntityTypes.BELL, index, () -> new BellRenderer(this.getContext()));
+        BellModel bellModel = (BellModel)model;
+        Reflector.setFieldValue(renderer, Reflector.BellRenderer_model, bellModel);
+        return renderer;
+    }
 }

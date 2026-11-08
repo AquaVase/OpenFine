@@ -12,7 +12,7 @@
 -@OnlyIn(Dist.CLIENT)
  public interface ModelBaker {
 -    ResolvedModel getModel(Identifier location);
-+   ResolvedModel getModel(Identifier var1);
++    ResolvedModel getModel(Identifier var1);
  
      BlockStateModelPart missingBlockModelPart();
  
@@ -21,30 +21,30 @@
      ModelBaker.Interner interner();
  
 -    <T> T compute(ModelBaker.SharedOperationKey<T> key);
-+   <T> T compute(ModelBaker.SharedOperationKey<T> var1);
++    <T> T compute(ModelBaker.SharedOperationKey<T> var1);
  
 -    @OnlyIn(Dist.CLIENT)
-+   default RenderTypeGroup renderType() {
-+      return null;
-+   }
++    default RenderTypeGroup renderType() {
++        return null;
++    }
 +
-+   default RenderTypeGroup renderTypeFast() {
-+      return null;
-+   }
++    default RenderTypeGroup renderTypeFast() {
++        return null;
++    }
 +
      interface Interner {
 -        Vector3fc vector(Vector3fc vector);
-+      Vector3fc vector(Vector3fc var1);
++        Vector3fc vector(Vector3fc var1);
  
 -        BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo material);
-+      BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo var1);
++        BakedQuad.MaterialInfo materialInfo(BakedQuad.MaterialInfo var1);
      }
  
      @FunctionalInterface
 -    @OnlyIn(Dist.CLIENT)
      interface SharedOperationKey<T> {
 -        T compute(ModelBaker modelBakery);
-+      T compute(ModelBaker var1);
++        T compute(ModelBaker var1);
      }
 -}
 \ No newline at end of file

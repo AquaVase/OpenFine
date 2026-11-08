@@ -13,17 +13,17 @@ import net.minecraft.world.level.block.SkullBlock.Type;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public class RendererUtils {
-   public static Map<EntityType, EntityRenderer> getEntityRenderMap() {
-      EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-      return dispatcher.getEntityRenderMap();
-   }
+    public static Map<EntityType, EntityRenderer> getEntityRenderMap() {
+        EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        return dispatcher.getEntityRenderMap();
+    }
 
-   public static Map<BlockEntityType, BlockEntityRenderer> getBlockEntityRenderMap() {
-      BlockEntityRenderDispatcher dispatcher = Minecraft.getInstance().getBlockEntityRenderDispatcher();
-      return dispatcher.getBlockEntityRenderMap();
-   }
+    public static Map<BlockEntityType, BlockEntityRenderer> getBlockEntityRenderMap() {
+        BlockEntityRenderDispatcher dispatcher = Minecraft.getInstance().getBlockEntityRenderDispatcher();
+        return dispatcher.getBlockEntityRenderMap();
+    }
 
-   public static Map<Type, SkullModelBase> getSkullModelMap() {
-      return SkullBlockRenderer.getGlobalModels();
-   }
+    public static Map<Type, SkullModelBase> getSkullModelMap() {
+        return SkullBlockRenderer.getGlobalModels();
+    }
 }

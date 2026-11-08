@@ -22,10 +22,10 @@
      protected float gravity;
      protected float friction = 0.98F;
      protected boolean speedUpWhenYMotionIsBlocked = false;
-+   private BlockPosM blockPosM = new BlockPosM();
++    private BlockPosM blockPosM = new BlockPosM();
  
 -    protected Particle(final ClientLevel level, final double x, final double y, final double z) {
-+   protected Particle(ClientLevel level, double x, double y, double z) {
++    protected Particle(ClientLevel level, double x, double y, double z) {
          this.level = level;
          this.setSize(0.2F, 0.2F);
          this.setPos(x, y, z);
@@ -34,7 +34,7 @@
      }
  
 -    public Particle(final ClientLevel level, final double x, final double y, final double z, final double xa, final double ya, final double za) {
-+   public Particle(ClientLevel level, double x, double y, double z, double xa, double ya, double za) {
++    public Particle(ClientLevel level, double x, double y, double z, double xa, double ya, double za) {
          this(level, x, y, z);
          this.xd = xa + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
          this.yd = ya + (this.random.nextFloat() * 2.0F - 1.0F) * 0.4F;
@@ -43,7 +43,7 @@
      }
  
 -    public Particle setPower(final float power) {
-+   public Particle setPower(float power) {
++    public Particle setPower(float power) {
          this.xd *= power;
          this.yd = (this.yd - 0.1F) * power + 0.1F;
          this.zd *= power;
@@ -51,41 +51,40 @@
      }
  
 -    public void setParticleSpeed(final double xd, final double yd, final double zd) {
-+   public void setParticleSpeed(double xd, double yd, double zd) {
++    public void setParticleSpeed(double xd, double yd, double zd) {
          this.xd = xd;
          this.yd = yd;
          this.zd = zd;
      }
  
 -    public Particle scale(final float scale) {
-+   public Particle scale(float scale) {
++    public Particle scale(float scale) {
          this.setSize(0.2F * scale, 0.2F * scale);
          return this;
      }
  
 -    public void setLifetime(final int lifetime) {
-+   public void setLifetime(int lifetime) {
++    public void setLifetime(int lifetime) {
          this.lifetime = lifetime;
      }
  
-@@ -113,7 +115,11 @@
+@@ -113,6 +115,10 @@
                  this.zd *= 0.7F;
              }
          }
 +
-+      if (Config.isCustomColors() && this instanceof LavaParticle) {
-+         CustomColors.updateLavaFX(this);
++        if (Config.isCustomColors() && this instanceof LavaParticle) {
++            CustomColors.updateLavaFX(this);
++        }
      }
-+   }
  
      public abstract ParticleRenderType getGroup();
- 
 @@ -126,7 +132,7 @@
          this.removed = true;
      }
  
 -    protected void setSize(final float w, final float h) {
-+   protected void setSize(float w, float h) {
++    protected void setSize(float w, float h) {
          if (w != this.bbWidth || h != this.bbHeight) {
              this.bbWidth = w;
              this.bbHeight = h;
@@ -94,7 +93,7 @@
      }
  
 -    public void setPos(final double x, final double y, final double z) {
-+   public void setPos(double x, double y, double z) {
++    public void setPos(double x, double y, double z) {
          this.x = x;
          this.y = y;
          this.z = z;
@@ -103,10 +102,10 @@
              double originalYa = ya;
              double originalZa = za;
 -            if (this.hasPhysics && (xa != 0.0 || ya != 0.0 || za != 0.0) && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
-+         if (this.hasPhysics
-+            && (xa != 0.0 || ya != 0.0 || za != 0.0)
-+            && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED
-+            && this.hasNearBlocks(this.x, this.y, this.z)) {
++            if (this.hasPhysics
++                && (xa != 0.0 || ya != 0.0 || za != 0.0)
++                && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED
++                && this.hasNearBlocks(this.x, this.y, this.z)) {
                  Vec3 movement = Entity.collideBoundingBox(
                      CollisionContext.positionContext(this.y), new Vec3(xa, ya, za), this.getBoundingBox(), this.level, List.of()
                  );
@@ -115,7 +114,7 @@
      }
  
 -    protected int getLightCoords(final float a) {
-+   protected int getLightCoords(float a) {
++    protected int getLightCoords(float a) {
          BlockPos pos = BlockPos.containing(this.x, this.y, this.z);
          return this.level.hasChunkAt(pos) ? LightCoordsUtil.getLightCoords(this.level, pos) : 15728640;
      }
@@ -124,7 +123,7 @@
      }
  
 -    public void setBoundingBox(final AABB bb) {
-+   public void setBoundingBox(AABB bb) {
++    public void setBoundingBox(AABB bb) {
          this.bb = bb;
      }
  
@@ -133,44 +132,44 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   private boolean hasNearBlocks(double dx, double dy, double dz) {
-+      if (!(this.bbWidth > 1.0F) && !(this.bbHeight > 1.0F)) {
-+         int posXi = Mth.floor(this.x);
-+         int posYi = Mth.floor(this.y);
-+         int posZi = Mth.floor(this.z);
-+         this.blockPosM.setXyz(posXi, posYi, posZi);
-+         BlockState bs = this.level.getBlockState(this.blockPosM);
-+         if (!bs.isAir()) {
-+            return true;
-+         }
-+
-+         double posX2 = dx > 0.0 ? this.bb.maxX : (dx < 0.0 ? this.bb.minX : this.x);
-+         double posY2 = dy > 0.0 ? this.bb.maxY : (dy < 0.0 ? this.bb.minY : this.y);
-+         double posZ2 = dz > 0.0 ? this.bb.maxZ : (dz < 0.0 ? this.bb.minZ : this.z);
-+         int posXi2 = Mth.floor(posX2 + dx);
-+         int posYi2 = Mth.floor(posY2 + dy);
-+         int posZi2 = Mth.floor(posZ2 + dz);
-+         if (posXi2 != posXi || posYi2 != posYi || posZi2 != posZi) {
-+            this.blockPosM.setXyz(posXi2, posYi2, posZi2);
-+            BlockState bs2 = this.level.getBlockState(this.blockPosM);
-+            if (!bs2.isAir()) {
-+               return true;
++    private boolean hasNearBlocks(double dx, double dy, double dz) {
++        if (!(this.bbWidth > 1.0F) && !(this.bbHeight > 1.0F)) {
++            int posXi = Mth.floor(this.x);
++            int posYi = Mth.floor(this.y);
++            int posZi = Mth.floor(this.z);
++            this.blockPosM.setXyz(posXi, posYi, posZi);
++            BlockState bs = this.level.getBlockState(this.blockPosM);
++            if (!bs.isAir()) {
++                return true;
 +            }
-+         }
 +
-+         return false;
-+      } else {
-+         return true;
-+      }
-+   }
++            double posX2 = dx > 0.0 ? this.bb.maxX : (dx < 0.0 ? this.bb.minX : this.x);
++            double posY2 = dy > 0.0 ? this.bb.maxY : (dy < 0.0 ? this.bb.minY : this.y);
++            double posZ2 = dz > 0.0 ? this.bb.maxZ : (dz < 0.0 ? this.bb.minZ : this.z);
++            int posXi2 = Mth.floor(posX2 + dx);
++            int posYi2 = Mth.floor(posY2 + dy);
++            int posZi2 = Mth.floor(posZ2 + dz);
++            if (posXi2 != posXi || posYi2 != posYi || posZi2 != posZi) {
++                this.blockPosM.setXyz(posXi2, posYi2, posZi2);
++                BlockState bs2 = this.level.getBlockState(this.blockPosM);
++                if (!bs2.isAir()) {
++                    return true;
++                }
++            }
 +
-+   public int getAge() {
-+      return this.age;
-+   }
++            return false;
++        } else {
++            return true;
++        }
++    }
 +
-+   public Vec3 getPos() {
-+      return new Vec3(this.x, this.y, this.z);
-+   }
++    public int getAge() {
++        return this.age;
++    }
++
++    public Vec3 getPos() {
++        return new Vec3(this.x, this.y, this.z);
++    }
 +
      public record LifetimeAlpha(float startAlpha, float endAlpha, float startAtNormalizedAge, float endAtNormalizedAge) {
          public static final Particle.LifetimeAlpha ALWAYS_OPAQUE = new Particle.LifetimeAlpha(1.0F, 1.0F, 0.0F, 1.0F);
@@ -180,7 +179,7 @@
          }
  
 -        public float currentAlphaForAge(final int age, final int lifetime, final float partialTickTime) {
-+      public float currentAlphaForAge(int age, int lifetime, float partialTickTime) {
++        public float currentAlphaForAge(int age, int lifetime, float partialTickTime) {
              if (Mth.equal(this.startAlpha, this.endAlpha)) {
                  return this.startAlpha;
              }

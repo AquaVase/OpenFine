@@ -17,14 +17,14 @@
      private final Throwable exception;
      private final List<CrashReportCategory> details = Lists.newArrayList();
 -    private @Nullable Path saveFile;
-+   private Path saveFile;
++    private Path saveFile;
      private boolean trackingStackTrace = true;
      private StackTraceElement[] uncategorizedStackTrace = new StackTraceElement[0];
      private final SystemReport systemReport = new SystemReport();
-+   private boolean reported = false;
++    private boolean reported = false;
  
 -    public CrashReport(final String title, final Throwable t) {
-+   public CrashReport(String title, Throwable t) {
++    public CrashReport(String title, Throwable t) {
          this.title = title;
          this.exception = t;
      }
@@ -33,34 +33,41 @@
      }
  
 -    public void getDetails(final StringBuilder builder) {
-+   public void getDetails(StringBuilder builder) {
++    public void getDetails(StringBuilder builder) {
          if (this.uncategorizedStackTrace.length <= 0 && !this.details.isEmpty()) {
              this.uncategorizedStackTrace = ArrayUtils.subarray(this.details.get(0).getStacktrace(), 0, 1);
          }
-@@ -58,6 +60,11 @@
+@@ -58,14 +60,20 @@
          if (this.uncategorizedStackTrace.length > 0) {
              builder.append("-- Head --\n");
              builder.append("Thread: ").append(Thread.currentThread().getName()).append("\n");
-+         if (Reflector.CrashReportExtender_generateEnhancedStackTraceSTE.exists()) {
-+            builder.append(Reflector.CrashReportAnalyser_appendSuspectedMods.callString(this.exception, this.uncategorizedStackTrace));
-+            builder.append("Stacktrace:");
-+            builder.append(Reflector.CrashReportExtender_generateEnhancedStackTraceSTE.callString1(this.uncategorizedStackTrace));
-+         } else {
-             builder.append("Stacktrace:\n");
+-            builder.append("Stacktrace:\n");
++            if (Reflector.CrashReportExtender_generateEnhancedStackTraceSTE.exists()) {
++                builder.append(Reflector.CrashReportAnalyser_appendSuspectedMods.callString(this.exception, this.uncategorizedStackTrace));
++                builder.append("Stacktrace:");
++                builder.append(Reflector.CrashReportExtender_generateEnhancedStackTraceSTE.callString1(this.uncategorizedStackTrace));
++            } else {
++                builder.append("Stacktrace:\n");
  
-             for (StackTraceElement element : this.uncategorizedStackTrace) {
-@@ -67,12 +74,14 @@
- 
-             builder.append("\n");
+-            for (StackTraceElement element : this.uncategorizedStackTrace) {
+-                builder.append("\t").append("at ").append(element);
++                for (StackTraceElement element : this.uncategorizedStackTrace) {
++                    builder.append("\t").append("at ").append(element);
++                    builder.append("\n");
++                }
++
+                 builder.append("\n");
+             }
+-
+-            builder.append("\n");
          }
-+      }
  
          for (CrashReportCategory entry : this.details) {
-             entry.getDetails(builder);
+@@ -73,6 +81,7 @@
              builder.append("\n\n");
          }
  
-+      Reflector.CrashReportExtender_extendSystemReport.call(this.systemReport);
++        Reflector.CrashReportExtender_extendSystemReport.call(this.systemReport);
          this.systemReport.appendToCrashReportString(builder);
      }
  
@@ -68,14 +75,14 @@
          }
  
          try {
-+         if (Reflector.CrashReportExtender_generateEnhancedStackTraceT.exists()) {
-+            return Reflector.CrashReportExtender_generateEnhancedStackTraceT.callString(exception);
-+         }
-+      } catch (Throwable e) {
-+         e.printStackTrace();
-+      }
++            if (Reflector.CrashReportExtender_generateEnhancedStackTraceT.exists()) {
++                return Reflector.CrashReportExtender_generateEnhancedStackTraceT.callString(exception);
++            }
++        } catch (Throwable e) {
++            e.printStackTrace();
++        }
 +
-+      try {
++        try {
              writer = new StringWriter();
              printWriter = new PrintWriter(writer);
              exception.printStackTrace(printWriter);
@@ -84,7 +91,7 @@
      }
  
 -    private static Throwable copyProperties(final Throwable original, final Throwable copy) {
-+   private static Throwable copyProperties(Throwable original, Throwable copy) {
++    private static Throwable copyProperties(Throwable original, Throwable copy) {
          try {
              Throwable cause = original.getCause();
              if (cause != null) {
@@ -93,7 +100,7 @@
      }
  
 -    private static Throwable replaceMessage(final Throwable original, final String title) {
-+   private static Throwable replaceMessage(Throwable original, String title) {
++    private static Throwable replaceMessage(Throwable original, String title) {
          return switch (original) {
              case NullPointerException var4 -> copyProperties(original, new NullPointerException(title));
              case StackOverflowError var5 -> copyProperties(original, new StackOverflowError(title));
@@ -102,11 +109,11 @@
      }
  
 -    public String getFriendlyReport(final ReportType reportType, final List<String> extraComments) {
-+   public String getFriendlyReport(ReportType reportType, List<String> extraComments) {
-+      if (!this.reported) {
-+         this.reported = true;
-+         CrashReporter.onCrashReport(this, this.systemReport);
-+      }
++    public String getFriendlyReport(ReportType reportType, List<String> extraComments) {
++        if (!this.reported) {
++            this.reported = true;
++            CrashReporter.onCrashReport(this, this.systemReport);
++        }
 +
          StringBuilder builder = new StringBuilder();
          reportType.appendHeader(builder, extraComments);
@@ -116,17 +123,17 @@
      }
  
 -    public String getFriendlyReport(final ReportType reportType) {
-+   public String getFriendlyReport(ReportType reportType) {
++    public String getFriendlyReport(ReportType reportType) {
          return this.getFriendlyReport(reportType, List.of());
      }
  
 -    public @Nullable Path getSaveFile() {
-+   public Path getSaveFile() {
++    public Path getSaveFile() {
          return this.saveFile;
      }
  
 -    public boolean saveToFile(final Path saveFile, final ReportType reportType, final List<String> extraComments) {
-+   public boolean saveToFile(Path saveFile, ReportType reportType, List<String> extraComments) {
++    public boolean saveToFile(Path saveFile, ReportType reportType, List<String> extraComments) {
          if (this.saveFile != null) {
              return false;
          }
@@ -135,41 +142,79 @@
      }
  
 -    public boolean saveToFile(final Path file, final ReportType reportType) {
-+   public boolean saveToFile(Path file, ReportType reportType) {
++    public boolean saveToFile(Path file, ReportType reportType) {
          return this.saveToFile(file, reportType, List.of());
      }
  
-@@ -183,12 +205,14 @@
+@@ -183,43 +205,48 @@
          return this.systemReport;
      }
  
 -    public CrashReportCategory addCategory(final String name) {
-+   public CrashReportCategory addCategory(String name) {
++    public CrashReportCategory addCategory(String name) {
          return this.addCategory(name, 1);
      }
  
 -    public CrashReportCategory addCategory(final String name, final int nestedOffset) {
-+   public CrashReportCategory addCategory(String name, int nestedOffset) {
++    public CrashReportCategory addCategory(String name, int nestedOffset) {
          CrashReportCategory category = new CrashReportCategory(name);
+-        if (this.trackingStackTrace) {
+-            int size = category.fillInStackTrace(nestedOffset);
+-            StackTraceElement[] fullTrace = this.exception.getStackTrace();
+-            StackTraceElement source = null;
+-            StackTraceElement next = null;
+-            int traceIndex = fullTrace.length - size;
+-            if (traceIndex < 0) {
+-                LOGGER.error("Negative index in crash report handler ({}/{})", fullTrace.length, size);
+-            }
+ 
+-            if (0 <= traceIndex && traceIndex < fullTrace.length) {
+-                source = fullTrace[traceIndex];
+-                if (fullTrace.length + 1 - size < fullTrace.length) {
+-                    next = fullTrace[fullTrace.length + 1 - size];
++        try {
++            if (this.trackingStackTrace) {
++                int size = category.fillInStackTrace(nestedOffset);
++                StackTraceElement[] fullTrace = this.exception.getStackTrace();
++                StackTraceElement source = null;
++                StackTraceElement next = null;
++                int traceIndex = fullTrace.length - size;
++                if (traceIndex < 0) {
++                    LOGGER.error("Negative index in crash report handler ({}/{})", fullTrace.length, size);
+                 }
+-            }
+ 
+-            this.trackingStackTrace = category.validateStackTrace(source, next);
+-            if (fullTrace.length >= size && 0 <= traceIndex && traceIndex < fullTrace.length) {
+-                this.uncategorizedStackTrace = new StackTraceElement[traceIndex];
+-                System.arraycopy(fullTrace, 0, this.uncategorizedStackTrace, 0, this.uncategorizedStackTrace.length);
+-            } else {
+-                this.trackingStackTrace = false;
++                if (0 <= traceIndex && traceIndex < fullTrace.length) {
++                    source = fullTrace[traceIndex];
++                    if (fullTrace.length + 1 - size < fullTrace.length) {
++                        next = fullTrace[fullTrace.length + 1 - size];
++                    }
++                }
 +
-+      try {
-         if (this.trackingStackTrace) {
-             int size = category.fillInStackTrace(nestedOffset);
-             StackTraceElement[] fullTrace = this.exception.getStackTrace();
-@@ -214,12 +238,15 @@
-                 this.trackingStackTrace = false;
++                this.trackingStackTrace = category.validateStackTrace(source, next);
++                if (fullTrace.length >= size && 0 <= traceIndex && traceIndex < fullTrace.length) {
++                    this.uncategorizedStackTrace = new StackTraceElement[traceIndex];
++                    System.arraycopy(fullTrace, 0, this.uncategorizedStackTrace, 0, this.uncategorizedStackTrace.length);
++                } else {
++                    this.trackingStackTrace = false;
++                }
              }
++        } catch (Throwable e) {
++            e.printStackTrace();
          }
-+      } catch (Throwable e) {
-+         e.printStackTrace();
-+      }
  
          this.details.add(category);
          return category;
      }
  
 -    public static CrashReport forThrowable(Throwable t, final String title) {
-+   public static CrashReport forThrowable(Throwable t, String title) {
++    public static CrashReport forThrowable(Throwable t, String title) {
          while (t instanceof CompletionException && t.getCause() != null) {
              t = t.getCause();
          }

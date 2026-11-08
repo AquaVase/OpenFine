@@ -6,13 +6,13 @@ import net.optifine.reflect.Reflector;
 import net.optifine.reflect.ReflectorField;
 
 public class ModelAdapterSalmonSmall extends ModelAdapterSalmon {
-   public ModelAdapterSalmonSmall() {
-      super(EntityTypes.SALMON, "salmon_small", ModelLayers.SALMON_SMALL);
-      this.setAlias("salmon");
-   }
+    public ModelAdapterSalmonSmall() {
+        super(EntityTypes.SALMON, "salmon_small", ModelLayers.SALMON_SMALL);
+        this.setAlias("salmon");
+    }
 
-   @Override
-   protected ReflectorField getModelField() {
-      return Reflector.SalmonRenderer_modelSmall;
-   }
+    @Override
+    protected ReflectorField getModelField() {
+        return Reflector.SalmonRenderer_modelSmall;
+    }
 }

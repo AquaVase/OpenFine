@@ -19,11 +19,11 @@
      private final Map<ChunkSectionLayer, ByteBufferBuilder> buffers = Util.makeEnumMap(
          ChunkSectionLayer.class, layer -> new ByteBufferBuilder(layer.bufferSize())
      );
-+   private ModelBlockRenderer blockRenderer;
-+   private FluidRenderer fluidRenderer;
++    private ModelBlockRenderer blockRenderer;
++    private FluidRenderer fluidRenderer;
  
 -    public ByteBufferBuilder buffer(final ChunkSectionLayer layer) {
-+   public ByteBufferBuilder buffer(ChunkSectionLayer layer) {
++    public ByteBufferBuilder buffer(ChunkSectionLayer layer) {
          return this.buffers.get(layer);
      }
  
@@ -34,24 +34,24 @@
 -}
 \ No newline at end of file
 +
-+   public ModelBlockRenderer getModelBlockRenderer(boolean ambientOcclusion, boolean cull, BlockColors blockColors) {
-+      if (this.blockRenderer != null
-+         && this.blockRenderer.isAmbientOcclusion() == ambientOcclusion
-+         && this.blockRenderer.isCull() == cull
-+         && this.blockRenderer.getBlockColors() == blockColors) {
-+         return this.blockRenderer;
-+      }
++    public ModelBlockRenderer getModelBlockRenderer(boolean ambientOcclusion, boolean cull, BlockColors blockColors) {
++        if (this.blockRenderer != null
++            && this.blockRenderer.isAmbientOcclusion() == ambientOcclusion
++            && this.blockRenderer.isCull() == cull
++            && this.blockRenderer.getBlockColors() == blockColors) {
++            return this.blockRenderer;
++        }
 +
-+      this.blockRenderer = new ModelBlockRenderer(ambientOcclusion, cull, blockColors);
-+      return this.blockRenderer;
-+   }
++        this.blockRenderer = new ModelBlockRenderer(ambientOcclusion, cull, blockColors);
++        return this.blockRenderer;
++    }
 +
-+   public FluidRenderer getFluidRenderer(FluidStateModelSet fluidModelSet) {
-+      if (this.fluidRenderer != null && this.fluidRenderer.getFluidModels() == fluidModelSet) {
-+         return this.fluidRenderer;
-+      }
++    public FluidRenderer getFluidRenderer(FluidStateModelSet fluidModelSet) {
++        if (this.fluidRenderer != null && this.fluidRenderer.getFluidModels() == fluidModelSet) {
++            return this.fluidRenderer;
++        }
 +
-+      this.fluidRenderer = new FluidRenderer(fluidModelSet);
-+      return this.fluidRenderer;
-+   }
++        this.fluidRenderer = new FluidRenderer(fluidModelSet);
++        return this.fluidRenderer;
++    }
 +}

@@ -15,14 +15,14 @@
      private final FloatList distances = new FloatArrayList();
  
 -    public void submit(final TranslucentSubmit submit) {
-+   public void submit(TranslucentSubmit submit) {
++    public void submit(TranslucentSubmit submit) {
          this.submits.add(submit);
          this.distances.add(submit.distanceToCameraSq());
      }
  
      @Override
 -    public void sortInto(final FeatureRenderPhase.Output output) {
-+   public void sortInto(Output output) {
++    public void sortInto(Output output) {
          if (!this.submits.isEmpty()) {
              for (int index : this.sortIndices()) {
                  output.accept(this.submits.get(index), true);
@@ -33,7 +33,7 @@
 -}
 \ No newline at end of file
 +
-+   public int size() {
-+      return this.submits.size();
-+   }
++    public int size() {
++        return this.submits.size();
++    }
 +}

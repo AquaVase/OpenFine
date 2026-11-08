@@ -19,24 +19,24 @@
      private final Queue<PacketProcessor.ListenerAndPacket<?>> packetsToBeHandled = Queues.newConcurrentLinkedQueue();
      private final Thread runningThread;
      private boolean closed;
-+   public static ResourceKey<Level> lastDimensionType = null;
++    public static ResourceKey<Level> lastDimensionType = null;
  
 -    public PacketProcessor(final Thread runningThread) {
-+   protected static void clientPreProcessPacket(Packet packetIn) {
-+      if (packetIn instanceof ClientboundPlayerPositionPacket) {
-+         Minecraft.getInstance().levelRenderer.onPlayerPositionSet();
-+      }
++    protected static void clientPreProcessPacket(Packet packetIn) {
++        if (packetIn instanceof ClientboundPlayerPositionPacket) {
++            Minecraft.getInstance().levelRenderer.onPlayerPositionSet();
++        }
 +
-+      if (packetIn instanceof ClientboundRespawnPacket respawn) {
-+         lastDimensionType = respawn.commonPlayerSpawnInfo().dimension();
-+      } else if (packetIn instanceof ClientboundLoginPacket joinGame) {
-+         lastDimensionType = joinGame.commonPlayerSpawnInfo().dimension();
-+      } else {
-+         lastDimensionType = null;
-+      }
-+   }
++        if (packetIn instanceof ClientboundRespawnPacket respawn) {
++            lastDimensionType = respawn.commonPlayerSpawnInfo().dimension();
++        } else if (packetIn instanceof ClientboundLoginPacket joinGame) {
++            lastDimensionType = joinGame.commonPlayerSpawnInfo().dimension();
++        } else {
++            lastDimensionType = null;
++        }
++    }
 +
-+   public PacketProcessor(Thread runningThread) {
++    public PacketProcessor(Thread runningThread) {
          this.runningThread = runningThread;
      }
  
@@ -45,7 +45,7 @@
      }
  
 -    public <T extends PacketListener> void scheduleIfPossible(final T listener, final Packet<T> packet) {
-+   public <T extends PacketListener> void scheduleIfPossible(T listener, Packet<T> packet) {
++    public <T extends PacketListener> void scheduleIfPossible(T listener, Packet<T> packet) {
          if (this.closed) {
              throw new RejectedExecutionException("Server already shutting down");
          }
@@ -53,7 +53,7 @@
  
      private record ListenerAndPacket<T extends PacketListener>(T listener, Packet<T> packet) {
          public void handle() {
-+         PacketProcessor.clientPreProcessPacket(this.packet);
++            PacketProcessor.clientPreProcessPacket(this.packet);
              if (this.listener.shouldHandleMessage(this.packet)) {
                  try {
                      this.packet.handle(this.listener);

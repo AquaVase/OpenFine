@@ -26,9 +26,9 @@
      private final int depthOrLayers;
      private final int mipLevels;
 -    private final @GpuTexture.Usage int usage;
-+   private @GpuTexture.Usage int usage;
++    private @GpuTexture.Usage int usage;
      private final String label;
-+   private AbstractTexture parentTexture;
++    private AbstractTexture parentTexture;
  
 -    public GpuTexture(
 -        final @GpuTexture.Usage int usage,
@@ -39,7 +39,7 @@
 -        final int depthOrLayers,
 -        final int mipLevels
 -    ) {
-+   public GpuTexture(@GpuTexture.Usage int usage, String label, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels) {
++    public GpuTexture(@GpuTexture.Usage int usage, String label, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels) {
          this.usage = usage;
          this.label = label;
          this.format = format;
@@ -48,12 +48,12 @@
      }
  
 -    public int getWidth(final int mipLevel) {
-+   public int getWidth(int mipLevel) {
++    public int getWidth(int mipLevel) {
          return this.width >> mipLevel;
      }
  
 -    public int getHeight(final int mipLevel) {
-+   public int getHeight(int mipLevel) {
++    public int getHeight(int mipLevel) {
          return this.height >> mipLevel;
      }
  
@@ -61,46 +61,46 @@
  
      public abstract boolean isClosed();
  
-+   public int getWidth() {
-+      return this.width;
-+   }
++    public int getWidth() {
++        return this.width;
++    }
 +
-+   public int getHeight() {
-+      return this.height;
-+   }
++    public int getHeight() {
++        return this.height;
++    }
 +
-+   public MultiTexID getMultiTexID() {
-+      return null;
-+   }
++    public MultiTexID getMultiTexID() {
++        return null;
++    }
 +
-+   public int getGlTextureId() {
-+      return 0;
-+   }
++    public int getGlTextureId() {
++        return 0;
++    }
 +
-+   public void bindTexture() {
-+   }
++    public void bindTexture() {
++    }
 +
-+   public void deleteGlTexture() {
-+   }
++    public void deleteGlTexture() {
++    }
 +
-+   public void setUpdateBlurMipmap(boolean updateBlurMipmap) {
-+   }
++    public void setUpdateBlurMipmap(boolean updateBlurMipmap) {
++    }
 +
-+   public void setParentTexture(AbstractTexture parentTexture) {
-+      this.parentTexture = parentTexture;
-+   }
++    public void setParentTexture(AbstractTexture parentTexture) {
++        this.parentTexture = parentTexture;
++    }
 +
-+   public AbstractTexture getParentTexture() {
-+      return this.parentTexture;
-+   }
++    public AbstractTexture getParentTexture() {
++        return this.parentTexture;
++    }
 +
-+   public void setUsage(int usage) {
-+      this.usage = usage;
-+   }
++    public void setUsage(int usage) {
++        this.usage = usage;
++    }
 +
-+   public GlTexture getGlTexture() {
-+      return (GlTexture)this;
-+   }
++    public GlTexture getGlTexture() {
++        return (GlTexture)this;
++    }
 +
      @Retention(RetentionPolicy.CLASS)
      @Target(ElementType.TYPE_USE)

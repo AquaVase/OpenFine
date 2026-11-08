@@ -26,19 +26,19 @@
      private final List<StagedVertexBuffer.Draw> draws = new ArrayList<>();
 -    private StagedVertexBuffer.@Nullable Draw lastBuildingDraw;
 -    private @Nullable BufferBuilder lastVertexBuilder;
-+   private StagedVertexBuffer.Draw lastBuildingDraw;
-+   private BufferBuilder lastVertexBuilder;
++    private StagedVertexBuffer.Draw lastBuildingDraw;
++    private BufferBuilder lastVertexBuilder;
      private final StagedVertexBuffer.GpuBufferPool vertexBufferPool;
      private final StagedVertexBuffer.GpuBufferPool indexBufferPool;
 -    private @Nullable GpuBuffer currentVertexBuffer;
 -    private @Nullable GpuBuffer currentIndexBuffer;
-+   private GpuBuffer currentVertexBuffer;
-+   private GpuBuffer currentIndexBuffer;
-+   private Deque<StagedVertexBuffer.Draw> prevBuildingDraws = new ArrayDeque<>();
-+   private Deque<BufferBuilder> prevVertexBuilders = new ArrayDeque<>();
++    private GpuBuffer currentVertexBuffer;
++    private GpuBuffer currentIndexBuffer;
++    private Deque<StagedVertexBuffer.Draw> prevBuildingDraws = new ArrayDeque<>();
++    private Deque<BufferBuilder> prevVertexBuilders = new ArrayDeque<>();
  
 -    public StagedVertexBuffer(final Supplier<String> label, final int initialCapacity) {
-+   public StagedVertexBuffer(Supplier<String> label, int initialCapacity) {
++    public StagedVertexBuffer(Supplier<String> label, int initialCapacity) {
          this.stagingBuffer = new ByteBufferBuilder(initialCapacity);
          this.stagingGpuBufferPool = new StagedVertexBuffer.GpuBufferPool(() -> label.get() + " - Staging", 22);
          this.vertexBufferPool = new StagedVertexBuffer.GpuBufferPool(() -> label.get() + " - Vertex", 40);
@@ -46,12 +46,12 @@
      }
  
 -    public StagedVertexBuffer.Draw appendDraw(final VertexFormat format, final PrimitiveTopology primitiveTopology) {
-+   public StagedVertexBuffer.Draw appendDraw(VertexFormat format, PrimitiveTopology primitiveTopology) {
++    public StagedVertexBuffer.Draw appendDraw(VertexFormat format, PrimitiveTopology primitiveTopology) {
          return this.appendDraw(format, primitiveTopology, null);
      }
  
 -    public StagedVertexBuffer.Draw appendDraw(final VertexFormat format, final PrimitiveTopology primitiveTopology, final @Nullable VertexSorting quadSorting) {
-+   public StagedVertexBuffer.Draw appendDraw(VertexFormat format, PrimitiveTopology primitiveTopology, VertexSorting quadSorting) {
++    public StagedVertexBuffer.Draw appendDraw(VertexFormat format, PrimitiveTopology primitiveTopology, VertexSorting quadSorting) {
          if (this.currentVertexBuffer != null) {
              throw new IllegalStateException("Cannot append draw after upload");
          }
@@ -60,7 +60,7 @@
      }
  
 -    public VertexConsumer getVertexBuilder(final StagedVertexBuffer.Draw draw) {
-+   public VertexConsumer getVertexBuilder(StagedVertexBuffer.Draw draw) {
++    public VertexConsumer getVertexBuilder(StagedVertexBuffer.Draw draw) {
          if (this.currentVertexBuffer != null) {
              throw new IllegalStateException("Cannot append draw after upload");
          }
@@ -69,7 +69,7 @@
      }
  
 -    private void finishLastVertexBuilder() {
-+   public void finishLastVertexBuilder() {
++    public void finishLastVertexBuilder() {
          if (this.lastVertexBuilder != null) {
              MeshData mesh = this.lastVertexBuilder.build();
              if (mesh != null) {
@@ -77,18 +77,18 @@
          }
      }
  
-+   public void saveRenderState() {
-+      this.prevBuildingDraws.push(this.lastBuildingDraw);
-+      this.prevVertexBuilders.push(this.lastVertexBuilder);
-+   }
++    public void saveRenderState() {
++        this.prevBuildingDraws.push(this.lastBuildingDraw);
++        this.prevVertexBuilders.push(this.lastVertexBuilder);
++    }
 +
-+   public void restoreRenderState() {
-+      if (!this.prevBuildingDraws.isEmpty()) {
-+         this.finishLastVertexBuilder();
-+         this.lastBuildingDraw = this.prevBuildingDraws.pop();
-+         this.lastVertexBuilder = this.prevVertexBuilders.pop();
-+      }
-+   }
++    public void restoreRenderState() {
++        if (!this.prevBuildingDraws.isEmpty()) {
++            this.finishLastVertexBuilder();
++            this.lastBuildingDraw = this.prevBuildingDraws.pop();
++            this.lastVertexBuilder = this.prevVertexBuilders.pop();
++        }
++    }
 +
      public void upload() {
          if (this.currentVertexBuffer != null) {
@@ -103,7 +103,7 @@
 -        final @Nullable GpuBuffer indexGpuBuffer,
 -        final int vertexBufferSize,
 -        final int indexBufferSize
-+      GpuDevice device, List<StagedVertexBuffer.Draw> draws, GpuBuffer vertexGpuBuffer, GpuBuffer indexGpuBuffer, int vertexBufferSize, int indexBufferSize
++        GpuDevice device, List<StagedVertexBuffer.Draw> draws, GpuBuffer vertexGpuBuffer, GpuBuffer indexGpuBuffer, int vertexBufferSize, int indexBufferSize
      ) {
          CommandEncoder commandEncoder = device.createCommandEncoder();
          int stagingBufferSize = vertexBufferSize + indexBufferSize;
@@ -112,7 +112,7 @@
      }
  
 -    private static CompactVectorArray decodeSortingPoints(final StagedVertexBuffer.Draw draw) {
-+   private static CompactVectorArray decodeSortingPoints(StagedVertexBuffer.Draw draw) {
++    private static CompactVectorArray decodeSortingPoints(StagedVertexBuffer.Draw draw) {
          VertexFormat format = draw.format;
          CompactVectorArray points = new CompactVectorArray(draw.vertexCount / 4);
          int offset = 0;
@@ -121,7 +121,7 @@
      }
  
 -    public StagedVertexBuffer.@Nullable ExecuteInfo getExecuteInfo(final StagedVertexBuffer.Draw draw) {
-+   public StagedVertexBuffer.ExecuteInfo getExecuteInfo(StagedVertexBuffer.Draw draw) {
++    public StagedVertexBuffer.ExecuteInfo getExecuteInfo(StagedVertexBuffer.Draw draw) {
          if (draw.isEmpty()) {
              return null;
          } else if (this.currentVertexBuffer == null) {
@@ -134,25 +134,25 @@
          private final VertexFormat format;
          private final PrimitiveTopology primitiveTopology;
 -        private final @Nullable VertexSorting quadSorting;
-+      private final VertexSorting quadSorting;
++        private final VertexSorting quadSorting;
          private final List<ByteBufferBuilder.Result> vertexBufferSlices = new ArrayList<>();
          private int vertexBufferSize;
          private int vertexCount;
          private int indexCount;
          private int vertexOffset;
          private int indexOffset;
-+      private EntityRenderState entityRenderState;
-+      private BlockEntityRenderState blockEntityRenderState;
++        private EntityRenderState entityRenderState;
++        private BlockEntityRenderState blockEntityRenderState;
  
 -        private Draw(final VertexFormat format, final PrimitiveTopology primitiveTopology, final @Nullable VertexSorting quadSorting) {
-+      private Draw(VertexFormat format, PrimitiveTopology primitiveTopology, VertexSorting quadSorting) {
++        private Draw(VertexFormat format, PrimitiveTopology primitiveTopology, VertexSorting quadSorting) {
              this.format = format;
              this.primitiveTopology = primitiveTopology;
              this.quadSorting = quadSorting;
          }
  
 -        private void append(final MeshData mesh) {
-+      private void append(MeshData mesh) {
++        private void append(MeshData mesh) {
              assert mesh.indexBuffer() == null;
              this.vertexBufferSlices.add(mesh.vertexBufferSlice());
              this.vertexBufferSize = this.vertexBufferSize + mesh.vertexBuffer().remaining();
@@ -161,32 +161,32 @@
              return this.vertexCount == 0;
          }
 +
-+      public void setEntityRenderState(EntityRenderState entityRenderState) {
-+         this.entityRenderState = entityRenderState;
++        public void setEntityRenderState(EntityRenderState entityRenderState) {
++            this.entityRenderState = entityRenderState;
++        }
++
++        public EntityRenderState getEntityRenderState() {
++            return this.entityRenderState;
++        }
++
++        public Entity getEntity() {
++            return this.entityRenderState == null ? null : this.entityRenderState.entity;
++        }
++
++        public void setBlockEntityRenderState(BlockEntityRenderState blockEntityRenderState) {
++            this.blockEntityRenderState = blockEntityRenderState;
++        }
++
++        public BlockEntityRenderState getBlockEntityRenderState() {
++            return this.blockEntityRenderState;
++        }
++
++        public BlockEntity getBlockEntity() {
++            return this.blockEntityRenderState == null ? null : this.blockEntityRenderState.blockEntity;
++        }
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+      public EntityRenderState getEntityRenderState() {
-+         return this.entityRenderState;
-+      }
-+
-+      public Entity getEntity() {
-+         return this.entityRenderState == null ? null : this.entityRenderState.entity;
-+      }
-+
-+      public void setBlockEntityRenderState(BlockEntityRenderState blockEntityRenderState) {
-+         this.blockEntityRenderState = blockEntityRenderState;
-+      }
-+
-+      public BlockEntityRenderState getBlockEntityRenderState() {
-+         return this.blockEntityRenderState;
-+      }
-+
-+      public BlockEntity getBlockEntity() {
-+         return this.blockEntityRenderState == null ? null : this.blockEntityRenderState.blockEntity;
-+      }
-+   }
-+
      public record ExecuteInfo(GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int baseVertex, int firstIndex, int indexCount) {
      }
  
@@ -199,7 +199,7 @@
          private final List<StagedVertexBuffer.GpuBufferPool.PendingRecycle> pendingRecycle = new ArrayList<>();
  
 -        private GpuBufferPool(final Supplier<String> label, final @GpuBuffer.Usage int usage) {
-+      private GpuBufferPool(Supplier<String> label, @GpuBuffer.Usage int usage) {
++        private GpuBufferPool(Supplier<String> label, @GpuBuffer.Usage int usage) {
              this.label = label;
              this.usage = usage;
          }
@@ -208,7 +208,7 @@
          }
  
 -        public GpuBuffer acquire(final GpuDevice device, final int minSize) {
-+      public GpuBuffer acquire(GpuDevice device, int minSize) {
++        public GpuBuffer acquire(GpuDevice device, int minSize) {
              this.tryRecycleBuffers();
              int roundedMinSize = Mth.roundToward(minSize, 262144);
              GpuBuffer buffer = this.takeBestAvailable(roundedMinSize, roundedMinSize * 4);
@@ -217,7 +217,7 @@
          }
  
 -        private @Nullable GpuBuffer takeBestAvailable(final int minSize, final int maxSize) {
-+      private GpuBuffer takeBestAvailable(int minSize, int maxSize) {
++        private GpuBuffer takeBestAvailable(int minSize, int maxSize) {
              int bestIndex = -1;
              long bestSize = maxSize + 1;
  
@@ -226,7 +226,7 @@
          }
  
 -        public void endFrame(final GpuDevice device) {
-+      public void endFrame(GpuDevice device) {
++        public void endFrame(GpuDevice device) {
              if (!this.usedThisFrame.isEmpty()) {
                  GpuFence fence = device.createCommandEncoder().createFence();
                  this.pendingRecycle.add(new StagedVertexBuffer.GpuBufferPool.PendingRecycle(List.copyOf(this.usedThisFrame), fence));
@@ -237,7 +237,7 @@
 -        @OnlyIn(Dist.CLIENT)
          private record PendingRecycle(List<GpuBuffer> buffers, GpuFence fence) implements AutoCloseable {
 -            public @Nullable List<GpuBuffer> tryRecycle() {
-+         public List<GpuBuffer> tryRecycle() {
++            public List<GpuBuffer> tryRecycle() {
                  if (this.fence.awaitCompletion(0L)) {
                      this.fence.close();
                      return this.buffers;

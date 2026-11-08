@@ -19,43 +19,43 @@
      private static final int MAX_SMOOTH_LIGHT_LEVEL = 240;
  
 -    public static int pack(final int block, final int sky) {
-+   public static int pack(int block, int sky) {
++    public static int pack(int block, int sky) {
          return block << 4 | sky << 20;
      }
  
 -    public static int block(final int packed) {
 -        return packed >> 4 & 15;
-+   public static int block(int packed) {
-+      return (packed & 65535) >> 4;
++    public static int block(int packed) {
++        return (packed & 65535) >> 4;
      }
  
 -    public static int sky(final int packed) {
-+   public static int sky(int packed) {
++    public static int sky(int packed) {
          return packed >> 20 & 15;
      }
  
 -    public static int withBlock(final int coords, final int block) {
-+   public static int withBlock(int coords, int block) {
++    public static int withBlock(int coords, int block) {
          return coords & 0xFF0000 | block << 4;
      }
  
 -    public static int smoothPack(final int block, final int sky) {
-+   public static int smoothPack(int block, int sky) {
++    public static int smoothPack(int block, int sky) {
          return block & 0xFF | (sky & 0xFF) << 16;
      }
  
 -    public static int smoothBlock(final int packed) {
-+   public static int smoothBlock(int packed) {
++    public static int smoothBlock(int packed) {
          return packed & 0xFF;
      }
  
 -    public static int smoothSky(final int packed) {
-+   public static int smoothSky(int packed) {
++    public static int smoothSky(int packed) {
          return packed >> 16 & 0xFF;
      }
  
 -    public static int addSmoothBlockEmission(final int lightCoords, float blockLightEmission) {
-+   public static int addSmoothBlockEmission(int lightCoords, float blockLightEmission) {
++    public static int addSmoothBlockEmission(int lightCoords, float blockLightEmission) {
          blockLightEmission = Mth.clamp(blockLightEmission, 0.0F, 1.0F);
          int emittedBlock = (int)(Mth.clamp(blockLightEmission, 0.0F, 1.0F) * 240.0F);
          int block = Math.min(smoothBlock(lightCoords) + emittedBlock, 240);
@@ -63,7 +63,7 @@
      }
  
 -    public static int max(final int coords1, final int coords2) {
-+   public static int max(int coords1, int coords2) {
++    public static int max(int coords1, int coords2) {
          int block1 = block(coords1);
          int block2 = block(coords2);
          int sky1 = sky(coords1);
@@ -72,7 +72,7 @@
      }
  
 -    public static int lightCoordsWithEmission(final int lightCoords, final int emission) {
-+   public static int lightCoordsWithEmission(int lightCoords, int emission) {
++    public static int lightCoordsWithEmission(int lightCoords, int emission) {
          if (emission == 0) {
              return lightCoords;
          }
@@ -81,11 +81,11 @@
      }
  
 -    public static int smoothBlend(int neighbor1, int neighbor2, int neighbor3, final int center) {
-+   public static int smoothBlend(int neighbor1, int neighbor2, int neighbor3, int center) {
++    public static int smoothBlend(int neighbor1, int neighbor2, int neighbor3, int center) {
          if (sky(center) > 2 || block(center) > 2) {
              if (neighbor1 == 0) {
                  neighbor1 = center;
-@@ -87,38 +92,45 @@
+@@ -87,36 +92,43 @@
          return neighbor1 + neighbor2 + neighbor3 + center >> 2 & 16711935;
      }
  
@@ -99,59 +99,57 @@
 -        final float weight3,
 -        final float weight4
 -    ) {
-+   public static int smoothWeightedBlend(int coords1, int coords2, int coords3, int coords4, float weight1, float weight2, float weight3, float weight4) {
++    public static int smoothWeightedBlend(int coords1, int coords2, int coords3, int coords4, float weight1, float weight2, float weight3, float weight4) {
          int sky = (int)(smoothSky(coords1) * weight1 + smoothSky(coords2) * weight2 + smoothSky(coords3) * weight3 + smoothSky(coords4) * weight4);
          int block = (int)(smoothBlock(coords1) * weight1 + smoothBlock(coords2) * weight2 + smoothBlock(coords3) * weight3 + smoothBlock(coords4) * weight4);
          return smoothPack(block, sky);
      }
  
 -    public static int getLightCoords(final BlockAndLightGetter level, final BlockPos pos) {
-+   public static int getLightCoords(BlockAndLightGetter level, BlockPos pos) {
++    public static int getLightCoords(BlockAndLightGetter level, BlockPos pos) {
          return getLightCoords(LightCoordsUtil.BrightnessGetter.DEFAULT, level, level.getBlockState(pos), pos);
      }
  
-+   public static int getLightCoords(LightCoordsUtil.BrightnessGetter brightnessGetter, BlockAndLightGetter level, BlockState state, BlockPos pos) {
-+      return getLightCoords(brightnessGetter, level, state, pos, LevelRenderer.isAmbientOcclusion());
-+   }
++    public static int getLightCoords(LightCoordsUtil.BrightnessGetter brightnessGetter, BlockAndLightGetter level, BlockState state, BlockPos pos) {
++        return getLightCoords(brightnessGetter, level, state, pos, LevelRenderer.isAmbientOcclusion());
++    }
 +
      public static int getLightCoords(
 -        final LightCoordsUtil.BrightnessGetter brightnessGetter, final BlockAndLightGetter level, final BlockState state, final BlockPos pos
-+      LightCoordsUtil.BrightnessGetter brightnessGetter, BlockAndLightGetter level, BlockState state, BlockPos pos, boolean ambientOcclusionIn
++        LightCoordsUtil.BrightnessGetter brightnessGetter, BlockAndLightGetter level, BlockState state, BlockPos pos, boolean ambientOcclusionIn
      ) {
-+      if (EmissiveTextures.isRenderEmissive() && Config.isMinecraftThread()) {
-+         return Lightmap.MAX_BRIGHTNESS;
-+      }
++        if (EmissiveTextures.isRenderEmissive() && Config.isMinecraftThread()) {
++            return Lightmap.MAX_BRIGHTNESS;
++        }
 +
          if (state.emissiveRendering()) {
 -            return 15728880;
-+         return 15794417;
++            return 15794417;
          }
  
          int packedBrightness = brightnessGetter.packedBrightness(level, pos);
          int block = block(packedBrightness);
 -        int blockSelfEmission = state.getLightEmission();
 -        return block < blockSelfEmission ? withBlock(packedBrightness, blockSelfEmission) : packedBrightness;
-+      int blockSelfEmission = state.getLightEmission(level, pos);
-+      if (block < blockSelfEmission) {
-+         packedBrightness = withBlock(packedBrightness, blockSelfEmission);
++        int blockSelfEmission = state.getLightEmission(level, pos);
++        if (block < blockSelfEmission) {
++            packedBrightness = withBlock(packedBrightness, blockSelfEmission);
++        }
++
++        if (Config.isDynamicLights() && (!ambientOcclusionIn || !state.isSolidRender())) {
++            packedBrightness = DynamicLights.getCombinedLight(pos, packedBrightness);
++        }
++
++        return packedBrightness;
      }
  
-+      if (Config.isDynamicLights() && (!ambientOcclusionIn || !state.isSolidRender())) {
-+         packedBrightness = DynamicLights.getCombinedLight(pos, packedBrightness);
-+      }
-+
-+      return packedBrightness;
-+   }
-+
      @FunctionalInterface
-     public interface BrightnessGetter {
-         LightCoordsUtil.BrightnessGetter DEFAULT = (level, pos) -> {
 @@ -127,6 +139,6 @@
              return LightCoordsUtil.pack(block, sky);
          };
  
 -        int packedBrightness(BlockAndLightGetter level, BlockPos pos);
-+      int packedBrightness(BlockAndLightGetter var1, BlockPos var2);
++        int packedBrightness(BlockAndLightGetter var1, BlockPos var2);
      }
 -}
 \ No newline at end of file

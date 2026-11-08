@@ -28,12 +28,12 @@
      private final RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
      private final AbstractTexture endSkyTexture;
      private int starIndexCount;
-+   private ClientLevel world;
-+   private float partialTicks;
-+   private Vector4f endSkyColor = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
++    private ClientLevel world;
++    private float partialTicks;
++    private Vector4f endSkyColor = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
  
 -    public SkyRenderer(final TextureManager textureManager, final AtlasManager atlasManager, final RenderTarget renderTarget) {
-+   public SkyRenderer(TextureManager textureManager, AtlasManager atlasManager, RenderTarget renderTarget) {
++    public SkyRenderer(TextureManager textureManager, AtlasManager atlasManager, RenderTarget renderTarget) {
          this.celestialsAtlas = atlasManager.getAtlasOrThrow(AtlasIds.CELESTIALS);
          this.renderTarget = renderTarget;
          this.starBuffer = this.buildStars();
@@ -42,7 +42,7 @@
      }
  
 -    private AbstractTexture getTexture(final TextureManager textureManager, final Identifier location) {
-+   private AbstractTexture getTexture(TextureManager textureManager, Identifier location) {
++    private AbstractTexture getTexture(TextureManager textureManager, Identifier location) {
          return textureManager.getTexture(location);
      }
  
@@ -51,17 +51,17 @@
      }
  
 -    private static GpuBuffer buildSunQuad(final TextureAtlas atlas) {
-+   private static GpuBuffer buildSunQuad(TextureAtlas atlas) {
++    private static GpuBuffer buildSunQuad(TextureAtlas atlas) {
          return buildCelestialQuad("Sun quad", atlas.getSprite(SUN_SPRITE));
      }
  
 -    private static GpuBuffer buildEndFlashQuad(final TextureAtlas atlas) {
-+   private static GpuBuffer buildEndFlashQuad(TextureAtlas atlas) {
++    private static GpuBuffer buildEndFlashQuad(TextureAtlas atlas) {
          return buildCelestialQuad("End flash quad", atlas.getSprite(END_FLASH_SPRITE));
      }
  
 -    private static GpuBuffer buildCelestialQuad(final String name, final TextureAtlasSprite sprite) {
-+   private static GpuBuffer buildCelestialQuad(String name, TextureAtlasSprite sprite) {
++    private static GpuBuffer buildCelestialQuad(String name, TextureAtlasSprite sprite) {
          VertexFormat format = DefaultVertexFormat.POSITION_TEX;
  
          try (ByteBufferBuilder byteBufferBuilder = ByteBufferBuilder.exactlySized(4 * format.getVertexSize())) {
@@ -70,7 +70,7 @@
      }
  
 -    private static GpuBuffer buildMoonPhases(final TextureAtlas atlas) {
-+   private static GpuBuffer buildMoonPhases(TextureAtlas atlas) {
++    private static GpuBuffer buildMoonPhases(TextureAtlas atlas) {
          MoonPhase[] phases = MoonPhase.values();
          VertexFormat format = DefaultVertexFormat.POSITION_TEX;
  
@@ -79,13 +79,13 @@
      }
  
 -    private void buildSkyDisc(final VertexConsumer builder, final float yy) {
-+   private void buildSkyDisc(VertexConsumer builder, float yy) {
++    private void buildSkyDisc(VertexConsumer builder, float yy) {
          float x = Math.signum(yy) * 512.0F;
          builder.addVertex(0.0F, yy, 0.0F);
  
          for (int i = -180; i <= 180; i += 45) {
 -            builder.addVertex(x * Mth.cos(i * (float) (Math.PI / 180.0)), yy, 512.0F * Mth.sin(i * (float) (Math.PI / 180.0)));
-+         builder.addVertex(x * (float)Math.cos(i * (Math.PI / 180.0)), yy, 512.0F * (float)Math.sin(i * (Math.PI / 180.0)));
++            builder.addVertex(x * (float)Math.cos(i * (Math.PI / 180.0)), yy, 512.0F * (float)Math.sin(i * (Math.PI / 180.0)));
          }
      }
  
@@ -97,11 +97,11 @@
 -                bufferBuilder.addVertex(pose, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(-14145496);
 -                bufferBuilder.addVertex(pose, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(-14145496);
 -                bufferBuilder.addVertex(pose, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(-14145496);
-+            int argb = -1;
-+            bufferBuilder.addVertex(pose, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(argb);
-+            bufferBuilder.addVertex(pose, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(argb);
-+            bufferBuilder.addVertex(pose, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(argb);
-+            bufferBuilder.addVertex(pose, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(argb);
++                int argb = -1;
++                bufferBuilder.addVertex(pose, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(argb);
++                bufferBuilder.addVertex(pose, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(argb);
++                bufferBuilder.addVertex(pose, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(argb);
++                bufferBuilder.addVertex(pose, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(argb);
              }
  
              try (MeshData meshData = bufferBuilder.buildOrThrow()) {
@@ -110,7 +110,7 @@
      }
  
 -    public void renderSkyDisc(final int skyColor) {
-+   public void renderSkyDisc(int skyColor) {
++    public void renderSkyDisc(int skyColor) {
          GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms()
              .writeTransform(RenderSystem.getModelViewMatrixCopy(), ARGB.vector4fFromARGB32(skyColor));
          GpuTextureView colorTexture = this.renderTarget.getColorTextureView();
@@ -119,12 +119,12 @@
      }
  
 -    public void extractRenderState(final ClientLevel level, final float partialTicks, final Camera camera, final SkyRenderState state) {
-+   public void extractRenderState(ClientLevel level, float partialTicks, Camera camera, SkyRenderState state) {
++    public void extractRenderState(ClientLevel level, float partialTicks, Camera camera, SkyRenderState state) {
          state.skybox = level.dimensionType().skybox();
 -        if (state.skybox != DimensionType.Skybox.NONE) {
 -            if (state.skybox == DimensionType.Skybox.END) {
-+      if (state.skybox != Skybox.NONE) {
-+         if (state.skybox == Skybox.END) {
++        if (state.skybox != Skybox.NONE) {
++            if (state.skybox == Skybox.END) {
                  EndFlashState endFlashState = level.endFlashState();
                  if (endFlashState != null) {
                      state.endFlashIntensity = endFlashState.getIntensity(partialTicks);
@@ -133,7 +133,7 @@
      }
  
 -    private boolean shouldRenderDarkDisc(final float deltaPartialTick, final ClientLevel level) {
-+   private boolean shouldRenderDarkDisc(float deltaPartialTick, ClientLevel level) {
++    private boolean shouldRenderDarkDisc(float deltaPartialTick, ClientLevel level) {
          return Minecraft.getInstance().player.getEyePosition(deltaPartialTick).y - level.getLevelData().getHorizonHeight(level) < 0.0
              && !Minecraft.getInstance().player.isUnderWater();
      }
@@ -148,47 +148,49 @@
 -        final MoonPhase moonPhase,
 -        final float rainBrightness,
 -        final float starBrightness
-+      PoseStack poseStack, float sunAngle, float moonAngle, float starAngle, MoonPhase moonPhase, float rainBrightness, float starBrightness
++        PoseStack poseStack, float sunAngle, float moonAngle, float starAngle, MoonPhase moonPhase, float rainBrightness, float starBrightness
      ) {
          poseStack.pushPose();
          poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
-+      CustomSky.renderSky(this.world, poseStack, this.partialTicks);
-+      boolean isShaders = Config.isShaders();
-+      if (isShaders) {
-+         Shaders.preCelestialRotate(poseStack);
-+      }
++        CustomSky.renderSky(this.world, poseStack, this.partialTicks);
++        boolean isShaders = Config.isShaders();
++        if (isShaders) {
++            Shaders.preCelestialRotate(poseStack);
++        }
 +
          poseStack.pushPose();
          poseStack.mulPose(Axis.XP.rotation(sunAngle));
-+      if (Config.isSunTexture()) {
-+         if (isShaders) {
-+            Shaders.setRenderStage(RenderStage.SUN);
-+         }
+-        this.renderSun(rainBrightness, poseStack);
++        if (Config.isSunTexture()) {
++            if (isShaders) {
++                Shaders.setRenderStage(RenderStage.SUN);
++            }
 +
-         this.renderSun(rainBrightness, poseStack);
-+      }
++            this.renderSun(rainBrightness, poseStack);
++        }
 +
          poseStack.popPose();
          poseStack.pushPose();
          poseStack.mulPose(Axis.XP.rotation(moonAngle));
-+      if (Config.isMoonTexture()) {
-+         if (isShaders) {
-+            Shaders.setRenderStage(RenderStage.MOON);
-+         }
+-        this.renderMoon(moonPhase, rainBrightness, poseStack);
++        if (Config.isMoonTexture()) {
++            if (isShaders) {
++                Shaders.setRenderStage(RenderStage.MOON);
++            }
 +
-         this.renderMoon(moonPhase, rainBrightness, poseStack);
-+      }
++            this.renderMoon(moonPhase, rainBrightness, poseStack);
++        }
 +
          poseStack.popPose();
 -        if (starBrightness > 0.0F) {
-+      if (isShaders) {
-+         Shaders.disableTexture2D();
-+      }
++        if (isShaders) {
++            Shaders.disableTexture2D();
++        }
 +
-+      if (starBrightness > 0.0F && Config.isStarsEnabled() && !CustomSky.hasSkyLayers(this.world)) {
-+         if (isShaders) {
-+            Shaders.setRenderStage(RenderStage.STARS);
-+         }
++        if (starBrightness > 0.0F && Config.isStarsEnabled() && !CustomSky.hasSkyLayers(this.world)) {
++            if (isShaders) {
++                Shaders.setRenderStage(RenderStage.STARS);
++            }
 +
              poseStack.pushPose();
              poseStack.mulPose(Axis.XP.rotation(starAngle));
@@ -196,15 +198,15 @@
              poseStack.popPose();
          }
  
-+      if (isShaders) {
-+         Shaders.enableFog();
-+      }
++        if (isShaders) {
++            Shaders.enableFog();
++        }
 +
          poseStack.popPose();
      }
  
 -    private void renderSun(final float rainBrightness, final PoseStack poseStack) {
-+   private void renderSun(float rainBrightness, PoseStack poseStack) {
++    private void renderSun(float rainBrightness, PoseStack poseStack) {
          Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
          modelViewStack.pushMatrix();
          modelViewStack.mul(poseStack.last().pose());
@@ -213,7 +215,7 @@
      }
  
 -    private void renderMoon(final MoonPhase moonPhase, final float rainBrightness, final PoseStack poseStack) {
-+   private void renderMoon(MoonPhase moonPhase, float rainBrightness, PoseStack poseStack) {
++    private void renderMoon(MoonPhase moonPhase, float rainBrightness, PoseStack poseStack) {
          int baseVertex = moonPhase.index() * 4;
          Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
          modelViewStack.pushMatrix();
@@ -222,11 +224,11 @@
      }
  
 -    private void renderStars(final float starBrightness, final PoseStack poseStack) {
-+   private void renderStars(float starBrightness, PoseStack poseStack) {
-+      boolean prevColAttr = RenderSystem.isColorToAttribute();
-+      if (Config.isShaders()) {
-+         RenderSystem.setColorToAttribute(false);
-+      }
++    private void renderStars(float starBrightness, PoseStack poseStack) {
++        boolean prevColAttr = RenderSystem.isColorToAttribute();
++        if (Config.isShaders()) {
++            RenderSystem.setColorToAttribute(false);
++        }
 +
          Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
          modelViewStack.pushMatrix();
@@ -235,55 +237,74 @@
          }
  
          modelViewStack.popMatrix();
-+      if (Config.isShaders()) {
-+         RenderSystem.setColorToAttribute(prevColAttr);
++        if (Config.isShaders()) {
++            RenderSystem.setColorToAttribute(prevColAttr);
++        }
      }
-+   }
  
 -    public void renderSunriseAndSunset(final PoseStack poseStack, final float sunAngle, final int sunriseAndSunsetColor) {
-+   public void renderSunriseAndSunset(PoseStack poseStack, float sunAngle, int sunriseAndSunsetColor) {
++    public void renderSunriseAndSunset(PoseStack poseStack, float sunAngle, int sunriseAndSunsetColor) {
          float alpha = ARGB.alphaFloat(sunriseAndSunsetColor);
          if (!(alpha <= 0.001F)) {
              poseStack.pushPose();
-@@ -458,11 +499,26 @@
+@@ -458,26 +499,44 @@
      }
  
      public void renderEndSky() {
-+      if (Config.isSkyEnabled()) {
-+         int argb = -14145496;
-+         float red = ARGB.redFloat(argb);
-+         float green = ARGB.greenFloat(argb);
-+         float blue = ARGB.blueFloat(argb);
-+         Minecraft mc = Minecraft.getInstance();
-+         if (Config.isCustomColors()) {
-+            Vec3 vector3d = new Vec3(red, green, blue);
-+            vector3d = CustomColors.getWorldSkyColor(vector3d, mc.level, mc.getCameraEntity(), 0.0F);
-+            red = (float)vector3d.x;
-+            green = (float)vector3d.y;
-+            blue = (float)vector3d.z;
-+         }
-+
-+         this.endSkyColor.set(red, green, blue, 1.0F);
-         RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-         GpuBuffer indexBuffer = autoIndices.getBuffer(36);
-         GpuTextureView colorTexture = this.renderTarget.getColorTextureView();
-         GpuTextureView depthTexture = this.renderTarget.getDepthTextureView();
+-        RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+-        GpuBuffer indexBuffer = autoIndices.getBuffer(36);
+-        GpuTextureView colorTexture = this.renderTarget.getColorTextureView();
+-        GpuTextureView depthTexture = this.renderTarget.getDepthTextureView();
 -        GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
-+         GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), this.endSkyColor);
++        if (Config.isSkyEnabled()) {
++            int argb = -14145496;
++            float red = ARGB.redFloat(argb);
++            float green = ARGB.greenFloat(argb);
++            float blue = ARGB.blueFloat(argb);
++            Minecraft mc = Minecraft.getInstance();
++            if (Config.isCustomColors()) {
++                Vec3 vector3d = new Vec3(red, green, blue);
++                vector3d = CustomColors.getWorldSkyColor(vector3d, mc.level, mc.getCameraEntity(), 0.0F);
++                red = (float)vector3d.x;
++                green = (float)vector3d.y;
++                blue = (float)vector3d.z;
++            }
  
-         try (RenderPass renderPass = RenderSystem.getDevice()
-                 .createCommandEncoder()
-@@ -475,9 +531,12 @@
-             renderPass.setIndexBuffer(indexBuffer, autoIndices.type());
-             renderPass.drawIndexed(36, 1, 0, 0, 0);
-         }
+-        try (RenderPass renderPass = RenderSystem.getDevice()
+-                .createCommandEncoder()
+-                .createRenderPass(() -> "End sky", colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
+-            renderPass.setPipeline(RenderPipelines.END_SKY);
+-            RenderSystem.bindDefaultUniforms(renderPass);
+-            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+-            renderPass.bindTexture("Sampler0", this.endSkyTexture.getTextureView(), this.endSkyTexture.getSampler());
+-            renderPass.setVertexBuffer(0, this.endSkyBuffer.slice());
+-            renderPass.setIndexBuffer(indexBuffer, autoIndices.type());
+-            renderPass.drawIndexed(36, 1, 0, 0, 0);
++            this.endSkyColor.set(red, green, blue, 1.0F);
++            RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
++            GpuBuffer indexBuffer = autoIndices.getBuffer(36);
++            GpuTextureView colorTexture = this.renderTarget.getColorTextureView();
++            GpuTextureView depthTexture = this.renderTarget.getDepthTextureView();
++            GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), this.endSkyColor);
 +
-+         CustomSky.renderSky(Minecraft.getInstance().level, 0.0F);
++            try (RenderPass renderPass = RenderSystem.getDevice()
++                    .createCommandEncoder()
++                    .createRenderPass(() -> "End sky", colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
++                renderPass.setPipeline(RenderPipelines.END_SKY);
++                RenderSystem.bindDefaultUniforms(renderPass);
++                renderPass.setUniform("DynamicTransforms", dynamicTransforms);
++                renderPass.bindTexture("Sampler0", this.endSkyTexture.getTextureView(), this.endSkyTexture.getSampler());
++                renderPass.setVertexBuffer(0, this.endSkyBuffer.slice());
++                renderPass.setIndexBuffer(indexBuffer, autoIndices.type());
++                renderPass.drawIndexed(36, 1, 0, 0, 0);
++            }
++
++            CustomSky.renderSky(Minecraft.getInstance().level, 0.0F);
+         }
      }
-+   }
  
 -    public void renderEndFlash(final PoseStack poseStack, final float intensity, final float xAngle, final float yAngle) {
-+   public void renderEndFlash(PoseStack poseStack, float intensity, float xAngle, float yAngle) {
++    public void renderEndFlash(PoseStack poseStack, float intensity, float xAngle, float yAngle) {
          poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - yAngle));
          poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F - xAngle));
          Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
@@ -294,8 +315,8 @@
 -}
 \ No newline at end of file
 +
-+   public void setRenderParameters(ClientLevel world, float partialTicks) {
-+      this.world = world;
-+      this.partialTicks = partialTicks;
-+   }
++    public void setRenderParameters(ClientLevel world, float partialTicks) {
++        this.world = world;
++        this.partialTicks = partialTicks;
++    }
 +}

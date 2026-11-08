@@ -15,7 +15,7 @@
      private final List<FrameBufferCache.CacheKey> fboKeys = new ArrayList<>();
  
 -    protected GlTextureView(final GlTexture texture, final int baseMipLevel, final int mipLevels, final FrameBufferCache frameBufferCache) {
-+   protected GlTextureView(GlTexture texture, int baseMipLevel, int mipLevels, FrameBufferCache frameBufferCache) {
++    protected GlTextureView(GlTexture texture, int baseMipLevel, int mipLevels, FrameBufferCache frameBufferCache) {
          super(texture, baseMipLevel, mipLevels);
          texture.addViews();
          this.frameBufferCache = frameBufferCache;
@@ -24,25 +24,25 @@
  
      @Override
 -    public void addAssociatedFbo(final FrameBufferCache.CacheKey fboKey) {
-+   public void addAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
++    public void addAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
          this.fboKeys.add(fboKey);
      }
  
      @Override
 -    public void removeAssociatedFbo(final FrameBufferCache.CacheKey fboKey) {
-+   public void removeAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
++    public void removeAssociatedFbo(FrameBufferCache.CacheKey fboKey) {
          this.fboKeys.remove(fboKey);
      }
 -}
 \ No newline at end of file
 +
-+   public boolean hasFramebuffer(int framebufferIn) {
-+      return this.frameBufferCache.hasFramebuffer(this.fboKeys, framebufferIn);
-+   }
++    public boolean hasFramebuffer(int framebufferIn) {
++        return this.frameBufferCache.hasFramebuffer(this.fboKeys, framebufferIn);
++    }
 +
-+   @Override
-+   public String toString() {
-+      String fboStr = this.fboKeys.size() > 0 ? this.frameBufferCache.getFramebuffer(this.fboKeys.get(0)) + "" : "";
-+      return this.texture() + ", mips: " + this.baseMipLevel() + "-" + this.mipLevels() + ", fbo: " + fboStr;
-+   }
++    @Override
++    public String toString() {
++        String fboStr = this.fboKeys.size() > 0 ? this.frameBufferCache.getFramebuffer(this.fboKeys.get(0)) + "" : "";
++        return this.texture() + ", mips: " + this.baseMipLevel() + "-" + this.mipLevels() + ", fbo: " + fboStr;
++    }
 +}

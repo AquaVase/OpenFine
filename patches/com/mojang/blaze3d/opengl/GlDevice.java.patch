@@ -27,7 +27,7 @@
      protected static boolean USE_GL_ARB_shader_draw_parameters = true;
      private final GlCommandEncoder encoder;
 -    private final @Nullable GlDebug debugLog;
-+   private final GlDebug debugLog;
++    private final GlDebug debugLog;
      private final GlDebugLabel debugLabels;
      private final DirectStateAccess directStateAccess;
      private final ShaderSource defaultShaderSource;
@@ -35,11 +35,11 @@
      private final VertexArrayCache vertexArrayCache;
      private final BufferStorage bufferStorage;
      private final DeviceInfo deviceInfo;
-+   private final DirectStateAccess directStateAccessEmulated;
-+   private final VertexArrayCache vertexArrayCacheEmulated;
++    private final DirectStateAccess directStateAccessEmulated;
++    private final VertexArrayCache vertexArrayCacheEmulated;
  
 -    public GlDevice(final long windowHandle, final ShaderSource defaultShaderSource, final GpuDebugOptions debugOptions) {
-+   public GlDevice(long windowHandle, ShaderSource defaultShaderSource, GpuDebugOptions debugOptions) {
++    public GlDevice(long windowHandle, ShaderSource defaultShaderSource, GpuDebugOptions debugOptions) {
          GLFW.glfwMakeContextCurrent(windowHandle);
          GLCapabilities capabilities = GL.createCapabilities();
          Set<String> enabledExtensions = new HashSet<>();
@@ -47,12 +47,12 @@
  
          this.deviceInfo = heuristics.createDeviceInfo(capabilities, maxSupportedAnisotropy, enabledExtensions);
          this.encoder = new GlCommandEncoder(this);
-+      USE_GL_ARB_direct_state_access = false;
-+      this.directStateAccessEmulated = DirectStateAccess.create(capabilities, enabledExtensions, heuristics);
-+      USE_GL_ARB_direct_state_access = true;
-+      USE_GL_ARB_vertex_attrib_binding = false;
-+      this.vertexArrayCacheEmulated = VertexArrayCache.create(capabilities, this.debugLabels, enabledExtensions);
-+      USE_GL_ARB_vertex_attrib_binding = true;
++        USE_GL_ARB_direct_state_access = false;
++        this.directStateAccessEmulated = DirectStateAccess.create(capabilities, enabledExtensions, heuristics);
++        USE_GL_ARB_direct_state_access = true;
++        USE_GL_ARB_vertex_attrib_binding = false;
++        this.vertexArrayCacheEmulated = VertexArrayCache.create(capabilities, this.debugLabels, enabledExtensions);
++        USE_GL_ARB_vertex_attrib_binding = true;
      }
  
      public GlDebugLabel debugLabels() {
@@ -61,7 +61,7 @@
  
      @Override
 -    public GpuSurfaceBackend createSurface(final long windowHandle) {
-+   public GpuSurfaceBackend createSurface(long windowHandle) {
++    public GpuSurfaceBackend createSurface(long windowHandle) {
          return new GlSurface(windowHandle);
      }
  
@@ -75,7 +75,7 @@
 -        final FilterMode magFilter,
 -        final int maxAnisotropy,
 -        final OptionalDouble maxLod
-+      AddressMode addressModeU, AddressMode addressModeV, FilterMode minFilter, FilterMode magFilter, int maxAnisotropy, OptionalDouble maxLod
++        AddressMode addressModeU, AddressMode addressModeV, FilterMode minFilter, FilterMode magFilter, int maxAnisotropy, OptionalDouble maxLod
      ) {
          return new GlSampler(addressModeU, addressModeV, minFilter, magFilter, maxAnisotropy, maxLod);
      }
@@ -89,24 +89,24 @@
 -        final int height,
 -        final int depthOrLayers,
 -        final int mipLevels
-+      Supplier<String> label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels
++        Supplier<String> label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels
      ) {
 -        return this.createTexture(this.debugLabels.exists() && label != null ? label.get() : null, usage, format, width, height, depthOrLayers, mipLevels);
-+      return this.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels, false);
++        return this.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels, false);
      }
  
-+   public GpuTexture createTexture(
-+      Supplier<String> label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels, boolean stencil
-+   ) {
-+      return this.createTexture(
-+         this.debugLabels.exists() && label != null ? label.get() : null, usage, format, width, height, depthOrLayers, mipLevels, stencil
-+      );
-+   }
++    public GpuTexture createTexture(
++        Supplier<String> label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels, boolean stencil
++    ) {
++        return this.createTexture(
++            this.debugLabels.exists() && label != null ? label.get() : null, usage, format, width, height, depthOrLayers, mipLevels, stencil
++        );
++    }
 +
      @Override
-+   public GpuTexture createTexture(String label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels) {
-+      return this.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels, false);
-+   }
++    public GpuTexture createTexture(String label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels) {
++        return this.createTexture(label, usage, format, width, height, depthOrLayers, mipLevels, false);
++    }
 +
      public GpuTexture createTexture(
 -        @Nullable String label,
@@ -116,41 +116,41 @@
 -        final int height,
 -        final int depthOrLayers,
 -        final int mipLevels
-+      String label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels, boolean stencil
++        String label, @GpuTexture.Usage int usage, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels, boolean stencil
      ) {
-+      stencil &= format.hasDepthAspect();
++        stencil &= format.hasDepthAspect();
          GlStateManager.clearGlErrors();
          int id = GlStateManager._genTexture();
          if (label == null) {
-@@ -193,14 +194,22 @@
+@@ -193,12 +194,20 @@
              if (isCubemap) {
                  for (int cubeTarget : GlConst.CUBEMAP_TARGETS) {
                      for (int i = 0; i < mipLevels; i++) {
-+                  if (stencil) {
-+                     GlStateManager._texImage2D(cubeTarget, i, 36013, width >> i, height >> i, 0, 34041, 36269, null);
-+                  } else {
-                         GlStateManager._texImage2D(cubeTarget, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
+-                        GlStateManager._texImage2D(cubeTarget, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
++                        if (stencil) {
++                            GlStateManager._texImage2D(cubeTarget, i, 36013, width >> i, height >> i, 0, 34041, 36269, null);
++                        } else {
++                            GlStateManager._texImage2D(cubeTarget, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
++                        }
                      }
                  }
-+            }
              } else {
                  for (int i = 0; i < mipLevels; i++) {
-+               if (stencil) {
-+                  GlStateManager._texImage2D(target, i, 36013, width >> i, height >> i, 0, 34041, 36269, null);
-+               } else {
-                     GlStateManager._texImage2D(target, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
+-                    GlStateManager._texImage2D(target, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
++                    if (stencil) {
++                        GlStateManager._texImage2D(target, i, 36013, width >> i, height >> i, 0, 34041, 36269, null);
++                    } else {
++                        GlStateManager._texImage2D(target, i, glInternalID, width >> i, height >> i, 0, glExternalID, glType, null);
++                    }
                  }
              }
-+         }
  
-             int error = GlStateManager._getError();
-             if (error == 1285) {
 @@ -211,7 +220,7 @@
                  throw new IllegalStateException("OpenGL error " + error);
              }
  
 -            GlTexture texture = new GlTexture(usage, label, format, width, height, depthOrLayers, mipLevels, id, this.frameBufferCache);
-+         GlTexture texture = new GlTexture(usage, label, format, width, height, depthOrLayers, mipLevels, id, this.frameBufferCache, stencil);
++            GlTexture texture = new GlTexture(usage, label, format, width, height, depthOrLayers, mipLevels, id, this.frameBufferCache, stencil);
              this.debugLabels.applyLabel(texture);
              return texture;
          } else {
@@ -159,19 +159,19 @@
  
      @Override
 -    public GpuTextureView createTextureView(final GpuTexture texture) {
-+   public GpuTextureView createTextureView(GpuTexture texture) {
++    public GpuTextureView createTextureView(GpuTexture texture) {
          return this.createTextureView(texture, 0, texture.getMipLevels());
      }
  
      @Override
 -    public GpuTextureView createTextureView(final GpuTexture texture, final int baseMipLevel, final int mipLevels) {
-+   public GpuTextureView createTextureView(GpuTexture texture, int baseMipLevel, int mipLevels) {
++    public GpuTextureView createTextureView(GpuTexture texture, int baseMipLevel, int mipLevels) {
          return new GlTextureView((GlTexture)texture, baseMipLevel, mipLevels, this.frameBufferCache);
      }
  
      @Override
 -    public GpuBuffer createBuffer(final @Nullable Supplier<String> label, final @GpuBuffer.Usage int usage, final long size) {
-+   public GpuBuffer createBuffer(Supplier<String> label, @GpuBuffer.Usage int usage, long size) {
++    public GpuBuffer createBuffer(Supplier<String> label, @GpuBuffer.Usage int usage, long size) {
          GlStateManager.clearGlErrors();
          GlBuffer buffer = this.bufferStorage.createBuffer(this.directStateAccess, usage, size);
          int error = GlStateManager._getError();
@@ -180,64 +180,82 @@
  
      @Override
 -    public GpuBuffer createBuffer(final @Nullable Supplier<String> label, final @GpuBuffer.Usage int usage, final ByteBuffer data) {
-+   public GpuBuffer createBuffer(Supplier<String> label, @GpuBuffer.Usage int usage, ByteBuffer data) {
++    public GpuBuffer createBuffer(Supplier<String> label, @GpuBuffer.Usage int usage, ByteBuffer data) {
          GlStateManager.clearGlErrors();
          long size = data.remaining();
          GlBuffer buffer = this.bufferStorage.createBuffer(this.directStateAccess, usage, data);
-+      buffer.label = label;
++        buffer.label = label;
          int error = GlStateManager._getError();
          if (error == 1285) {
              throw new GpuOutOfMemoryException("Could not allocate buffer of " + size + " for " + label);
-@@ -312,29 +322,35 @@
+@@ -312,46 +322,51 @@
      }
  
      public DirectStateAccess directStateAccess() {
 -        return this.directStateAccess;
-+      return Config.isShaders() ? this.directStateAccessEmulated : this.directStateAccess;
++        return Config.isShaders() ? this.directStateAccessEmulated : this.directStateAccess;
      }
  
 -    protected GlRenderPipeline getOrCompilePipeline(final RenderPipeline pipeline) {
-+   protected GlRenderPipeline getOrCompilePipeline(RenderPipeline pipeline) {
++    protected GlRenderPipeline getOrCompilePipeline(RenderPipeline pipeline) {
          return this.pipelineCache.computeIfAbsent(pipeline, p -> this.compilePipeline(p, this.defaultShaderSource));
      }
  
 -    protected GlShaderModule getOrCompileShader(final Identifier id, final ShaderType type, final ShaderDefines defines, final ShaderSource shaderSource) {
-+   protected GlShaderModule getOrCompileShader(Identifier id, ShaderType type, ShaderDefines defines, ShaderSource shaderSource) {
++    protected GlShaderModule getOrCompileShader(Identifier id, ShaderType type, ShaderDefines defines, ShaderSource shaderSource) {
          GlDevice.ShaderCompilationKey key = new GlDevice.ShaderCompilationKey(id, type, defines);
          return this.shaderCache.computeIfAbsent(key, k -> this.compileShader(k, shaderSource));
      }
  
 -    public GlRenderPipeline precompilePipeline(final RenderPipeline pipeline, final @Nullable ShaderSource customShaderSource) {
-+   public GlRenderPipeline precompilePipeline(RenderPipeline pipeline, ShaderSource customShaderSource) {
++    public GlRenderPipeline precompilePipeline(RenderPipeline pipeline, ShaderSource customShaderSource) {
          ShaderSource shaderSource = customShaderSource == null ? this.defaultShaderSource : customShaderSource;
          return this.pipelineCache.computeIfAbsent(pipeline, p -> this.compilePipeline(p, shaderSource));
      }
  
 -    private GlShaderModule compileShader(final GlDevice.ShaderCompilationKey key, final ShaderSource shaderSource) {
-+   private GlShaderModule compileShader(GlDevice.ShaderCompilationKey key, ShaderSource shaderSource) {
++    private GlShaderModule compileShader(GlDevice.ShaderCompilationKey key, ShaderSource shaderSource) {
          String source = shaderSource.get(key.id, key.type);
          if (source == null) {
              LOGGER.error("Couldn't find source for {} shader ({})", key.type, key.id);
              return GlShaderModule.INVALID_SHADER;
--        } else {
-+      }
++        }
 +
-+      if (key.type == ShaderType.VERTEX) {
-+         source = source.replace("texelFetch(Sampler2, UV2 / 16, 0)", "texture(Sampler2, (UV2 / 256.0) + (0.5 / 16.0))");
-+         source = source.replace("minecraft_sample_lightmap(Sampler2, UV2)", "texture(Sampler2, (UV2 / 256.0) + (0.5 / 16.0))");
-+      }
++        if (key.type == ShaderType.VERTEX) {
++            source = source.replace("texelFetch(Sampler2, UV2 / 16, 0)", "texture(Sampler2, (UV2 / 256.0) + (0.5 / 16.0))");
++            source = source.replace("minecraft_sample_lightmap(Sampler2, UV2)", "texture(Sampler2, (UV2 / 256.0) + (0.5 / 16.0))");
++        }
 +
-             String sourceWithDefines = GlslPreprocessor.injectDefines(source, key.defines);
-             int shaderId = GlStateManager.glCreateShader(GlConst.toGl(key.type));
-             GlStateManager.glShaderSource(shaderId, sourceWithDefines);
-@@ -349,9 +365,8 @@
-                 return module;
-             }
++        String sourceWithDefines = GlslPreprocessor.injectDefines(source, key.defines);
++        int shaderId = GlStateManager.glCreateShader(GlConst.toGl(key.type));
++        GlStateManager.glShaderSource(shaderId, sourceWithDefines);
++        GlStateManager.glCompileShader(shaderId);
++        if (GlStateManager.glGetShaderi(shaderId, 35713) == 0) {
++            String logInfo = StringUtils.trim(GlStateManager.glGetShaderInfoLog(shaderId, 32768));
++            LOGGER.error("Couldn't compile {} shader ({}): {}", key.type.getName(), key.id, logInfo);
++            return GlShaderModule.INVALID_SHADER;
+         } else {
+-            String sourceWithDefines = GlslPreprocessor.injectDefines(source, key.defines);
+-            int shaderId = GlStateManager.glCreateShader(GlConst.toGl(key.type));
+-            GlStateManager.glShaderSource(shaderId, sourceWithDefines);
+-            GlStateManager.glCompileShader(shaderId);
+-            if (GlStateManager.glGetShaderi(shaderId, 35713) == 0) {
+-                String logInfo = StringUtils.trim(GlStateManager.glGetShaderInfoLog(shaderId, 32768));
+-                LOGGER.error("Couldn't compile {} shader ({}): {}", key.type.getName(), key.id, logInfo);
+-                return GlShaderModule.INVALID_SHADER;
+-            } else {
+-                GlShaderModule module = new GlShaderModule(shaderId, key.id, key.type);
+-                this.debugLabels.applyLabel(module);
+-                return module;
+-            }
++            GlShaderModule module = new GlShaderModule(shaderId, key.id, key.type);
++            this.debugLabels.applyLabel(module);
++            return module;
          }
--    }
+     }
  
 -    private GlProgram compileProgram(final RenderPipeline pipeline, final ShaderSource shaderSource) {
-+   private GlProgram compileProgram(RenderPipeline pipeline, ShaderSource shaderSource) {
++    private GlProgram compileProgram(RenderPipeline pipeline, ShaderSource shaderSource) {
          GlShaderModule vertexShader = this.getOrCompileShader(pipeline.getVertexShader(), ShaderType.VERTEX, pipeline.getShaderDefines(), shaderSource);
          GlShaderModule fragmentShader = this.getOrCompileShader(pipeline.getFragmentShader(), ShaderType.FRAGMENT, pipeline.getShaderDefines(), shaderSource);
          if (vertexShader == GlShaderModule.INVALID_SHADER) {
@@ -246,13 +264,13 @@
      }
  
 -    private GlRenderPipeline compilePipeline(final RenderPipeline pipeline, final ShaderSource shaderSource) {
-+   private GlRenderPipeline compilePipeline(RenderPipeline pipeline, ShaderSource shaderSource) {
++    private GlRenderPipeline compilePipeline(RenderPipeline pipeline, ShaderSource shaderSource) {
          return new GlRenderPipeline(pipeline, this.compileProgram(pipeline, shaderSource));
      }
  
      public VertexArrayCache vertexArrayCache() {
 -        return this.vertexArrayCache;
-+      return Config.isShaders() ? this.vertexArrayCacheEmulated : this.vertexArrayCache;
++        return Config.isShaders() ? this.vertexArrayCacheEmulated : this.vertexArrayCache;
      }
  
      public BufferStorage getBufferStorage() {
@@ -261,7 +279,7 @@
  
      @Override
 -    public GpuQueryPool createTimestampQueryPool(final int size) {
-+   public GpuQueryPool createTimestampQueryPool(int size) {
++    public GpuQueryPool createTimestampQueryPool(int size) {
          return new GlQueryPool(size);
      }
  
@@ -270,9 +288,9 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public GlCommandEncoder getGlCommandEncoder() {
-+      return this.encoder;
-+   }
++    public GlCommandEncoder getGlCommandEncoder() {
++        return this.encoder;
++    }
 +
      private record ShaderCompilationKey(Identifier id, ShaderType type, ShaderDefines defines) {
          @Override

@@ -6,8 +6,8 @@
  
 -    public LoadingChunkTracker(final DistanceManager distanceManager, final TicketStorage ticketStorage) {
 -        super(MAX_LEVEL + 1, 16, 256);
-+   public LoadingChunkTracker(DistanceManager distanceManager, TicketStorage ticketStorage) {
-+      super(MAX_LEVEL + 1, 256, 256);
++    public LoadingChunkTracker(DistanceManager distanceManager, TicketStorage ticketStorage) {
++        super(MAX_LEVEL + 1, 256, 256);
          this.distanceManager = distanceManager;
          this.ticketStorage = ticketStorage;
          ticketStorage.setLoadingChunkUpdatedListener(this::update);
@@ -15,13 +15,13 @@
  
      @Override
 -    protected int getLevelFromSource(final long to) {
-+   protected int getLevelFromSource(long to) {
++    protected int getLevelFromSource(long to) {
          return this.ticketStorage.getTicketLevelAt(to, false);
      }
  
      @Override
 -    protected int getLevel(final long node) {
-+   protected int getLevel(long node) {
++    protected int getLevel(long node) {
          if (!this.distanceManager.isChunkToRemove(node)) {
              ChunkHolder chunk = this.distanceManager.getChunk(node);
              if (chunk != null) {
@@ -30,7 +30,7 @@
  
      @Override
 -    protected void setLevel(final long node, final int level) {
-+   protected void setLevel(long node, int level) {
++    protected void setLevel(long node, int level) {
          ChunkHolder chunk = this.distanceManager.getChunk(node);
          int oldLevel = chunk == null ? MAX_LEVEL : chunk.getTicketLevel();
          if (oldLevel != level) {
@@ -39,7 +39,7 @@
      }
  
 -    public int runDistanceUpdates(final int count) {
-+   public int runDistanceUpdates(int count) {
++    public int runDistanceUpdates(int count) {
          return this.runUpdates(count);
      }
 -}

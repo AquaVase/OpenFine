@@ -54,94 +54,105 @@
  public final class ModelPart {
      public static final float DEFAULT_SCALE = 1.0F;
      public float x;
-@@ -38,14 +58,52 @@
+@@ -38,13 +58,51 @@
      public float zScale = 1.0F;
      public boolean visible = true;
      public boolean skipDraw;
 -    private final List<ModelPart.Cube> cubes;
 -    private final Map<String, ModelPart> children;
-+   public final List<ModelPart.Cube> cubes;
-+   public final Map<String, ModelPart> children;
++    public final List<ModelPart.Cube> cubes;
++    public final Map<String, ModelPart> children;
      private PartPose initialPose = PartPose.ZERO;
-+   private String name;
-+   public List<ModelPart> childModelsList;
-+   public List<ModelSprite> spriteList = new ArrayList<>();
-+   public boolean mirrorV = false;
-+   private Identifier textureLocation = null;
-+   private String id = null;
-+   private ModelUpdater modelUpdater;
-+   private LevelRenderer renderGlobal = Config.getRenderGlobal();
-+   private boolean custom;
-+   private Attachment[] attachments;
-+   private AttachmentPaths attachmentPaths;
-+   private boolean attachmentPathsChecked;
-+   private ModelPart parent;
-+   private ModelLayerLocation modelLayerLocation;
-+   public float textureWidth = 64.0F;
-+   public float textureHeight = 32.0F;
-+   public float textureOffsetX;
-+   public float textureOffsetY;
-+   public boolean mirror;
-+   public static final Set<Direction> ALL_VISIBLE = EnumSet.allOf(Direction.class);
++    private String name;
++    public List<ModelPart> childModelsList;
++    public List<ModelSprite> spriteList = new ArrayList<>();
++    public boolean mirrorV = false;
++    private Identifier textureLocation = null;
++    private String id = null;
++    private ModelUpdater modelUpdater;
++    private LevelRenderer renderGlobal = Config.getRenderGlobal();
++    private boolean custom;
++    private Attachment[] attachments;
++    private AttachmentPaths attachmentPaths;
++    private boolean attachmentPathsChecked;
++    private ModelPart parent;
++    private ModelLayerLocation modelLayerLocation;
++    public float textureWidth = 64.0F;
++    public float textureHeight = 32.0F;
++    public float textureOffsetX;
++    public float textureOffsetY;
++    public boolean mirror;
++    public static final Set<Direction> ALL_VISIBLE = EnumSet.allOf(Direction.class);
  
 -    public ModelPart(final List<ModelPart.Cube> cubes, final Map<String, ModelPart> children) {
-+   public ModelPart setTextureOffset(float x, float y) {
-+      this.textureOffsetX = x;
-+      this.textureOffsetY = y;
-+      return this;
-+   }
++    public ModelPart setTextureOffset(float x, float y) {
++        this.textureOffsetX = x;
++        this.textureOffsetY = y;
++        return this;
++    }
 +
-+   public ModelPart setTextureSize(int textureWidthIn, int textureHeightIn) {
-+      this.textureWidth = textureWidthIn;
-+      this.textureHeight = textureHeightIn;
-+      return this;
-+   }
++    public ModelPart setTextureSize(int textureWidthIn, int textureHeightIn) {
++        this.textureWidth = textureWidthIn;
++        this.textureHeight = textureHeightIn;
++        return this;
++    }
 +
-+   public ModelPart(List<ModelPart.Cube> cubes, Map<String, ModelPart> children) {
-+      cubes = new ArrayList<>(cubes);
++    public ModelPart(List<ModelPart.Cube> cubes, Map<String, ModelPart> children) {
++        cubes = new ArrayList<>(cubes);
          this.cubes = cubes;
          this.children = children;
-+      this.childModelsList = new ArrayList<>(children.values());
++        this.childModelsList = new ArrayList<>(children.values());
 +
-+      for (ModelPart child : this.childModelsList) {
-+         child.setParent(this);
++        for (ModelPart child : this.childModelsList) {
++            child.setParent(this);
++        }
      }
-+   }
  
      public PartPose storePose() {
-         return PartPose.offsetAndRotation(this.x, this.y, this.z, this.xRot, this.yRot, this.zRot);
 @@ -55,7 +113,7 @@
          return this.initialPose;
      }
  
 -    public void setInitialPose(final PartPose initialPose) {
-+   public void setInitialPose(PartPose initialPose) {
++    public void setInitialPose(PartPose initialPose) {
          this.initialPose = initialPose;
      }
  
-@@ -63,7 +121,8 @@
+@@ -63,23 +121,25 @@
          this.loadPose(this.initialPose);
      }
  
 -    public void loadPose(final PartPose pose) {
-+   public void loadPose(PartPose pose) {
-+      if (!this.custom) {
-         this.x = pose.x();
-         this.y = pose.y();
-         this.z = pose.z();
-@@ -74,12 +133,13 @@
-         this.yScale = pose.yScale();
-         this.zScale = pose.zScale();
+-        this.x = pose.x();
+-        this.y = pose.y();
+-        this.z = pose.z();
+-        this.xRot = pose.xRot();
+-        this.yRot = pose.yRot();
+-        this.zRot = pose.zRot();
+-        this.xScale = pose.xScale();
+-        this.yScale = pose.yScale();
+-        this.zScale = pose.zScale();
++    public void loadPose(PartPose pose) {
++        if (!this.custom) {
++            this.x = pose.x();
++            this.y = pose.y();
++            this.z = pose.z();
++            this.xRot = pose.xRot();
++            this.yRot = pose.yRot();
++            this.zRot = pose.zRot();
++            this.xScale = pose.xScale();
++            this.yScale = pose.yScale();
++            this.zScale = pose.zScale();
++        }
      }
-+   }
  
 -    public boolean hasChild(final String name) {
-+   public boolean hasChild(String name) {
++    public boolean hasChild(String name) {
          return this.children.containsKey(name);
      }
  
 -    public ModelPart getChild(final String name) {
-+   public ModelPart getChild(String name) {
++    public ModelPart getChild(String name) {
          ModelPart result = this.children.get(name);
          if (result == null) {
              throw new NoSuchElementException("Can't find part " + name);
@@ -150,78 +161,83 @@
      }
  
 -    public void setPos(final float x, final float y, final float z) {
-+   public void setPos(float x, float y, float z) {
++    public void setPos(float x, float y, float z) {
          this.x = x;
          this.y = y;
          this.z = z;
      }
  
 -    public void setRotation(final float xRot, final float yRot, final float zRot) {
-+   public void setRotation(float xRot, float yRot, float zRot) {
++    public void setRotation(float xRot, float yRot, float zRot) {
          this.xRot = xRot;
          this.yRot = yRot;
          this.zRot = zRot;
      }
  
 -    public void render(final PoseStack poseStack, final VertexConsumer buffer, final int lightCoords, final int overlayCoords) {
-+   public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords) {
++    public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords) {
          this.render(poseStack, buffer, lightCoords, overlayCoords, -1);
      }
  
 -    public void render(final PoseStack poseStack, final VertexConsumer buffer, final int lightCoords, final int overlayCoords, final int color) {
 -        if (this.visible) {
 -            if (!this.cubes.isEmpty() || !this.children.isEmpty()) {
-+   public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color) {
-+      this.render(poseStack, buffer, lightCoords, overlayCoords, color, true);
-+   }
-+
-+   public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color, boolean updateModel) {
-+      if (this.visible && (!this.cubes.isEmpty() || !this.children.isEmpty() || !this.spriteList.isEmpty())) {
-+         RenderTypeFeatureRenderer renderTypeBuffer = null;
-+         if (this.textureLocation != null && !RenderState.isRenderOverlayEyes()) {
-+            renderTypeBuffer = buffer.getRenderTypeBuffer();
-+            if (renderTypeBuffer != null) {
-+               renderTypeBuffer.saveRenderState();
-+               buffer = renderTypeBuffer.getSubVertexBuilder(this.textureLocation);
-+            }
-+         }
-+
-+         if (updateModel && CustomEntityModels.isActive()) {
-+            this.updateModel();
-+         }
-+
-                 poseStack.pushPose();
-                 this.translateAndRotate(poseStack);
+-                poseStack.pushPose();
+-                this.translateAndRotate(poseStack);
 -                if (!this.skipDraw) {
-+         if (!this.skipDraw && this.cubes.size() > 0) {
-                     this.compile(poseStack.last(), buffer, lightCoords, overlayCoords, color);
-                 }
+-                    this.compile(poseStack.last(), buffer, lightCoords, overlayCoords, color);
+-                }
++    public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color) {
++        this.render(poseStack, buffer, lightCoords, overlayCoords, color, true);
++    }
  
 -                for (ModelPart child : this.children.values()) {
 -                    child.render(poseStack, buffer, lightCoords, overlayCoords, color);
-+         int childModelsSize = this.childModelsList.size();
-+
-+         for (int ix = 0; ix < childModelsSize; ix++) {
-+            ModelPart child = this.childModelsList.get(ix);
-+            child.render(poseStack, buffer, lightCoords, overlayCoords, color, false);
++    public void render(PoseStack poseStack, VertexConsumer buffer, int lightCoords, int overlayCoords, int color, boolean updateModel) {
++        if (this.visible && (!this.cubes.isEmpty() || !this.children.isEmpty() || !this.spriteList.isEmpty())) {
++            RenderTypeFeatureRenderer renderTypeBuffer = null;
++            if (this.textureLocation != null && !RenderState.isRenderOverlayEyes()) {
++                renderTypeBuffer = buffer.getRenderTypeBuffer();
++                if (renderTypeBuffer != null) {
++                    renderTypeBuffer.saveRenderState();
++                    buffer = renderTypeBuffer.getSubVertexBuilder(this.textureLocation);
                  }
++            }
  
-+         int spriteListSize = this.spriteList.size();
-+
-+         for (int ix = 0; ix < spriteListSize; ix++) {
-+            ModelSprite sprite = this.spriteList.get(ix);
-+            sprite.render(poseStack, buffer, lightCoords, overlayCoords, color);
-+         }
-+
-                 poseStack.popPose();
-+         if (renderTypeBuffer != null) {
-+            renderTypeBuffer.restoreRenderState();
+-                poseStack.popPose();
++            if (updateModel && CustomEntityModels.isActive()) {
++                this.updateModel();
              }
++
++            poseStack.pushPose();
++            this.translateAndRotate(poseStack);
++            if (!this.skipDraw && this.cubes.size() > 0) {
++                this.compile(poseStack.last(), buffer, lightCoords, overlayCoords, color);
++            }
++
++            int childModelsSize = this.childModelsList.size();
++
++            for (int ix = 0; ix < childModelsSize; ix++) {
++                ModelPart child = this.childModelsList.get(ix);
++                child.render(poseStack, buffer, lightCoords, overlayCoords, color, false);
++            }
++
++            int spriteListSize = this.spriteList.size();
++
++            for (int ix = 0; ix < spriteListSize; ix++) {
++                ModelSprite sprite = this.spriteList.get(ix);
++                sprite.render(poseStack, buffer, lightCoords, overlayCoords, color);
++            }
++
++            poseStack.popPose();
++            if (renderTypeBuffer != null) {
++                renderTypeBuffer.restoreRenderState();
++            }
          }
      }
  
 -    public void rotateBy(final Quaternionf rotation) {
-+   public void rotateBy(Quaternionf rotation) {
++    public void rotateBy(Quaternionf rotation) {
          Matrix3f oldRotation = new Matrix3f().rotationZYX(this.zRot, this.yRot, this.xRot);
          Matrix3f newRotation = oldRotation.rotate(rotation);
          Vector3f newAngles = newRotation.getEulerAnglesZYX(new Vector3f());
@@ -229,7 +245,7 @@
      }
  
 -    public void getExtentsForGui(final PoseStack poseStack, final Consumer<Vector3fc> output) {
-+   public void getExtentsForGui(PoseStack poseStack, Consumer<Vector3fc> output) {
++    public void getExtentsForGui(PoseStack poseStack, Consumer<Vector3fc> output) {
          this.visit(poseStack, (pose, partPath, cubeIndex, cube) -> {
              for (ModelPart.Polygon polygon : cube.polygons) {
                  for (ModelPart.Vertex vertex : polygon.vertices()) {
@@ -238,12 +254,12 @@
      }
  
 -    public void visit(final PoseStack poseStack, final ModelPart.Visitor visitor) {
-+   public void visit(PoseStack poseStack, ModelPart.Visitor visitor) {
++    public void visit(PoseStack poseStack, ModelPart.Visitor visitor) {
          this.visit(poseStack, visitor, "");
      }
  
 -    private void visit(final PoseStack poseStack, final ModelPart.Visitor visitor, final String path) {
-+   private void visit(PoseStack poseStack, ModelPart.Visitor visitor, String path) {
++    private void visit(PoseStack poseStack, ModelPart.Visitor visitor, String path) {
          if (!this.cubes.isEmpty() || !this.children.isEmpty()) {
              poseStack.pushPose();
              this.translateAndRotate(poseStack);
@@ -252,7 +268,7 @@
      }
  
 -    public void translateAndRotate(final PoseStack poseStack) {
-+   public void translateAndRotate(PoseStack poseStack) {
++    public void translateAndRotate(PoseStack poseStack) {
          poseStack.translate(this.x / 16.0F, this.y / 16.0F, this.z / 16.0F);
          if (this.xRot != 0.0F || this.yRot != 0.0F || this.zRot != 0.0F) {
              poseStack.mulPose(new Quaternionf().rotationZYX(this.zRot, this.yRot, this.xRot));
@@ -263,26 +279,26 @@
 -    private void compile(final PoseStack.Pose pose, final VertexConsumer builder, final int lightCoords, final int overlayCoords, final int color) {
 -        for (ModelPart.Cube cube : this.cubes) {
 -            cube.compile(pose, builder, lightCoords, overlayCoords, color);
-+   private void compile(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color) {
-+      boolean shadersVelocity = Config.isShaders() && Shaders.useVelocityAttrib && Config.isMinecraftThread();
-+      int cubeListSize = this.cubes.size();
++    private void compile(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color) {
++        boolean shadersVelocity = Config.isShaders() && Shaders.useVelocityAttrib && Config.isMinecraftThread();
++        int cubeListSize = this.cubes.size();
 +
-+      for (int ic = 0; ic < cubeListSize; ic++) {
-+         ModelPart.Cube cube = this.cubes.get(ic);
-+         VertexPosition[][] boxPos = null;
-+         if (shadersVelocity) {
-+            IRandomEntity entity = RandomEntities.getRandomEntityRendered();
-+            if (entity != null) {
-+               boxPos = cube.getBoxVertexPositions(entity.getId());
++        for (int ic = 0; ic < cubeListSize; ic++) {
++            ModelPart.Cube cube = this.cubes.get(ic);
++            VertexPosition[][] boxPos = null;
++            if (shadersVelocity) {
++                IRandomEntity entity = RandomEntities.getRandomEntityRendered();
++                if (entity != null) {
++                    boxPos = cube.getBoxVertexPositions(entity.getId());
++                }
++            }
++
++            cube.compile(pose, builder, lightCoords, overlayCoords, color, boxPos);
          }
      }
  
 -    public ModelPart.Cube getRandomCube(final RandomSource random) {
-+         cube.compile(pose, builder, lightCoords, overlayCoords, color, boxPos);
-+      }
-+   }
-+
-+   public ModelPart.Cube getRandomCube(RandomSource random) {
++    public ModelPart.Cube getRandomCube(RandomSource random) {
          return Util.getRandom(this.cubes, random);
      }
  
@@ -291,21 +307,21 @@
      }
  
 -    public void offsetPos(final Vector3f offset) {
-+   public void offsetPos(Vector3f offset) {
++    public void offsetPos(Vector3f offset) {
          this.x = this.x + offset.x();
          this.y = this.y + offset.y();
          this.z = this.z + offset.z();
      }
  
 -    public void offsetRotation(final Vector3f offset) {
-+   public void offsetRotation(Vector3f offset) {
++    public void offsetRotation(Vector3f offset) {
          this.xRot = this.xRot + offset.x();
          this.yRot = this.yRot + offset.y();
          this.zRot = this.zRot + offset.z();
      }
  
 -    public void offsetScale(final Vector3f offset) {
-+   public void offsetScale(Vector3f offset) {
++    public void offsetScale(Vector3f offset) {
          this.xScale = this.xScale + offset.x();
          this.yScale = this.yScale + offset.y();
          this.zScale = this.zScale + offset.z();
@@ -314,7 +330,7 @@
      }
  
 -    public Function<String, @Nullable ModelPart> createPartLookup() {
-+   public Function<String, ModelPart> createPartLookup() {
++    public Function<String, ModelPart> createPartLookup() {
          Map<String, ModelPart> parts = new HashMap<>();
          parts.put("root", this);
          this.addAllChildren(parts::putIfAbsent);
@@ -322,7 +338,7 @@
      }
  
 -    private void addAllChildren(final BiConsumer<String, ModelPart> output) {
-+   private void addAllChildren(BiConsumer<String, ModelPart> output) {
++    private void addAllChildren(BiConsumer<String, ModelPart> output) {
          for (Entry<String, ModelPart> entry : this.children.entrySet()) {
              output.accept(entry.getKey(), entry.getValue());
          }
@@ -331,296 +347,296 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public void addSprite(float posX, float posY, float posZ, int sizeX, int sizeY, int sizeZ, float sizeAdd) {
-+      this.spriteList.add(new ModelSprite(this, this.textureOffsetX, this.textureOffsetY, posX, posY, posZ, sizeX, sizeY, sizeZ, sizeAdd));
-+   }
++    public void addSprite(float posX, float posY, float posZ, int sizeX, int sizeY, int sizeZ, float sizeAdd) {
++        this.spriteList.add(new ModelSprite(this, this.textureOffsetX, this.textureOffsetY, posX, posY, posZ, sizeX, sizeY, sizeZ, sizeAdd));
++    }
 +
-+   public Identifier getTextureLocation() {
-+      return this.textureLocation;
-+   }
++    public Identifier getTextureLocation() {
++        return this.textureLocation;
++    }
 +
-+   public void setTextureLocation(Identifier textureLocation) {
-+      this.textureLocation = textureLocation;
-+   }
++    public void setTextureLocation(Identifier textureLocation) {
++        this.textureLocation = textureLocation;
++    }
 +
-+   public String getId() {
-+      return this.id;
-+   }
++    public String getId() {
++        return this.id;
++    }
 +
-+   public void setId(String id) {
-+      this.id = id;
-+   }
++    public void setId(String id) {
++        this.id = id;
++    }
 +
-+   public String getName() {
-+      return this.name;
-+   }
++    public String getName() {
++        return this.name;
++    }
 +
-+   public void setName(String name) {
-+      this.name = name;
-+   }
++    public void setName(String name) {
++        this.name = name;
++    }
 +
-+   public void addBox(float[][] faceUvs, float x, float y, float z, float dx, float dy, float dz, float delta) {
-+      this.cubes.add(new ModelPart.Cube(faceUvs, x, y, z, dx, dy, dz, delta, delta, delta, this.mirror, this.textureWidth, this.textureHeight));
-+   }
++    public void addBox(float[][] faceUvs, float x, float y, float z, float dx, float dy, float dz, float delta) {
++        this.cubes.add(new ModelPart.Cube(faceUvs, x, y, z, dx, dy, dz, delta, delta, delta, this.mirror, this.textureWidth, this.textureHeight));
++    }
 +
-+   public void addBox(float[][] faceUvs, float x, float y, float z, float dx, float dy, float dz, float deltaW, float deltaH, float deltaD) {
-+      this.cubes.add(new ModelPart.Cube(faceUvs, x, y, z, dx, dy, dz, deltaW, deltaH, deltaD, this.mirror, this.textureWidth, this.textureHeight));
-+   }
++    public void addBox(float[][] faceUvs, float x, float y, float z, float dx, float dy, float dz, float deltaW, float deltaH, float deltaD) {
++        this.cubes.add(new ModelPart.Cube(faceUvs, x, y, z, dx, dy, dz, deltaW, deltaH, deltaD, this.mirror, this.textureWidth, this.textureHeight));
++    }
 +
-+   public void addBox(float x, float y, float z, float width, float height, float depth, float delta) {
-+      this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, delta, delta, delta, this.mirror, false);
-+   }
++    public void addBox(float x, float y, float z, float width, float height, float depth, float delta) {
++        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, delta, delta, delta, this.mirror, false);
++    }
 +
-+   public void addBox(float x, float y, float z, float width, float height, float depth, float deltaW, float deltaH, float deltaD) {
-+      this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, deltaW, deltaH, deltaD, this.mirror, false);
-+   }
++    public void addBox(float x, float y, float z, float width, float height, float depth, float deltaW, float deltaH, float deltaD) {
++        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, deltaW, deltaH, deltaD, this.mirror, false);
++    }
 +
-+   private void addBox(
-+      float texOffX,
-+      float texOffY,
-+      float x,
-+      float y,
-+      float z,
-+      float width,
-+      float height,
-+      float depth,
-+      float deltaX,
-+      float deltaY,
-+      float deltaZ,
-+      boolean mirror,
-+      boolean dummyIn
-+   ) {
-+      this.cubes
-+         .add(
-+            new ModelPart.Cube(
-+               texOffX, texOffY, x, y, z, width, height, depth, deltaX, deltaY, deltaZ, mirror, this.textureWidth, this.textureHeight, ALL_VISIBLE
-+            )
-+         );
-+   }
++    private void addBox(
++        float texOffX,
++        float texOffY,
++        float x,
++        float y,
++        float z,
++        float width,
++        float height,
++        float depth,
++        float deltaX,
++        float deltaY,
++        float deltaZ,
++        boolean mirror,
++        boolean dummyIn
++    ) {
++        this.cubes
++            .add(
++                new ModelPart.Cube(
++                    texOffX, texOffY, x, y, z, width, height, depth, deltaX, deltaY, deltaZ, mirror, this.textureWidth, this.textureHeight, ALL_VISIBLE
++                )
++            );
++    }
 +
-+   public ModelPart getChildModelDeep(String name) {
-+      if (name == null) {
-+         return null;
-+      }
++    public ModelPart getChildModelDeep(String name) {
++        if (name == null) {
++            return null;
++        }
 +
-+      if (this.children.containsKey(name)) {
-+         return this.getChild(name);
-+      }
++        if (this.children.containsKey(name)) {
++            return this.getChild(name);
++        }
 +
-+      if (this.children != null) {
-+         for (String key : this.children.keySet()) {
-+            ModelPart child = this.children.get(key);
-+            ModelPart mr = child.getChildModelDeep(name);
-+            if (mr != null) {
-+               return mr;
++        if (this.children != null) {
++            for (String key : this.children.keySet()) {
++                ModelPart child = this.children.get(key);
++                ModelPart mr = child.getChildModelDeep(name);
++                if (mr != null) {
++                    return mr;
++                }
 +            }
-+         }
-+      }
++        }
 +
-+      return null;
-+   }
++        return null;
++    }
 +
-+   public ModelPart getChildById(String id) {
-+      if (id == null) {
-+         return null;
-+      }
++    public ModelPart getChildById(String id) {
++        if (id == null) {
++            return null;
++        }
 +
-+      if (this.children != null) {
-+         for (String key : this.children.keySet()) {
-+            ModelPart child = this.children.get(key);
-+            if (id.equals(child.getId())) {
-+               return child;
++        if (this.children != null) {
++            for (String key : this.children.keySet()) {
++                ModelPart child = this.children.get(key);
++                if (id.equals(child.getId())) {
++                    return child;
++                }
 +            }
-+         }
-+      }
++        }
 +
-+      return null;
-+   }
++        return null;
++    }
 +
-+   public ModelPart getChildDeepById(String id) {
-+      if (id == null) {
-+         return null;
-+      }
++    public ModelPart getChildDeepById(String id) {
++        if (id == null) {
++            return null;
++        }
 +
-+      ModelPart mrChild = this.getChildById(id);
-+      if (mrChild != null) {
-+         return mrChild;
-+      }
++        ModelPart mrChild = this.getChildById(id);
++        if (mrChild != null) {
++            return mrChild;
++        }
 +
-+      if (this.children != null) {
-+         for (String key : this.children.keySet()) {
-+            ModelPart child = this.children.get(key);
-+            ModelPart mr = child.getChildDeepById(id);
-+            if (mr != null) {
-+               return mr;
++        if (this.children != null) {
++            for (String key : this.children.keySet()) {
++                ModelPart child = this.children.get(key);
++                ModelPart mr = child.getChildDeepById(id);
++                if (mr != null) {
++                    return mr;
++                }
 +            }
-+         }
-+      }
++        }
 +
-+      return null;
-+   }
++        return null;
++    }
 +
-+   public ModelUpdater getModelUpdater() {
-+      return this.modelUpdater;
-+   }
++    public ModelUpdater getModelUpdater() {
++        return this.modelUpdater;
++    }
 +
-+   public void setModelUpdater(ModelUpdater modelUpdater) {
-+      this.modelUpdater = modelUpdater;
-+   }
++    public void setModelUpdater(ModelUpdater modelUpdater) {
++        this.modelUpdater = modelUpdater;
++    }
 +
-+   public void addChildModel(String name, ModelPart part) {
-+      if (part != null) {
-+         this.children.put(name, part);
-+         this.childModelsList = new ArrayList<>(this.children.values());
-+         part.setParent(this);
-+         if (part.getName() == null) {
-+            part.setName(name);
-+         }
-+      }
-+   }
++    public void addChildModel(String name, ModelPart part) {
++        if (part != null) {
++            this.children.put(name, part);
++            this.childModelsList = new ArrayList<>(this.children.values());
++            part.setParent(this);
++            if (part.getName() == null) {
++                part.setName(name);
++            }
++        }
++    }
 +
-+   public String getUniqueChildModelName(String name) {
-+      String baseName = name;
++    public String getUniqueChildModelName(String name) {
++        String baseName = name;
 +
-+      for (int counter = 2; this.children.containsKey(name); counter++) {
-+         name = baseName + "-" + counter;
-+      }
++        for (int counter = 2; this.children.containsKey(name); counter++) {
++            name = baseName + "-" + counter;
++        }
 +
-+      return name;
-+   }
++        return name;
++    }
 +
-+   private void updateModel() {
-+      if (this.modelUpdater != null) {
-+         this.modelUpdater.update();
-+      } else {
-+         int childModelsSize = this.childModelsList.size();
++    private void updateModel() {
++        if (this.modelUpdater != null) {
++            this.modelUpdater.update();
++        } else {
++            int childModelsSize = this.childModelsList.size();
 +
-+         for (int ix = 0; ix < childModelsSize; ix++) {
-+            ModelPart modelpart = this.childModelsList.get(ix);
-+            modelpart.updateModel();
-+         }
-+      }
-+   }
++            for (int ix = 0; ix < childModelsSize; ix++) {
++                ModelPart modelpart = this.childModelsList.get(ix);
++                modelpart.updateModel();
++            }
++        }
++    }
 +
-+   public boolean isCustom() {
-+      return this.custom;
-+   }
++    public boolean isCustom() {
++        return this.custom;
++    }
 +
-+   public void setCustom(boolean custom) {
-+      this.custom = custom;
-+   }
++    public void setCustom(boolean custom) {
++        this.custom = custom;
++    }
 +
-+   public ModelPart getParent() {
-+      return this.parent;
-+   }
++    public ModelPart getParent() {
++        return this.parent;
++    }
 +
-+   public void setParent(ModelPart parent) {
-+      this.parent = parent;
-+   }
++    public void setParent(ModelPart parent) {
++        this.parent = parent;
++    }
 +
-+   public Attachment[] getAttachments() {
-+      return this.attachments;
-+   }
++    public Attachment[] getAttachments() {
++        return this.attachments;
++    }
 +
-+   public void setAttachments(Attachment[] attachments) {
-+      this.attachments = attachments;
-+   }
++    public void setAttachments(Attachment[] attachments) {
++        this.attachments = attachments;
++    }
 +
-+   public boolean applyAttachmentTransform(AttachmentType typeIn, PoseStack matrixStackIn) {
-+      if (this.attachmentPathsChecked && this.attachmentPaths == null) {
-+         return false;
-+      }
++    public boolean applyAttachmentTransform(AttachmentType typeIn, PoseStack matrixStackIn) {
++        if (this.attachmentPathsChecked && this.attachmentPaths == null) {
++            return false;
++        }
 +
-+      AttachmentPath ap = this.getAttachmentPath(typeIn);
-+      if (ap == null) {
-+         return false;
-+      }
++        AttachmentPath ap = this.getAttachmentPath(typeIn);
++        if (ap == null) {
++            return false;
++        }
 +
-+      ap.applyTransform(matrixStackIn);
-+      return true;
-+   }
++        ap.applyTransform(matrixStackIn);
++        return true;
++    }
 +
-+   private AttachmentPath getAttachmentPath(AttachmentType typeIn) {
-+      if (!this.attachmentPathsChecked) {
-+         this.attachmentPathsChecked = true;
-+         this.attachmentPaths = new AttachmentPaths();
-+         this.collectAttachmentPaths(new ArrayList<>(), this.attachmentPaths);
-+         if (this.attachmentPaths.isEmpty()) {
-+            this.attachmentPaths = null;
-+         }
-+      }
++    private AttachmentPath getAttachmentPath(AttachmentType typeIn) {
++        if (!this.attachmentPathsChecked) {
++            this.attachmentPathsChecked = true;
++            this.attachmentPaths = new AttachmentPaths();
++            this.collectAttachmentPaths(new ArrayList<>(), this.attachmentPaths);
++            if (this.attachmentPaths.isEmpty()) {
++                this.attachmentPaths = null;
++            }
++        }
 +
-+      return this.attachmentPaths == null ? null : this.attachmentPaths.getVisiblePath(typeIn);
-+   }
++        return this.attachmentPaths == null ? null : this.attachmentPaths.getVisiblePath(typeIn);
++    }
 +
-+   private void collectAttachmentPaths(List<ModelPart> parents, AttachmentPaths paths) {
-+      parents.add(this);
-+      if (this.attachments != null) {
-+         paths.addPaths(parents, this.attachments);
-+      }
++    private void collectAttachmentPaths(List<ModelPart> parents, AttachmentPaths paths) {
++        parents.add(this);
++        if (this.attachments != null) {
++            paths.addPaths(parents, this.attachments);
++        }
 +
-+      for (ModelPart mp : this.childModelsList) {
-+         mp.collectAttachmentPaths(parents, paths);
-+      }
++        for (ModelPart mp : this.childModelsList) {
++            mp.collectAttachmentPaths(parents, paths);
++        }
 +
-+      parents.remove(parents.size() - 1);
-+   }
++        parents.remove(parents.size() - 1);
++    }
 +
-+   public static ModelPart makeRoot() {
-+      ModelPart part = new ModelPart(new ArrayList<>(), new HashMap<>());
-+      part.setName("root");
-+      return part;
-+   }
++    public static ModelPart makeRoot() {
++        ModelPart part = new ModelPart(new ArrayList<>(), new HashMap<>());
++        part.setName("root");
++        return part;
++    }
 +
-+   public void retainChildren(ModelPart... partsIn) {
-+      for (String childName : new ArrayList<>(this.children.keySet())) {
-+         ModelPart child = this.children.get(childName);
-+         if (!ArrayUtils.contains(partsIn, child)) {
-+            this.children.remove(childName);
-+         }
-+      }
++    public void retainChildren(ModelPart... partsIn) {
++        for (String childName : new ArrayList<>(this.children.keySet())) {
++            ModelPart child = this.children.get(childName);
++            if (!ArrayUtils.contains(partsIn, child)) {
++                this.children.remove(childName);
++            }
++        }
 +
-+      this.childModelsList = new ArrayList<>(this.children.values());
-+   }
++        this.childModelsList = new ArrayList<>(this.children.values());
++    }
 +
-+   public void removeCubesDeep() {
-+      this.cubes.clear();
++    public void removeCubesDeep() {
++        this.cubes.clear();
 +
-+      for (ModelPart child : this.childModelsList) {
-+         child.removeCubesDeep();
-+      }
-+   }
++        for (ModelPart child : this.childModelsList) {
++            child.removeCubesDeep();
++        }
++    }
 +
-+   public ModelLayerLocation getModelLayerLocation() {
-+      return this.modelLayerLocation;
-+   }
++    public ModelLayerLocation getModelLayerLocation() {
++        return this.modelLayerLocation;
++    }
 +
-+   public void setModelLayerLocation(ModelLayerLocation modelLayerLocation) {
-+      this.modelLayerLocation = modelLayerLocation;
-+   }
++    public void setModelLayerLocation(ModelLayerLocation modelLayerLocation) {
++        this.modelLayerLocation = modelLayerLocation;
++    }
 +
-+   @Override
-+   public String toString() {
-+      StringBuilder sb = new StringBuilder();
-+      sb.append("name: " + this.name);
-+      if (this.id != null) {
-+         sb.append(", id: " + this.id);
-+      }
++    @Override
++    public String toString() {
++        StringBuilder sb = new StringBuilder();
++        sb.append("name: " + this.name);
++        if (this.id != null) {
++            sb.append(", id: " + this.id);
++        }
 +
-+      if (this.cubes != null && this.cubes.size() > 0) {
-+         sb.append(", boxes: " + this.cubes.size());
-+      }
++        if (this.cubes != null && this.cubes.size() > 0) {
++            sb.append(", boxes: " + this.cubes.size());
++        }
 +
-+      if (this.children != null && this.children.size() > 0) {
-+         sb.append(", models: " + this.children.size());
-+      }
++        if (this.children != null && this.children.size() > 0) {
++            sb.append(", models: " + this.children.size());
++        }
 +
-+      if (this.custom) {
-+         sb.append(", custom: " + this.custom);
-+      }
++        if (this.custom) {
++            sb.append(", custom: " + this.custom);
++        }
 +
-+      return sb.toString();
-+   }
++        return sb.toString();
++    }
 +
      public static class Cube {
          public final ModelPart.Polygon[] polygons;
@@ -629,14 +645,14 @@
          public final float maxX;
          public final float maxY;
          public final float maxZ;
-+      private BoxVertexPositions boxVertexPositions;
-+      private RenderPositions[] renderPositions;
++        private BoxVertexPositions boxVertexPositions;
++        private RenderPositions[] renderPositions;
  
          public Cube(
 -            final int xTexOffs,
 -            final int yTexOffs,
-+         int xTexOffs,
-+         int yTexOffs,
++            int xTexOffs,
++            int yTexOffs,
              float minX,
              float minY,
              float minZ,
@@ -650,37 +666,37 @@
 -            final float xTexSize,
 -            final float yTexSize,
 -            final Set<Direction> visibleFaces
-+         float width,
-+         float height,
-+         float depth,
-+         float growX,
-+         float growY,
-+         float growZ,
-+         boolean mirror,
-+         float xTexSize,
-+         float yTexSize,
-+         Set<Direction> visibleFaces
++            float width,
++            float height,
++            float depth,
++            float growX,
++            float growY,
++            float growZ,
++            boolean mirror,
++            float xTexSize,
++            float yTexSize,
++            Set<Direction> visibleFaces
          ) {
-+         this((float)xTexOffs, (float)yTexOffs, minX, minY, minZ, width, height, depth, growX, growY, growZ, mirror, xTexSize, yTexSize, visibleFaces);
-+      }
++            this((float)xTexOffs, (float)yTexOffs, minX, minY, minZ, width, height, depth, growX, growY, growZ, mirror, xTexSize, yTexSize, visibleFaces);
++        }
 +
-+      public Cube(
-+         float xTexOffs,
-+         float yTexOffs,
-+         float minX,
-+         float minY,
-+         float minZ,
-+         float width,
-+         float height,
-+         float depth,
-+         float growX,
-+         float growY,
-+         float growZ,
-+         boolean mirror,
-+         float xTexSize,
-+         float yTexSize,
-+         Set<Direction> visibleFaces
-+      ) {
++        public Cube(
++            float xTexOffs,
++            float yTexOffs,
++            float minX,
++            float minY,
++            float minZ,
++            float width,
++            float height,
++            float depth,
++            float growX,
++            float growY,
++            float growZ,
++            boolean mirror,
++            float xTexSize,
++            float yTexSize,
++            Set<Direction> visibleFaces
++        ) {
              this.minX = minX;
              this.minY = minY;
              this.minZ = minZ;
@@ -691,7 +707,7 @@
 -                this.polygons[pos++] = new ModelPart.Polygon(
 -                    new ModelPart.Vertex[]{t1, t0, t3, t2}, u1, v1, u2, v2, xTexSize, yTexSize, mirror, Direction.NORTH
 -                );
-+            this.polygons[pos++] = new ModelPart.Polygon(new ModelPart.Vertex[]{t1, t0, t3, t2}, u1, v1, u2, v2, xTexSize, yTexSize, mirror, Direction.NORTH);
++                this.polygons[pos++] = new ModelPart.Polygon(new ModelPart.Vertex[]{t1, t0, t3, t2}, u1, v1, u2, v2, xTexSize, yTexSize, mirror, Direction.NORTH);
              }
  
              if (visibleFaces.contains(Direction.EAST)) {
@@ -700,182 +716,187 @@
                  this.polygons[pos] = new ModelPart.Polygon(new ModelPart.Vertex[]{l0, l1, l2, l3}, u3, v1, u4, v2, xTexSize, yTexSize, mirror, Direction.SOUTH);
              }
 +
-+         this.renderPositions = collectRenderPositions(this.polygons);
++            this.renderPositions = collectRenderPositions(this.polygons);
          }
  
 -        public void compile(final PoseStack.Pose pose, final VertexConsumer builder, final int lightCoords, final int overlayCoords, final int color) {
-+      public Cube(
-+         float[][] faceUvs,
-+         float x,
-+         float y,
-+         float z,
-+         float width,
-+         float height,
-+         float depth,
-+         float deltaX,
-+         float deltaY,
-+         float deltaZ,
-+         boolean mirorIn,
-+         float texWidth,
-+         float texHeight
-+      ) {
-+         this.minX = x;
-+         this.minY = y;
-+         this.minZ = z;
-+         this.maxX = x + width;
-+         this.maxY = y + height;
-+         this.maxZ = z + depth;
-+         this.polygons = new ModelPart.Polygon[6];
-+         float f = x + width;
-+         float f1 = y + height;
-+         float f2 = z + depth;
-+         x -= deltaX;
-+         y -= deltaY;
-+         z -= deltaZ;
-+         f += deltaX;
-+         f1 += deltaY;
-+         f2 += deltaZ;
-+         if (mirorIn) {
-+            float f3 = f;
-+            f = x;
-+            x = f3;
-+         }
-+
-+         ModelPart.Vertex pos0 = new ModelPart.Vertex(x, y, z, 0.0F, 0.0F);
-+         ModelPart.Vertex pos1 = new ModelPart.Vertex(f, y, z, 0.0F, 8.0F);
-+         ModelPart.Vertex pos2 = new ModelPart.Vertex(f, f1, z, 8.0F, 8.0F);
-+         ModelPart.Vertex pos3 = new ModelPart.Vertex(x, f1, z, 8.0F, 0.0F);
-+         ModelPart.Vertex pos4 = new ModelPart.Vertex(x, y, f2, 0.0F, 0.0F);
-+         ModelPart.Vertex pos5 = new ModelPart.Vertex(f, y, f2, 0.0F, 8.0F);
-+         ModelPart.Vertex pos6 = new ModelPart.Vertex(f, f1, f2, 8.0F, 8.0F);
-+         ModelPart.Vertex pos7 = new ModelPart.Vertex(x, f1, f2, 8.0F, 0.0F);
-+         this.polygons[2] = this.makeTexturedQuad(
-+            new ModelPart.Vertex[]{pos5, pos4, pos0, pos1}, faceUvs[1], true, texWidth, texHeight, mirorIn, Direction.DOWN
-+         );
-+         this.polygons[3] = this.makeTexturedQuad(new ModelPart.Vertex[]{pos2, pos3, pos7, pos6}, faceUvs[0], true, texWidth, texHeight, mirorIn, Direction.UP);
-+         this.polygons[1] = this.makeTexturedQuad(
-+            new ModelPart.Vertex[]{pos0, pos4, pos7, pos3}, faceUvs[5], false, texWidth, texHeight, mirorIn, Direction.WEST
-+         );
-+         this.polygons[4] = this.makeTexturedQuad(
-+            new ModelPart.Vertex[]{pos1, pos0, pos3, pos2}, faceUvs[2], false, texWidth, texHeight, mirorIn, Direction.NORTH
-+         );
-+         this.polygons[0] = this.makeTexturedQuad(
-+            new ModelPart.Vertex[]{pos5, pos1, pos2, pos6}, faceUvs[4], false, texWidth, texHeight, mirorIn, Direction.EAST
-+         );
-+         this.polygons[5] = this.makeTexturedQuad(
-+            new ModelPart.Vertex[]{pos4, pos5, pos6, pos7}, faceUvs[3], false, texWidth, texHeight, mirorIn, Direction.SOUTH
-+         );
-+         this.renderPositions = collectRenderPositions(this.polygons);
-+      }
-+
-+      private static RenderPositions[] collectRenderPositions(ModelPart.Polygon[] quads) {
-+         Map<Vector3f, RenderPositions> map = new LinkedHashMap<>();
-+
-+         for (int q = 0; q < quads.length; q++) {
-+            ModelPart.Polygon quad = quads[q];
-+            if (quad != null) {
-+               for (int v = 0; v < quad.vertices.length; v++) {
-+                  ModelPart.Vertex vert = quad.vertices[v];
-+                  Vector3f position = new Vector3f(vert.x, vert.y, vert.z);
-+                  RenderPositions rp = map.get(position);
-+                  if (rp == null) {
-+                     rp = new RenderPositions(position);
-+                     map.put(position, rp);
-+                  }
-+
-+                  vert.renderPositions.set(rp);
-+               }
++        public Cube(
++            float[][] faceUvs,
++            float x,
++            float y,
++            float z,
++            float width,
++            float height,
++            float depth,
++            float deltaX,
++            float deltaY,
++            float deltaZ,
++            boolean mirorIn,
++            float texWidth,
++            float texHeight
++        ) {
++            this.minX = x;
++            this.minY = y;
++            this.minZ = z;
++            this.maxX = x + width;
++            this.maxY = y + height;
++            this.maxZ = z + depth;
++            this.polygons = new ModelPart.Polygon[6];
++            float f = x + width;
++            float f1 = y + height;
++            float f2 = z + depth;
++            x -= deltaX;
++            y -= deltaY;
++            z -= deltaZ;
++            f += deltaX;
++            f1 += deltaY;
++            f2 += deltaZ;
++            if (mirorIn) {
++                float f3 = f;
++                f = x;
++                x = f3;
 +            }
-+         }
 +
-+         return map.values().toArray(new RenderPositions[map.size()]);
-+      }
++            ModelPart.Vertex pos0 = new ModelPart.Vertex(x, y, z, 0.0F, 0.0F);
++            ModelPart.Vertex pos1 = new ModelPart.Vertex(f, y, z, 0.0F, 8.0F);
++            ModelPart.Vertex pos2 = new ModelPart.Vertex(f, f1, z, 8.0F, 8.0F);
++            ModelPart.Vertex pos3 = new ModelPart.Vertex(x, f1, z, 8.0F, 0.0F);
++            ModelPart.Vertex pos4 = new ModelPart.Vertex(x, y, f2, 0.0F, 0.0F);
++            ModelPart.Vertex pos5 = new ModelPart.Vertex(f, y, f2, 0.0F, 8.0F);
++            ModelPart.Vertex pos6 = new ModelPart.Vertex(f, f1, f2, 8.0F, 8.0F);
++            ModelPart.Vertex pos7 = new ModelPart.Vertex(x, f1, f2, 8.0F, 0.0F);
++            this.polygons[2] = this.makeTexturedQuad(
++                new ModelPart.Vertex[]{pos5, pos4, pos0, pos1}, faceUvs[1], true, texWidth, texHeight, mirorIn, Direction.DOWN
++            );
++            this.polygons[3] = this.makeTexturedQuad(new ModelPart.Vertex[]{pos2, pos3, pos7, pos6}, faceUvs[0], true, texWidth, texHeight, mirorIn, Direction.UP);
++            this.polygons[1] = this.makeTexturedQuad(
++                new ModelPart.Vertex[]{pos0, pos4, pos7, pos3}, faceUvs[5], false, texWidth, texHeight, mirorIn, Direction.WEST
++            );
++            this.polygons[4] = this.makeTexturedQuad(
++                new ModelPart.Vertex[]{pos1, pos0, pos3, pos2}, faceUvs[2], false, texWidth, texHeight, mirorIn, Direction.NORTH
++            );
++            this.polygons[0] = this.makeTexturedQuad(
++                new ModelPart.Vertex[]{pos5, pos1, pos2, pos6}, faceUvs[4], false, texWidth, texHeight, mirorIn, Direction.EAST
++            );
++            this.polygons[5] = this.makeTexturedQuad(
++                new ModelPart.Vertex[]{pos4, pos5, pos6, pos7}, faceUvs[3], false, texWidth, texHeight, mirorIn, Direction.SOUTH
++            );
++            this.renderPositions = collectRenderPositions(this.polygons);
++        }
 +
-+      private ModelPart.Polygon makeTexturedQuad(
-+         ModelPart.Vertex[] positionTextureVertexs,
-+         float[] faceUvs,
-+         boolean reverseUV,
-+         float textureWidth,
-+         float textureHeight,
-+         boolean mirrorIn,
-+         Direction directionIn
-+      ) {
-+         if (faceUvs == null) {
-+            return null;
-+         } else {
-+            return reverseUV
-+               ? new ModelPart.Polygon(
-+                  positionTextureVertexs, faceUvs[2], faceUvs[3], faceUvs[0], faceUvs[1], textureWidth, textureHeight, mirrorIn, directionIn
-+               )
-+               : new ModelPart.Polygon(
-+                  positionTextureVertexs, faceUvs[0], faceUvs[1], faceUvs[2], faceUvs[3], textureWidth, textureHeight, mirrorIn, directionIn
-+               );
-+         }
-+      }
++        private static RenderPositions[] collectRenderPositions(ModelPart.Polygon[] quads) {
++            Map<Vector3f, RenderPositions> map = new LinkedHashMap<>();
 +
-+      public VertexPosition[][] getBoxVertexPositions(int key) {
-+         if (this.boxVertexPositions == null) {
-+            this.boxVertexPositions = new BoxVertexPositions();
-+         }
++            for (int q = 0; q < quads.length; q++) {
++                ModelPart.Polygon quad = quads[q];
++                if (quad != null) {
++                    for (int v = 0; v < quad.vertices.length; v++) {
++                        ModelPart.Vertex vert = quad.vertices[v];
++                        Vector3f position = new Vector3f(vert.x, vert.y, vert.z);
++                        RenderPositions rp = map.get(position);
++                        if (rp == null) {
++                            rp = new RenderPositions(position);
++                            map.put(position, rp);
++                        }
 +
-+         return this.boxVertexPositions.get(key);
-+      }
++                        vert.renderPositions.set(rp);
++                    }
++                }
++            }
 +
-+      public void compile(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color) {
-+         this.compile(pose, builder, lightCoords, overlayCoords, color, null);
-+      }
++            return map.values().toArray(new RenderPositions[map.size()]);
++        }
 +
-+      public void compile(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color, VertexPosition[][] boxPos) {
++        private ModelPart.Polygon makeTexturedQuad(
++            ModelPart.Vertex[] positionTextureVertexs,
++            float[] faceUvs,
++            boolean reverseUV,
++            float textureWidth,
++            float textureHeight,
++            boolean mirrorIn,
++            Direction directionIn
++        ) {
++            if (faceUvs == null) {
++                return null;
++            } else {
++                return reverseUV
++                    ? new ModelPart.Polygon(
++                        positionTextureVertexs, faceUvs[2], faceUvs[3], faceUvs[0], faceUvs[1], textureWidth, textureHeight, mirrorIn, directionIn
++                    )
++                    : new ModelPart.Polygon(
++                        positionTextureVertexs, faceUvs[0], faceUvs[1], faceUvs[2], faceUvs[3], textureWidth, textureHeight, mirrorIn, directionIn
++                    );
++            }
++        }
++
++        public VertexPosition[][] getBoxVertexPositions(int key) {
++            if (this.boxVertexPositions == null) {
++                this.boxVertexPositions = new BoxVertexPositions();
++            }
++
++            return this.boxVertexPositions.get(key);
++        }
++
++        public void compile(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color) {
++            this.compile(pose, builder, lightCoords, overlayCoords, color, null);
++        }
++
++        public void compile(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color, VertexPosition[][] boxPos) {
              Matrix4f matrix = pose.pose();
 -            Vector3f scratchVector = new Vector3f();
-+         Vector3f scratchVector = builder.getTempVec3f();
++            Vector3f scratchVector = builder.getTempVec3f();
  
 -            for (ModelPart.Polygon polygon : this.polygons) {
-+         for (RenderPositions rp : this.renderPositions) {
-+            MathUtils.transform(matrix, rp.getPositionDiv16(), rp.getPositionRender());
-+         }
-+
-+         boolean fastRender = builder.canAddVertexFast();
-+         int quadsSize = this.polygons.length;
-+
-+         for (int iq = 0; iq < quadsSize; iq++) {
-+            ModelPart.Polygon polygon = this.polygons[iq];
-+            if (polygon != null) {
-+               if (boxPos != null) {
-+                  builder.setQuadVertexPositions(boxPos[iq]);
-+               }
-+
-                 Vector3f normal = pose.transformNormal(polygon.normal, scratchVector);
-                 float nx = normal.x();
-                 float ny = normal.y();
-                 float nz = normal.z();
-+               if (fastRender) {
-+                  byte nxb = BufferBuilder.normalIntValue(nx);
-+                  byte nyb = BufferBuilder.normalIntValue(ny);
-+                  byte nzb = BufferBuilder.normalIntValue(nz);
-+                  int normals = (nzb & 255) << 16 | (nyb & 255) << 8 | nxb & 255;
+-                Vector3f normal = pose.transformNormal(polygon.normal, scratchVector);
+-                float nx = normal.x();
+-                float ny = normal.y();
+-                float nz = normal.z();
++            for (RenderPositions rp : this.renderPositions) {
++                MathUtils.transform(matrix, rp.getPositionDiv16(), rp.getPositionRender());
++            }
  
-+                  for (ModelPart.Vertex modelpart$vertex : polygon.vertices) {
-+                     Vector3f posRender = modelpart$vertex.renderPositions.get().getPositionRender();
-+                     builder.addVertexFast(
-+                        posRender.x, posRender.y, posRender.z, color, modelpart$vertex.u, modelpart$vertex.v, overlayCoords, lightCoords, normals
-+                     );
-+                  }
-+               } else {
-                 for (ModelPart.Vertex vertex : polygon.vertices) {
+-                for (ModelPart.Vertex vertex : polygon.vertices) {
 -                    float x = vertex.worldX();
 -                    float y = vertex.worldY();
 -                    float z = vertex.worldZ();
 -                    Vector3f pos = matrix.transformPosition(x, y, z, scratchVector);
 -                    builder.addVertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, overlayCoords, lightCoords, nx, ny, nz);
-+                     Vector3f posRender = vertex.renderPositions.get().getPositionRender();
-+                     builder.addVertex(posRender.x, posRender.y, posRender.z, color, vertex.u, vertex.v, overlayCoords, lightCoords, nx, ny, nz);
++            boolean fastRender = builder.canAddVertexFast();
++            int quadsSize = this.polygons.length;
++
++            for (int iq = 0; iq < quadsSize; iq++) {
++                ModelPart.Polygon polygon = this.polygons[iq];
++                if (polygon != null) {
++                    if (boxPos != null) {
++                        builder.setQuadVertexPositions(boxPos[iq]);
++                    }
++
++                    Vector3f normal = pose.transformNormal(polygon.normal, scratchVector);
++                    float nx = normal.x();
++                    float ny = normal.y();
++                    float nz = normal.z();
++                    if (fastRender) {
++                        byte nxb = BufferBuilder.normalIntValue(nx);
++                        byte nyb = BufferBuilder.normalIntValue(ny);
++                        byte nzb = BufferBuilder.normalIntValue(nz);
++                        int normals = (nzb & 255) << 16 | (nyb & 255) << 8 | nxb & 255;
++
++                        for (ModelPart.Vertex modelpart$vertex : polygon.vertices) {
++                            Vector3f posRender = modelpart$vertex.renderPositions.get().getPositionRender();
++                            builder.addVertexFast(
++                                posRender.x, posRender.y, posRender.z, color, modelpart$vertex.u, modelpart$vertex.v, overlayCoords, lightCoords, normals
++                            );
++                        }
++                    } else {
++                        for (ModelPart.Vertex vertex : polygon.vertices) {
++                            Vector3f posRender = vertex.renderPositions.get().getPositionRender();
++                            builder.addVertex(posRender.x, posRender.y, posRender.z, color, vertex.u, vertex.v, overlayCoords, lightCoords, nx, ny, nz);
++                        }
++                    }
                  }
              }
          }
      }
-+      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      public record Polygon(ModelPart.Vertex[] vertices, Vector3fc normal) {
@@ -890,21 +911,21 @@
 -            final boolean mirror,
 -            final Direction facing
 -        ) {
-+      public Polygon(ModelPart.Vertex[] vertices, float u0, float v0, float u1, float v1, float xTexSize, float yTexSize, boolean mirror, Direction facing) {
++        public Polygon(ModelPart.Vertex[] vertices, float u0, float v0, float u1, float v1, float xTexSize, float yTexSize, boolean mirror, Direction facing) {
              this(vertices, (mirror ? mirrorFacing(facing) : facing).getUnitVec3f());
              float us = 0.0F / xTexSize;
              float vs = 0.0F / yTexSize;
-+         if (Config.isAntialiasing()) {
-+            us = 0.05F / xTexSize;
-+            vs = 0.05F / yTexSize;
-+            if (u1 < u0) {
-+               us = -us;
-+            }
++            if (Config.isAntialiasing()) {
++                us = 0.05F / xTexSize;
++                vs = 0.05F / yTexSize;
++                if (u1 < u0) {
++                    us = -us;
++                }
 +
-+            if (v1 < v0) {
-+               vs = -vs;
++                if (v1 < v0) {
++                    vs = -vs;
++                }
 +            }
-+         }
 +
              vertices[0] = vertices[0].remap(u1 / xTexSize - us, v0 / yTexSize + vs);
              vertices[1] = vertices[1].remap(u0 / xTexSize + us, v0 / yTexSize + vs);
@@ -914,22 +935,22 @@
          }
  
 -        private static Direction mirrorFacing(final Direction facing) {
-+      private static Direction mirrorFacing(Direction facing) {
++        private static Direction mirrorFacing(Direction facing) {
              return facing.getAxis() == Direction.Axis.X ? facing.getOpposite() : facing;
          }
      }
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record Vertex(float x, float y, float z, float u, float v) {
-+   public record Vertex(float x, float y, float z, float u, float v, Mutable<RenderPositions> renderPositions) {
++    public record Vertex(float x, float y, float z, float u, float v, Mutable<RenderPositions> renderPositions) {
          public static final float SCALE_FACTOR = 16.0F;
  
 -        public ModelPart.Vertex remap(final float u, final float v) {
-+      public Vertex(float x, float y, float z, float u, float v) {
-+         this(x, y, z, u, v, new Mutable<>());
-+      }
++        public Vertex(float x, float y, float z, float u, float v) {
++            this(x, y, z, u, v, new Mutable<>());
++        }
 +
-+      public ModelPart.Vertex remap(float u, float v) {
++        public ModelPart.Vertex remap(float u, float v) {
              return new ModelPart.Vertex(this.x, this.y, this.z, u, v);
          }
  
@@ -940,7 +961,7 @@
 -    @OnlyIn(Dist.CLIENT)
      public interface Visitor {
 -        void visit(final PoseStack.Pose pose, final String partPath, final int cubeIndex, final ModelPart.Cube cube);
-+      void visit(PoseStack.Pose var1, String var2, int var3, ModelPart.Cube var4);
++        void visit(PoseStack.Pose var1, String var2, int var3, ModelPart.Cube var4);
      }
 -}
 \ No newline at end of file

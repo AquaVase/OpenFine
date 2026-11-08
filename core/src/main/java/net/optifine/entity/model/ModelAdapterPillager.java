@@ -10,17 +10,17 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterPillager extends ModelAdapterIllager {
-   public ModelAdapterPillager() {
-      super(EntityTypes.PILLAGER, "pillager", ModelLayers.PILLAGER);
-   }
+    public ModelAdapterPillager() {
+        super(EntityTypes.PILLAGER, "pillager", ModelLayers.PILLAGER);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new IllagerModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new IllagerModel(root);
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new PillagerRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new PillagerRenderer(context);
+    }
 }

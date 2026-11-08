@@ -15,39 +15,39 @@ import net.minecraft.world.entity.EntityTypes;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterTropicalFishB extends ModelAdapterLiving {
-   public ModelAdapterTropicalFishB() {
-      super(EntityTypes.TROPICAL_FISH, "tropical_fish_b", ModelLayers.TROPICAL_FISH_LARGE);
-   }
+    public ModelAdapterTropicalFishB() {
+        super(EntityTypes.TROPICAL_FISH, "tropical_fish_b", ModelLayers.TROPICAL_FISH_LARGE);
+    }
 
-   public ModelAdapterTropicalFishB(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    public ModelAdapterTropicalFishB(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new TropicalFishLargeModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new TropicalFishLargeModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "body");
-      map.put("tail", "tail");
-      map.put("fin_right", "right_fin");
-      map.put("fin_left", "left_fin");
-      map.put("fin_top", "top_fin");
-      map.put("fin_bottom", "bottom_fin");
-      map.put("root", "root");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "body");
+        map.put("tail", "tail");
+        map.put("fin_right", "right_fin");
+        map.put("fin_left", "left_fin");
+        map.put("fin_top", "top_fin");
+        map.put("fin_bottom", "bottom_fin");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new TropicalFishRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new TropicalFishRenderer(context);
+    }
 
-   @Override
-   protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
-      this.setModel(renderer, Reflector.RenderTropicalFish_modelB, "TropicalFishRenderer.modelB", modelBase);
-   }
+    @Override
+    protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
+        this.setModel(renderer, Reflector.RenderTropicalFish_modelB, "TropicalFishRenderer.modelB", modelBase);
+    }
 }

@@ -23,7 +23,7 @@
 -@OnlyIn(Dist.CLIENT)
 -public interface BlockEntityRenderer<T extends BlockEntity, S extends BlockEntityRenderState> {
 +public interface BlockEntityRenderer<T extends BlockEntity, S extends BlockEntityRenderState> extends IEntityRenderer {
-+   IdentityHashMap<BlockEntityRenderer, BlockEntityType> CACHED_TYPES = new IdentityHashMap<>();
++    IdentityHashMap<BlockEntityRenderer, BlockEntityType> CACHED_TYPES = new IdentityHashMap<>();
 +
      S createRenderState();
  
@@ -34,12 +34,12 @@
 -        final Vec3 cameraPosition,
 -        final ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress
 -    ) {
-+   default void extractRenderState(T blockEntity, S state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
++    default void extractRenderState(T blockEntity, S state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
          BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
      }
  
 -    void submit(final S state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera);
-+   void submit(S var1, PoseStack var2, SubmitNodeCollector var3, CameraRenderState var4);
++    void submit(S var1, PoseStack var2, SubmitNodeCollector var3, CameraRenderState var4);
  
      default boolean shouldRenderOffScreen() {
          return false;
@@ -48,33 +48,33 @@
      }
  
 -    default boolean shouldRender(final T blockEntity, final Vec3 cameraPosition) {
-+   default boolean shouldRender(T blockEntity, Vec3 cameraPosition) {
++    default boolean shouldRender(T blockEntity, Vec3 cameraPosition) {
          return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPosition, this.getViewDistance());
      }
 -}
 \ No newline at end of file
 +
-+   @Override
-+   default Either<EntityType, BlockEntityType> getType() {
-+      BlockEntityType type = CACHED_TYPES.get(this);
-+      return type == null ? null : Either.makeRight(type);
-+   }
++    @Override
++    default Either<EntityType, BlockEntityType> getType() {
++        BlockEntityType type = CACHED_TYPES.get(this);
++        return type == null ? null : Either.makeRight(type);
++    }
 +
-+   @Override
-+   default void setType(Either<EntityType, BlockEntityType> type) {
-+      CACHED_TYPES.put(this, type.getRight().get());
-+   }
++    @Override
++    default void setType(Either<EntityType, BlockEntityType> type) {
++        CACHED_TYPES.put(this, type.getRight().get());
++    }
 +
-+   @Override
-+   default void setShadowSize(float shadowSize) {
-+   }
++    @Override
++    default void setShadowSize(float shadowSize) {
++    }
 +
-+   @Override
-+   default Identifier getLocationTextureCustom() {
-+      return null;
-+   }
++    @Override
++    default Identifier getLocationTextureCustom() {
++        return null;
++    }
 +
-+   @Override
-+   default void setLocationTextureCustom(Identifier locationTextureCustom) {
-+   }
++    @Override
++    default void setLocationTextureCustom(Identifier locationTextureCustom) {
++    }
 +}

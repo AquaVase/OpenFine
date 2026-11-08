@@ -14,45 +14,45 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterHappyGhastHarness extends ModelAdapterHappyGhast {
-   public ModelAdapterHappyGhastHarness() {
-      super(EntityTypes.HAPPY_GHAST, "happy_ghast_harness", ModelLayers.HAPPY_GHAST_HARNESS);
-   }
+    public ModelAdapterHappyGhastHarness() {
+        super(EntityTypes.HAPPY_GHAST, "happy_ghast_harness", ModelLayers.HAPPY_GHAST_HARNESS);
+    }
 
-   protected ModelAdapterHappyGhastHarness(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterHappyGhastHarness(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      return null;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        return null;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new HappyGhastHarnessModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new HappyGhastHarnessModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "harness");
-      map.put("goggles", "goggles");
-      map.put("root", "root");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "harness");
+        map.put("goggles", "goggles");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      HappyGhastHarnessModel model = (HappyGhastHarnessModel)modelBase;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        HappyGhastHarnessModel model = (HappyGhastHarnessModel)modelBase;
 
-      for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
-         if (layer.getLayerType() == LayerType.HAPPY_GHAST_BODY) {
-            if (this.isBaby()) {
-               layer.babyModel = model;
-            } else {
-               layer.adultModel = model;
+        for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
+            if (layer.getLayerType() == LayerType.HAPPY_GHAST_BODY) {
+                if (this.isBaby()) {
+                    layer.babyModel = model;
+                } else {
+                    layer.adultModel = model;
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

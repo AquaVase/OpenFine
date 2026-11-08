@@ -24,7 +24,7 @@
 -        final int maxAnisotropy,
 -        final OptionalDouble maxLod
 -    ) {
-+   public GlSampler(AddressMode addressModeU, AddressMode addressModeV, FilterMode minFilter, FilterMode magFilter, int maxAnisotropy, OptionalDouble maxLod) {
++    public GlSampler(AddressMode addressModeU, AddressMode addressModeV, FilterMode minFilter, FilterMode magFilter, int maxAnisotropy, OptionalDouble maxLod) {
          this.addressModeU = addressModeU;
          this.addressModeV = addressModeV;
          this.minFilter = minFilter;
@@ -35,35 +35,35 @@
 -}
 \ No newline at end of file
 +
-+   public boolean matches(GlSampler sampler) {
-+      if (sampler == null) {
-+         return false;
-+      } else if (this.id == sampler.getId() && this.addressModeU != sampler.getAddressModeU()) {
-+         return false;
-+      } else if (this.addressModeV != sampler.getAddressModeV()) {
-+         return false;
-+      } else if (this.minFilter != sampler.getMinFilter()) {
-+         return false;
-+      } else if (this.magFilter != sampler.getMagFilter()) {
-+         return false;
-+      } else {
-+         return this.maxAnisotropy != sampler.getMaxAnisotropy() ? false : this.maxLod.equals(sampler.getMaxLod());
-+      }
-+   }
++    public boolean matches(GlSampler sampler) {
++        if (sampler == null) {
++            return false;
++        } else if (this.id == sampler.getId() && this.addressModeU != sampler.getAddressModeU()) {
++            return false;
++        } else if (this.addressModeV != sampler.getAddressModeV()) {
++            return false;
++        } else if (this.minFilter != sampler.getMinFilter()) {
++            return false;
++        } else if (this.magFilter != sampler.getMagFilter()) {
++            return false;
++        } else {
++            return this.maxAnisotropy != sampler.getMaxAnisotropy() ? false : this.maxLod.equals(sampler.getMaxLod());
++        }
++    }
 +
-+   @Override
-+   public String toString() {
-+      return "modeU: "
-+         + this.addressModeU
-+         + ", modeV: "
-+         + this.addressModeV
-+         + ", min: "
-+         + this.minFilter
-+         + ", mag: "
-+         + this.magFilter
-+         + ", aniso: "
-+         + this.maxAnisotropy
-+         + ", lod: "
-+         + this.maxLod;
-+   }
++    @Override
++    public String toString() {
++        return "modeU: "
++            + this.addressModeU
++            + ", modeV: "
++            + this.addressModeV
++            + ", min: "
++            + this.minFilter
++            + ", mag: "
++            + this.magFilter
++            + ", aniso: "
++            + this.maxAnisotropy
++            + ", lod: "
++            + this.maxLod;
++    }
 +}

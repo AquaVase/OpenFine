@@ -9,32 +9,32 @@
 +import net.minecraft.world.level.storage.ValueOutput;
 +
 +public abstract class CapabilityProvider<B> {
-+   protected CapabilityProvider() {
-+   }
++    protected CapabilityProvider() {
++    }
 +
-+   public final void gatherCapabilities() {
-+   }
++    public final void gatherCapabilities() {
++    }
 +
-+   protected final CapabilityDispatcher getCapabilities() {
-+      return null;
-+   }
++    protected final CapabilityDispatcher getCapabilities() {
++        return null;
++    }
 +
-+   protected final void deserializeCaps(Provider registryAccess, CompoundTag tag) {
-+   }
++    protected final void deserializeCaps(Provider registryAccess, CompoundTag tag) {
++    }
 +
-+   protected final CompoundTag serializeCaps(Provider registryAccess) {
-+      return null;
-+   }
++    protected final CompoundTag serializeCaps(Provider registryAccess) {
++        return null;
++    }
 +
-+   protected final CompoundTag serializeCaps(ValueOutput output) {
-+      return null;
-+   }
++    protected final CompoundTag serializeCaps(ValueOutput output) {
++        return null;
++    }
 +
-+   public void invalidateCaps() {
-+   }
++    public void invalidateCaps() {
++    }
 +
-+   public static class BlockEntities extends CapabilityProvider<BlockEntity> {
-+      protected BlockEntities() {
-+      }
-+   }
++    public static class BlockEntities extends CapabilityProvider<BlockEntity> {
++        protected BlockEntities() {
++        }
++    }
 +}

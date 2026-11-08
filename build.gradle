@@ -97,10 +97,8 @@ def srgTargetJar = tasks.register('srgTargetJar', Jar) {
 }
 patchgen.srgModifiedJar = srgTargetJar.flatMap { it.archiveFile }
 
-tasks.named('restoreArchive') {
-    dependsOn tasks.named('generatePatches')
-    inputArchive = patchgen.outputArchive
-}
+// Archive restoration is optional and unused by this workspace.
+tasks.named('restoreArchive') { enabled = false }
 
 // Maintain recovered sources directly instead of extracting vanilla sources over them.
 tasks.named('extractMapped') { enabled = false }

@@ -55,25 +55,25 @@
      private final StagingBuffer stagingBuffer;
      private final Map<ChunkSectionLayer, SectionRenderDispatcher.SectionUberBuffers> chunkUberBuffers;
      private final ReentrantLock copyLock = new ReentrantLock();
-+   private int countRenderBuilders;
-+   private List<SectionBufferBuilderPack> listPausedBuilders = new ArrayList<>();
-+   public static final ChunkSectionLayer[] BLOCK_RENDER_LAYERS = ChunkSectionLayer.VALUES;
-+   public static int renderChunksUpdated;
++    private int countRenderBuilders;
++    private List<SectionBufferBuilderPack> listPausedBuilders = new ArrayList<>();
++    public static final ChunkSectionLayer[] BLOCK_RENDER_LAYERS = ChunkSectionLayer.VALUES;
++    public static int renderChunksUpdated;
  
      public SectionRenderDispatcher(
 -        final TracingExecutor executor,
 -        final RenderBuffers renderBuffers,
 -        final SectionCompiler sectionCompiler,
 -        final Consumer<SectionRenderDispatcher.RenderSection> onSectionMeshUpdate
-+      TracingExecutor executor,
-+      RenderBuffers renderBuffers,
-+      SectionCompiler sectionCompiler,
-+      Consumer<SectionRenderDispatcher.RenderSection> onSectionMeshUpdate
++        TracingExecutor executor,
++        RenderBuffers renderBuffers,
++        SectionCompiler sectionCompiler,
++        Consumer<SectionRenderDispatcher.RenderSection> onSectionMeshUpdate
      ) {
          this.onSectionMeshUpdate = onSectionMeshUpdate;
          this.fixedBuffers = renderBuffers.fixedBufferPack();
          this.bufferPool = renderBuffers.sectionBufferPool();
-+      this.countRenderBuilders = this.bufferPool.getFreeBufferCount();
++        this.countRenderBuilders = this.bufferPool.getFreeBufferCount();
          this.executor = executor;
          this.sectionCompiler = sectionCompiler;
          int vertexBufferHeapSize = 134217728;
@@ -82,7 +82,7 @@
      }
  
 -    public void setCompiler(final SectionCompiler sectionCompiler) {
-+   public void setCompiler(SectionCompiler sectionCompiler) {
++    public void setCompiler(SectionCompiler sectionCompiler) {
          this.sectionCompiler = sectionCompiler;
      }
  
@@ -91,22 +91,22 @@
      }
  
 -    public void setCameraPosition(final Vec3 cameraPosition) {
-+   public void setCameraPosition(Vec3 cameraPosition) {
++    public void setCameraPosition(Vec3 cameraPosition) {
          this.cameraPosition.set(cameraPosition);
      }
  
 -    public SectionRenderDispatcher.@Nullable RenderSectionBufferSlice getRenderSectionSlice(final SectionMesh sectionMesh, final ChunkSectionLayer layer) {
-+   public SectionRenderDispatcher.RenderSectionBufferSlice getRenderSectionSlice(SectionMesh sectionMesh, ChunkSectionLayer layer) {
++    public SectionRenderDispatcher.RenderSectionBufferSlice getRenderSectionSlice(SectionMesh sectionMesh, ChunkSectionLayer layer) {
          SectionRenderDispatcher.SectionUberBuffers uberBuffers = this.chunkUberBuffers.get(layer);
 -        TlsfAllocator.Allocation vertexSlice = uberBuffers.vertexBuffer.getAllocation(sectionMesh);
-+      Allocation vertexSlice = uberBuffers.vertexBuffer.getAllocation(sectionMesh);
++        Allocation vertexSlice = uberBuffers.vertexBuffer.getAllocation(sectionMesh);
          if (vertexSlice == null) {
              return null;
          }
  
          long vertexBufferOffset = vertexSlice.getOffsetFromHeap();
 -        TlsfAllocator.Allocation indexSlice = uberBuffers.indexBuffer.getAllocation(sectionMesh);
-+      Allocation indexSlice = uberBuffers.indexBuffer.getAllocation(sectionMesh);
++        Allocation indexSlice = uberBuffers.indexBuffer.getAllocation(sectionMesh);
          long indexBufferOffset = 0L;
          GpuBuffer indexBuffer = null;
          if (indexSlice != null) {
@@ -115,7 +115,7 @@
          GpuDevice device = RenderSystem.getDevice();
  
 -        try (StagingBuffer.Uploader uploader = this.stagingBuffer.startUploading(device.createCommandEncoder())) {
-+      try (Uploader uploader = this.stagingBuffer.startUploading(device.createCommandEncoder())) {
++        try (Uploader uploader = this.stagingBuffer.startUploading(device.createCommandEncoder())) {
              for (SectionRenderDispatcher.SectionUberBuffers buffers : this.chunkUberBuffers.values()) {
                  boolean performedBufferResize = buffers.vertexBuffer.uploadStagedAllocations(device, uploader);
                  buffers.indexBuffer.uploadStagedAllocations(device, uploader);
@@ -124,7 +124,7 @@
      }
  
 -    private void schedule(final SectionRenderDispatcher.RenderSection.SectionTask task) {
-+   private void schedule(SectionRenderDispatcher.RenderSection.SectionTask task) {
++    private void schedule(SectionRenderDispatcher.RenderSection.SectionTask task) {
          if (!this.closed) {
              this.queue.add(task);
              this.executor.execute(this::runTask);
@@ -133,78 +133,78 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public void pauseChunkUpdates() {
-+      long timeStartMs = System.currentTimeMillis();
-+      if (this.listPausedBuilders.size() <= 0) {
-+         while (this.listPausedBuilders.size() != this.countRenderBuilders) {
-+            SectionBufferBuilderPack builder = this.bufferPool.acquire();
-+            if (builder != null) {
-+               this.listPausedBuilders.add(builder);
++    public void pauseChunkUpdates() {
++        long timeStartMs = System.currentTimeMillis();
++        if (this.listPausedBuilders.size() <= 0) {
++            while (this.listPausedBuilders.size() != this.countRenderBuilders) {
++                SectionBufferBuilderPack builder = this.bufferPool.acquire();
++                if (builder != null) {
++                    this.listPausedBuilders.add(builder);
++                }
++
++                if (System.currentTimeMillis() > timeStartMs + 1000L) {
++                    break;
++                }
 +            }
++        }
++    }
 +
-+            if (System.currentTimeMillis() > timeStartMs + 1000L) {
-+               break;
-+            }
-+         }
-+      }
-+   }
++    public void resumeChunkUpdates() {
++        for (SectionBufferBuilderPack builder : this.listPausedBuilders) {
++            this.bufferPool.release(builder);
++        }
 +
-+   public void resumeChunkUpdates() {
-+      for (SectionBufferBuilderPack builder : this.listPausedBuilders) {
-+         this.bufferPool.release(builder);
-+      }
-+
-+      this.listPausedBuilders.clear();
-+   }
++        this.listPausedBuilders.clear();
++    }
 +
      public class RenderSection implements RotatingSectionStorage.Value {
          public final int index;
          public final AtomicReference<SectionMesh> sectionMesh = new AtomicReference<>(CompiledSectionMesh.UNCOMPILED);
 -        private SectionRenderDispatcher.RenderSection.@Nullable CompileTask lastCompileTask;
 -        private SectionRenderDispatcher.RenderSection.@Nullable ResortTransparencyTask lastResortTransparencyTask;
-+      private SectionRenderDispatcher.RenderSection.CompileTask lastCompileTask;
-+      private SectionRenderDispatcher.RenderSection.ResortTransparencyTask lastResortTransparencyTask;
++        private SectionRenderDispatcher.RenderSection.CompileTask lastCompileTask;
++        private SectionRenderDispatcher.RenderSection.ResortTransparencyTask lastResortTransparencyTask;
          private AABB bb;
          private volatile long sectionNode = SectionPos.asLong(-1, -1, -1);
 -        private final BlockPos.MutableBlockPos renderOrigin = new BlockPos.MutableBlockPos(-1, -1, -1);
-+      private final MutableBlockPos renderOrigin = new MutableBlockPos(-1, -1, -1);
++        private final MutableBlockPos renderOrigin = new MutableBlockPos(-1, -1, -1);
          private long uploadedTime;
          private long fadeDuration;
          private boolean wasPreviouslyEmpty;
-+      private boolean needsBackgroundPriorityUpdate;
-+      private boolean renderRegions = Config.isRenderRegions();
-+      public int regionX;
-+      public int regionZ;
-+      public int regionDX;
-+      public int regionDY;
-+      public int regionDZ;
-+      private VboRegion[] vboRegions;
-+      private final SectionRenderDispatcher.RenderSection[] renderChunksOfset16 = new SectionRenderDispatcher.RenderSection[6];
-+      private boolean renderChunksOffset16Updated = false;
-+      private LevelChunk chunk;
-+      private SectionOcclusionGraph.Node renderInfo = new SectionOcclusionGraph.Node(this, null, 0);
-+      public AabbFrame boundingBoxParent;
-+      private SectionPos sectionPosition;
++        private boolean needsBackgroundPriorityUpdate;
++        private boolean renderRegions = Config.isRenderRegions();
++        public int regionX;
++        public int regionZ;
++        public int regionDX;
++        public int regionDY;
++        public int regionDZ;
++        private VboRegion[] vboRegions;
++        private final SectionRenderDispatcher.RenderSection[] renderChunksOfset16 = new SectionRenderDispatcher.RenderSection[6];
++        private boolean renderChunksOffset16Updated = false;
++        private LevelChunk chunk;
++        private SectionOcclusionGraph.Node renderInfo = new SectionOcclusionGraph.Node(this, null, 0);
++        public AabbFrame boundingBoxParent;
++        private SectionPos sectionPosition;
  
 -        public RenderSection(final int index, final long sectionNode) {
-+      public RenderSection(int index, long sectionNode) {
++        public RenderSection(int index, long sectionNode) {
              this.index = index;
              this.setSectionNode(sectionNode);
          }
  
 -        public float getVisibility(final long now) {
-+      public float getVisibility(long now) {
++        public float getVisibility(long now) {
              long elapsed = now - this.uploadedTime;
              return elapsed >= this.fadeDuration ? 1.0F : (float)elapsed / (float)this.fadeDuration;
          }
  
 -        public void setFadeDuration(final long fadeDuration) {
-+      public void setFadeDuration(long fadeDuration) {
++        public void setFadeDuration(long fadeDuration) {
              this.fadeDuration = fadeDuration;
          }
  
 -        public void setWasPreviouslyEmpty(final boolean wasPreviouslyEmpty) {
-+      public void setWasPreviouslyEmpty(boolean wasPreviouslyEmpty) {
++        public void setWasPreviouslyEmpty(boolean wasPreviouslyEmpty) {
              this.wasPreviouslyEmpty = wasPreviouslyEmpty;
          }
  
@@ -213,39 +213,37 @@
  
          @Override
 -        public void setSectionNode(final long sectionNode) {
-+      public void setSectionNode(long sectionNode) {
++        public void setSectionNode(long sectionNode) {
              this.reset();
              this.sectionNode = sectionNode;
              int x = SectionPos.sectionToBlockCoord(SectionPos.x(sectionNode));
-@@ -249,8 +301,21 @@
+@@ -249,6 +301,19 @@
              int z = SectionPos.sectionToBlockCoord(SectionPos.z(sectionNode));
              this.renderOrigin.set(x, y, z);
              this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-+         this.sectionPosition = SectionPos.of(this.getPosition());
-+         if (this.renderRegions) {
-+            int bits = 8;
-+            this.regionX = x >> bits << bits;
-+            this.regionZ = z >> bits << bits;
-+            this.regionDX = x - this.regionX;
-+            this.regionDY = y;
-+            this.regionDZ = z - this.regionZ;
++            this.sectionPosition = SectionPos.of(this.getPosition());
++            if (this.renderRegions) {
++                int bits = 8;
++                this.regionX = x >> bits << bits;
++                this.regionZ = z >> bits << bits;
++                this.regionDX = x - this.regionX;
++                this.regionDY = y;
++                this.regionDZ = z - this.regionZ;
++            }
++
++            this.renderChunksOffset16Updated = false;
++            this.chunk = null;
++            this.boundingBoxParent = null;
          }
  
-+         this.renderChunksOffset16Updated = false;
-+         this.chunk = null;
-+         this.boundingBoxParent = null;
-+      }
-+
          public SectionMesh getSectionMesh() {
-             return this.sectionMesh.get();
-         }
 @@ -274,12 +339,16 @@
              return this.renderOrigin;
          }
  
-+      public BlockPos getPosition() {
-+         return this.renderOrigin;
-+      }
++        public BlockPos getPosition() {
++            return this.renderOrigin;
++        }
 +
          @Override
          public long getSectionNode() {
@@ -253,7 +251,7 @@
          }
  
 -        public long getNeighborSectionNode(final Direction direction) {
-+      public long getNeighborSectionNode(Direction direction) {
++        public long getNeighborSectionNode(Direction direction) {
              return SectionPos.offset(this.sectionNode, direction);
          }
  
@@ -262,7 +260,7 @@
          }
  
 -        private SectionRenderDispatcher.RenderSection.SectionTask createCompileTask(final RenderSectionRegion region) {
-+      private SectionRenderDispatcher.RenderSection.SectionTask createCompileTask(RenderSectionRegion region) {
++        private SectionRenderDispatcher.RenderSection.SectionTask createCompileTask(RenderSectionRegion region) {
              this.cancelTasks();
              boolean isRecompile = this.sectionMesh.get() != CompiledSectionMesh.UNCOMPILED;
              this.lastCompileTask = new SectionRenderDispatcher.RenderSection.CompileTask(region, isRecompile);
@@ -270,19 +268,19 @@
          }
  
 -        public void compileAsync(final RenderSectionRegion region) {
-+      public void compileAsync(RenderSectionRegion region) {
++        public void compileAsync(RenderSectionRegion region) {
              SectionRenderDispatcher.RenderSection.SectionTask task = this.createCompileTask(region);
              SectionRenderDispatcher.this.schedule(task);
          }
  
 -        public void compileSync(final RenderSectionRegion region) {
-+      public void compileSync(RenderSectionRegion region) {
++        public void compileSync(RenderSectionRegion region) {
              SectionRenderDispatcher.RenderSection.SectionTask task = this.createCompileTask(region);
              task.doTask(SectionRenderDispatcher.this.fixedBuffers);
          }
  
 -        private SectionMesh setSectionMesh(final SectionMesh sectionMesh) {
-+      private SectionMesh setSectionMesh(SectionMesh sectionMesh) {
++        private SectionMesh setSectionMesh(SectionMesh sectionMesh) {
              SectionMesh oldMesh = this.sectionMesh.getAndSet(sectionMesh);
              SectionRenderDispatcher.this.onSectionMeshUpdate.accept(this);
              if (this.uploadedTime == 0L) {
@@ -291,7 +289,7 @@
          }
  
 -        private void releaseSectionMesh(final SectionMesh oldMesh) {
-+      private void releaseSectionMesh(SectionMesh oldMesh) {
++        private void releaseSectionMesh(SectionMesh oldMesh) {
              oldMesh.close();
  
              for (SectionRenderDispatcher.SectionUberBuffers buffers : SectionRenderDispatcher.this.chunkUberBuffers.values()) {
@@ -300,14 +298,14 @@
          }
  
 -        private VertexSorting createVertexSorting(final SectionPos sectionPos, final Vec3 cameraPos) {
-+      private VertexSorting createVertexSorting(SectionPos sectionPos, Vec3 cameraPos) {
++        private VertexSorting createVertexSorting(SectionPos sectionPos, Vec3 cameraPos) {
              return VertexSorting.byDistance(
                  (float)(cameraPos.x - sectionPos.minBlockX()), (float)(cameraPos.y - sectionPos.minBlockY()), (float)(cameraPos.z - sectionPos.minBlockZ())
              );
          }
  
 -        private void checkSectionMesh(final CompiledSectionMesh compiledSectionMesh) {
-+      private void checkSectionMesh(CompiledSectionMesh compiledSectionMesh) {
++        private void checkSectionMesh(CompiledSectionMesh compiledSectionMesh) {
              boolean allBuffersUpdated = true;
  
              for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
@@ -316,13 +314,13 @@
          }
  
 -        private void vertexBufferUploadCallback(final CompiledSectionMesh sectionMesh, final ChunkSectionLayer layer) {
-+      private void vertexBufferUploadCallback(CompiledSectionMesh sectionMesh, ChunkSectionLayer layer) {
++        private void vertexBufferUploadCallback(CompiledSectionMesh sectionMesh, ChunkSectionLayer layer) {
              sectionMesh.setVertexBufferUploaded(layer);
              this.checkSectionMesh(sectionMesh);
          }
  
 -        private void indexBufferUploadCallback(final CompiledSectionMesh sectionMesh, final ChunkSectionLayer layer, final boolean sortedIndexBuffer) {
-+      private void indexBufferUploadCallback(CompiledSectionMesh sectionMesh, ChunkSectionLayer layer, boolean sortedIndexBuffer) {
++        private void indexBufferUploadCallback(CompiledSectionMesh sectionMesh, ChunkSectionLayer layer, boolean sortedIndexBuffer) {
              sectionMesh.setIndexBufferUploaded(layer);
              if (!sortedIndexBuffer) {
                  this.checkSectionMesh(sectionMesh);
@@ -332,7 +330,7 @@
 -        private boolean addSectionBuffersToUberBuffer(
 -            final ChunkSectionLayer layer, final CompiledSectionMesh key, final @Nullable ByteBuffer vertexBuffer, final @Nullable ByteBuffer indexBuffer
 -        ) {
-+      private boolean addSectionBuffersToUberBuffer(ChunkSectionLayer layer, CompiledSectionMesh key, ByteBuffer vertexBuffer, ByteBuffer indexBuffer) {
++        private boolean addSectionBuffersToUberBuffer(ChunkSectionLayer layer, CompiledSectionMesh key, ByteBuffer vertexBuffer, ByteBuffer indexBuffer) {
              boolean success = true;
              SectionRenderDispatcher.this.copyLock.lock();
  
@@ -341,167 +339,253 @@
                      assert sectionBuffers != null;
                      if (vertexBuffer != null) {
 -                        UberGpuBuffer.UploadCallback<CompiledSectionMesh> callback = mesh -> this.vertexBufferUploadCallback(mesh, layer);
-+                  UploadCallback<CompiledSectionMesh> callback = mesh -> this.vertexBufferUploadCallback(mesh, layer);
++                        UploadCallback<CompiledSectionMesh> callback = mesh -> this.vertexBufferUploadCallback(mesh, layer);
                          success &= sectionBuffers.vertexBuffer.addAllocation(key, callback, vertexBuffer);
                      }
  
                      if (indexBuffer != null) {
                          boolean sortedIndexBuffer = vertexBuffer == null;
 -                        UberGpuBuffer.UploadCallback<CompiledSectionMesh> callback = mesh -> this.indexBufferUploadCallback(mesh, layer, sortedIndexBuffer);
-+                  UploadCallback<CompiledSectionMesh> callback = mesh -> this.indexBufferUploadCallback(mesh, layer, sortedIndexBuffer);
++                        UploadCallback<CompiledSectionMesh> callback = mesh -> this.indexBufferUploadCallback(mesh, layer, sortedIndexBuffer);
                          success &= sectionBuffers.indexBuffer.addAllocation(key, callback, indexBuffer);
                      } else {
                          key.setIndexBufferUploaded(layer);
-@@ -416,17 +483,108 @@
+@@ -416,79 +483,185 @@
              return success;
          }
  
 -        @OnlyIn(Dist.CLIENT)
-+      public void setNeedsBackgroundPriorityUpdate(boolean needsBackgroundPriorityUpdate) {
-+         this.needsBackgroundPriorityUpdate = needsBackgroundPriorityUpdate;
-+      }
++        public void setNeedsBackgroundPriorityUpdate(boolean needsBackgroundPriorityUpdate) {
++            this.needsBackgroundPriorityUpdate = needsBackgroundPriorityUpdate;
++        }
 +
-+      public boolean needsBackgroundPriorityUpdate() {
-+         return this.needsBackgroundPriorityUpdate;
-+      }
++        public boolean needsBackgroundPriorityUpdate() {
++            return this.needsBackgroundPriorityUpdate;
++        }
 +
-+      public LevelChunk getChunk() {
-+         return this.getChunk(this.getPosition());
-+      }
++        public LevelChunk getChunk() {
++            return this.getChunk(this.getPosition());
++        }
 +
-+      private LevelChunk getChunk(BlockPos posIn) {
-+         LevelChunk chunkLocal = this.chunk;
-+         if (chunkLocal != null && ChunkUtils.isLoaded(chunkLocal)) {
++        private LevelChunk getChunk(BlockPos posIn) {
++            LevelChunk chunkLocal = this.chunk;
++            if (chunkLocal != null && ChunkUtils.isLoaded(chunkLocal)) {
++                return chunkLocal;
++            }
++
++            chunkLocal = this.getWorld().getChunkAt(posIn);
++            this.chunk = chunkLocal;
 +            return chunkLocal;
-+         }
++        }
 +
-+         chunkLocal = this.getWorld().getChunkAt(posIn);
-+         this.chunk = chunkLocal;
-+         return chunkLocal;
-+      }
++        public boolean isChunkRegionEmpty() {
++            return this.isChunkRegionEmpty(this.getPosition());
++        }
 +
-+      public boolean isChunkRegionEmpty() {
-+         return this.isChunkRegionEmpty(this.getPosition());
-+      }
++        private boolean isChunkRegionEmpty(BlockPos posIn) {
++            int yStart = posIn.getY();
++            int yEnd = yStart + 15;
++            return this.getChunk(posIn).isYSpaceEmpty(yStart, yEnd);
++        }
 +
-+      private boolean isChunkRegionEmpty(BlockPos posIn) {
-+         int yStart = posIn.getY();
-+         int yEnd = yStart + 15;
-+         return this.getChunk(posIn).isYSpaceEmpty(yStart, yEnd);
-+      }
++        public SectionOcclusionGraph.Node getRenderInfo() {
++            return this.renderInfo;
++        }
 +
-+      public SectionOcclusionGraph.Node getRenderInfo() {
-+         return this.renderInfo;
-+      }
++        public SectionOcclusionGraph.Node getRenderInfo(Direction dirIn, int counterIn) {
++            this.renderInfo.initialize(dirIn, counterIn);
++            return this.renderInfo;
++        }
 +
-+      public SectionOcclusionGraph.Node getRenderInfo(Direction dirIn, int counterIn) {
-+         this.renderInfo.initialize(dirIn, counterIn);
-+         return this.renderInfo;
-+      }
++        public boolean isVisible(ICamera camera, int frameCount) {
++            return this.getBoundingBoxParent().isBoundingBoxInFrustumFully(camera, frameCount) ? true : camera.isVisible(this.bb);
++        }
 +
-+      public boolean isVisible(ICamera camera, int frameCount) {
-+         return this.getBoundingBoxParent().isBoundingBoxInFrustumFully(camera, frameCount) ? true : camera.isVisible(this.bb);
-+      }
-+
-+      public AabbFrame getBoundingBoxParent() {
-+         if (this.boundingBoxParent == null) {
-+            BlockPos pos = this.getPosition();
-+            int x = pos.getX();
-+            int y = pos.getY();
-+            int z = pos.getZ();
-+            int bits = 5;
-+            int xp = x >> bits << bits;
-+            int yp = y >> bits << bits;
-+            int zp = z >> bits << bits;
-+            if (xp != x || yp != y || zp != z) {
-+               AabbFrame bbp = Config.getWorldRenderer().getRenderChunk(new BlockPos(xp, yp, zp)).getBoundingBoxParent();
-+               if (bbp != null && bbp.minX == xp && bbp.minY == yp && bbp.minZ == zp) {
-+                  this.boundingBoxParent = bbp;
-+               }
-+            }
-+
++        public AabbFrame getBoundingBoxParent() {
 +            if (this.boundingBoxParent == null) {
-+               int delta = 1 << bits;
-+               this.boundingBoxParent = new AabbFrame(xp, yp, zp, xp + delta, yp + delta, zp + delta);
++                BlockPos pos = this.getPosition();
++                int x = pos.getX();
++                int y = pos.getY();
++                int z = pos.getZ();
++                int bits = 5;
++                int xp = x >> bits << bits;
++                int yp = y >> bits << bits;
++                int zp = z >> bits << bits;
++                if (xp != x || yp != y || zp != z) {
++                    AabbFrame bbp = Config.getWorldRenderer().getRenderChunk(new BlockPos(xp, yp, zp)).getBoundingBoxParent();
++                    if (bbp != null && bbp.minX == xp && bbp.minY == yp && bbp.minZ == zp) {
++                        this.boundingBoxParent = bbp;
++                    }
++                }
++
++                if (this.boundingBoxParent == null) {
++                    int delta = 1 << bits;
++                    this.boundingBoxParent = new AabbFrame(xp, yp, zp, xp + delta, yp + delta, zp + delta);
++                }
 +            }
-+         }
 +
-+         return this.boundingBoxParent;
-+      }
++            return this.boundingBoxParent;
++        }
 +
-+      public ClientLevel getWorld() {
-+         return Config.getMinecraft().level;
-+      }
++        public ClientLevel getWorld() {
++            return Config.getMinecraft().level;
++        }
 +
-+      public SectionPos getSectionPosition() {
-+         return this.sectionPosition;
-+      }
++        public SectionPos getSectionPosition() {
++            return this.sectionPosition;
++        }
 +
-+      public void setVboRegions(VboRegion[] vboRegions) {
-+         this.vboRegions = vboRegions;
-+      }
++        public void setVboRegions(VboRegion[] vboRegions) {
++            this.vboRegions = vboRegions;
++        }
 +
-+      @Override
-+      public String toString() {
-+         return "pos: " + this.getPosition();
-+      }
++        @Override
++        public String toString() {
++            return "pos: " + this.getPosition();
++        }
 +
          private class CompileTask extends SectionRenderDispatcher.RenderSection.SectionTask {
              private final RenderSectionRegion region;
-+         private RenderRegionCache renderRegionCache;
++            private RenderRegionCache renderRegionCache;
  
 -            public CompileTask(final RenderSectionRegion region, final boolean isRecompile) {
-+         public CompileTask(RenderSectionRegion region, boolean isRecompile) {
++            public CompileTask(RenderSectionRegion region, boolean isRecompile) {
                  super(isRecompile);
                  this.region = region;
-+            this.renderRegionCache = region.getRegionCache();
++                this.renderRegionCache = region.getRegionCache();
              }
  
              @Override
 -            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(final SectionBufferBuilderPack buffers) {
-+         public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
-+            try {
-                 if (this.isCancelled.get()) {
-                     return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
-                 }
-@@ -441,12 +599,22 @@
+-                if (this.isCancelled.get()) {
+-                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
+-                }
++            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
++                try {
++                    if (this.isCancelled.get()) {
++                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
++                    }
  
-                 SectionCompiler.Results results;
-                 try (Zone ignored = Profiler.get().zone("Compile Section")) {
-+                  ChunkCacheOF chunkCacheOF = this.region.makeChunkCacheOF();
-                     results = SectionRenderDispatcher.this.sectionCompiler
+-                long sectionNode = RenderSection.this.sectionNode;
+-                SectionPos sectionPos = SectionPos.of(sectionNode);
+-                if (this.isCancelled.get()) {
+-                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
+-                }
++                    long sectionNode = RenderSection.this.sectionNode;
++                    SectionPos sectionPos = SectionPos.of(sectionNode);
++                    if (this.isCancelled.get()) {
++                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
++                    }
+ 
+-                Vec3 cameraPos = SectionRenderDispatcher.this.cameraPosition.get();
++                    Vec3 cameraPos = SectionRenderDispatcher.this.cameraPosition.get();
+ 
+-                SectionCompiler.Results results;
+-                try (Zone ignored = Profiler.get().zone("Compile Section")) {
+-                    results = SectionRenderDispatcher.this.sectionCompiler
 -                        .compile(sectionPos, this.region, RenderSection.this.createVertexSorting(sectionPos, cameraPos), buffers);
-+                     .compile(
-+                        sectionPos,
-+                        chunkCacheOF,
-+                        RenderSection.this.createVertexSorting(sectionPos, cameraPos),
-+                        buffers,
-+                        RenderSection.this.regionDX,
-+                        RenderSection.this.regionDY,
-+                        RenderSection.this.regionDZ
-+                     );
-                 }
+-                }
++                    SectionCompiler.Results results;
++                    try (Zone ignored = Profiler.get().zone("Compile Section")) {
++                        ChunkCacheOF chunkCacheOF = this.region.makeChunkCacheOF();
++                        results = SectionRenderDispatcher.this.sectionCompiler
++                            .compile(
++                                sectionPos,
++                                chunkCacheOF,
++                                RenderSection.this.createVertexSorting(sectionPos, cameraPos),
++                                buffers,
++                                RenderSection.this.regionDX,
++                                RenderSection.this.regionDY,
++                                RenderSection.this.regionDZ
++                            );
++                    }
  
-                 TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
+-                TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
 -                CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results);
-+               CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results, RenderSection.this.vboRegions);
-+               compiledSectionMesh.setAnimatedSprites(results.animatedSprites);
-                 if (results.renderedLayers.isEmpty()) {
-                     SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
-                     SectionRenderDispatcher.this.copyLock.lock();
-@@ -490,7 +658,12 @@
+-                if (results.renderedLayers.isEmpty()) {
+-                    SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
+-                    SectionRenderDispatcher.this.copyLock.lock();
++                    TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
++                    CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results, RenderSection.this.vboRegions);
++                    compiledSectionMesh.setAnimatedSprites(results.animatedSprites);
++                    if (results.renderedLayers.isEmpty()) {
++                        SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
++                        SectionRenderDispatcher.this.copyLock.lock();
  
-                     return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
+-                    try {
+-                        RenderSection.this.releaseSectionMesh(oldMesh);
+-                    } finally {
+-                        SectionRenderDispatcher.this.copyLock.unlock();
+-                    }
++                        try {
++                            RenderSection.this.releaseSectionMesh(oldMesh);
++                        } finally {
++                            SectionRenderDispatcher.this.copyLock.unlock();
++                        }
+ 
+-                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
+-                } else {
+-                    for (Entry<ChunkSectionLayer, MeshData> entry : results.renderedLayers.entrySet()) {
+-                        MeshData meshData = entry.getValue();
+-                        boolean success = false;
++                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
++                    } else {
++                        for (Entry<ChunkSectionLayer, MeshData> entry : results.renderedLayers.entrySet()) {
++                            MeshData meshData = entry.getValue();
++                            boolean success = false;
+ 
+-                        while (!success) {
+-                            if (this.isCancelled.get()) {
+-                                results.release();
+-                                SectionRenderDispatcher.this.copyLock.lock();
++                            while (!success) {
++                                if (this.isCancelled.get()) {
++                                    results.release();
++                                    SectionRenderDispatcher.this.copyLock.lock();
+ 
+-                                try {
+-                                    RenderSection.this.releaseSectionMesh(compiledSectionMesh);
+-                                } finally {
+-                                    SectionRenderDispatcher.this.copyLock.unlock();
++                                    try {
++                                        RenderSection.this.releaseSectionMesh(compiledSectionMesh);
++                                    } finally {
++                                        SectionRenderDispatcher.this.copyLock.unlock();
++                                    }
++
++                                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
+                                 }
+ 
+-                                return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
++                                success = RenderSection.this.addSectionBuffersToUberBuffer(
++                                    entry.getKey(), compiledSectionMesh, meshData.vertexBuffer(), meshData.indexBuffer()
++                                );
++                                if (!success && !RenderSystem.isOnRenderThread()) {
++                                    Thread.onSpinWait();
++                                }
+                             }
+ 
+-                            success = RenderSection.this.addSectionBuffersToUberBuffer(
+-                                entry.getKey(), compiledSectionMesh, meshData.vertexBuffer(), meshData.indexBuffer()
+-                            );
+-                            if (!success && !RenderSystem.isOnRenderThread()) {
+-                                Thread.onSpinWait();
+-                            }
++                            meshData.close();
+                         }
+ 
+-                        meshData.close();
++                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
+                     }
+-
+-                    return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
++                } finally {
++                    if (this.renderRegionCache != null) {
++                        this.renderRegionCache.compileFinished();
++                    }
                  }
-+            } finally {
-+               if (this.renderRegionCache != null) {
-+                  this.renderRegionCache.compileFinished();
              }
-+            }
-+         }
  
-             @Override
-             public void cancel() {
 @@ -498,17 +671,16 @@
              }
          }
@@ -511,14 +595,14 @@
              private final CompiledSectionMesh compiledSectionMesh;
  
 -            public ResortTransparencyTask(final CompiledSectionMesh compiledSectionMesh) {
-+         public ResortTransparencyTask(CompiledSectionMesh compiledSectionMesh) {
++            public ResortTransparencyTask(CompiledSectionMesh compiledSectionMesh) {
                  super(true);
                  this.compiledSectionMesh = compiledSectionMesh;
              }
  
              @Override
 -            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(final SectionBufferBuilderPack buffers) {
-+         public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
++            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
                  if (this.isCancelled.get()) {
                      return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
                  }
@@ -533,12 +617,12 @@
              private final boolean isRecompile;
  
 -            public SectionTask(final boolean isRecompile) {
-+         public SectionTask(boolean isRecompile) {
++            public SectionTask(boolean isRecompile) {
                  this.isRecompile = isRecompile;
              }
  
 -            public abstract SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(final SectionBufferBuilderPack buffers);
-+         public abstract SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack var1);
++            public abstract SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack var1);
  
              public abstract void cancel();
  
@@ -556,7 +640,7 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record RenderSectionBufferSlice(GpuBuffer vertexBuffer, long vertexBufferOffset, @Nullable GpuBuffer indexBuffer, long indexBufferOffset) {
-+   public record RenderSectionBufferSlice(GpuBuffer vertexBuffer, long vertexBufferOffset, GpuBuffer indexBuffer, long indexBufferOffset) {
++    public record RenderSectionBufferSlice(GpuBuffer vertexBuffer, long vertexBufferOffset, GpuBuffer indexBuffer, long indexBufferOffset) {
      }
  
 -    @OnlyIn(Dist.CLIENT)

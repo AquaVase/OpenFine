@@ -22,53 +22,53 @@
      }
  
 -    public GpuBufferSlice writeTransform(final Matrix4f modelView) {
-+   public GpuBufferSlice writeTransform(Matrix4f modelView) {
++    public GpuBufferSlice writeTransform(Matrix4f modelView) {
          return this.writeTransform(new DynamicUniforms.Transform(modelView, WHITE, NO_OFFSET, IDENTITY_TEXTURE_TRANSFORM));
      }
  
 -    public GpuBufferSlice writeTransform(final Matrix4f modelView, final Vector4f colorModulator) {
-+   public GpuBufferSlice writeTransform(Matrix4f modelView, Vector4f colorModulator) {
++    public GpuBufferSlice writeTransform(Matrix4f modelView, Vector4f colorModulator) {
          return this.writeTransform(new DynamicUniforms.Transform(modelView, colorModulator, NO_OFFSET, IDENTITY_TEXTURE_TRANSFORM));
      }
  
 -    public GpuBufferSlice writeTransform(final Matrix4f modelView, final Matrix4f textureMatrix) {
-+   public GpuBufferSlice writeTransform(Matrix4f modelView, Matrix4f textureMatrix) {
++    public GpuBufferSlice writeTransform(Matrix4f modelView, Matrix4f textureMatrix) {
          return this.writeTransform(new DynamicUniforms.Transform(modelView, WHITE, NO_OFFSET, textureMatrix));
      }
  
 -    public GpuBufferSlice writeTransform(final Matrix4f modelView, final Vector4f colorModulator, final Vector3f modelOffset, final Matrix4f textureMatrix) {
-+   public GpuBufferSlice writeTransform(Matrix4f modelView, Vector4f colorModulator, Vector3f modelOffset, Matrix4f textureMatrix) {
++    public GpuBufferSlice writeTransform(Matrix4f modelView, Vector4f colorModulator, Vector3f modelOffset, Matrix4f textureMatrix) {
          return this.writeTransform(new DynamicUniforms.Transform(modelView, colorModulator, modelOffset, textureMatrix));
      }
  
 -    public GpuBufferSlice writeTransform(final DynamicUniforms.Transform uniform) {
-+   public GpuBufferSlice writeTransform(DynamicUniforms.Transform uniform) {
++    public GpuBufferSlice writeTransform(DynamicUniforms.Transform uniform) {
          return this.transforms.writeUniform(uniform);
      }
  
 -    public GpuBufferSlice[] writeTransforms(final DynamicUniforms.Transform... transforms) {
-+   public GpuBufferSlice[] writeTransforms(DynamicUniforms.Transform... transforms) {
++    public GpuBufferSlice[] writeTransforms(DynamicUniforms.Transform... transforms) {
          return this.transforms.writeUniforms(transforms);
      }
  
 -    public GpuBufferSlice[] writeChunkSections(final DynamicUniforms.ChunkSectionInfo... infos) {
-+   public GpuBufferSlice[] writeChunkSections(DynamicUniforms.ChunkSectionInfo... infos) {
++    public GpuBufferSlice[] writeChunkSections(DynamicUniforms.ChunkSectionInfo... infos) {
          return this.chunkSections.writeUniforms(infos);
      }
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record ChunkSectionInfo(Matrix4fc modelView, int x, int y, int z, float visibility, int textureAtlasWidth, int textureAtlasHeight)
 -        implements DynamicUniformStorage.DynamicUniform {
-+   public record ChunkSectionInfo(
-+      Matrix4fc modelView, int x, int y, int z, float visibility, int textureAtlasWidth, int textureAtlasHeight, double px, double py, double pz
-+   ) implements DynamicUniformStorage.DynamicUniform {
-+      public ChunkSectionInfo(Matrix4fc modelView, int x, int y, int z, float visibility, int textureAtlasWidth, int textureAtlasHeight) {
-+         this(modelView, x, y, z, visibility, textureAtlasWidth, textureAtlasHeight, 0.0, 0.0, 0.0);
-+      }
++    public record ChunkSectionInfo(
++        Matrix4fc modelView, int x, int y, int z, float visibility, int textureAtlasWidth, int textureAtlasHeight, double px, double py, double pz
++    ) implements DynamicUniformStorage.DynamicUniform {
++        public ChunkSectionInfo(Matrix4fc modelView, int x, int y, int z, float visibility, int textureAtlasWidth, int textureAtlasHeight) {
++            this(modelView, x, y, z, visibility, textureAtlasWidth, textureAtlasHeight, 0.0, 0.0, 0.0);
++        }
 +
          @Override
 -        public void write(final ByteBuffer buffer) {
-+      public void write(ByteBuffer buffer) {
++        public void write(ByteBuffer buffer) {
              Std140Builder.intoBuffer(buffer)
                  .putMat4f(this.modelView)
                  .putFloat(this.visibility)
@@ -81,7 +81,7 @@
          implements DynamicUniformStorage.DynamicUniform {
          @Override
 -        public void write(final ByteBuffer buffer) {
-+      public void write(ByteBuffer buffer) {
++        public void write(ByteBuffer buffer) {
              Std140Builder.intoBuffer(buffer).putMat4f(this.modelView).putVec4(this.colorModulator).putVec3(this.modelOffset).putMat4f(this.textureMatrix);
          }
      }

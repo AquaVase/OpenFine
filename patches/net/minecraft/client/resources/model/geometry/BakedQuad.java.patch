@@ -35,30 +35,30 @@
      long packedUV3,
      Direction direction,
 -    BakedQuad.MaterialInfo materialInfo
-+   BakedQuad.MaterialInfo materialInfo,
-+   QuadProperties properties
++    BakedQuad.MaterialInfo materialInfo,
++    QuadProperties properties
  ) {
      public static final int VERTEX_COUNT = 4;
      public static final int FLAG_TRANSLUCENT = 1;
      public static final int FLAG_ANIMATED = 2;
  
 -    public Vector3fc position(final int vertex) {
-+   public BakedQuad(
-+      Vector3fc position0,
-+      Vector3fc position1,
-+      Vector3fc position2,
-+      Vector3fc position3,
-+      long packedUV0,
-+      long packedUV1,
-+      long packedUV2,
-+      long packedUV3,
-+      Direction direction,
-+      BakedQuad.MaterialInfo materialInfo
-+   ) {
-+      this(position0, position1, position2, position3, packedUV0, packedUV1, packedUV2, packedUV3, direction, materialInfo, new QuadProperties());
-+   }
++    public BakedQuad(
++        Vector3fc position0,
++        Vector3fc position1,
++        Vector3fc position2,
++        Vector3fc position3,
++        long packedUV0,
++        long packedUV1,
++        long packedUV2,
++        long packedUV3,
++        Direction direction,
++        BakedQuad.MaterialInfo materialInfo
++    ) {
++        this(position0, position1, position2, position3, packedUV0, packedUV1, packedUV2, packedUV3, direction, materialInfo, new QuadProperties());
++    }
 +
-+   public Vector3fc position(int vertex) {
++    public Vector3fc position(int vertex) {
          return switch (vertex) {
              case 0 -> this.position0;
              case 1 -> this.position1;
@@ -67,7 +67,7 @@
      }
  
 -    public long packedUV(final int vertex) {
-+   public long packedUV(int vertex) {
++    public long packedUV(int vertex) {
          return switch (vertex) {
              case 0 -> this.packedUV0;
              case 1 -> this.packedUV1;
@@ -75,192 +75,192 @@
          };
      }
  
-+   public boolean isTinted() {
-+      return this.materialInfo.tintIndex != -1;
-+   }
++    public boolean isTinted() {
++        return this.materialInfo.tintIndex != -1;
++    }
 +
-+   public TextureAtlasSprite sprite() {
-+      return this.materialInfo.sprite();
-+   }
++    public TextureAtlasSprite sprite() {
++        return this.materialInfo.sprite();
++    }
 +
-+   public int tintIndex() {
-+      return this.materialInfo.tintIndex;
-+   }
++    public int tintIndex() {
++        return this.materialInfo.tintIndex;
++    }
 +
-+   public BakedQuad makeCopy(PositionUv[] posUvs, TextureAtlasSprite spriteIn) {
-+      if (posUvs.length != 4) {
-+         throw new IllegalArgumentException("Invalid vertex data length: " + posUvs.length);
-+      }
++    public BakedQuad makeCopy(PositionUv[] posUvs, TextureAtlasSprite spriteIn) {
++        if (posUvs.length != 4) {
++            throw new IllegalArgumentException("Invalid vertex data length: " + posUvs.length);
++        }
 +
-+      Vector3f pos0 = posUvs[0].position();
-+      Vector3f pos1 = posUvs[1].position();
-+      Vector3f pos2 = posUvs[2].position();
-+      Vector3f pos3 = posUvs[3].position();
-+      long uv0 = posUvs[0].packedUv();
-+      long uv1 = posUvs[1].packedUv();
-+      long uv2 = posUvs[2].packedUv();
-+      long uv3 = posUvs[3].packedUv();
-+      return new BakedQuad(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, this.direction, this.materialInfo);
-+   }
++        Vector3f pos0 = posUvs[0].position();
++        Vector3f pos1 = posUvs[1].position();
++        Vector3f pos2 = posUvs[2].position();
++        Vector3f pos3 = posUvs[3].position();
++        long uv0 = posUvs[0].packedUv();
++        long uv1 = posUvs[1].packedUv();
++        long uv2 = posUvs[2].packedUv();
++        long uv3 = posUvs[3].packedUv();
++        return new BakedQuad(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, this.direction, this.materialInfo);
++    }
 +
-+   public BakedQuad makeCopy(long[] uvs, TextureAtlasSprite spriteIn) {
-+      return this.makeCopy(uvs, spriteIn, this.materialInfo.layer);
-+   }
++    public BakedQuad makeCopy(long[] uvs, TextureAtlasSprite spriteIn) {
++        return this.makeCopy(uvs, spriteIn, this.materialInfo.layer);
++    }
 +
-+   public BakedQuad makeCopy(long[] uvs, TextureAtlasSprite spriteIn, ChunkSectionLayer layerIn) {
-+      if (uvs.length != 4) {
-+         throw new IllegalArgumentException("Invalid vertex data length: " + uvs.length);
-+      }
++    public BakedQuad makeCopy(long[] uvs, TextureAtlasSprite spriteIn, ChunkSectionLayer layerIn) {
++        if (uvs.length != 4) {
++            throw new IllegalArgumentException("Invalid vertex data length: " + uvs.length);
++        }
 +
-+      long uv0 = uvs[0];
-+      long uv1 = uvs[1];
-+      long uv2 = uvs[2];
-+      long uv3 = uvs[3];
-+      BakedQuad.MaterialInfo mi2 = new BakedQuad.MaterialInfo(
-+         spriteIn, layerIn, this.materialInfo.itemRenderType, this.materialInfo.tintIndex, this.materialInfo.shade, this.materialInfo.lightEmission
-+      );
-+      return new BakedQuad(this.position0, this.position1, this.position2, this.position3, uv0, uv1, uv2, uv3, this.direction, mi2);
-+   }
++        long uv0 = uvs[0];
++        long uv1 = uvs[1];
++        long uv2 = uvs[2];
++        long uv3 = uvs[3];
++        BakedQuad.MaterialInfo mi2 = new BakedQuad.MaterialInfo(
++            spriteIn, layerIn, this.materialInfo.itemRenderType, this.materialInfo.tintIndex, this.materialInfo.shade, this.materialInfo.lightEmission
++        );
++        return new BakedQuad(this.position0, this.position1, this.position2, this.position3, uv0, uv1, uv2, uv3, this.direction, mi2);
++    }
 +
-+   public BakedQuad makeCopyReverse() {
-+      Vector3fc pos0 = this.position3;
-+      Vector3fc pos1 = this.position2;
-+      Vector3fc pos2 = this.position1;
-+      Vector3fc pos3 = this.position0;
-+      long uv0 = this.packedUV3;
-+      long uv1 = this.packedUV2;
-+      long uv2 = this.packedUV1;
-+      long uv3 = this.packedUV0;
-+      return new BakedQuad(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, this.direction, this.materialInfo);
-+   }
++    public BakedQuad makeCopyReverse() {
++        Vector3fc pos0 = this.position3;
++        Vector3fc pos1 = this.position2;
++        Vector3fc pos2 = this.position1;
++        Vector3fc pos3 = this.position0;
++        long uv0 = this.packedUV3;
++        long uv1 = this.packedUV2;
++        long uv2 = this.packedUV1;
++        long uv3 = this.packedUV0;
++        return new BakedQuad(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, this.direction, this.materialInfo);
++    }
 +
-+   public long[] getPackedUVs() {
-+      return new long[]{this.packedUV0, this.packedUV1, this.packedUV2, this.packedUV3};
-+   }
++    public long[] getPackedUVs() {
++        return new long[]{this.packedUV0, this.packedUV1, this.packedUV2, this.packedUV3};
++    }
 +
-+   private static Direction fixFace(Direction faceIn, Vector3fc pos0, Vector3fc pos1, Vector3fc pos2, Vector3fc pos3) {
-+      if (faceIn == null) {
-+         faceIn = FaceBakery.calculateFacing(new Vector3fc[]{pos0, pos1, pos2, pos3});
-+      }
++    private static Direction fixFace(Direction faceIn, Vector3fc pos0, Vector3fc pos1, Vector3fc pos2, Vector3fc pos3) {
++        if (faceIn == null) {
++            faceIn = FaceBakery.calculateFacing(new Vector3fc[]{pos0, pos1, pos2, pos3});
++        }
 +
-+      if (faceIn == null) {
-+         faceIn = Direction.UP;
-+      }
++        if (faceIn == null) {
++            faceIn = Direction.UP;
++        }
 +
-+      return faceIn;
-+   }
++        return faceIn;
++    }
 +
-+   private static TextureAtlasSprite fixSprite(TextureAtlasSprite spriteIn, long pUV0, long pUV1, long pUV2, long pUV3) {
-+      return spriteIn == null ? getSpriteByUv(spriteIn.getTextureAtlas(), new long[]{pUV0, pUV1, pUV2, pUV3}) : spriteIn;
-+   }
++    private static TextureAtlasSprite fixSprite(TextureAtlasSprite spriteIn, long pUV0, long pUV1, long pUV2, long pUV3) {
++        return spriteIn == null ? getSpriteByUv(spriteIn.getTextureAtlas(), new long[]{pUV0, pUV1, pUV2, pUV3}) : spriteIn;
++    }
 +
-+   public long getPackedUvSingle(int indexIn) {
-+      if (this.properties.packedUvsSingle == null) {
-+         this.properties.packedUvsSingle = makePackedUvsSingle(new long[]{this.packedUV0, this.packedUV1, this.packedUV2, this.packedUV3}, this.sprite());
-+      }
++    public long getPackedUvSingle(int indexIn) {
++        if (this.properties.packedUvsSingle == null) {
++            this.properties.packedUvsSingle = makePackedUvsSingle(new long[]{this.packedUV0, this.packedUV1, this.packedUV2, this.packedUV3}, this.sprite());
++        }
 +
-+      return this.properties.packedUvsSingle[indexIn];
-+   }
++        return this.properties.packedUvsSingle[indexIn];
++    }
 +
-+   private static long[] makePackedUvsSingle(long[] packedUVs, TextureAtlasSprite sprite) {
-+      long[] packedUVsSingle = new long[packedUVs.length];
++    private static long[] makePackedUvsSingle(long[] packedUVs, TextureAtlasSprite sprite) {
++        long[] packedUVsSingle = new long[packedUVs.length];
 +
-+      for (int i = 0; i < 4; i++) {
-+         float tu = UVPair.unpackU(packedUVs[i]);
-+         float tv = UVPair.unpackV(packedUVs[i]);
-+         float u = sprite.toSingleU(tu);
-+         float v = sprite.toSingleV(tv);
-+         packedUVsSingle[i] = UVPair.pack(u, v);
-+      }
++        for (int i = 0; i < 4; i++) {
++            float tu = UVPair.unpackU(packedUVs[i]);
++            float tv = UVPair.unpackV(packedUVs[i]);
++            float u = sprite.toSingleU(tu);
++            float v = sprite.toSingleV(tv);
++            packedUVsSingle[i] = UVPair.pack(u, v);
++        }
 +
-+      return packedUVsSingle;
-+   }
++        return packedUVsSingle;
++    }
 +
-+   private static TextureAtlasSprite getSpriteByUv(TextureAtlas atlasIn, long[] packedUVs) {
-+      float uMin = 1.0F;
-+      float vMin = 1.0F;
-+      float uMax = 0.0F;
-+      float vMax = 0.0F;
++    private static TextureAtlasSprite getSpriteByUv(TextureAtlas atlasIn, long[] packedUVs) {
++        float uMin = 1.0F;
++        float vMin = 1.0F;
++        float uMax = 0.0F;
++        float vMax = 0.0F;
 +
-+      for (int i = 0; i < 4; i++) {
-+         float tu = UVPair.unpackU(packedUVs[i]);
-+         float tv = UVPair.unpackV(packedUVs[i]);
-+         uMin = Math.min(uMin, tu);
-+         vMin = Math.min(vMin, tv);
-+         uMax = Math.max(uMax, tu);
-+         vMax = Math.max(vMax, tv);
-+      }
++        for (int i = 0; i < 4; i++) {
++            float tu = UVPair.unpackU(packedUVs[i]);
++            float tv = UVPair.unpackV(packedUVs[i]);
++            uMin = Math.min(uMin, tu);
++            vMin = Math.min(vMin, tv);
++            uMax = Math.max(uMax, tu);
++            vMax = Math.max(vMax, tv);
++        }
 +
-+      float uMid = (uMin + uMax) / 2.0F;
-+      float vMid = (vMin + vMax) / 2.0F;
-+      return atlasIn.getIconByUV(uMid, vMid);
-+   }
++        float uMid = (uMin + uMax) / 2.0F;
++        float vMid = (vMin + vMax) / 2.0F;
++        return atlasIn.getIconByUV(uMid, vMid);
++    }
 +
-+   public QuadBounds getQuadBounds() {
-+      if (this.properties.quadBounds == null) {
-+         this.properties.quadBounds = new QuadBounds(new Vector3fc[]{this.position0, this.position1, this.position2, this.position3});
-+      }
++    public QuadBounds getQuadBounds() {
++        if (this.properties.quadBounds == null) {
++            this.properties.quadBounds = new QuadBounds(new Vector3fc[]{this.position0, this.position1, this.position2, this.position3});
++        }
 +
-+      return this.properties.quadBounds;
-+   }
++        return this.properties.quadBounds;
++    }
 +
-+   public float getMidX() {
-+      QuadBounds qb = this.getQuadBounds();
-+      return (qb.getMaxX() + qb.getMinX()) / 2.0F;
-+   }
++    public float getMidX() {
++        QuadBounds qb = this.getQuadBounds();
++        return (qb.getMaxX() + qb.getMinX()) / 2.0F;
++    }
 +
-+   public double getMidY() {
-+      QuadBounds qb = this.getQuadBounds();
-+      return (qb.getMaxY() + qb.getMinY()) / 2.0F;
-+   }
++    public double getMidY() {
++        QuadBounds qb = this.getQuadBounds();
++        return (qb.getMaxY() + qb.getMinY()) / 2.0F;
++    }
 +
-+   public double getMidZ() {
-+      QuadBounds qb = this.getQuadBounds();
-+      return (qb.getMaxZ() + qb.getMinZ()) / 2.0F;
-+   }
++    public double getMidZ() {
++        QuadBounds qb = this.getQuadBounds();
++        return (qb.getMaxZ() + qb.getMinZ()) / 2.0F;
++    }
 +
-+   public boolean isFaceQuad() {
-+      QuadBounds qb = this.getQuadBounds();
-+      return qb.isFaceQuad(this.direction);
-+   }
++    public boolean isFaceQuad() {
++        QuadBounds qb = this.getQuadBounds();
++        return qb.isFaceQuad(this.direction);
++    }
 +
-+   public boolean isFullQuad() {
-+      QuadBounds qb = this.getQuadBounds();
-+      return qb.isFullQuad(this.direction);
-+   }
++    public boolean isFullQuad() {
++        QuadBounds qb = this.getQuadBounds();
++        return qb.isFullQuad(this.direction);
++    }
 +
-+   public boolean isFullFaceQuad() {
-+      return this.isFullQuad() && this.isFaceQuad();
-+   }
++    public boolean isFullFaceQuad() {
++        return this.isFullQuad() && this.isFaceQuad();
++    }
 +
-+   public BakedQuad getQuadEmissive() {
-+      if (this.properties.quadEmissiveChecked) {
-+         return this.properties.quadEmissive;
-+      }
++    public BakedQuad getQuadEmissive() {
++        if (this.properties.quadEmissiveChecked) {
++            return this.properties.quadEmissive;
++        }
 +
-+      if (this.properties.quadEmissive == null) {
-+         TextureAtlasSprite sprite = this.materialInfo.sprite;
-+         if (sprite != null && sprite.spriteEmissive != null) {
-+            this.properties.quadEmissive = BakedQuadRetextured.make(this, sprite.spriteEmissive, BlockModelCustomizer.getEmissiveLayer(this.materialInfo.layer));
-+         }
-+      }
++        if (this.properties.quadEmissive == null) {
++            TextureAtlasSprite sprite = this.materialInfo.sprite;
++            if (sprite != null && sprite.spriteEmissive != null) {
++                this.properties.quadEmissive = BakedQuadRetextured.make(this, sprite.spriteEmissive, BlockModelCustomizer.getEmissiveLayer(this.materialInfo.layer));
++            }
++        }
 +
-+      this.properties.quadEmissiveChecked = true;
-+      return this.properties.quadEmissive;
-+   }
++        this.properties.quadEmissiveChecked = true;
++        return this.properties.quadEmissive;
++    }
 +
-+   public VertexPosition[] getVertexPositions(int key) {
-+      if (this.properties.quadVertexPositions == null) {
-+         this.properties.quadVertexPositions = new QuadVertexPositions();
-+      }
++    public VertexPosition[] getVertexPositions(int key) {
++        if (this.properties.quadVertexPositions == null) {
++            this.properties.quadVertexPositions = new QuadVertexPositions();
++        }
 +
-+      return this.properties.quadVertexPositions.get(key);
-+   }
++        return this.properties.quadVertexPositions.get(key);
++    }
 +
-+   @Override
-+   public String toString() {
-+      return "tint: " + this.tintIndex() + ", facing: " + this.direction + ", sprite: " + this.sprite();
-+   }
++    @Override
++    public String toString() {
++        return "tint: " + this.tintIndex() + ", facing: " + this.direction + ", sprite: " + this.sprite();
++    }
 +
      @Retention(RetentionPolicy.CLASS)
      @Target(ElementType.TYPE_USE)
@@ -273,7 +273,7 @@
 -        public static BakedQuad.MaterialInfo of(
 -            final Material.Baked material, final Transparency transparency, final int tintIndex, final boolean shade, final int lightEmission
 -        ) {
-+      public static BakedQuad.MaterialInfo of(Baked material, Transparency transparency, int tintIndex, boolean shade, int lightEmission) {
++        public static BakedQuad.MaterialInfo of(Baked material, Transparency transparency, int tintIndex, boolean shade, int lightEmission) {
              ChunkSectionLayer layer = ChunkSectionLayer.byTransparency(transparency);
              RenderType itemRenderType;
              if (material.sprite().atlasLocation().equals(TextureAtlas.LOCATION_BLOCKS)) {

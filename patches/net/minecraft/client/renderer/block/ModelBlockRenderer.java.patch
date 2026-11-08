@@ -51,24 +51,24 @@
      private final RandomSource random = RandomSource.createThreadLocalInstance(0L);
      private final List<BlockStateModelPart> parts = new ObjectArrayList<>();
 -    private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
-+   private final MutableBlockPos scratchPos = new MutableBlockPos();
++    private final MutableBlockPos scratchPos = new MutableBlockPos();
      private final QuadInstance quadInstance = new QuadInstance();
      private int tintCacheIndex = -1;
      private int tintCacheValue;
      private boolean tintSourcesInitialized;
 -    private final List<@Nullable BlockTintSource> tintSources = new ObjectArrayList<>();
-+   private final List<BlockTintSource> tintSources = new ObjectArrayList<>();
++    private final List<BlockTintSource> tintSources = new ObjectArrayList<>();
      private final IntList computedTintValues = new IntArrayList();
-+   private RenderEnv renderEnv = new RenderEnv(Blocks.AIR.defaultBlockState(), BlockPos.ZERO);
-+   private int countQuadsRendered;
-+   private static float aoLightValueOpaque = 0.2F;
-+   private static boolean separateAoLightValue = false;
-+   private static final LightCacheOF LIGHT_CACHE_OF = new LightCacheOF();
-+   private static final ChunkSectionLayer[] OVERLAY_LAYERS = new ChunkSectionLayer[]{ChunkSectionLayer.CUTOUT, ChunkSectionLayer.TRANSLUCENT};
-+   private static boolean forge = Reflector.ForgeHooksClient.exists();
++    private RenderEnv renderEnv = new RenderEnv(Blocks.AIR.defaultBlockState(), BlockPos.ZERO);
++    private int countQuadsRendered;
++    private static float aoLightValueOpaque = 0.2F;
++    private static boolean separateAoLightValue = false;
++    private static final LightCacheOF LIGHT_CACHE_OF = new LightCacheOF();
++    private static final ChunkSectionLayer[] OVERLAY_LAYERS = new ChunkSectionLayer[]{ChunkSectionLayer.CUTOUT, ChunkSectionLayer.TRANSLUCENT};
++    private static boolean forge = Reflector.ForgeHooksClient.exists();
  
 -    public ModelBlockRenderer(final boolean ambientOcclusion, final boolean cull, final BlockColors blockColors) {
-+   public ModelBlockRenderer(boolean ambientOcclusion, boolean cull, BlockColors blockColors) {
++    public ModelBlockRenderer(boolean ambientOcclusion, boolean cull, BlockColors blockColors) {
          this.lighter = new BlockModelLighter();
          this.ambientOcclusion = ambientOcclusion;
          this.cull = cull;
@@ -76,7 +76,7 @@
      }
  
 -    public static boolean forceOpaque(final boolean cutoutLeaves, final BlockState blockState) {
-+   public static boolean forceOpaque(boolean cutoutLeaves, BlockState blockState) {
++    public static boolean forceOpaque(boolean cutoutLeaves, BlockState blockState) {
          return !cutoutLeaves && blockState.getBlock() instanceof LeavesBlock;
      }
  
@@ -90,7 +90,7 @@
 -        final BlockState blockState,
 -        final BlockStateModel model,
 -        final long seed
-+      BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockPos pos, BlockState blockState, BlockStateModel model, long seed
++        BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockPos pos, BlockState blockState, BlockStateModel model, long seed
      ) {
          this.random.setSeed(seed);
          model.collectParts(this.random, this.parts);
@@ -98,26 +98,26 @@
              try {
                  Vec3 offset = blockState.getOffset(pos);
 -                if (this.ambientOcclusion && blockState.getLightEmission() == 0 && this.parts.getFirst().useAmbientOcclusion()) {
-+            this.renderEnv.reset(blockState, pos);
-+            this.quadInstance.setBlockState(blockState);
-+            List<BlockStateModelPart> parts2 = BlockModelCustomizer.getRenderModel(this.parts, blockState, this.renderEnv);
-+            if (parts2 != this.parts) {
-+               this.parts.clear();
-+               this.parts.addAll(parts2);
-+            }
++                this.renderEnv.reset(blockState, pos);
++                this.quadInstance.setBlockState(blockState);
++                List<BlockStateModelPart> parts2 = BlockModelCustomizer.getRenderModel(this.parts, blockState, this.renderEnv);
++                if (parts2 != this.parts) {
++                    this.parts.clear();
++                    this.parts.addAll(parts2);
++                }
 +
-+            this.countQuadsRendered = 0;
-+            boolean useAo = false;
-+            if (this.ambientOcclusion && blockState.getLightEmission(level, pos) == 0 && this.parts.getFirst().useAmbientOcclusion()) {
++                this.countQuadsRendered = 0;
++                boolean useAo = false;
++                if (this.ambientOcclusion && blockState.getLightEmission(level, pos) == 0 && this.parts.getFirst().useAmbientOcclusion()) {
                      this.tesselateAmbientOcclusion(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
-+               useAo = true;
++                    useAo = true;
                  } else {
                      this.tesselateFlat(output, x + (float)offset.x, y + (float)offset.y, z + (float)offset.z, this.parts, level, blockState, pos);
                  }
 +
-+            if (this.countQuadsRendered > 0) {
-+               this.renderOverlayModels(output, x, y, z, level, this.parts, blockState, pos, this.cull, useAo);
-+            }
++                if (this.countQuadsRendered > 0) {
++                    this.renderOverlayModels(output, x, y, z, level, this.parts, blockState, pos, this.cull, useAo);
++                }
              } finally {
                  this.parts.clear();
                  this.resetTintCache();
@@ -126,7 +126,7 @@
      }
  
 -    private void configureTintCache(final BlockState blockState) {
-+   private void configureTintCache(BlockState blockState) {
++    private void configureTintCache(BlockState blockState) {
          List<BlockTintSource> tintSources = this.blockColors.getTintSources(blockState);
          int tintSourceCount = tintSources.size();
          if (tintSourceCount > 0) {
@@ -142,15 +142,15 @@
 -        final BlockAndTintGetter level,
 -        final BlockState state,
 -        final BlockPos pos
-+      BlockQuadOutput output, float x, float y, float z, List<BlockStateModelPart> parts, BlockAndTintGetter level, BlockState state, BlockPos pos
++        BlockQuadOutput output, float x, float y, float z, List<BlockStateModelPart> parts, BlockAndTintGetter level, BlockState state, BlockPos pos
      ) {
          int cacheValid = 0;
          int shouldRenderFaceCache = 0;
-+      int partCount = parts.size();
++        int partCount = parts.size();
  
 -        for (BlockStateModelPart part : parts) {
-+      for (int ip = 0; ip < partCount; ip++) {
-+         BlockStateModelPart part = parts.get(ip);
++        for (int ip = 0; ip < partCount; ip++) {
++            BlockStateModelPart part = parts.get(ip);
 +
              for (Direction direction : DIRECTIONS) {
                  int cacheMask = 1 << direction.ordinal();
@@ -160,11 +160,11 @@
  
                          if (shouldRenderFace) {
 -                            for (BakedQuad quad : culledQuads) {
-+                     culledQuads = BlockModelCustomizer.getRenderQuads(culledQuads, level, state, pos, direction, this.renderEnv);
-+                     int quadCount = culledQuads.size();
++                            culledQuads = BlockModelCustomizer.getRenderQuads(culledQuads, level, state, pos, direction, this.renderEnv);
++                            int quadCount = culledQuads.size();
 +
-+                     for (int ix = 0; ix < quadCount; ix++) {
-+                        BakedQuad quad = culledQuads.get(ix);
++                            for (int ix = 0; ix < quadCount; ix++) {
++                                BakedQuad quad = culledQuads.get(ix);
                                  this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
                                  this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
                              }
@@ -173,12 +173,12 @@
              }
  
 -            for (BakedQuad quad : part.getQuads(null)) {
-+         List<BakedQuad> unculledQuads = part.getQuads(null);
-+         unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
-+         int quadCount = unculledQuads.size();
++            List<BakedQuad> unculledQuads = part.getQuads(null);
++            unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
++            int quadCount = unculledQuads.size();
 +
-+         for (int ix = 0; ix < quadCount; ix++) {
-+            BakedQuad quad = unculledQuads.get(ix);
++            for (int ix = 0; ix < quadCount; ix++) {
++                BakedQuad quad = unculledQuads.get(ix);
                  this.lighter.prepareQuadAmbientOcclusion(level, state, pos, quad, this.quadInstance);
                  this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
              }
@@ -194,15 +194,15 @@
 -        final BlockAndTintGetter level,
 -        final BlockState state,
 -        final BlockPos pos
-+      BlockQuadOutput output, float x, float y, float z, List<BlockStateModelPart> parts, BlockAndTintGetter level, BlockState state, BlockPos pos
++        BlockQuadOutput output, float x, float y, float z, List<BlockStateModelPart> parts, BlockAndTintGetter level, BlockState state, BlockPos pos
      ) {
          int cacheValid = 0;
          int shouldRenderFaceCache = 0;
-+      int partCount = parts.size();
++        int partCount = parts.size();
  
 -        for (BlockStateModelPart part : parts) {
-+      for (int ip = 0; ip < partCount; ip++) {
-+         BlockStateModelPart part = parts.get(ip);
++        for (int ip = 0; ip < partCount; ip++) {
++            BlockStateModelPart part = parts.get(ip);
 +
              for (Direction direction : DIRECTIONS) {
                  int cacheMask = 1 << direction.ordinal();
@@ -211,12 +211,12 @@
  
                          if (shouldRenderFace) {
                              int lightCoords = this.lighter.getLightCoords(state, level, relativePos);
-+                     culledQuads = BlockModelCustomizer.getRenderQuads(culledQuads, level, state, pos, direction, this.renderEnv);
-+                     int quadCount = culledQuads.size();
++                            culledQuads = BlockModelCustomizer.getRenderQuads(culledQuads, level, state, pos, direction, this.renderEnv);
++                            int quadCount = culledQuads.size();
  
 -                            for (BakedQuad quad : culledQuads) {
-+                     for (int ix = 0; ix < quadCount; ix++) {
-+                        BakedQuad quad = culledQuads.get(ix);
++                            for (int ix = 0; ix < quadCount; ix++) {
++                                BakedQuad quad = culledQuads.get(ix);
                                  this.lighter.prepareQuadFlat(level, state, pos, lightCoords, quad, this.quadInstance);
                                  this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
                              }
@@ -225,12 +225,12 @@
              }
  
 -            for (BakedQuad quad : part.getQuads(null)) {
-+         List<BakedQuad> unculledQuads = part.getQuads(null);
-+         unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
-+         int quadCount = unculledQuads.size();
++            List<BakedQuad> unculledQuads = part.getQuads(null);
++            unculledQuads = BlockModelCustomizer.getRenderQuads(unculledQuads, level, state, pos, null, this.renderEnv);
++            int quadCount = unculledQuads.size();
 +
-+         for (int ix = 0; ix < quadCount; ix++) {
-+            BakedQuad quad = unculledQuads.get(ix);
++            for (int ix = 0; ix < quadCount; ix++) {
++                BakedQuad quad = unculledQuads.get(ix);
                  this.lighter.prepareQuadFlat(level, state, pos, -1, quad, this.quadInstance);
                  this.putQuadWithTint(output, x, y, z, level, state, pos, quad);
              }
@@ -238,7 +238,7 @@
      }
  
 -    private boolean shouldRenderFace(final BlockAndTintGetter level, final BlockState state, final Direction direction, final BlockPos neighborPos) {
-+   private boolean shouldRenderFace(BlockAndTintGetter level, BlockState state, Direction direction, BlockPos neighborPos) {
++    private boolean shouldRenderFace(BlockAndTintGetter level, BlockState state, Direction direction, BlockPos neighborPos) {
          if (!this.cull) {
              return true;
          }
@@ -256,26 +256,26 @@
 -        final BlockPos pos,
 -        final BakedQuad quad
 -    ) {
-+   private void putQuadWithTint(BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockState state, BlockPos pos, BakedQuad quad) {
-+      if (quad.sprite().isSpriteEmissive) {
-+         setMaxBlockLight(this.quadInstance);
-+      }
++    private void putQuadWithTint(BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockState state, BlockPos pos, BakedQuad quad) {
++        if (quad.sprite().isSpriteEmissive) {
++            setMaxBlockLight(this.quadInstance);
++        }
 +
          int tintIndex = quad.materialInfo().tintIndex();
 -        if (tintIndex != -1) {
-+      int colorMultiplier = CustomColors.getColorMultiplier(quad, state, level, pos, this.renderEnv);
-+      if (colorMultiplier != -1) {
-+         this.quadInstance.multiplyColor(colorMultiplier);
-+      } else if (tintIndex != -1) {
++        int colorMultiplier = CustomColors.getColorMultiplier(quad, state, level, pos, this.renderEnv);
++        if (colorMultiplier != -1) {
++            this.quadInstance.multiplyColor(colorMultiplier);
++        } else if (tintIndex != -1) {
              this.quadInstance.multiplyColor(this.getTintColor(level, state, pos, tintIndex));
          }
  
          output.put(x, y, z, quad, this.quadInstance);
-+      this.countQuadsRendered++;
++        this.countQuadsRendered++;
      }
  
 -    private int getTintColor(final BlockAndTintGetter level, final BlockState state, final BlockPos pos, final int tintIndex) {
-+   private int getTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
++    private int getTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
          if (this.tintCacheIndex == tintIndex) {
              return this.tintCacheValue;
          }
@@ -284,7 +284,7 @@
      }
  
 -    private int computeTintColor(final BlockAndTintGetter level, final BlockState state, final BlockPos pos, final int tintIndex) {
-+   private int computeTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
++    private int computeTintColor(BlockAndTintGetter level, BlockState state, BlockPos pos, int tintIndex) {
          if (!this.tintSourcesInitialized) {
              this.configureTintCache(state);
              this.tintSourcesInitialized = true;
@@ -295,123 +295,123 @@
 -}
 \ No newline at end of file
 +
-+   public static float fixAoLightValue(float val) {
-+      return val == 0.2F ? aoLightValueOpaque : val;
-+   }
++    public static float fixAoLightValue(float val) {
++        return val == 0.2F ? aoLightValueOpaque : val;
++    }
 +
-+   public static void updateAoLightValue() {
-+      aoLightValueOpaque = 1.0F - Config.getAmbientOcclusionLevel() * 0.8F;
-+      separateAoLightValue = Config.isShaders() && Shaders.isSeparateAo();
-+   }
++    public static void updateAoLightValue() {
++        aoLightValueOpaque = 1.0F - Config.getAmbientOcclusionLevel() * 0.8F;
++        separateAoLightValue = Config.isShaders() && Shaders.isSeparateAo();
++    }
 +
-+   public static boolean isSeparateAoLightValue() {
-+      return separateAoLightValue;
-+   }
++    public static boolean isSeparateAoLightValue() {
++        return separateAoLightValue;
++    }
 +
-+   private void renderOverlayModels(
-+      BlockQuadOutput output,
-+      float x,
-+      float y,
-+      float z,
-+      BlockAndTintGetter worldIn,
-+      List<BlockStateModelPart> partsIn,
-+      BlockState stateIn,
-+      BlockPos posIn,
-+      boolean checkSides,
-+      boolean smooth
-+   ) {
-+      if (this.renderEnv.isOverlaysRendered()) {
-+         this.renderEnv.setOverlaysRendered(false);
++    private void renderOverlayModels(
++        BlockQuadOutput output,
++        float x,
++        float y,
++        float z,
++        BlockAndTintGetter worldIn,
++        List<BlockStateModelPart> partsIn,
++        BlockState stateIn,
++        BlockPos posIn,
++        boolean checkSides,
++        boolean smooth
++    ) {
++        if (this.renderEnv.isOverlaysRendered()) {
++            this.renderEnv.setOverlaysRendered(false);
 +
-+         for (int l = 0; l < OVERLAY_LAYERS.length; l++) {
-+            ChunkSectionLayer layer = OVERLAY_LAYERS[l];
-+            ListQuadsOverlay listQuadsOverlay = this.renderEnv.getListQuadsOverlay(layer);
-+            if (listQuadsOverlay.size() > 0) {
-+               SectionCompiler sc = this.renderEnv.getSectionCompiler();
-+               Map<ChunkSectionLayer, BufferBuilder> bbMap = this.renderEnv.getBufferBuilderMap();
-+               SectionBufferBuilderPack sbbp = this.renderEnv.getSectionBufferBuilderPack();
-+               Vector3f midBlock = Config.isShaders() ? this.quadInstance.getMidBlock() : null;
-+               if (sc != null && bbMap != null && sbbp != null) {
-+                  BufferBuilder overlayBuffer = sc.getOrBeginLayer(bbMap, sbbp, layer);
++            for (int l = 0; l < OVERLAY_LAYERS.length; l++) {
++                ChunkSectionLayer layer = OVERLAY_LAYERS[l];
++                ListQuadsOverlay listQuadsOverlay = this.renderEnv.getListQuadsOverlay(layer);
++                if (listQuadsOverlay.size() > 0) {
++                    SectionCompiler sc = this.renderEnv.getSectionCompiler();
++                    Map<ChunkSectionLayer, BufferBuilder> bbMap = this.renderEnv.getBufferBuilderMap();
++                    SectionBufferBuilderPack sbbp = this.renderEnv.getSectionBufferBuilderPack();
++                    Vector3f midBlock = Config.isShaders() ? this.quadInstance.getMidBlock() : null;
++                    if (sc != null && bbMap != null && sbbp != null) {
++                        BufferBuilder overlayBuffer = sc.getOrBeginLayer(bbMap, sbbp, layer);
 +
-+                  for (int q = 0; q < listQuadsOverlay.size(); q++) {
-+                     BakedQuad quad = listQuadsOverlay.getQuad(q);
-+                     List<BakedQuad> listQuadSingle = listQuadsOverlay.getListQuadsSingle(quad);
-+                     BlockState quadBlockState = listQuadsOverlay.getBlockState(q);
-+                     if (quad.getQuadEmissive() != null) {
-+                        listQuadsOverlay.addQuad(quad.getQuadEmissive(), quadBlockState);
-+                     }
++                        for (int q = 0; q < listQuadsOverlay.size(); q++) {
++                            BakedQuad quad = listQuadsOverlay.getQuad(q);
++                            List<BakedQuad> listQuadSingle = listQuadsOverlay.getListQuadsSingle(quad);
++                            BlockState quadBlockState = listQuadsOverlay.getBlockState(q);
++                            if (quad.getQuadEmissive() != null) {
++                                listQuadsOverlay.addQuad(quad.getQuadEmissive(), quadBlockState);
++                            }
 +
-+                     this.renderEnv.reset(quadBlockState, posIn);
-+                     if (midBlock != null) {
-+                        overlayBuffer.setMidBlock(midBlock.x, midBlock.y, midBlock.z);
-+                     }
++                            this.renderEnv.reset(quadBlockState, posIn);
++                            if (midBlock != null) {
++                                overlayBuffer.setMidBlock(midBlock.x, midBlock.y, midBlock.z);
++                            }
 +
-+                     if (smooth) {
-+                        this.lighter.prepareQuadAmbientOcclusion(worldIn, stateIn, posIn, quad, this.quadInstance);
-+                     } else {
-+                        BlockPos relativePos = this.scratchPos.setWithOffset(posIn, quad.direction());
-+                        int lightCoords = this.lighter.getLightCoords(stateIn, worldIn, relativePos);
-+                        this.lighter.prepareQuadFlat(worldIn, stateIn, posIn, lightCoords, quad, this.quadInstance);
-+                     }
++                            if (smooth) {
++                                this.lighter.prepareQuadAmbientOcclusion(worldIn, stateIn, posIn, quad, this.quadInstance);
++                            } else {
++                                BlockPos relativePos = this.scratchPos.setWithOffset(posIn, quad.direction());
++                                int lightCoords = this.lighter.getLightCoords(stateIn, worldIn, relativePos);
++                                this.lighter.prepareQuadFlat(worldIn, stateIn, posIn, lightCoords, quad, this.quadInstance);
++                            }
 +
-+                     this.putQuadWithTint(output, x, y, z, worldIn, quadBlockState, posIn, quad);
-+                  }
-+               }
++                            this.putQuadWithTint(output, x, y, z, worldIn, quadBlockState, posIn, quad);
++                        }
++                    }
 +
-+               listQuadsOverlay.clear();
++                    listQuadsOverlay.clear();
++                }
 +            }
-+         }
-+      }
++        }
 +
-+      if (Config.isBetterSnow() && !this.renderEnv.isBreakingAnimation() && BetterSnow.shouldRender(worldIn, stateIn, posIn)) {
-+         BlockStateModelPart modelSnow = BetterSnow.getModelSnowLayer();
-+         BlockState stateSnow = BetterSnow.getStateSnowLayer();
-+         List<BlockStateModelPart> modelPartsSnow = this.renderEnv.getBlockModelParts(modelSnow);
-+         if (this.ambientOcclusion) {
-+            this.tesselateAmbientOcclusion(output, x, y, z, modelPartsSnow, worldIn, stateSnow, posIn);
-+         } else {
-+            this.tesselateFlat(output, x, y, z, modelPartsSnow, worldIn, stateSnow, posIn);
-+         }
-+      }
-+   }
++        if (Config.isBetterSnow() && !this.renderEnv.isBreakingAnimation() && BetterSnow.shouldRender(worldIn, stateIn, posIn)) {
++            BlockStateModelPart modelSnow = BetterSnow.getModelSnowLayer();
++            BlockState stateSnow = BetterSnow.getStateSnowLayer();
++            List<BlockStateModelPart> modelPartsSnow = this.renderEnv.getBlockModelParts(modelSnow);
++            if (this.ambientOcclusion) {
++                this.tesselateAmbientOcclusion(output, x, y, z, modelPartsSnow, worldIn, stateSnow, posIn);
++            } else {
++                this.tesselateFlat(output, x, y, z, modelPartsSnow, worldIn, stateSnow, posIn);
++            }
++        }
++    }
 +
-+   public void resetCache() {
-+      this.tintCacheIndex = -1;
-+      this.tintCacheValue = 0;
-+   }
++    public void resetCache() {
++        this.tintCacheIndex = -1;
++        this.tintCacheValue = 0;
++    }
 +
-+   private static void setMaxBlockLight(QuadInstance quadInstanceIn) {
-+      quadInstanceIn.setLightCoords(Lightmap.MAX_BRIGHTNESS);
-+      quadInstanceIn.setColor(-1);
-+   }
++    private static void setMaxBlockLight(QuadInstance quadInstanceIn) {
++        quadInstanceIn.setLightCoords(Lightmap.MAX_BRIGHTNESS);
++        quadInstanceIn.setColor(-1);
++    }
 +
-+   public static LightCacheOF getLightCacheOf() {
-+      return LIGHT_CACHE_OF;
-+   }
++    public static LightCacheOF getLightCacheOf() {
++        return LIGHT_CACHE_OF;
++    }
 +
-+   public void setMidBlock(float mx, float my, float mz) {
-+      this.quadInstance.getMidBlock().set(mx, my, mz);
-+   }
++    public void setMidBlock(float mx, float my, float mz) {
++        this.quadInstance.getMidBlock().set(mx, my, mz);
++    }
 +
-+   public Vector3f getMidBlock() {
-+      return this.quadInstance.getMidBlock();
-+   }
++    public Vector3f getMidBlock() {
++        return this.quadInstance.getMidBlock();
++    }
 +
-+   public RenderEnv getRenderEnv(BlockState blockState, BlockPos blockPos) {
-+      this.renderEnv.reset(blockState, blockPos);
-+      return this.renderEnv;
-+   }
++    public RenderEnv getRenderEnv(BlockState blockState, BlockPos blockPos) {
++        this.renderEnv.reset(blockState, blockPos);
++        return this.renderEnv;
++    }
 +
-+   public boolean isAmbientOcclusion() {
-+      return this.ambientOcclusion;
-+   }
++    public boolean isAmbientOcclusion() {
++        return this.ambientOcclusion;
++    }
 +
-+   public boolean isCull() {
-+      return this.cull;
-+   }
++    public boolean isCull() {
++        return this.cull;
++    }
 +
-+   public BlockColors getBlockColors() {
-+      return this.blockColors;
-+   }
++    public BlockColors getBlockColors() {
++        return this.blockColors;
++    }
 +}

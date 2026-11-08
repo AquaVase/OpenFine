@@ -14,36 +14,36 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterTurtle extends ModelAdapterQuadruped {
-   public ModelAdapterTurtle() {
-      super(EntityTypes.TURTLE, "turtle", ModelLayers.TURTLE);
-   }
+    public ModelAdapterTurtle() {
+        super(EntityTypes.TURTLE, "turtle", ModelLayers.TURTLE);
+    }
 
-   protected ModelAdapterTurtle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterTurtle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterTurtle ma = new ModelAdapterTurtle(this.getEntityType(), "turtle_baby", ModelLayers.TURTLE_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterTurtle ma = new ModelAdapterTurtle(this.getEntityType(), "turtle_baby", ModelLayers.TURTLE_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return this.isBaby() ? new BabyTurtleModel(root) : new AdultTurtleModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return this.isBaby() ? new BabyTurtleModel(root) : new AdultTurtleModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      map.put("body2", "egg_belly");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        map.put("body2", "egg_belly");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new TurtleRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new TurtleRenderer(context);
+    }
 }

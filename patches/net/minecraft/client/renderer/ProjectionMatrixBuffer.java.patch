@@ -16,13 +16,13 @@
      private final GpuBuffer buffer;
      private final GpuBufferSlice bufferSlice;
 -    private @Nullable Projection lastUploadedProjection;
-+   private Projection lastUploadedProjection;
++    private Projection lastUploadedProjection;
      private long projectionMatrixVersion;
      private final Matrix4f tempMatrix = new Matrix4f();
-+   private boolean shaders;
++    private boolean shaders;
  
 -    public ProjectionMatrixBuffer(final String name) {
-+   public ProjectionMatrixBuffer(String name) {
++    public ProjectionMatrixBuffer(String name) {
          this.lastUploadedProjection = null;
          this.projectionMatrixVersion = -1L;
          GpuDevice device = RenderSystem.getDevice();
@@ -31,34 +31,34 @@
      }
  
 -    public GpuBufferSlice getBuffer(final Projection projection) {
-+   public GpuBufferSlice getBuffer(Projection projection) {
++    public GpuBufferSlice getBuffer(Projection projection) {
          assert projection.getMatrixVersion() != -1L;
 -        if (this.lastUploadedProjection == projection && projection.getMatrixVersion() == this.projectionMatrixVersion) {
-+      if (this.lastUploadedProjection == projection && projection.getMatrixVersion() == this.projectionMatrixVersion && this.shaders != Config.isShaders()) {
++        if (this.lastUploadedProjection == projection && projection.getMatrixVersion() == this.projectionMatrixVersion && this.shaders != Config.isShaders()) {
              return this.bufferSlice;
          }
  
-+      this.shaders = Config.isShaders();
++        this.shaders = Config.isShaders();
          this.lastUploadedProjection = projection;
          this.projectionMatrixVersion = projection.getMatrixVersion();
          return this.writeBuffer(projection.getMatrix(this.tempMatrix));
      }
  
 -    public GpuBufferSlice getBuffer(final Matrix4f projectionMatrix) {
-+   public GpuBufferSlice getBuffer(Matrix4f projectionMatrix) {
++    public GpuBufferSlice getBuffer(Matrix4f projectionMatrix) {
          this.lastUploadedProjection = null;
          this.projectionMatrixVersion = -1L;
          return this.writeBuffer(projectionMatrix);
      }
  
 -    private GpuBufferSlice writeBuffer(final Matrix4f projectionMatrix) {
-+   private GpuBufferSlice writeBuffer(Matrix4f projectionMatrix) {
++    private GpuBufferSlice writeBuffer(Matrix4f projectionMatrix) {
          try (MemoryStack stack = MemoryStack.stackPush()) {
              ByteBuffer byteBuffer = Std140Builder.onStack(stack, RenderSystem.PROJECTION_MATRIX_UBO_SIZE).putMat4f(projectionMatrix).get();
              RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.buffer.slice(), byteBuffer);
          }
  
-+      this.bufferSlice.setData(projectionMatrix);
++        this.bufferSlice.setData(projectionMatrix);
          return this.bufferSlice;
      }
  

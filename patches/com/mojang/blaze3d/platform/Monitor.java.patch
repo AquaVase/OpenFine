@@ -30,44 +30,45 @@
      private static final HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();
  
 -    public static @Nullable Monitor tryCreate(final long monitor) {
-+   public static Monitor tryCreate(long monitor) {
++    public static Monitor tryCreate(long monitor) {
          GLFWErrorCapture glfwErrors = new GLFWErrorCapture();
  
          try (GLFWErrorScope var3 = new GLFWErrorScope(glfwErrors)) {
              String monitorName = queryMonitorName(monitor);
 -            Builder<VideoMode> videoModes = ImmutableList.builder();
-+         List<VideoMode> videoModes = new ArrayList<>();
++            List<VideoMode> videoModes = new ArrayList<>();
              Buffer modes = GLFW.glfwGetVideoModes(monitor);
              if (modes == null) {
                  LOGGER.warn("Failed to query video modes of monitor {}", monitorName);
                  return null;
              }
  
-+         GLFWVidMode glCurrentMode = GLFW.glfwGetVideoMode(monitor);
-+         VideoMode currentVideoMode = new VideoMode(glCurrentMode);
-+         List<VideoMode> removedModes = new ArrayList<>();
++            GLFWVidMode glCurrentMode = GLFW.glfwGetVideoMode(monitor);
++            VideoMode currentVideoMode = new VideoMode(glCurrentMode);
++            List<VideoMode> removedModes = new ArrayList<>();
 +
              for (int i = modes.limit() - 1; i >= 0; i--) {
                  modes.position(i);
                  VideoMode mode = new VideoMode(modes);
                  if (mode.getRedBits() >= 8 && mode.getGreenBits() >= 8 && mode.getBlueBits() >= 8) {
-+               if (mode.getRefreshRate() < currentVideoMode.getRefreshRate()) {
-+                  removedModes.add(mode);
-+               } else {
-                     videoModes.add(mode);
+-                    videoModes.add(mode);
++                    if (mode.getRefreshRate() < currentVideoMode.getRefreshRate()) {
++                        removedModes.add(mode);
++                    } else {
++                        videoModes.add(mode);
++                    }
                  }
              }
-+         }
  
-+         removedModes.sort(new VideoModeComparator().reversed());
++            removedModes.sort(new VideoModeComparator().reversed());
 +
-+         for (VideoMode vm : removedModes) {
-+            if (getVideoMode(videoModes, vm.getWidth(), vm.getHeight()) == null) {
-+               videoModes.add(vm);
++            for (VideoMode vm : removedModes) {
++                if (getVideoMode(videoModes, vm.getWidth(), vm.getHeight()) == null) {
++                    videoModes.add(vm);
++                }
 +            }
-+         }
 +
-+         videoModes.sort(new VideoModeComparator());
++            videoModes.sort(new VideoModeComparator());
              int[] x = new int[1];
              int[] y = new int[1];
              GLFW.glfwGetMonitorPos(monitor, x, y);
@@ -76,24 +77,24 @@
                  return null;
              } else {
 -                return new Monitor(monitorName, monitor, videoModes.build(), new VideoMode(currentMode), x[0], y[0]);
-+            return new Monitor(monitorName, monitor, videoModes, new VideoMode(currentMode), x[0], y[0]);
++                return new Monitor(monitorName, monitor, videoModes, new VideoMode(currentMode), x[0], y[0]);
              }
          } finally {
 -            for (GLFWErrorCapture.Error error : glfwErrors) {
-+         for (Error error : glfwErrors) {
++            for (Error error : glfwErrors) {
                  LOGGER.error("GLFW error collected during monitor 0x{} query: {}", HEX_FORMAT.toHexDigits(monitor), error);
              }
          }
      }
  
 -    private static String queryMonitorName(final long monitor) {
-+   private static String queryMonitorName(long monitor) {
++    private static String queryMonitorName(long monitor) {
          String monitorName = Objects.requireNonNull(GLFW.glfwGetMonitorName(monitor), "unknown");
          return monitorName + "[0x" + HEX_FORMAT.toHexDigits(monitor) + "]";
      }
  
 -    public VideoMode getPreferredVidMode(final Optional<VideoMode> expectedMode) {
-+   public VideoMode getPreferredVidMode(Optional<VideoMode> expectedMode) {
++    public VideoMode getPreferredVidMode(Optional<VideoMode> expectedMode) {
          if (expectedMode.isPresent()) {
              VideoMode videoMode = expectedMode.get();
  
@@ -102,12 +103,12 @@
      }
  
 -    public int indexOfMode(final VideoMode videoMode) {
-+   public int indexOfMode(VideoMode videoMode) {
++    public int indexOfMode(VideoMode videoMode) {
          return this.videoModes.indexOf(videoMode);
      }
  
 -    public VideoMode mode(final int mode) {
-+   public VideoMode mode(int mode) {
++    public VideoMode mode(int mode) {
          return this.videoModes.get(mode);
      }
  
@@ -118,13 +119,13 @@
 -}
 \ No newline at end of file
 +
-+   public static VideoMode getVideoMode(List<VideoMode> list, int width, int height) {
-+      for (VideoMode vm : list) {
-+         if (vm.getWidth() == width && vm.getHeight() == height) {
-+            return vm;
-+         }
-+      }
++    public static VideoMode getVideoMode(List<VideoMode> list, int width, int height) {
++        for (VideoMode vm : list) {
++            if (vm.getWidth() == width && vm.getHeight() == height) {
++                return vm;
++            }
++        }
 +
-+      return null;
-+   }
++        return null;
++    }
 +}

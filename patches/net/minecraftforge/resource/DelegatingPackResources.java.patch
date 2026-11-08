@@ -13,30 +13,30 @@
 +import net.minecraft.server.packs.resources.IoSupplier;
 +
 +public class DelegatingPackResources extends AbstractPackResources {
-+   public DelegatingPackResources(PackLocationInfo info) {
-+      super(info);
-+   }
++    public DelegatingPackResources(PackLocationInfo info) {
++        super(info);
++    }
 +
-+   @Override
-+   public IoSupplier<InputStream> getRootResource(String... pathIn) {
-+      return null;
-+   }
++    @Override
++    public IoSupplier<InputStream> getRootResource(String... pathIn) {
++        return null;
++    }
 +
-+   @Override
-+   public IoSupplier<InputStream> getResource(PackType type, Identifier namespaceIn) {
-+      return null;
-+   }
++    @Override
++    public IoSupplier<InputStream> getResource(PackType type, Identifier namespaceIn) {
++        return null;
++    }
 +
-+   @Override
-+   public void listResources(PackType typeIn, String namespaceIn, String pathIn, ResourceOutput outputIn) {
-+   }
++    @Override
++    public void listResources(PackType typeIn, String namespaceIn, String pathIn, ResourceOutput outputIn) {
++    }
 +
-+   @Override
-+   public Set<String> getNamespaces(PackType type) {
-+      return null;
-+   }
++    @Override
++    public Set<String> getNamespaces(PackType type) {
++        return null;
++    }
 +
-+   @Override
-+   public void close() {
-+   }
++    @Override
++    public void close() {
++    }
 +}

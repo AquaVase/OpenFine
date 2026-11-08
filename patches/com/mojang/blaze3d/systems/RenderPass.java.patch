@@ -31,11 +31,11 @@
      private final DeviceLimits deviceLimits;
      private final Runnable onFinish;
 -    private final RenderPass.@Nullable RenderArea renderArea;
-+   private final RenderPass.RenderArea renderArea;
++    private final RenderPass.RenderArea renderArea;
      private boolean isClosed;
      private int pushedDebugGroups;
 -    private final List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colorAttachments;
-+   private final List<Attachment<Optional<Vector4fc>>> colorAttachments;
++    private final List<Attachment<Optional<Vector4fc>>> colorAttachments;
  
      public RenderPass(
 -        final RenderPassBackend backend,
@@ -43,11 +43,11 @@
 -        final List<RenderPassDescriptor.@Nullable Attachment<Optional<Vector4fc>>> colorAttachments,
 -        final Runnable onFinish,
 -        final RenderPass.@Nullable RenderArea renderArea
-+      RenderPassBackend backend,
-+      GpuDeviceBackend device,
-+      List<Attachment<Optional<Vector4fc>>> colorAttachments,
-+      Runnable onFinish,
-+      RenderPass.RenderArea renderArea
++        RenderPassBackend backend,
++        GpuDeviceBackend device,
++        List<Attachment<Optional<Vector4fc>>> colorAttachments,
++        Runnable onFinish,
++        RenderPass.RenderArea renderArea
      ) {
          this.backend = backend;
          this.device = device;
@@ -56,7 +56,7 @@
      }
  
 -    public void pushDebugGroup(final Supplier<String> label) {
-+   public void pushDebugGroup(Supplier<String> label) {
++    public void pushDebugGroup(Supplier<String> label) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -65,7 +65,7 @@
      }
  
 -    public void writeTimestamp(final GpuQueryPool pool, final int index) {
-+   public void writeTimestamp(GpuQueryPool pool, int index) {
++    public void writeTimestamp(GpuQueryPool pool, int index) {
          if (index >= 0 && index <= pool.size()) {
              this.backend.writeTimestamp(pool, index);
          } else {
@@ -74,7 +74,7 @@
      }
  
 -    public void setPipeline(final RenderPipeline pipeline) {
-+   public void setPipeline(RenderPipeline pipeline) {
++    public void setPipeline(RenderPipeline pipeline) {
          ColorTargetState[] colorTargetStates = pipeline.getColorTargetStates();
          if (colorTargetStates.length != this.colorAttachments.size()) {
              throw new IllegalStateException("Render pass color attachment count must match pipeline color target state count.");
@@ -82,7 +82,7 @@
  
          for (int i = 0; i < this.colorAttachments.size(); i++) {
 -            RenderPassDescriptor.Attachment<Optional<Vector4fc>> attachment = this.colorAttachments.get(i);
-+         Attachment<Optional<Vector4fc>> attachment = this.colorAttachments.get(i);
++            Attachment<Optional<Vector4fc>> attachment = this.colorAttachments.get(i);
              if (attachment != null) {
                  ColorTargetState colorTargetState = colorTargetStates[i];
                  if (colorTargetState == null || colorTargetState.format() != attachment.textureView().texture().getFormat()) {
@@ -91,17 +91,17 @@
      }
  
 -    public void bindTexture(final String name, final @Nullable GpuTextureView textureView, final @Nullable GpuSampler sampler) {
-+   public void bindTexture(String name, GpuTextureView textureView, GpuSampler sampler) {
++    public void bindTexture(String name, GpuTextureView textureView, GpuSampler sampler) {
          this.backend.bindTexture(name, textureView, sampler);
      }
  
 -    public void setUniform(final String name, final GpuBuffer value) {
-+   public void setUniform(String name, GpuBuffer value) {
++    public void setUniform(String name, GpuBuffer value) {
          this.backend.setUniform(name, value);
      }
  
 -    public void setUniform(final String name, final GpuBufferSlice value) {
-+   public void setUniform(String name, GpuBufferSlice value) {
++    public void setUniform(String name, GpuBufferSlice value) {
          int alignment = this.device.getDeviceInfo().limits().minUniformOffsetAlignment();
          if (value.offset() % alignment > 0L) {
              throw new IllegalArgumentException("Uniform buffer offset must be aligned to " + alignment);
@@ -110,7 +110,7 @@
      }
  
 -    public void enableScissor(final int x, final int y, final int width, final int height) {
-+   public void enableScissor(int x, int y, int width, int height) {
++    public void enableScissor(int x, int y, int width, int height) {
          if (width > 0 && height > 0) {
              if (x >= this.renderArea.x()
                  && y >= this.renderArea.y()
@@ -119,7 +119,7 @@
      }
  
 -    public void setVertexBuffer(final int slot, final @Nullable GpuBufferSlice vertexBuffer) {
-+   public void setVertexBuffer(int slot, GpuBufferSlice vertexBuffer) {
++    public void setVertexBuffer(int slot, GpuBufferSlice vertexBuffer) {
          if (slot < 0 || slot >= 16) {
              throw new IllegalArgumentException("Vertex buffer slot is out of range: " + slot);
          }
@@ -128,12 +128,12 @@
      }
  
 -    public void setIndexBuffer(final GpuBuffer indexBuffer, final IndexType indexType) {
-+   public void setIndexBuffer(GpuBuffer indexBuffer, IndexType indexType) {
++    public void setIndexBuffer(GpuBuffer indexBuffer, IndexType indexType) {
          this.backend.setIndexBuffer(indexBuffer, indexType);
      }
  
 -    public void drawIndexed(final int indexCount, final int instanceCount, final int firstIndex, final int vertexOffset, final int firstInstance) {
-+   public void drawIndexed(int indexCount, int instanceCount, int firstIndex, int vertexOffset, int firstInstance) {
++    public void drawIndexed(int indexCount, int instanceCount, int firstIndex, int vertexOffset, int firstInstance) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -142,7 +142,7 @@
      }
  
 -    public void multiDrawIndexed(final IntBuffer drawParameters, final int instanceCount, final int firstInstance, final int drawCount) {
-+   public void multiDrawIndexed(IntBuffer drawParameters, int instanceCount, int firstInstance, int drawCount) {
++    public void multiDrawIndexed(IntBuffer drawParameters, int instanceCount, int firstInstance, int drawCount) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -151,7 +151,7 @@
      }
  
 -    public void multiDrawIndexed(final PointerBuffer firstIndexOffsets, final IntBuffer indexCounts, final IntBuffer vertexOffsets, final int drawCount) {
-+   public void multiDrawIndexed(PointerBuffer firstIndexOffsets, IntBuffer indexCounts, IntBuffer vertexOffsets, int drawCount) {
++    public void multiDrawIndexed(PointerBuffer firstIndexOffsets, IntBuffer indexCounts, IntBuffer vertexOffsets, int drawCount) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -160,7 +160,7 @@
      }
  
 -    public void drawIndexedIndirect(final GpuBufferSlice commands, final int drawCount) {
-+   public void drawIndexedIndirect(GpuBufferSlice commands, int drawCount) {
++    public void drawIndexedIndirect(GpuBufferSlice commands, int drawCount) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -173,7 +173,7 @@
 -        final @Nullable IndexType defaultIndexType,
 -        final Collection<String> dynamicUniforms,
 -        final T uniformArgument
-+      Collection<RenderPass.Draw<T>> draws, GpuBuffer defaultIndexBuffer, IndexType defaultIndexType, Collection<String> dynamicUniforms, T uniformArgument
++        Collection<RenderPass.Draw<T>> draws, GpuBuffer defaultIndexBuffer, IndexType defaultIndexType, Collection<String> dynamicUniforms, T uniformArgument
      ) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
@@ -182,7 +182,7 @@
      }
  
 -    public void draw(final int vertexCount, final int instanceCount, final int firstVertex, final int firstInstance) {
-+   public void draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) {
++    public void draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -191,7 +191,7 @@
      }
  
 -    public void multiDraw(final IntBuffer drawParameters, final int instanceCount, final int firstInstance, final int drawCount) {
-+   public void multiDraw(IntBuffer drawParameters, int instanceCount, int firstInstance, int drawCount) {
++    public void multiDraw(IntBuffer drawParameters, int instanceCount, int firstInstance, int drawCount) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -200,7 +200,7 @@
      }
  
 -    public void multiDraw(final IntBuffer firstVertices, final IntBuffer vertexCounts, final int drawCount) {
-+   public void multiDraw(IntBuffer firstVertices, IntBuffer vertexCounts, int drawCount) {
++    public void multiDraw(IntBuffer firstVertices, IntBuffer vertexCounts, int drawCount) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -209,7 +209,7 @@
      }
  
 -    public void drawIndirect(final GpuBufferSlice commands, final int drawCount) {
-+   public void drawIndirect(GpuBufferSlice commands, int drawCount) {
++    public void drawIndirect(GpuBufferSlice commands, int drawCount) {
          if (this.isClosed) {
              throw new IllegalStateException("Can't use a closed render pass");
          }
@@ -223,15 +223,15 @@
          GpuBuffer vertexBuffer,
 -        @Nullable GpuBuffer indexBuffer,
 -        @Nullable IndexType indexType,
-+      GpuBuffer indexBuffer,
-+      IndexType indexType,
++        GpuBuffer indexBuffer,
++        IndexType indexType,
          int firstIndex,
          int indexCount,
          int baseVertex,
 -        @Nullable BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer
-+      BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer,
-+      RegionRenderData regionRenderData,
-+      MultiTextureData multiTextureData
++        BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer,
++        RegionRenderData regionRenderData,
++        MultiTextureData multiTextureData
      ) {
          public Draw(
 -            final int slot,
@@ -241,19 +241,19 @@
 -            final int firstIndex,
 -            final int indexCount,
 -            final int baseVertex
-+         int slot,
-+         GpuBuffer vertexBuffer,
-+         GpuBuffer indexBuffer,
-+         IndexType indexType,
-+         int firstIndex,
-+         int indexCount,
-+         int baseVertex,
-+         BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer
++            int slot,
++            GpuBuffer vertexBuffer,
++            GpuBuffer indexBuffer,
++            IndexType indexType,
++            int firstIndex,
++            int indexCount,
++            int baseVertex,
++            BiConsumer<T, RenderPass.UniformUploader> uniformUploaderConsumer
          ) {
-+         this(slot, vertexBuffer, indexBuffer, indexType, firstIndex, indexCount, baseVertex, uniformUploaderConsumer, null, null);
-+      }
++            this(slot, vertexBuffer, indexBuffer, indexType, firstIndex, indexCount, baseVertex, uniformUploaderConsumer, null, null);
++        }
 +
-+      public Draw(int slot, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int firstIndex, int indexCount, int baseVertex) {
++        public Draw(int slot, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int firstIndex, int indexCount, int baseVertex) {
              this(slot, vertexBuffer, indexBuffer, indexType, firstIndex, indexCount, baseVertex, null);
          }
      }
@@ -261,7 +261,7 @@
 -    @OnlyIn(Dist.CLIENT)
      public record RenderArea(int x, int y, int width, int height) {
 -        public boolean fillsTexture(final GpuTextureView texture) {
-+      public boolean fillsTexture(GpuTextureView texture) {
++        public boolean fillsTexture(GpuTextureView texture) {
              return this.x == 0 && this.y == 0 && this.width == texture.getWidth(0) && this.height == texture.getHeight(0);
          }
      }
@@ -269,7 +269,7 @@
 -    @OnlyIn(Dist.CLIENT)
      public interface UniformUploader {
 -        void upload(String name, GpuBufferSlice buffer);
-+      void upload(String var1, GpuBufferSlice var2);
++        void upload(String var1, GpuBufferSlice var2);
      }
 -}
 \ No newline at end of file

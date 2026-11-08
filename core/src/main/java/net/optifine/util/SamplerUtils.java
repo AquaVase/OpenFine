@@ -5,11 +5,11 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 
 public class SamplerUtils {
-   public static boolean isBlur(GpuSampler sampler) {
-      return sampler.getMagFilter() == FilterMode.LINEAR;
-   }
+    public static boolean isBlur(GpuSampler sampler) {
+        return sampler.getMagFilter() == FilterMode.LINEAR;
+    }
 
-   public static boolean isClamp(GpuSampler sampler) {
-      return sampler.getAddressModeU() == AddressMode.CLAMP_TO_EDGE;
-   }
+    public static boolean isClamp(GpuSampler sampler) {
+        return sampler.getAddressModeU() == AddressMode.CLAMP_TO_EDGE;
+    }
 }

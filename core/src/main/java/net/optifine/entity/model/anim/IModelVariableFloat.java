@@ -4,13 +4,13 @@ import net.optifine.expr.IExpression;
 import net.optifine.expr.IExpressionFloat;
 
 public interface IModelVariableFloat extends IExpressionFloat, IModelVariable {
-   float getValue();
+    float getValue();
 
-   void setValue(float var1);
+    void setValue(float var1);
 
-   @Override
-   default void setValue(IExpression expr) {
-      float val = ((IExpressionFloat)expr).eval();
-      this.setValue(val);
-   }
+    @Override
+    default void setValue(IExpression expr) {
+        float val = ((IExpressionFloat)expr).eval();
+        this.setValue(val);
+    }
 }

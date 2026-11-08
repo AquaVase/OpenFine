@@ -13,63 +13,63 @@
      public static final String ALLOWED_NAMESPACE_CHARACTERS = "[a-z0-9_.-]";
      private final String namespace;
      private final String path;
-+   private final boolean defaultNamespace;
++    private final boolean defaultNamespace;
  
 -    private Identifier(final String namespace, final String path) {
 -        assert isValidNamespace(namespace);
 -        assert isValidPath(path);
-+   public Identifier(String namespace, String path) {
++    public Identifier(String namespace, String path) {
          this.namespace = namespace;
          this.path = path;
-+      this.defaultNamespace = "minecraft".equals(namespace);
++        this.defaultNamespace = "minecraft".equals(namespace);
      }
  
 -    private static Identifier createUntrusted(final String namespace, final String path) {
-+   public Identifier(String str) {
-+      this(getNamespace(str), getPath(str));
-+   }
++    public Identifier(String str) {
++        this(getNamespace(str), getPath(str));
++    }
 +
-+   private static String getNamespace(String str) {
-+      int pos = str.indexOf(58);
-+      return pos >= 0 ? str.substring(0, pos) : "minecraft";
-+   }
++    private static String getNamespace(String str) {
++        int pos = str.indexOf(58);
++        return pos >= 0 ? str.substring(0, pos) : "minecraft";
++    }
 +
-+   private static String getPath(String str) {
-+      int pos = str.indexOf(58);
-+      return pos >= 0 ? str.substring(pos + 1) : str;
-+   }
++    private static String getPath(String str) {
++        int pos = str.indexOf(58);
++        return pos >= 0 ? str.substring(pos + 1) : str;
++    }
 +
-+   private static Identifier createUntrusted(String namespace, String path) {
++    private static Identifier createUntrusted(String namespace, String path) {
          return new Identifier(assertValidNamespace(namespace, path), assertValidPath(namespace, path));
      }
  
 -    public static Identifier fromNamespaceAndPath(final String namespace, final String path) {
-+   public static Identifier fromNamespaceAndPath(String namespace, String path) {
++    public static Identifier fromNamespaceAndPath(String namespace, String path) {
          return createUntrusted(namespace, path);
      }
  
 -    public static Identifier parse(final String identifier) {
-+   public static Identifier parse(String identifier) {
++    public static Identifier parse(String identifier) {
          return bySeparator(identifier, ':');
      }
  
 -    public static Identifier withDefaultNamespace(final String path) {
-+   public static Identifier withDefaultNamespace(String path) {
++    public static Identifier withDefaultNamespace(String path) {
          return new Identifier("minecraft", assertValidPath("minecraft", path));
      }
  
 -    public static @Nullable Identifier tryParse(final String identifier) {
-+   public static Identifier tryParse(String identifier) {
++    public static Identifier tryParse(String identifier) {
          return tryBySeparator(identifier, ':');
      }
  
 -    public static @Nullable Identifier tryBuild(final String namespace, final String path) {
-+   public static Identifier tryBuild(String namespace, String path) {
++    public static Identifier tryBuild(String namespace, String path) {
          return isValidNamespace(namespace) && isValidPath(path) ? new Identifier(namespace, path) : null;
      }
  
 -    public static Identifier bySeparator(final String identifier, final char separator) {
-+   public static Identifier bySeparator(String identifier, char separator) {
++    public static Identifier bySeparator(String identifier, char separator) {
          int separatorIndex = identifier.indexOf(separator);
          if (separatorIndex >= 0) {
              String path = identifier.substring(separatorIndex + 1);
@@ -78,7 +78,7 @@
      }
  
 -    public static @Nullable Identifier tryBySeparator(final String identifier, final char separator) {
-+   public static Identifier tryBySeparator(String identifier, char separator) {
++    public static Identifier tryBySeparator(String identifier, char separator) {
          int separatorIndex = identifier.indexOf(separator);
          if (separatorIndex >= 0) {
              String path = identifier.substring(separatorIndex + 1);
@@ -87,7 +87,7 @@
      }
  
 -    public static DataResult<Identifier> read(final String input) {
-+   public static DataResult<Identifier> read(String input) {
++    public static DataResult<Identifier> read(String input) {
          try {
              return DataResult.success(parse(input));
          } catch (IdentifierException e) {
@@ -96,22 +96,22 @@
      }
  
 -    public Identifier withPath(final String newPath) {
-+   public Identifier withPath(String newPath) {
++    public Identifier withPath(String newPath) {
          return new Identifier(this.namespace, assertValidPath(this.namespace, newPath));
      }
  
 -    public Identifier withPath(final UnaryOperator<String> modifier) {
-+   public Identifier withPath(UnaryOperator<String> modifier) {
++    public Identifier withPath(UnaryOperator<String> modifier) {
          return this.withPath(modifier.apply(this.path));
      }
  
 -    public Identifier withPrefix(final String prefix) {
-+   public Identifier withPrefix(String prefix) {
++    public Identifier withPrefix(String prefix) {
          return this.withPath(prefix + this.path);
      }
  
 -    public Identifier withSuffix(final String suffix) {
-+   public Identifier withSuffix(String suffix) {
++    public Identifier withSuffix(String suffix) {
          return this.withPath(this.path + suffix);
      }
  
@@ -120,12 +120,12 @@
  
      @Override
 -    public boolean equals(final Object o) {
-+   public boolean equals(Object o) {
++    public boolean equals(Object o) {
          if (this == o) {
              return true;
          } else {
 -            return !(o instanceof Identifier that) ? false : this.namespace.equals(that.namespace) && this.path.equals(that.path);
-+         return o instanceof Identifier that ? this.namespace.equals(that.namespace) && this.path.equals(that.path) : false;
++            return o instanceof Identifier that ? this.namespace.equals(that.namespace) && this.path.equals(that.path) : false;
          }
      }
  
@@ -134,7 +134,7 @@
      }
  
 -    public int compareTo(final Identifier o) {
-+   public int compareTo(Identifier o) {
++    public int compareTo(Identifier o) {
          int result = this.path.compareTo(o.path);
          if (result == 0) {
              result = this.namespace.compareTo(o.namespace);
@@ -143,7 +143,7 @@
      }
  
 -    public Path resolveAgainst(final Path root) {
-+   public Path resolveAgainst(Path root) {
++    public Path resolveAgainst(Path root) {
          Path resultingPath = root.resolve(this.getNamespace(), this.getPath());
          Path normalizedPath = resultingPath.normalize();
          Path normalizedRoot = root.normalize();
@@ -152,17 +152,17 @@
      }
  
 -    public String toLanguageKey(final String prefix) {
-+   public String toLanguageKey(String prefix) {
++    public String toLanguageKey(String prefix) {
          return prefix + "." + this.toLanguageKey();
      }
  
 -    public String toLanguageKey(final String prefix, final String suffix) {
-+   public String toLanguageKey(String prefix, String suffix) {
++    public String toLanguageKey(String prefix, String suffix) {
          return prefix + "." + this.toLanguageKey() + "." + suffix;
      }
  
 -    private static String readGreedy(final StringReader reader) {
-+   private static String readGreedy(StringReader reader) {
++    private static String readGreedy(StringReader reader) {
          int start = reader.getCursor();
  
          while (reader.canRead() && isAllowedInIdentifier(reader.peek())) {
@@ -171,7 +171,7 @@
      }
  
 -    public static Identifier read(final StringReader reader) throws CommandSyntaxException {
-+   public static Identifier read(StringReader reader) throws CommandSyntaxException {
++    public static Identifier read(StringReader reader) throws CommandSyntaxException {
          int start = reader.getCursor();
          String raw = readGreedy(reader);
  
@@ -180,7 +180,7 @@
      }
  
 -    public static Identifier readNonEmpty(final StringReader reader) throws CommandSyntaxException {
-+   public static Identifier readNonEmpty(StringReader reader) throws CommandSyntaxException {
++    public static Identifier readNonEmpty(StringReader reader) throws CommandSyntaxException {
          int start = reader.getCursor();
          String raw = readGreedy(reader);
          if (raw.isEmpty()) {
@@ -189,12 +189,12 @@
      }
  
 -    public static boolean isAllowedInIdentifier(final char c) {
-+   public static boolean isAllowedInIdentifier(char c) {
++    public static boolean isAllowedInIdentifier(char c) {
          return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c == '_' || c == ':' || c == '/' || c == '.' || c == '-';
      }
  
 -    public static boolean isValidPath(final String path) {
-+   public static boolean isValidPath(String path) {
++    public static boolean isValidPath(String path) {
          for (int i = 0; i < path.length(); i++) {
              if (!validPathChar(path.charAt(i))) {
                  return false;
@@ -203,7 +203,7 @@
      }
  
 -    public static boolean isValidNamespace(final String namespace) {
-+   public static boolean isValidNamespace(String namespace) {
++    public static boolean isValidNamespace(String namespace) {
          if (namespace.equals("..")) {
              return false;
          }
@@ -212,7 +212,7 @@
      }
  
 -    private static String assertValidNamespace(final String namespace, final String path) {
-+   private static String assertValidNamespace(String namespace, String path) {
++    private static String assertValidNamespace(String namespace, String path) {
          if (!isValidNamespace(namespace)) {
              throw new IdentifierException("Non [a-z0-9_.-] character in namespace of identifier: " + namespace + ":" + path);
          } else {
@@ -221,17 +221,17 @@
      }
  
 -    public static boolean validPathChar(final char c) {
-+   public static boolean validPathChar(char c) {
++    public static boolean validPathChar(char c) {
          return c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '/' || c == '.';
      }
  
 -    private static boolean validNamespaceChar(final char c) {
-+   private static boolean validNamespaceChar(char c) {
++    private static boolean validNamespaceChar(char c) {
          return c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '.';
      }
  
 -    private static String assertValidPath(final String namespace, final String path) {
-+   private static String assertValidPath(String namespace, String path) {
++    private static String assertValidPath(String namespace, String path) {
          if (!isValidPath(path)) {
              throw new IdentifierException("Non [a-z0-9/._-] character in path of location: " + namespace + ":" + path);
          } else {
@@ -241,35 +241,35 @@
 -}
 \ No newline at end of file
 +
-+   public boolean isDefaultNamespace() {
-+      return this.defaultNamespace;
-+   }
++    public boolean isDefaultNamespace() {
++        return this.defaultNamespace;
++    }
 +
-+   public boolean isOptiFine() {
-+      return this.defaultNamespace && this.path.startsWith("optifine");
-+   }
++    public boolean isOptiFine() {
++        return this.defaultNamespace && this.path.startsWith("optifine");
++    }
 +
-+   public Identifier removePrefix(String prefix) {
-+      String pathNew = StrUtils.removePrefix(this.path, prefix);
-+      return new Identifier(this.namespace, pathNew);
-+   }
++    public Identifier removePrefix(String prefix) {
++        String pathNew = StrUtils.removePrefix(this.path, prefix);
++        return new Identifier(this.namespace, pathNew);
++    }
 +
-+   public Identifier removeSuffix(String suffix) {
-+      String pathNew = StrUtils.removeSuffix(this.path, suffix);
-+      return new Identifier(this.namespace, pathNew);
-+   }
++    public Identifier removeSuffix(String suffix) {
++        String pathNew = StrUtils.removeSuffix(this.path, suffix);
++        return new Identifier(this.namespace, pathNew);
++    }
 +
-+   public Identifier removePrefixSuffix(String prefix, String suffix) {
-+      String pathNew = StrUtils.removePrefixSuffix(this.path, prefix, suffix);
-+      return new Identifier(this.namespace, pathNew);
-+   }
++    public Identifier removePrefixSuffix(String prefix, String suffix) {
++        String pathNew = StrUtils.removePrefixSuffix(this.path, prefix, suffix);
++        return new Identifier(this.namespace, pathNew);
++    }
 +
-+   public boolean isValid() {
-+      return isValidNamespace(this.namespace) && isValidPath(this.path);
-+   }
++    public boolean isValid() {
++        return isValidNamespace(this.namespace) && isValidPath(this.path);
++    }
 +
-+   public int compareNamespaced(Identifier o) {
-+      int ret = this.namespace.compareTo(o.namespace);
-+      return ret != 0 ? ret : this.path.compareTo(o.path);
-+   }
++    public int compareNamespaced(Identifier o) {
++        int ret = this.namespace.compareTo(o.namespace);
++        return ret != 0 ? ret : this.path.compareTo(o.path);
++    }
 +}

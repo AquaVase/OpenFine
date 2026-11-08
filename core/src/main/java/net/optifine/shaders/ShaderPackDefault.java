@@ -4,27 +4,27 @@ import java.io.InputStream;
 import net.optifine.Config;
 
 public class ShaderPackDefault implements IShaderPack {
-   @Override
-   public void close() {
-   }
+    @Override
+    public void close() {
+    }
 
-   @Override
-   public InputStream getResourceAsStream(String resName) {
-      return Config.getOptiFineResourceStream(resName);
-   }
+    @Override
+    public InputStream getResourceAsStream(String resName) {
+        return Config.getOptiFineResourceStream(resName);
+    }
 
-   @Override
-   public String getName() {
-      return "(debug)";
-   }
+    @Override
+    public String getName() {
+        return "(debug)";
+    }
 
-   @Override
-   public boolean hasDirectory(String name) {
-      return false;
-   }
+    @Override
+    public boolean hasDirectory(String name) {
+        return false;
+    }
 
-   @Override
-   public String toString() {
-      return this.getName();
-   }
+    @Override
+    public String toString() {
+        return this.getName();
+    }
 }

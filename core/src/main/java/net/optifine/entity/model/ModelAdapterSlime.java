@@ -14,32 +14,32 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterSlime extends ModelAdapterLiving {
-   public ModelAdapterSlime() {
-      super(EntityTypes.SLIME, "slime", ModelLayers.SLIME);
-   }
+    public ModelAdapterSlime() {
+        super(EntityTypes.SLIME, "slime", ModelLayers.SLIME);
+    }
 
-   public ModelAdapterSlime(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    public ModelAdapterSlime(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SlimeModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SlimeModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "cube");
-      map.put("left_eye", "left_eye");
-      map.put("right_eye", "right_eye");
-      map.put("mouth", "mouth");
-      map.put("root", "root");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "cube");
+        map.put("left_eye", "left_eye");
+        map.put("right_eye", "right_eye");
+        map.put("mouth", "mouth");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new SlimeRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new SlimeRenderer(context);
+    }
 }

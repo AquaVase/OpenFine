@@ -17,20 +17,23 @@
  
      @Override
 -    protected void buildGroup(final FeatureFrameContext context, final List<ShadowFeatureRenderer.Submit> submits) {
-+   protected void buildGroup(FeatureFrameContext context, List<ShadowFeatureRenderer.Submit> submits) {
-+      if (!Shaders.isShadowPass) {
-+         if (!submits.isEmpty()) {
-         VertexConsumer builder = this.getVertexBuilder(SHADOW_RENDER_TYPE);
+-        VertexConsumer builder = this.getVertexBuilder(SHADOW_RENDER_TYPE);
++    protected void buildGroup(FeatureFrameContext context, List<ShadowFeatureRenderer.Submit> submits) {
++        if (!Shaders.isShadowPass) {
++            if (!submits.isEmpty()) {
++                VertexConsumer builder = this.getVertexBuilder(SHADOW_RENDER_TYPE);
  
-         for (ShadowFeatureRenderer.Submit submit : submits) {
-             this.prepare(submit, builder);
+-        for (ShadowFeatureRenderer.Submit submit : submits) {
+-            this.prepare(submit, builder);
++                for (ShadowFeatureRenderer.Submit submit : submits) {
++                    this.prepare(submit, builder);
++                }
++            }
          }
      }
-+      }
-+   }
  
 -    private void prepare(final ShadowFeatureRenderer.Submit submit, final VertexConsumer builder) {
-+   private void prepare(ShadowFeatureRenderer.Submit submit, VertexConsumer builder) {
++    private void prepare(ShadowFeatureRenderer.Submit submit, VertexConsumer builder) {
          for (EntityRenderState.ShadowPiece piece : submit.pieces()) {
              AABB aabb = piece.shapeBelow().bounds();
              float x01 = piece.relativeX() + (float)aabb.minX;
@@ -41,7 +44,7 @@
 -    private static void shadowVertex(
 -        final Matrix4fc pose, final VertexConsumer buffer, final int color, final float x, final float y, final float z, final float u, final float v
 -    ) {
-+   private static void shadowVertex(Matrix4fc pose, VertexConsumer buffer, int color, float x, float y, float z, float u, float v) {
++    private static void shadowVertex(Matrix4fc pose, VertexConsumer buffer, int color, float x, float y, float z, float u, float v) {
          Vector3f position = pose.transformPosition(x, y, z, new Vector3f());
          buffer.addVertex(position.x(), position.y(), position.z(), color, u, v, OverlayTexture.NO_OVERLAY, 15728880, 0.0F, 1.0F, 0.0F);
      }

@@ -42,8 +42,8 @@
      public static final int PROJECTION_MATRIX_UBO_SIZE = new Std140SizeCalculator().putMat4f().get();
 -    private static @Nullable Thread renderThread;
 -    private static @Nullable GpuDevice DEVICE;
-+   private static Thread renderThread;
-+   private static GpuDevice DEVICE;
++    private static Thread renderThread;
++    private static GpuDevice DEVICE;
      private static final RenderSystem.AutoStorageIndexBuffer sharedSequential = new RenderSystem.AutoStorageIndexBuffer(1, 1, IntConsumer::accept);
      private static final RenderSystem.AutoStorageIndexBuffer sharedSequentialQuad = new RenderSystem.AutoStorageIndexBuffer(4, 6, (c, i) -> {
          c.accept(i);
@@ -55,10 +55,10 @@
 -    private static @Nullable GpuBufferSlice shaderLightDirections;
 -    private static @Nullable GpuBufferSlice projectionMatrixBuffer;
 -    private static @Nullable GpuBufferSlice savedProjectionMatrixBuffer;
-+   private static GpuBufferSlice shaderFog = null;
-+   private static GpuBufferSlice shaderLightDirections;
-+   private static GpuBufferSlice projectionMatrixBuffer;
-+   private static GpuBufferSlice savedProjectionMatrixBuffer;
++    private static GpuBufferSlice shaderFog = null;
++    private static GpuBufferSlice shaderLightDirections;
++    private static GpuBufferSlice projectionMatrixBuffer;
++    private static GpuBufferSlice savedProjectionMatrixBuffer;
      private static final AtomicLong pollEventsWaitStart = new AtomicLong();
      private static final AtomicBoolean pollingEvents = new AtomicBoolean(false);
      private static final ArrayListDeque<RenderSystem.GpuAsyncTask> PENDING_FENCES = new ArrayListDeque<>();
@@ -66,14 +66,14 @@
 -    public static @Nullable GpuTextureView outputDepthTextureOverride;
 -    private static @Nullable GpuBuffer globalSettingsUniform;
 -    private static @Nullable DynamicUniforms dynamicUniforms;
-+   public static GpuTextureView outputColorTextureOverride;
-+   public static GpuTextureView outputDepthTextureOverride;
-+   private static GpuBuffer globalSettingsUniform;
-+   private static DynamicUniforms dynamicUniforms;
++    public static GpuTextureView outputColorTextureOverride;
++    public static GpuTextureView outputDepthTextureOverride;
++    private static GpuBuffer globalSettingsUniform;
++    private static DynamicUniforms dynamicUniforms;
      private static final ScissorState scissorStateForRenderTypeDraws = new ScissorState();
      private static final SamplerCache samplerCache = new SamplerCache();
-+   private static final Vector4f shaderColor = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
-+   private static boolean colorToAttribute = false;
++    private static final Vector4f shaderColor = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
++    private static boolean colorToAttribute = false;
  
      public static SamplerCache getSamplerCache() {
          return samplerCache;
@@ -82,30 +82,30 @@
      }
  
 -    public static void setShaderFog(final GpuBufferSlice fog) {
-+   public static void setShaderFog(GpuBufferSlice fog) {
++    public static void setShaderFog(GpuBufferSlice fog) {
          shaderFog = fog;
-+      if (Config.isShaders()) {
-+         FogRenderer.setShadersFog(fog);
++        if (Config.isShaders()) {
++            FogRenderer.setShadersFog(fog);
++        }
      }
-+   }
  
 -    public static @Nullable GpuBufferSlice getShaderFog() {
-+   public static GpuBufferSlice getShaderFog() {
++    public static GpuBufferSlice getShaderFog() {
          return shaderFog;
      }
  
 -    public static void setShaderLights(final GpuBufferSlice buffer) {
-+   public static void setShaderLights(GpuBufferSlice buffer) {
++    public static void setShaderLights(GpuBufferSlice buffer) {
          shaderLightDirections = buffer;
      }
  
 -    public static @Nullable GpuBufferSlice getShaderLights() {
-+   public static GpuBufferSlice getShaderLights() {
++    public static GpuBufferSlice getShaderLights() {
          return shaderLightDirections;
      }
  
 -    public static void enableScissorForRenderTypeDraws(final int x, final int y, final int width, final int height) {
-+   public static void enableScissorForRenderTypeDraws(int x, int y, int width, int height) {
++    public static void enableScissorForRenderTypeDraws(int x, int y, int width, int height) {
          scissorStateForRenderTypeDraws.enable(x, y, width, height);
      }
  
@@ -114,12 +114,12 @@
      }
  
 -    public static TimeSource.NanoTimeSource initBackendSystem() {
-+   public static NanoTimeSource initBackendSystem() {
++    public static NanoTimeSource initBackendSystem() {
          return GLX._initGlfw()::getAsLong;
      }
  
 -    public static void initRenderer(final GpuDevice device) {
-+   public static void initRenderer(GpuDevice device) {
++    public static void initRenderer(GpuDevice device) {
          if (DEVICE != null) {
              throw new IllegalStateException("RenderSystem.DEVICE already initialized");
          }
@@ -127,7 +127,7 @@
          DEVICE = device;
          dynamicUniforms = new DynamicUniforms();
          samplerCache.initialize();
-+      GlStateManager.init(GL.getCapabilities());
++        GlStateManager.init(GL.getCapabilities());
      }
  
      public static void shutdownRenderer() {
@@ -136,43 +136,42 @@
      }
  
 -    public static void setErrorCallback(final GLFWErrorCallbackI onFullscreenError) {
-+   public static void setErrorCallback(GLFWErrorCallbackI onFullscreenError) {
++    public static void setErrorCallback(GLFWErrorCallbackI onFullscreenError) {
          GLX._setGlfwErrorCallback(onFullscreenError);
      }
  
-@@ -177,11 +187,17 @@
+@@ -177,10 +187,16 @@
          modelViewStack.clear();
      }
  
 -    public static void setProjectionMatrix(final GpuBufferSlice projectionMatrixBuffer, final ProjectionType type) {
-+   public static void setProjectionMatrix(GpuBufferSlice projectionMatrixBuffer, ProjectionType type) {
++    public static void setProjectionMatrix(GpuBufferSlice projectionMatrixBuffer, ProjectionType type) {
          assertOnRenderThread();
          RenderSystem.projectionMatrixBuffer = projectionMatrixBuffer;
          projectionType = type;
-+      if (Config.isShaders()) {
-+         Matrix4f mat = getProjectionMatrix();
-+         if (mat != null) {
-+            Shaders.setSystemProjectionMatrix(mat);
++        if (Config.isShaders()) {
++            Matrix4f mat = getProjectionMatrix();
++            if (mat != null) {
++                Shaders.setSystemProjectionMatrix(mat);
++            }
++        }
      }
-+      }
-+   }
  
      public static void backupProjectionMatrix() {
-         assertOnRenderThread();
 @@ -193,9 +209,15 @@
          assertOnRenderThread();
          projectionMatrixBuffer = savedProjectionMatrixBuffer;
          projectionType = savedProjectionType;
-+      if (Config.isShaders()) {
-+         Matrix4f mat = getProjectionMatrix();
-+         if (mat != null) {
-+            Shaders.setSystemProjectionMatrix(mat);
++        if (Config.isShaders()) {
++            Matrix4f mat = getProjectionMatrix();
++            if (mat != null) {
++                Shaders.setSystemProjectionMatrix(mat);
++            }
++        }
      }
-+      }
-+   }
  
 -    public static @Nullable GpuBufferSlice getProjectionMatrixBuffer() {
-+   public static GpuBufferSlice getProjectionMatrixBuffer() {
++    public static GpuBufferSlice getProjectionMatrixBuffer() {
          assertOnRenderThread();
          return projectionMatrixBuffer;
      }
@@ -181,7 +180,7 @@
      }
  
 -    public static RenderSystem.AutoStorageIndexBuffer getSequentialBuffer(final PrimitiveTopology primitiveTopology) {
-+   public static RenderSystem.AutoStorageIndexBuffer getSequentialBuffer(PrimitiveTopology primitiveTopology) {
++    public static RenderSystem.AutoStorageIndexBuffer getSequentialBuffer(PrimitiveTopology primitiveTopology) {
          assertOnRenderThread();
  
          return switch (primitiveTopology) {
@@ -190,12 +189,12 @@
      }
  
 -    public static void setGlobalSettingsUniform(final GpuBuffer buffer) {
-+   public static void setGlobalSettingsUniform(GpuBuffer buffer) {
++    public static void setGlobalSettingsUniform(GpuBuffer buffer) {
          globalSettingsUniform = buffer;
      }
  
 -    public static @Nullable GpuBuffer getGlobalSettingsUniform() {
-+   public static GpuBuffer getGlobalSettingsUniform() {
++    public static GpuBuffer getGlobalSettingsUniform() {
          return globalSettingsUniform;
      }
  
@@ -204,35 +203,35 @@
      }
  
 -    public static void queueFencedTask(final Runnable task) {
-+   public static void setColorToAttribute(boolean colorToAttribute) {
-+      if (Config.isShaders()) {
-+         if (RenderSystem.colorToAttribute != colorToAttribute) {
-+            RenderSystem.colorToAttribute = colorToAttribute;
-+            if (colorToAttribute) {
-+               Shaders.setDefaultAttribColor(shaderColor.x, shaderColor.y, shaderColor.z, shaderColor.w);
-+            } else {
-+               Shaders.setDefaultAttribColor();
++    public static void setColorToAttribute(boolean colorToAttribute) {
++        if (Config.isShaders()) {
++            if (RenderSystem.colorToAttribute != colorToAttribute) {
++                RenderSystem.colorToAttribute = colorToAttribute;
++                if (colorToAttribute) {
++                    Shaders.setDefaultAttribColor(shaderColor.x, shaderColor.y, shaderColor.z, shaderColor.w);
++                } else {
++                    Shaders.setDefaultAttribColor();
++                }
 +            }
-+         }
-+      }
-+   }
++        }
++    }
 +
-+   public static boolean isColorToAttribute() {
-+      return colorToAttribute;
-+   }
++    public static boolean isColorToAttribute() {
++        return colorToAttribute;
++    }
 +
-+   public static void setShaderColor(float red, float green, float blue, float alpha) {
-+      shaderColor.set(red, green, blue, alpha);
-+      if (colorToAttribute) {
-+         Shaders.setDefaultAttribColor(red, green, blue, alpha);
-+      }
-+   }
++    public static void setShaderColor(float red, float green, float blue, float alpha) {
++        shaderColor.set(red, green, blue, alpha);
++        if (colorToAttribute) {
++            Shaders.setDefaultAttribColor(red, green, blue, alpha);
++        }
++    }
 +
-+   public static Vector4f getShaderColor() {
-+      return shaderColor;
-+   }
++    public static Vector4f getShaderColor() {
++        return shaderColor;
++    }
 +
-+   public static void queueFencedTask(Runnable task) {
++    public static void queueFencedTask(Runnable task) {
          PENDING_FENCES.addLast(new RenderSystem.GpuAsyncTask(task, getDevice().createCommandEncoder().createFence()));
      }
  
@@ -241,7 +240,7 @@
      }
  
 -    public static @Nullable GpuDevice tryGetDevice() {
-+   public static GpuDevice tryGetDevice() {
++    public static GpuDevice tryGetDevice() {
          return DEVICE;
      }
  
@@ -250,7 +249,7 @@
      }
  
 -    public static void bindDefaultUniforms(final RenderPass renderPass) {
-+   public static void bindDefaultUniforms(RenderPass renderPass) {
++    public static void bindDefaultUniforms(RenderPass renderPass) {
          GpuBufferSlice projectionMatrix = getProjectionMatrixBuffer();
          if (projectionMatrix != null) {
              renderPass.setUniform("Projection", projectionMatrix);
@@ -259,34 +258,34 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public static GlDevice getGlDevice() {
-+      return DEVICE.getGlDevice();
-+   }
++    public static GlDevice getGlDevice() {
++        return DEVICE.getGlDevice();
++    }
 +
-+   public static GlCommandEncoder getGlCommandEncoder() {
-+      return getGlDevice().getGlCommandEncoder();
-+   }
++    public static GlCommandEncoder getGlCommandEncoder() {
++        return getGlDevice().getGlCommandEncoder();
++    }
 +
-+   public static Matrix4f getProjectionMatrix() {
-+      Object data = projectionMatrixBuffer.getData();
-+      return !(data instanceof Matrix4f) ? null : (Matrix4f)data;
-+   }
++    public static Matrix4f getProjectionMatrix() {
++        Object data = projectionMatrixBuffer.getData();
++        return !(data instanceof Matrix4f) ? null : (Matrix4f)data;
++    }
 +
-+   public static Matrix4f getModelViewMatrix() {
-+      return getModelViewStack();
-+   }
++    public static Matrix4f getModelViewMatrix() {
++        return getModelViewStack();
++    }
 +
      public static final class AutoStorageIndexBuffer implements AutoCloseable {
          private final int vertexStride;
          private final int indexStride;
          private final RenderSystem.AutoStorageIndexBuffer.IndexGenerator generator;
 -        private @Nullable GpuBuffer buffer;
-+      private GpuBuffer buffer;
++        private GpuBuffer buffer;
          private IndexType type = IndexType.SHORT;
          private int indexCount;
  
 -        private AutoStorageIndexBuffer(final int vertexStride, final int indexStride, final RenderSystem.AutoStorageIndexBuffer.IndexGenerator generator) {
-+      private AutoStorageIndexBuffer(int vertexStride, int indexStride, RenderSystem.AutoStorageIndexBuffer.IndexGenerator generator) {
++        private AutoStorageIndexBuffer(int vertexStride, int indexStride, RenderSystem.AutoStorageIndexBuffer.IndexGenerator generator) {
              this.vertexStride = vertexStride;
              this.indexStride = indexStride;
              this.generator = generator;
@@ -295,18 +294,18 @@
          }
  
 -        public boolean hasStorage(final int indexCount) {
-+      public boolean hasStorage(int indexCount) {
++        public boolean hasStorage(int indexCount) {
              return indexCount <= this.indexCount;
          }
  
 -        public GpuBuffer getBuffer(final int indexCount) {
-+      public GpuBuffer getBuffer(int indexCount) {
++        public GpuBuffer getBuffer(int indexCount) {
              this.ensureStorage(indexCount);
              return this.buffer;
          }
  
 -        private void ensureStorage(int indexCount) {
-+      public void ensureStorage(int indexCount) {
++        public void ensureStorage(int indexCount) {
              if (!this.hasStorage(indexCount)) {
                  indexCount = Mth.roundToward(indexCount * 2, this.indexStride);
                  RenderSystem.LOGGER.debug("Growing IndexBuffer: Old limit {}, new limit {}.", this.indexCount, indexCount);
@@ -315,9 +314,9 @@
                      }
  
 -                    this.buffer = RenderSystem.getDevice().createBuffer(() -> "Auto Storage index buffer", 64, data);
-+               String name = this == RenderSystem.sharedSequentialQuad ? "QUADS" : (this == RenderSystem.sharedSequentialLines ? "LINES" : "SHARED");
-+               String suffix = " (" + name + ", " + type + ")";
-+               this.buffer = RenderSystem.getDevice().createBuffer(() -> "Auto Storage index buffer" + suffix, 64, data);
++                    String name = this == RenderSystem.sharedSequentialQuad ? "QUADS" : (this == RenderSystem.sharedSequentialLines ? "LINES" : "SHARED");
++                    String suffix = " (" + name + ", " + type + ")";
++                    this.buffer = RenderSystem.getDevice().createBuffer(() -> "Auto Storage index buffer" + suffix, 64, data);
                  } finally {
                      MemoryUtil.memFree(data);
                  }
@@ -326,7 +325,7 @@
          }
  
 -        private it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(final ByteBuffer buffer) {
-+      private it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(ByteBuffer buffer) {
++        private it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(ByteBuffer buffer) {
              switch (this.type) {
                  case SHORT:
                      return value -> buffer.putShort((short)value);
@@ -337,7 +336,7 @@
 -        @OnlyIn(Dist.CLIENT)
          private interface IndexGenerator {
 -            void accept(final it.unimi.dsi.fastutil.ints.IntConsumer consumer, final int start);
-+         void accept(it.unimi.dsi.fastutil.ints.IntConsumer var1, int var2);
++            void accept(it.unimi.dsi.fastutil.ints.IntConsumer var1, int var2);
          }
      }
  

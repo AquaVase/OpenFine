@@ -26,17 +26,17 @@
      public static final Transformation DEFAULT_TRANSFORMATION = new Transformation(null, null, new Vector3f(1.0F, -1.0F, -1.0F), null);
      private final SpriteGetter sprites;
 -    private final ShieldModel model;
-+   private ShieldModel model;
-+   private boolean modelUpdated;
++    private ShieldModel model;
++    private boolean modelUpdated;
  
 -    public ShieldSpecialRenderer(final SpriteGetter sprites, final ShieldModel model) {
-+   public ShieldSpecialRenderer(SpriteGetter sprites, ShieldModel model) {
++    public ShieldSpecialRenderer(SpriteGetter sprites, ShieldModel model) {
          this.sprites = sprites;
          this.model = model;
      }
  
 -    public @Nullable DataComponentMap extractArgument(final ItemStack stack) {
-+   public DataComponentMap extractArgument(ItemStack stack) {
++    public DataComponentMap extractArgument(ItemStack stack) {
          return stack.immutableComponents();
      }
  
@@ -48,18 +48,18 @@
 -        final int overlayCoords,
 -        final boolean hasFoil,
 -        final int outlineColor
-+      DataComponentMap components,
-+      PoseStack poseStack,
-+      SubmitNodeCollector submitNodeCollector,
-+      int lightCoords,
-+      int overlayCoords,
-+      boolean hasFoil,
-+      int outlineColor
++        DataComponentMap components,
++        PoseStack poseStack,
++        SubmitNodeCollector submitNodeCollector,
++        int lightCoords,
++        int overlayCoords,
++        boolean hasFoil,
++        int outlineColor
      ) {
-+      if (CustomEntityModels.isActive() && !this.modelUpdated) {
-+         this.model = ArrayUtils.firstNonNull(CustomStaticModels.getShieldModel(), this.model);
-+         this.modelUpdated = true;
-+      }
++        if (CustomEntityModels.isActive() && !this.modelUpdated) {
++            this.model = ArrayUtils.firstNonNull(CustomStaticModels.getShieldModel(), this.model);
++            this.modelUpdated = true;
++        }
 +
          BannerPatternLayers patterns = components != null
              ? components.getOrDefault(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY)
@@ -69,14 +69,14 @@
  
      @Override
 -    public void getExtents(final Consumer<Vector3fc> output) {
-+   public void getExtents(Consumer<Vector3fc> output) {
++    public void getExtents(Consumer<Vector3fc> output) {
          PoseStack poseStack = new PoseStack();
          this.model.root().getExtentsForGui(poseStack, output);
      }
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record Unbaked() implements SpecialModelRenderer.Unbaked<DataComponentMap> {
-+   public record Unbaked() implements net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked<DataComponentMap> {
++    public record Unbaked() implements net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked<DataComponentMap> {
          public static final ShieldSpecialRenderer.Unbaked INSTANCE = new ShieldSpecialRenderer.Unbaked();
          public static final MapCodec<ShieldSpecialRenderer.Unbaked> MAP_CODEC = MapCodec.unit(INSTANCE);
  
@@ -85,7 +85,7 @@
          }
  
 -        public ShieldSpecialRenderer bake(final SpecialModelRenderer.BakingContext context) {
-+      public ShieldSpecialRenderer bake(BakingContext context) {
++        public ShieldSpecialRenderer bake(BakingContext context) {
              return new ShieldSpecialRenderer(context.sprites(), new ShieldModel(context.entityModelSet().bakeLayer(ModelLayers.SHIELD)));
          }
      }

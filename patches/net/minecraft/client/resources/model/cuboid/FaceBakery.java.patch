@@ -27,7 +27,7 @@
  
      @VisibleForTesting
 -    static CuboidFace.UVs defaultFaceUV(final Vector3fc from, final Vector3fc to, final Direction facing) {
-+   static UVs defaultFaceUV(Vector3fc from, Vector3fc to, Direction facing) {
++    static UVs defaultFaceUV(Vector3fc from, Vector3fc to, Direction facing) {
          return switch (facing) {
 -            case DOWN -> new CuboidFace.UVs(from.x(), 16.0F - to.z(), to.x(), 16.0F - from.z());
 -            case UP -> new CuboidFace.UVs(from.x(), from.z(), to.x(), to.z());
@@ -35,17 +35,17 @@
 -            case SOUTH -> new CuboidFace.UVs(from.x(), 16.0F - to.y(), to.x(), 16.0F - from.y());
 -            case WEST -> new CuboidFace.UVs(from.z(), 16.0F - to.y(), to.z(), 16.0F - from.y());
 -            case EAST -> new CuboidFace.UVs(16.0F - to.z(), 16.0F - to.y(), 16.0F - from.z(), 16.0F - from.y());
-+         case DOWN -> new UVs(from.x(), 16.0F - to.z(), to.x(), 16.0F - from.z());
-+         case UP -> new UVs(from.x(), from.z(), to.x(), to.z());
-+         case NORTH -> new UVs(16.0F - to.x(), 16.0F - to.y(), 16.0F - from.x(), 16.0F - from.y());
-+         case SOUTH -> new UVs(from.x(), 16.0F - to.y(), to.x(), 16.0F - from.y());
-+         case WEST -> new UVs(from.z(), 16.0F - to.y(), to.z(), 16.0F - from.y());
-+         case EAST -> new UVs(16.0F - to.z(), 16.0F - to.y(), 16.0F - from.z(), 16.0F - from.y());
++            case DOWN -> new UVs(from.x(), 16.0F - to.z(), to.x(), 16.0F - from.z());
++            case UP -> new UVs(from.x(), from.z(), to.x(), to.z());
++            case NORTH -> new UVs(16.0F - to.x(), 16.0F - to.y(), 16.0F - from.x(), 16.0F - from.y());
++            case SOUTH -> new UVs(from.x(), 16.0F - to.y(), to.x(), 16.0F - from.y());
++            case WEST -> new UVs(from.z(), 16.0F - to.y(), to.z(), 16.0F - from.y());
++            case EAST -> new UVs(16.0F - to.z(), 16.0F - to.y(), 16.0F - from.z(), 16.0F - from.y());
          };
      }
  
 -    private static Transparency computeMaterialTransparency(final Material.Baked material, final CuboidFace.UVs uvs) {
-+   private static Transparency computeMaterialTransparency(Baked material, UVs uvs) {
++    private static Transparency computeMaterialTransparency(Baked material, UVs uvs) {
          return material.forceTranslucent()
              ? Transparency.TRANSLUCENT
              : material.sprite()
@@ -63,19 +63,19 @@
 -        final @Nullable CuboidRotation elementRotation,
 -        final boolean shade,
 -        final int lightEmission
-+      ModelBaker modelBaker,
-+      Vector3fc from,
-+      Vector3fc to,
-+      CuboidFace face,
-+      Baked material,
-+      Direction facing,
-+      ModelState modelState,
-+      CuboidRotation elementRotation,
-+      boolean shade,
-+      int lightEmission
++        ModelBaker modelBaker,
++        Vector3fc from,
++        Vector3fc to,
++        CuboidFace face,
++        Baked material,
++        Direction facing,
++        ModelState modelState,
++        CuboidRotation elementRotation,
++        boolean shade,
++        int lightEmission
      ) {
 -        CuboidFace.UVs uvs = face.uvs();
-+      UVs uvs = face.uvs();
++        UVs uvs = face.uvs();
          if (uvs == null) {
              uvs = defaultFaceUV(from, to, facing);
          }
@@ -92,15 +92,15 @@
 -        final Direction facing,
 -        final ModelState modelState,
 -        final @Nullable CuboidRotation elementRotation
-+      ModelBaker.Interner interner,
-+      Vector3fc from,
-+      Vector3fc to,
-+      UVs uvs,
-+      Quadrant uvRotation,
-+      BakedQuad.MaterialInfo materialInfo,
-+      Direction facing,
-+      ModelState modelState,
-+      CuboidRotation elementRotation
++        ModelBaker.Interner interner,
++        Vector3fc from,
++        Vector3fc to,
++        UVs uvs,
++        Quadrant uvRotation,
++        BakedQuad.MaterialInfo materialInfo,
++        Direction facing,
++        ModelState modelState,
++        CuboidRotation elementRotation
      ) {
          Matrix4fc uvTransform = modelState.inverseFaceTransformation(facing);
          Vector3fc[] vertexPositions = new Vector3fc[4];
@@ -121,22 +121,22 @@
 -        final Vector3fc[] positionOutput,
 -        final long[] uvOutput,
 -        final ModelBaker.Interner interner
-+      int index,
-+      FaceInfo faceInfo,
-+      UVs uvs,
-+      Quadrant uvRotation,
-+      Matrix4fc uvTransform,
-+      Vector3fc from,
-+      Vector3fc to,
-+      BakedQuad.MaterialInfo materialInfo,
-+      Transformation rotation,
-+      CuboidRotation elementRotation,
-+      Vector3fc[] positionOutput,
-+      long[] uvOutput,
-+      ModelBaker.Interner interner
++        int index,
++        FaceInfo faceInfo,
++        UVs uvs,
++        Quadrant uvRotation,
++        Matrix4fc uvTransform,
++        Vector3fc from,
++        Vector3fc to,
++        BakedQuad.MaterialInfo materialInfo,
++        Transformation rotation,
++        CuboidRotation elementRotation,
++        Vector3fc[] positionOutput,
++        long[] uvOutput,
++        ModelBaker.Interner interner
      ) {
 -        FaceInfo.VertexInfo vertexInfo = faceInfo.getVertexInfo(index);
-+      VertexInfo vertexInfo = faceInfo.getVertexInfo(index);
++        VertexInfo vertexInfo = faceInfo.getVertexInfo(index);
          Vector3f vertex = vertexInfo.select(from, to).div(16.0F);
          if (elementRotation != null) {
              rotateVertexBy(vertex, elementRotation.origin(), elementRotation.transform());
@@ -144,7 +144,7 @@
              rotateVertexBy(vertex, BLOCK_MIDDLE, rotation.getMatrix());
          }
  
-+      BlockModelUtils.snapVertexPosition(vertex);
++        BlockModelUtils.snapVertexPosition(vertex);
          float rawU = CuboidFace.getU(uvs, uvRotation, index);
          float rawV = CuboidFace.getV(uvs, uvRotation, index);
          float transformedV;
@@ -153,31 +153,31 @@
      }
  
 -    private static float cornerToCenter(final float value) {
-+   private static float cornerToCenter(float value) {
++    private static float cornerToCenter(float value) {
          return value - 0.5F;
      }
  
 -    private static float centerToCorner(final float value) {
-+   private static float centerToCorner(float value) {
++    private static float centerToCorner(float value) {
          return value + 0.5F;
      }
  
 -    private static void rotateVertexBy(final Vector3f vertex, final Vector3fc origin, final Matrix4fc transformation) {
-+   private static void rotateVertexBy(Vector3f vertex, Vector3fc origin, Matrix4fc transformation) {
++    private static void rotateVertexBy(Vector3f vertex, Vector3fc origin, Matrix4fc transformation) {
          vertex.sub(origin);
          transformation.transformPosition(vertex);
          vertex.add(origin);
      }
  
 -    private static @Nullable Direction calculateFacing(final Vector3fc[] positions) {
-+   public static Direction calculateFacing(Vector3fc[] positions) {
++    public static Direction calculateFacing(Vector3fc[] positions) {
          Vector3f normal = new Vector3f();
          GeometryUtils.normal(positions[0], positions[1], positions[2], normal);
          return findClosestDirection(normal);
      }
  
 -    private static @Nullable Direction findClosestDirection(final Vector3f direction) {
-+   private static Direction findClosestDirection(Vector3f direction) {
++    private static Direction findClosestDirection(Vector3f direction) {
          if (!direction.isFinite()) {
              return null;
          }
@@ -186,7 +186,7 @@
      }
  
 -    private static void recalculateWinding(final Vector3fc[] positions, final long[] uvs, final Direction direction) {
-+   private static void recalculateWinding(Vector3fc[] positions, long[] uvs, Direction direction) {
++    private static void recalculateWinding(Vector3fc[] positions, long[] uvs, Direction direction) {
          float minX = 999.0F;
          float minY = 999.0F;
          float minZ = 999.0F;
@@ -195,7 +195,7 @@
  
          for (int vertex = 0; vertex < 4; vertex++) {
 -            FaceInfo.VertexInfo vertInfo = info.getVertexInfo(vertex);
-+         VertexInfo vertInfo = info.getVertexInfo(vertex);
++            VertexInfo vertInfo = info.getVertexInfo(vertex);
              float newX = vertInfo.xFace().select(minX, minY, minZ, maxX, maxY, maxZ);
              float newY = vertInfo.yFace().select(minX, minY, minZ, maxX, maxY, maxZ);
              float newZ = vertInfo.zFace().select(minX, minY, minZ, maxX, maxY, maxZ);
@@ -204,7 +204,7 @@
      }
  
 -    private static int findVertex(final Vector3fc[] positions, final int start, final float x, final float y, final float z) {
-+   private static int findVertex(Vector3fc[] positions, int start, float x, float y, float z) {
++    private static int findVertex(Vector3fc[] positions, int start, float x, float y, float z) {
          for (int i = start; i < 4; i++) {
              Vector3fc position = positions[i];
              if (x == position.x() && y == position.y() && z == position.z()) {
@@ -213,14 +213,14 @@
      }
  
 -    private static void swap(final Vector3fc[] array, final int indexA, final int indexB) {
-+   private static void swap(Vector3fc[] array, int indexA, int indexB) {
++    private static void swap(Vector3fc[] array, int indexA, int indexB) {
          Vector3fc tmp = array[indexA];
          array[indexA] = array[indexB];
          array[indexB] = tmp;
      }
  
 -    private static void swap(final long[] array, final int indexA, final int indexB) {
-+   private static void swap(long[] array, int indexA, int indexB) {
++    private static void swap(long[] array, int indexA, int indexB) {
          long tmp = array[indexA];
          array[indexA] = array[indexB];
          array[indexB] = tmp;

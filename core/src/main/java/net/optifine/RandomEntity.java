@@ -16,108 +16,108 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.TagValueOutput;
 
 public class RandomEntity implements IRandomEntity {
-   private Entity entity;
+    private Entity entity;
 
-   @Override
-   public int getId() {
-      return getId(this.entity);
-   }
+    @Override
+    public int getId() {
+        return getId(this.entity);
+    }
 
-   @Override
-   public int getVehicleId() {
-      Entity vehicle = this.entity.getRootVehicle();
-      return getId(vehicle);
-   }
+    @Override
+    public int getVehicleId() {
+        Entity vehicle = this.entity.getRootVehicle();
+        return getId(vehicle);
+    }
 
-   private static int getId(Entity entityIn) {
-      UUID uuid = entityIn.getUUID();
-      long uuidLow = uuid.getLeastSignificantBits();
-      return (int)(uuidLow & 2147483647L);
-   }
+    private static int getId(Entity entityIn) {
+        UUID uuid = entityIn.getUUID();
+        long uuidLow = uuid.getLeastSignificantBits();
+        return (int)(uuidLow & 2147483647L);
+    }
 
-   @Override
-   public BlockPos getSpawnPosition() {
-      return this.entity.getEntityData().spawnPosition;
-   }
+    @Override
+    public BlockPos getSpawnPosition() {
+        return this.entity.getEntityData().spawnPosition;
+    }
 
-   @Override
-   public Biome getSpawnBiome() {
-      return this.entity.getEntityData().spawnBiome;
-   }
+    @Override
+    public Biome getSpawnBiome() {
+        return this.entity.getEntityData().spawnBiome;
+    }
 
-   @Override
-   public String getName() {
-      return this.entity.hasCustomName() ? this.entity.getCustomName().getString() : null;
-   }
+    @Override
+    public String getName() {
+        return this.entity.hasCustomName() ? this.entity.getCustomName().getString() : null;
+    }
 
-   @Override
-   public int getHealth() {
-      return !(this.entity instanceof LivingEntity el) ? 0 : (int)el.getHealth();
-   }
+    @Override
+    public int getHealth() {
+        return !(this.entity instanceof LivingEntity el) ? 0 : (int)el.getHealth();
+    }
 
-   @Override
-   public int getMaxHealth() {
-      return !(this.entity instanceof LivingEntity el) ? 0 : (int)el.getMaxHealth();
-   }
+    @Override
+    public int getMaxHealth() {
+        return !(this.entity instanceof LivingEntity el) ? 0 : (int)el.getMaxHealth();
+    }
 
-   public Entity getEntity() {
-      return this.entity;
-   }
+    public Entity getEntity() {
+        return this.entity;
+    }
 
-   public void setEntity(Entity entity) {
-      this.entity = entity;
-   }
+    public void setEntity(Entity entity) {
+        this.entity = entity;
+    }
 
-   @Override
-   public CompoundTag getNbtTag() {
-      SynchedEntityData edm = this.entity.getEntityData();
-      CompoundTag nbt = edm.nbtTag;
-      long timeMs = System.currentTimeMillis();
-      if (nbt == null || edm.nbtTagUpdateMs < timeMs - 1000L) {
-         nbt = new CompoundTag();
-         TagValueOutput tvo = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.entity.registryAccess());
-         this.entity.saveWithoutId(tvo);
-         if (this.entity instanceof TamableAnimal et) {
-            nbt.putBoolean("Sitting", et.isInSittingPose());
-         }
-
-         edm.nbtTag = nbt;
-         edm.nbtTagUpdateMs = timeMs;
-      }
-
-      return nbt;
-   }
-
-   @Override
-   public DyeColor getColor() {
-      return RandomEntityRule.getEntityColor(this.entity);
-   }
-
-   @Override
-   public BlockState getBlockState() {
-      if (this.entity instanceof ItemEntity ie && ie.getItem().getItem() instanceof BlockItem bi) {
-         return bi.getBlock().defaultBlockState();
-      } else {
-         SynchedEntityData edm = this.entity.getEntityData();
-         BlockState bs = edm.blockStateOn;
-         long timeMs = System.currentTimeMillis();
-         if (bs == null || edm.blockStateOnUpdateMs < timeMs - 50L) {
-            BlockPos pos = this.entity.blockPosition();
-            bs = this.entity.level().getBlockState(pos);
-            if (bs.isAir()) {
-               bs = this.entity.level().getBlockState(pos.below());
+    @Override
+    public CompoundTag getNbtTag() {
+        SynchedEntityData edm = this.entity.getEntityData();
+        CompoundTag nbt = edm.nbtTag;
+        long timeMs = System.currentTimeMillis();
+        if (nbt == null || edm.nbtTagUpdateMs < timeMs - 1000L) {
+            nbt = new CompoundTag();
+            TagValueOutput tvo = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.entity.registryAccess());
+            this.entity.saveWithoutId(tvo);
+            if (this.entity instanceof TamableAnimal et) {
+                nbt.putBoolean("Sitting", et.isInSittingPose());
             }
 
-            edm.blockStateOn = bs;
-            edm.blockStateOnUpdateMs = timeMs;
-         }
+            edm.nbtTag = nbt;
+            edm.nbtTagUpdateMs = timeMs;
+        }
 
-         return bs;
-      }
-   }
+        return nbt;
+    }
 
-   @Override
-   public String toString() {
-      return this.entity.toString();
-   }
+    @Override
+    public DyeColor getColor() {
+        return RandomEntityRule.getEntityColor(this.entity);
+    }
+
+    @Override
+    public BlockState getBlockState() {
+        if (this.entity instanceof ItemEntity ie && ie.getItem().getItem() instanceof BlockItem bi) {
+            return bi.getBlock().defaultBlockState();
+        } else {
+            SynchedEntityData edm = this.entity.getEntityData();
+            BlockState bs = edm.blockStateOn;
+            long timeMs = System.currentTimeMillis();
+            if (bs == null || edm.blockStateOnUpdateMs < timeMs - 50L) {
+                BlockPos pos = this.entity.blockPosition();
+                bs = this.entity.level().getBlockState(pos);
+                if (bs.isAir()) {
+                    bs = this.entity.level().getBlockState(pos.below());
+                }
+
+                edm.blockStateOn = bs;
+                edm.blockStateOnUpdateMs = timeMs;
+            }
+
+            return bs;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return this.entity.toString();
+    }
 }

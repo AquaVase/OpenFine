@@ -25,11 +25,11 @@
  public class WolfCollarLayer extends RenderLayer<WolfRenderState, WolfModel> {
      private static final Identifier WOLF_COLLAR_LOCATION = Identifier.withDefaultNamespace("textures/entity/wolf/wolf_collar.png");
      private static final Identifier WOLF_BABY_COLLAR_LOCATION = Identifier.withDefaultNamespace("textures/entity/wolf/wolf_collar_baby.png");
-+   public WolfModel adultModel = new AdultWolfModel(ModelAdapter.bakeModelLayer(ModelLayers.WOLF));
-+   public WolfModel babyModel = new BabyWolfModel(ModelAdapter.bakeModelLayer(ModelLayers.WOLF_BABY));
++    public WolfModel adultModel = new AdultWolfModel(ModelAdapter.bakeModelLayer(ModelLayers.WOLF));
++    public WolfModel babyModel = new BabyWolfModel(ModelAdapter.bakeModelLayer(ModelLayers.WOLF_BABY));
  
 -    public WolfCollarLayer(final RenderLayerParent<WolfRenderState, WolfModel> renderer) {
-+   public WolfCollarLayer(RenderLayerParent<WolfRenderState, WolfModel> renderer) {
++    public WolfCollarLayer(RenderLayerParent<WolfRenderState, WolfModel> renderer) {
          super(renderer);
      }
  
@@ -41,19 +41,19 @@
 -        final float yRot,
 -        final float xRot
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, WolfRenderState state, float yRot, float xRot) {
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, WolfRenderState state, float yRot, float xRot) {
          DyeColor collarColor = state.collarColor;
          if (collarColor != null && !state.isInvisible) {
              int color = collarColor.getTextureDiffuseColor();
-+         if (Config.isCustomColors()) {
-+            color = CustomColors.getWolfCollarColors(collarColor, color);
-+         }
++            if (Config.isCustomColors()) {
++                color = CustomColors.getWolfCollarColors(collarColor, color);
++            }
 +
              Identifier collarLocation = state.isBaby ? WOLF_BABY_COLLAR_LOCATION : WOLF_COLLAR_LOCATION;
-+         WolfModel model = this.getEntityModel(state);
-+         if (model.locationTextureCustom != null) {
-+            collarLocation = model.locationTextureCustom;
-+         }
++            WolfModel model = this.getEntityModel(state);
++            if (model.locationTextureCustom != null) {
++                collarLocation = model.locationTextureCustom;
++            }
 +
              submitNodeCollector.order(1)
                  .submitModel(
@@ -67,20 +67,20 @@
 -                    null,
 -                    state.outlineColor,
 -                    null
-+               model, state, poseStack, RenderTypes.entityCutout(collarLocation), lightCoords, OverlayTexture.NO_OVERLAY, color, null, state.outlineColor, null
++                    model, state, poseStack, RenderTypes.entityCutout(collarLocation), lightCoords, OverlayTexture.NO_OVERLAY, color, null, state.outlineColor, null
                  );
          }
      }
 -}
 \ No newline at end of file
 +
-+   public WolfModel getEntityModel(WolfRenderState stateIn) {
-+      WolfModel model = stateIn.isBaby ? this.babyModel : this.adultModel;
-+      if (model != null) {
-+         model.setupAnim(stateIn);
-+         return model;
-+      } else {
-+         return (WolfModel)super.getParentModel();
-+      }
-+   }
++    public WolfModel getEntityModel(WolfRenderState stateIn) {
++        WolfModel model = stateIn.isBaby ? this.babyModel : this.adultModel;
++        if (model != null) {
++            model.setupAnim(stateIn);
++            return model;
++        } else {
++            return (WolfModel)super.getParentModel();
++        }
++    }
 +}

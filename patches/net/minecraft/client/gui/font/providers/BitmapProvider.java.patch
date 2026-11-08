@@ -30,7 +30,7 @@
      private final CodepointMap<BitmapProvider.Glyph> glyphs;
  
 -    private BitmapProvider(final BitmapProvider.ImageDataHolder imageData, final CodepointMap<BitmapProvider.Glyph> glyphs) {
-+   private BitmapProvider(BitmapProvider.ImageDataHolder imageData, CodepointMap<BitmapProvider.Glyph> glyphs) {
++    private BitmapProvider(BitmapProvider.ImageDataHolder imageData, CodepointMap<BitmapProvider.Glyph> glyphs) {
          this.imageData = imageData;
          this.glyphs = glyphs;
      }
@@ -39,7 +39,7 @@
  
      @Override
 -    public @Nullable UnbakedGlyph getGlyph(final int codepoint) {
-+   public UnbakedGlyph getGlyph(int codepoint) {
++    public UnbakedGlyph getGlyph(int codepoint) {
          return this.glyphs.get(codepoint);
      }
  
@@ -56,11 +56,11 @@
              .validate(BitmapProvider.Definition::validate);
  
 -        private static DataResult<int[][]> validateDimensions(final int[][] grid) {
-+      public Definition {
-+         file = FontUtils.getHdFontLocation(file);
-+      }
++        public Definition {
++            file = FontUtils.getHdFontLocation(file);
++        }
 +
-+      private static DataResult<int[][]> validateDimensions(int[][] grid) {
++        private static DataResult<int[][]> validateDimensions(int[][] grid) {
              int lineCount = grid.length;
              if (lineCount == 0) {
                  return DataResult.error(() -> "Expected to find data in codepoint grid");
@@ -69,7 +69,7 @@
          }
  
 -        private static DataResult<BitmapProvider.Definition> validate(final BitmapProvider.Definition builder) {
-+      private static DataResult<BitmapProvider.Definition> validate(BitmapProvider.Definition builder) {
++        private static DataResult<BitmapProvider.Definition> validate(BitmapProvider.Definition builder) {
              return builder.ascent > builder.height
                  ? DataResult.error(() -> "Ascent " + builder.ascent + " higher than height " + builder.height)
                  : DataResult.success(builder);
@@ -78,12 +78,12 @@
  
          @Override
 -        public Either<GlyphProviderDefinition.Loader, GlyphProviderDefinition.Reference> unpack() {
-+      public Either<Loader, Reference> unpack() {
++        public Either<Loader, Reference> unpack() {
              return Either.left(this::load);
          }
  
 -        private GlyphProvider load(final ResourceManager resourceManager) throws IOException {
-+      private GlyphProvider load(ResourceManager resourceManager) throws IOException {
++        private GlyphProvider load(ResourceManager resourceManager) throws IOException {
              Identifier texture = this.file.withPrefix("textures/");
  
              try (InputStream resource = resourceManager.open(texture)) {
@@ -92,7 +92,7 @@
          }
  
 -        private int getActualGlyphWidth(final NativeImage image, final int glyphWidth, final int glyphHeight, final int xGlyph, final int yGlyph) {
-+      private int getActualGlyphWidth(NativeImage image, int glyphWidth, int glyphHeight, int xGlyph, int yGlyph) {
++        private int getActualGlyphWidth(NativeImage image, int glyphWidth, int glyphHeight, int xGlyph, int yGlyph) {
              int width;
              for (width = glyphWidth - 1; width >= 0; width--) {
                  int xPixel = xGlyph * glyphWidth + width;
@@ -109,7 +109,7 @@
  
          @Override
 -        public BakedGlyph bake(final UnbakedGlyph.Stitcher stitcher) {
-+      public BakedGlyph bake(Stitcher stitcher) {
++        public BakedGlyph bake(Stitcher stitcher) {
              return stitcher.stitch(
                  this.info(),
                  new GlyphBitmap() {
@@ -118,7 +118,7 @@
  
                      @Override
 -                    public void upload(final int x, final int y, final GpuTexture texture) {
-+               public void upload(int x, int y, GpuTexture texture) {
++                    public void upload(int x, int y, GpuTexture texture) {
                          RenderSystem.getDevice()
                              .createCommandEncoder()
                              .copyBufferToTexture(
@@ -131,10 +131,10 @@
          private final Identifier identifier;
          private final NativeImage image;
 -        private @Nullable GpuBuffer gpuBuffer = null;
-+      private GpuBuffer gpuBuffer = null;
++        private GpuBuffer gpuBuffer = null;
  
 -        private ImageDataHolder(final Identifier identifier, final NativeImage image) {
-+      private ImageDataHolder(Identifier identifier, NativeImage image) {
++        private ImageDataHolder(Identifier identifier, NativeImage image) {
              this.identifier = identifier;
              this.image = image;
          }

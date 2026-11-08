@@ -24,12 +24,12 @@
  
      public static final List<DyeColor> VALUES = List.of(values());
 -    private static final IntFunction<DyeColor> BY_ID = ByIdMap.continuous(DyeColor::getId, VALUES.toArray(DyeColor[]::new), ByIdMap.OutOfBoundsStrategy.ZERO);
-+   private static final IntFunction<DyeColor> BY_ID = ByIdMap.continuous(DyeColor::getId, VALUES.toArray(DyeColor[]::new), OutOfBoundsStrategy.ZERO);
++    private static final IntFunction<DyeColor> BY_ID = ByIdMap.continuous(DyeColor::getId, VALUES.toArray(DyeColor[]::new), OutOfBoundsStrategy.ZERO);
      private static final Int2ObjectOpenHashMap<DyeColor> BY_FIREWORK_COLOR = new Int2ObjectOpenHashMap<>(
          VALUES.stream().collect(Collectors.toMap(v -> v.fireworkColor, v -> (DyeColor)v))
      );
 -    public static final StringRepresentable.EnumCodec<DyeColor> CODEC = StringRepresentable.fromEnum(DyeColor::values);
-+   public static final EnumCodec<DyeColor> CODEC = StringRepresentable.fromEnum(DyeColor::values);
++    public static final EnumCodec<DyeColor> CODEC = StringRepresentable.fromEnum(DyeColor::values);
      public static final StreamCodec<ByteBuf, DyeColor> STREAM_CODEC = ByteBufCodecs.idMapper(BY_ID, DyeColor::getId);
      @Deprecated
      public static final Codec<DyeColor> LEGACY_ID_CODEC = Codec.BYTE.xmap(DyeColor::byId, color -> (byte)color.id);
@@ -38,11 +38,11 @@
      private final MapColor mapColor;
      private final MapColor terracottaColor;
 -    private final int textureDiffuseColor;
-+   private int textureDiffuseColor;
++    private int textureDiffuseColor;
      private final int fireworkColor;
      private final int textColor;
-+   private final TagKey<Item> dyesTag;
-+   private final TagKey<Item> dyedTag;
++    private final TagKey<Item> dyesTag;
++    private final TagKey<Item> dyedTag;
  
 -    DyeColor(
 -        final int id,
@@ -53,7 +53,7 @@
 -        final int fireworkColor,
 -        final int textColor
 -    ) {
-+   DyeColor(int id, String name, int textureDiffuseColor, MapColor mapColor, MapColor terracottaColor, int fireworkColor, int textColor) {
++    DyeColor(int id, String name, int textureDiffuseColor, MapColor mapColor, MapColor terracottaColor, int fireworkColor, int textColor) {
          this.id = id;
          this.name = name;
          this.mapColor = mapColor;
@@ -61,8 +61,8 @@
          this.textColor = ARGB.opaque(textColor);
          this.textureDiffuseColor = ARGB.opaque(textureDiffuseColor);
          this.fireworkColor = fireworkColor;
-+      this.dyesTag = (TagKey<Item>)Reflector.ForgeItemTags_create.call("forge", "dyes/" + name);
-+      this.dyedTag = (TagKey<Item>)Reflector.ForgeItemTags_create.call("forge", "dyed/" + name);
++        this.dyesTag = (TagKey<Item>)Reflector.ForgeItemTags_create.call("forge", "dyes/" + name);
++        this.dyedTag = (TagKey<Item>)Reflector.ForgeItemTags_create.call("forge", "dyed/" + name);
      }
  
      public int getId() {
@@ -71,19 +71,19 @@
      }
  
 -    public static DyeColor byId(final int id) {
-+   public static DyeColor byId(int id) {
++    public static DyeColor byId(int id) {
          return BY_ID.apply(id);
      }
  
      @Contract("_,!null->!null;_,null->_")
 -    public static @Nullable DyeColor byName(final String name, final @Nullable DyeColor def) {
-+   public static DyeColor byName(String name, DyeColor def) {
++    public static DyeColor byName(String name, DyeColor def) {
          DyeColor result = CODEC.byName(name);
          return result != null ? result : def;
      }
  
 -    public static @Nullable DyeColor byFireworkColor(final int color) {
-+   public static DyeColor byFireworkColor(int color) {
++    public static DyeColor byFireworkColor(int color) {
          return BY_FIREWORK_COLOR.get(color);
      }
  
@@ -92,7 +92,7 @@
      }
  
 -    public static DyeColor getMixedColor(final ServerLevel level, final DyeColor dyeColor1, final DyeColor dyeColor2) {
-+   public static DyeColor getMixedColor(ServerLevel level, DyeColor dyeColor1, DyeColor dyeColor2) {
++    public static DyeColor getMixedColor(ServerLevel level, DyeColor dyeColor1, DyeColor dyeColor2) {
          DyeColor mixedColor = findColorMixInRecipes(level, dyeColor1, dyeColor2);
          if (mixedColor != null) {
              return mixedColor;
@@ -101,7 +101,7 @@
      }
  
 -    private static @Nullable DyeColor findColorMixInRecipes(final ServerLevel level, final DyeColor dyeColor1, final DyeColor dyeColor2) {
-+   private static DyeColor findColorMixInRecipes(ServerLevel level, DyeColor dyeColor1, DyeColor dyeColor2) {
++    private static DyeColor findColorMixInRecipes(ServerLevel level, DyeColor dyeColor1, DyeColor dyeColor2) {
          DataComponentLookup<Item> itemComponents = level.registryAccess().lookupOrThrow(Registries.ITEM).componentLookup();
          Collection<Holder<Item>> dye1Items = itemComponents.findAll(DataComponents.DYE, dyeColor1);
          if (dye1Items.isEmpty()) {
@@ -112,19 +112,19 @@
 -}
 \ No newline at end of file
 +
-+   public void setTextureDiffuseColor(int color) {
-+      this.textureDiffuseColor = color;
-+   }
++    public void setTextureDiffuseColor(int color) {
++        this.textureDiffuseColor = color;
++    }
 +
-+   public TagKey<Item> getTag() {
-+      return this.dyesTag;
-+   }
++    public TagKey<Item> getTag() {
++        return this.dyesTag;
++    }
 +
-+   public TagKey<Item> getDyedTag() {
-+      return this.dyedTag;
-+   }
++    public TagKey<Item> getDyedTag() {
++        return this.dyedTag;
++    }
 +
-+   public static @Nullable DyeColor getColor(ItemStack stack) {
-+      return (DyeColor)Reflector.ForgeHooks_getDyeColorFromItemStack.call(stack);
-+   }
++    public static @Nullable DyeColor getColor(ItemStack stack) {
++        return (DyeColor)Reflector.ForgeHooks_getDyeColorFromItemStack.call(stack);
++    }
 +}

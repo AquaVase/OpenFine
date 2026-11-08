@@ -14,7 +14,7 @@
      private PalettedContainerRO<Holder<Biome>> biomes;
  
 -    private LevelChunkSection(final LevelChunkSection source) {
-+   private LevelChunkSection(LevelChunkSection source) {
++    private LevelChunkSection(LevelChunkSection source) {
          this.nonEmptyBlockCount = source.nonEmptyBlockCount;
          this.fluidCount = source.fluidCount;
          this.tickingBlockCount = source.tickingBlockCount;
@@ -23,25 +23,25 @@
      }
  
 -    public LevelChunkSection(final PalettedContainer<BlockState> states, final PalettedContainerRO<Holder<Biome>> biomes) {
-+   public LevelChunkSection(PalettedContainer<BlockState> states, PalettedContainerRO<Holder<Biome>> biomes) {
++    public LevelChunkSection(PalettedContainer<BlockState> states, PalettedContainerRO<Holder<Biome>> biomes) {
          this.states = states;
          this.biomes = biomes;
          this.recalcBlockCounts();
      }
  
 -    public LevelChunkSection(final PalettedContainerFactory containerFactory) {
-+   public LevelChunkSection(PalettedContainerFactory containerFactory) {
++    public LevelChunkSection(PalettedContainerFactory containerFactory) {
          this.states = containerFactory.createForBlockStates();
          this.biomes = containerFactory.createForBiomes();
      }
  
 -    public BlockState getBlockState(final int sectionX, final int sectionY, final int sectionZ) {
-+   public BlockState getBlockState(int sectionX, int sectionY, int sectionZ) {
++    public BlockState getBlockState(int sectionX, int sectionY, int sectionZ) {
          return this.states.get(sectionX, sectionY, sectionZ);
      }
  
 -    public FluidState getFluidState(final int sectionX, final int sectionY, final int sectionZ) {
-+   public FluidState getFluidState(int sectionX, int sectionY, int sectionZ) {
++    public FluidState getFluidState(int sectionX, int sectionY, int sectionZ) {
          return this.states.get(sectionX, sectionY, sectionZ).getFluidState();
      }
  
@@ -50,12 +50,12 @@
      }
  
 -    public BlockState setBlockState(final int sectionX, final int sectionY, final int sectionZ, final BlockState state) {
-+   public BlockState setBlockState(int sectionX, int sectionY, int sectionZ, BlockState state) {
++    public BlockState setBlockState(int sectionX, int sectionY, int sectionZ, BlockState state) {
          return this.setBlockState(sectionX, sectionY, sectionZ, state, true);
      }
  
 -    public BlockState setBlockState(final int sectionX, final int sectionY, final int sectionZ, final BlockState state, final boolean checkThreading) {
-+   public BlockState setBlockState(int sectionX, int sectionY, int sectionZ, BlockState state, boolean checkThreading) {
++    public BlockState setBlockState(int sectionX, int sectionY, int sectionZ, BlockState state, boolean checkThreading) {
          BlockState previous;
          if (checkThreading) {
              previous = this.states.getAndSet(sectionX, sectionY, sectionZ, state);
@@ -64,7 +64,7 @@
              public int tickingFluidCount;
  
 -            public void accept(final BlockState state, final int count) {
-+         public void accept(BlockState state, int count) {
++            public void accept(BlockState state, int count) {
                  if (!state.isAir()) {
                      this.nonEmptyBlockCount += count;
                      if (state.isRandomlyTicking()) {
@@ -73,7 +73,7 @@
      }
  
 -    public void read(final FriendlyByteBuf buffer) {
-+   public void read(FriendlyByteBuf buffer) {
++    public void read(FriendlyByteBuf buffer) {
          this.nonEmptyBlockCount = buffer.readShort();
          this.fluidCount = buffer.readShort();
          this.states.read(buffer);
@@ -82,14 +82,14 @@
      }
  
 -    public void readBiomes(final FriendlyByteBuf buffer) {
-+   public void readBiomes(FriendlyByteBuf buffer) {
++    public void readBiomes(FriendlyByteBuf buffer) {
          PalettedContainer<Holder<Biome>> biomes = this.biomes.recreate();
          biomes.read(buffer);
          this.biomes = biomes;
      }
  
 -    public void write(final FriendlyByteBuf buffer) {
-+   public void write(FriendlyByteBuf buffer) {
++    public void write(FriendlyByteBuf buffer) {
          buffer.writeShort(this.nonEmptyBlockCount);
          buffer.writeShort(this.fluidCount);
          this.states.write(buffer);
@@ -98,19 +98,19 @@
      }
  
 -    public boolean maybeHas(final Predicate<BlockState> predicate) {
-+   public boolean maybeHas(Predicate<BlockState> predicate) {
++    public boolean maybeHas(Predicate<BlockState> predicate) {
          return this.states.maybeHas(predicate);
      }
  
 -    public Holder<Biome> getNoiseBiome(final int quartX, final int quartY, final int quartZ) {
-+   public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ) {
++    public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ) {
          return this.biomes.get(quartX, quartY, quartZ);
      }
  
 -    public void fillBiomesFromNoise(
 -        final BiomeResolver biomeResolver, final Climate.Sampler sampler, final int quartMinX, final int quartMinY, final int quartMinZ
 -    ) {
-+   public void fillBiomesFromNoise(BiomeResolver biomeResolver, Sampler sampler, int quartMinX, int quartMinY, int quartMinZ) {
++    public void fillBiomesFromNoise(BiomeResolver biomeResolver, Sampler sampler, int quartMinX, int quartMinY, int quartMinZ) {
          PalettedContainer<Holder<Biome>> newBiomes = this.biomes.recreate();
          int size = 4;
  
@@ -121,7 +121,7 @@
 -}
 \ No newline at end of file
 +
-+   public short getBlockRefCount() {
-+      return this.nonEmptyBlockCount;
-+   }
++    public short getBlockRefCount() {
++        return this.nonEmptyBlockCount;
++    }
 +}

@@ -23,82 +23,82 @@
 -public class BlockState extends BlockBehaviour.BlockStateBase {
 +public class BlockState extends BlockStateBase implements IForgeBlockState {
      public static final Codec<BlockState> CODEC = codec(BuiltInRegistries.BLOCK.byNameCodec(), Block::defaultBlockState, Block::getStateDefinition).stable();
-+   private int blockId = -1;
-+   private int metadata = -1;
-+   private Identifier blockLocation;
-+   private boolean isCollisionShapeFullBlock;
-+   private boolean hasEmissive;
-+   private int blockStateId = -1;
-+   private static final AtomicInteger blockStateIdCounter = new AtomicInteger(0);
++    private int blockId = -1;
++    private int metadata = -1;
++    private Identifier blockLocation;
++    private boolean isCollisionShapeFullBlock;
++    private boolean hasEmissive;
++    private int blockStateId = -1;
++    private static final AtomicInteger blockStateIdCounter = new AtomicInteger(0);
  
 -    public BlockState(final Block owner, final Property<?>[] propertyKeys, final Comparable<?>[] propertyValues) {
-+   public int getBlockId() {
-+      if (this.blockId < 0) {
-+         this.blockId = BuiltInRegistries.BLOCK.getId(this.getBlock());
-+      }
++    public int getBlockId() {
++        if (this.blockId < 0) {
++            this.blockId = BuiltInRegistries.BLOCK.getId(this.getBlock());
++        }
 +
-+      return this.blockId;
-+   }
++        return this.blockId;
++    }
 +
-+   public int getMetadata() {
-+      if (this.metadata < 0) {
-+         this.metadata = BlockUtils.getMetadata(this);
-+         if (this.metadata < 0) {
-+            Config.warn("Metadata not found, block: " + this.getBlockLocation());
-+            this.metadata = 0;
-+         }
-+      }
++    public int getMetadata() {
++        if (this.metadata < 0) {
++            this.metadata = BlockUtils.getMetadata(this);
++            if (this.metadata < 0) {
++                Config.warn("Metadata not found, block: " + this.getBlockLocation());
++                this.metadata = 0;
++            }
++        }
 +
-+      return this.metadata;
-+   }
++        return this.metadata;
++    }
 +
-+   public Identifier getBlockLocation() {
-+      if (this.blockLocation == null) {
-+         this.blockLocation = BuiltInRegistries.BLOCK.getKey(this.getBlock());
-+      }
++    public Identifier getBlockLocation() {
++        if (this.blockLocation == null) {
++            this.blockLocation = BuiltInRegistries.BLOCK.getKey(this.getBlock());
++        }
 +
-+      return this.blockLocation;
-+   }
++        return this.blockLocation;
++    }
 +
-+   public int getBlockStateId() {
-+      if (this.blockStateId < 0) {
-+         this.blockStateId = blockStateIdCounter.incrementAndGet();
-+      }
++    public int getBlockStateId() {
++        if (this.blockStateId < 0) {
++            this.blockStateId = blockStateIdCounter.incrementAndGet();
++        }
 +
-+      return this.blockStateId;
-+   }
++        return this.blockStateId;
++    }
 +
-+   @Override
-+   public int getLightEmission(BlockGetter world, BlockPos pos) {
-+      return this.getLightEmission();
-+   }
++    @Override
++    public int getLightEmission(BlockGetter world, BlockPos pos) {
++        return this.getLightEmission();
++    }
 +
-+   @Override
-+   public void initCache() {
-+      super.initCache();
-+      this.isCollisionShapeFullBlock = Block.isShapeFullBlock(this.asState().getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO));
-+   }
++    @Override
++    public void initCache() {
++        super.initCache();
++        this.isCollisionShapeFullBlock = Block.isShapeFullBlock(this.asState().getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO));
++    }
 +
-+   public boolean isCacheOpaqueCollisionShape() {
-+      return this.isCollisionShapeFullBlock;
-+   }
++    public boolean isCacheOpaqueCollisionShape() {
++        return this.isCollisionShapeFullBlock;
++    }
 +
-+   public boolean hasEmissive() {
-+      return this.hasEmissive;
-+   }
++    public boolean hasEmissive() {
++        return this.hasEmissive;
++    }
 +
-+   public BlockState(Block owner, Property<?>[] propertyKeys, Comparable<?>[] propertyValues) {
++    public BlockState(Block owner, Property<?>[] propertyKeys, Comparable<?>[] propertyValues) {
          super(owner, propertyKeys, propertyValues);
-+      if (Blocks.AIR != null && Reflector.BlockBehaviour_Properties_emissiveRendering.exists()) {
-+         Predicate<BlockState> emissiveOwner = (Predicate<BlockState>)Reflector.getFieldValue(
-+            owner.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
-+         );
-+         Predicate<BlockState> emissiveAir = (Predicate<BlockState>)Reflector.getFieldValue(
-+            Blocks.AIR.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
-+         );
-+         this.hasEmissive = emissiveOwner != emissiveAir;
++        if (Blocks.AIR != null && Reflector.BlockBehaviour_Properties_emissiveRendering.exists()) {
++            Predicate<BlockState> emissiveOwner = (Predicate<BlockState>)Reflector.getFieldValue(
++                owner.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
++            );
++            Predicate<BlockState> emissiveAir = (Predicate<BlockState>)Reflector.getFieldValue(
++                Blocks.AIR.properties, Reflector.BlockBehaviour_Properties_emissiveRendering
++            );
++            this.hasEmissive = emissiveOwner != emissiveAir;
++        }
      }
-+   }
  
      @Override
      protected BlockState asState() {

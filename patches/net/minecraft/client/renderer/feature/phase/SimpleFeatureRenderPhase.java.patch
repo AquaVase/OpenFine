@@ -16,11 +16,11 @@
 -@OnlyIn(Dist.CLIENT)
  public class SimpleFeatureRenderPhase implements FeatureRenderPhase<SubmitNode> {
 -    private SimpleFeatureRenderPhase.@Nullable FeatureSubmits<?>[] submitsByFeature = new SimpleFeatureRenderPhase.FeatureSubmits[0];
-+   private SimpleFeatureRenderPhase.FeatureSubmits<?>[] submitsByFeature = new SimpleFeatureRenderPhase.FeatureSubmits[0];
++    private SimpleFeatureRenderPhase.FeatureSubmits<?>[] submitsByFeature = new SimpleFeatureRenderPhase.FeatureSubmits[0];
  
      @Override
 -    public void submit(final SubmitNode submit) {
-+   public void submit(SubmitNode submit) {
++    public void submit(SubmitNode submit) {
          FeatureRendererType<? extends SubmitNode> type = submit.featureType();
          if (this.submitsByFeature.length <= type.id()) {
              this.submitsByFeature = Arrays.copyOf(this.submitsByFeature, Mth.roundToward(type.id() + 1, 16));
@@ -29,7 +29,7 @@
  
      @Override
 -    public void sortInto(final FeatureRenderPhase.Output output) {
-+   public void sortInto(Output output) {
++    public void sortInto(Output output) {
          for (SimpleFeatureRenderPhase.FeatureSubmits<?> submits : maybeShuffle(this.submitsByFeature)) {
              if (submits != null) {
                  sortFeatureInto(output, submits);
@@ -40,7 +40,7 @@
 -    private static <Submit extends SubmitNode> void sortFeatureInto(
 -        final FeatureRenderPhase.Output output, final SimpleFeatureRenderPhase.FeatureSubmits<Submit> submits
 -    ) {
-+   private static <Submit extends SubmitNode> void sortFeatureInto(Output output, SimpleFeatureRenderPhase.FeatureSubmits<Submit> submits) {
++    private static <Submit extends SubmitNode> void sortFeatureInto(Output output, SimpleFeatureRenderPhase.FeatureSubmits<Submit> submits) {
          output.acceptFeatureGroup(submits.featureType, maybeShuffle(submits.unbatched), false);
  
          for (List<Submit> batch : maybeShuffle(submits.batches.values())) {
@@ -49,7 +49,7 @@
      }
  
 -    private static <V> Collection<V> maybeShuffle(final Collection<V> collection) {
-+   private static <V> Collection<V> maybeShuffle(Collection<V> collection) {
++    private static <V> Collection<V> maybeShuffle(Collection<V> collection) {
          if (SharedConstants.DEBUG_SHUFFLE_MODELS) {
              List<V> shuffled = new ArrayList<>(collection);
              Collections.shuffle(shuffled);
@@ -58,7 +58,7 @@
      }
  
 -    private static <V> V[] maybeShuffle(final V[] array) {
-+   private static <V> V[] maybeShuffle(V[] array) {
++    private static <V> V[] maybeShuffle(V[] array) {
          if (SharedConstants.DEBUG_SHUFFLE_MODELS) {
              V[] shuffled = Arrays.copyOf(array, array.length);
              ArrayUtils.shuffle(shuffled);
@@ -67,9 +67,9 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public int size() {
-+      return this.submitsByFeature.length;
-+   }
++    public int size() {
++        return this.submitsByFeature.length;
++    }
 +
      private static class FeatureSubmits<Submit extends SubmitNode> {
          private final FeatureRendererType<Submit> featureType;
@@ -77,17 +77,17 @@
          private final Map<Object, List<Submit>> batches = new HashMap<>();
  
 -        private FeatureSubmits(final FeatureRendererType<Submit> featureType) {
-+      private FeatureSubmits(FeatureRendererType<Submit> featureType) {
++        private FeatureSubmits(FeatureRendererType<Submit> featureType) {
              this.featureType = featureType;
          }
  
 -        public void addUnchecked(final SubmitNode submit) {
-+      public void addUnchecked(SubmitNode submit) {
++        public void addUnchecked(SubmitNode submit) {
              this.add((Submit)submit);
          }
  
 -        public void add(final Submit submit) {
-+      public void add(Submit submit) {
++        public void add(Submit submit) {
              Object key = batchKey(submit);
              if (key == null) {
                  this.unbatched.add(submit);
@@ -96,7 +96,7 @@
          }
  
 -        private static @Nullable Object batchKey(final SubmitNode submit) {
-+      private static Object batchKey(SubmitNode submit) {
++        private static Object batchKey(SubmitNode submit) {
              return submit instanceof BatchableSubmit batchable ? batchable.batchKey() : null;
          }
  

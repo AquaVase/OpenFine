@@ -18,29 +18,29 @@
      private static final int SUBSEQUENT_LINES_INDENT = 10;
      private final Font font;
 -    private @Nullable ProfileResults profilerPieChartResults;
-+   private ProfileResults profilerPieChartResults;
++    private ProfileResults profilerPieChartResults;
      private String profilerTreePath = "root";
      private int bottomOffset = 0;
-+   private int lastPosY = 0;
-+   private String lastRoot = "";
++    private int lastPosY = 0;
++    private String lastRoot = "";
  
 -    public ProfilerPieChart(final Font font) {
-+   public ProfilerPieChart(Font font) {
++    public ProfilerPieChart(Font font) {
          this.font = font;
      }
  
 -    public void setPieChartResults(final @Nullable ProfileResults results) {
-+   public void setPieChartResults(ProfileResults results) {
++    public void setPieChartResults(ProfileResults results) {
          this.profilerPieChartResults = results;
      }
  
 -    public void setBottomOffset(final int bottomOffset) {
-+   public void setBottomOffset(int bottomOffset) {
++    public void setBottomOffset(int bottomOffset) {
          this.bottomOffset = bottomOffset;
      }
  
 -    public void extractRenderState(final GuiGraphicsExtractor graphics) {
-+   public void extractRenderState(GuiGraphicsExtractor graphics) {
++    public void extractRenderState(GuiGraphicsExtractor graphics) {
          if (this.profilerPieChartResults != null) {
              List<ResultField> list = this.profilerPieChartResults.getTimes(this.profilerTreePath);
              ResultField currentNode = list.removeFirst();
@@ -48,13 +48,13 @@
              int left = chartCenterX - 130;
              int right = chartCenterX + 130;
              int textUnderChartHeight = list.size() * 9;
-+         if (!Config.equals(this.lastRoot, currentNode.name)) {
-+            this.lastRoot = currentNode.name;
-+            this.lastPosY = 0;
-+         }
++            if (!Config.equals(this.lastRoot, currentNode.name)) {
++                this.lastRoot = currentNode.name;
++                this.lastPosY = 0;
++            }
 +
-+         this.lastPosY = Math.max(this.lastPosY, textUnderChartHeight);
-+         textUnderChartHeight = this.lastPosY;
++            this.lastPosY = Math.max(this.lastPosY, textUnderChartHeight);
++            textUnderChartHeight = this.lastPosY;
              int bottom = graphics.guiHeight() - this.bottomOffset - 5;
              int textStartY = bottom - textUnderChartHeight;
              int chartHalfSizeY = 62;
@@ -63,7 +63,7 @@
      }
  
 -    private List<String> splitNodeName(final String nodeName, final int firstLineMaxWidth, final int maxWidth) {
-+   private List<String> splitNodeName(String nodeName, int firstLineMaxWidth, int maxWidth) {
++    private List<String> splitNodeName(String nodeName, int firstLineMaxWidth, int maxWidth) {
          String[] nodeNameSplit = nodeName.split("\\.");
          List<String> lines = new ArrayList<>();
          String currentLine = "";

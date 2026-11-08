@@ -9,6 +9,6 @@
 +import net.minecraft.resources.Identifier;
 +
 +public record ForgeBlockModelData(
-+   Optional<Transformation> transform, Optional<Identifier> renderType, Optional<Identifier> renderTypeFast, Optional<Map<String, Boolean>> visibility
++    Optional<Transformation> transform, Optional<Identifier> renderType, Optional<Identifier> renderTypeFast, Optional<Map<String, Boolean>> visibility
 +) {
 +}

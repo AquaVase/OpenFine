@@ -6,15 +6,15 @@
 +import net.minecraftforge.eventbus.api.event.MutableEvent;
 +
 +public class ComputeFovModifierEvent extends MutableEvent {
-+   public float getFovModifier() {
-+      throw new UnsupportedOperationException();
-+   }
++    public float getFovModifier() {
++        throw new UnsupportedOperationException();
++    }
 +
-+   public float getScale() {
-+      throw new UnsupportedOperationException();
-+   }
++    public float getScale() {
++        throw new UnsupportedOperationException();
++    }
 +
-+   public float getNewFovModifier() {
-+      throw new UnsupportedOperationException();
-+   }
++    public float getNewFovModifier() {
++        throw new UnsupportedOperationException();
++    }
 +}

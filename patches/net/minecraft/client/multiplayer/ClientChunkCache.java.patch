@@ -32,7 +32,7 @@
      private final ClientLevel level;
  
 -    public ClientChunkCache(final ClientLevel level, final int serverChunkRadius) {
-+   public ClientChunkCache(ClientLevel level, int serverChunkRadius) {
++    public ClientChunkCache(ClientLevel level, int serverChunkRadius) {
          this.level = level;
          this.emptyChunk = new EmptyLevelChunk(level, new ChunkPos(0, 0), level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS));
          this.lightEngine = new LevelLightEngine(this, true, level.dimensionType().hasSkyLight());
@@ -41,7 +41,7 @@
      }
  
 -    private static boolean isValidChunk(final @Nullable LevelChunk chunk, final int x, final int z) {
-+   private static boolean isValidChunk(LevelChunk chunk, int x, int z) {
++    private static boolean isValidChunk(LevelChunk chunk, int x, int z) {
          if (chunk == null) {
              return false;
          }
@@ -50,23 +50,23 @@
      }
  
 -    public void drop(final ChunkPos pos) {
-+   public void drop(ChunkPos pos) {
++    public void drop(ChunkPos pos) {
          if (this.storage.inRange(pos.x(), pos.z())) {
              int index = this.storage.getIndex(pos.x(), pos.z());
              LevelChunk currentChunk = this.storage.getChunk(index);
              if (isValidChunk(currentChunk, pos.x(), pos.z())) {
-+            if (Reflector.ChunkEvent_Unload_Constructor.exists()) {
-+               Reflector.postForgeBusEvent(Reflector.ChunkEvent_Unload_BUS, Reflector.ChunkEvent_Unload_Constructor, currentChunk);
-+            }
++                if (Reflector.ChunkEvent_Unload_Constructor.exists()) {
++                    Reflector.postForgeBusEvent(Reflector.ChunkEvent_Unload_BUS, Reflector.ChunkEvent_Unload_Constructor, currentChunk);
++                }
 +
-+            currentChunk.setLoaded(false);
++                currentChunk.setLoaded(false);
                  this.storage.drop(index, currentChunk);
              }
          }
      }
  
 -    public @Nullable LevelChunk getChunk(final int x, final int z, final ChunkStatus targetStatus, final boolean loadOrGenerate) {
-+   public LevelChunk getChunk(int x, int z, ChunkStatus targetStatus, boolean loadOrGenerate) {
++    public LevelChunk getChunk(int x, int z, ChunkStatus targetStatus, boolean loadOrGenerate) {
          if (this.storage.inRange(x, z)) {
              LevelChunk chunk = this.storage.getChunk(this.storage.getIndex(x, z));
              if (isValidChunk(chunk, x, z)) {
@@ -75,7 +75,7 @@
      }
  
 -    public void replaceBiomes(final int chunkX, final int chunkZ, final FriendlyByteBuf readBuffer) {
-+   public void replaceBiomes(int chunkX, int chunkZ, FriendlyByteBuf readBuffer) {
++    public void replaceBiomes(int chunkX, int chunkZ, FriendlyByteBuf readBuffer) {
          if (!this.storage.inRange(chunkX, chunkZ)) {
              LOGGER.warn("Ignoring chunk since it's not in the view range: {}, {}", chunkX, chunkZ);
          } else {
@@ -89,8 +89,8 @@
 -        final FriendlyByteBuf readBuffer,
 -        final Map<Heightmap.Types, long[]> heightmaps,
 -        final Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> blockEntities
-+   public LevelChunk replaceWithPacketData(
-+      int chunkX, int chunkZ, FriendlyByteBuf readBuffer, Map<Types, long[]> heightmaps, Consumer<BlockEntityTagOutput> blockEntities
++    public LevelChunk replaceWithPacketData(
++        int chunkX, int chunkZ, FriendlyByteBuf readBuffer, Map<Types, long[]> heightmaps, Consumer<BlockEntityTagOutput> blockEntities
      ) {
          if (!this.storage.inRange(chunkX, chunkZ)) {
              LOGGER.warn("Ignoring chunk since it's not in the view range: {}, {}", chunkX, chunkZ);
@@ -99,11 +99,11 @@
          ChunkPos pos = new ChunkPos(chunkX, chunkZ);
          if (!isValidChunk(chunk, chunkX, chunkZ)) {
 -            chunk = new LevelChunk(this.level, pos);
-+         if (chunk != null) {
-+            chunk.setLoaded(false);
-+         }
++            if (chunk != null) {
++                chunk.setLoaded(false);
++            }
 +
-+         chunk = new ChunkOF(this.level, pos);
++            chunk = new ChunkOF(this.level, pos);
              chunk.replaceWithPacketData(readBuffer, heightmaps, blockEntities);
              this.storage.replace(index, chunk);
          } else {
@@ -111,27 +111,27 @@
          }
  
          this.level.onChunkLoaded(pos);
-+      if (Reflector.ChunkEvent_Load_Constructor.exists()) {
-+         Reflector.postForgeBusEvent(Reflector.ChunkEvent_Load_BUS, Reflector.ChunkEvent_Load_Constructor, chunk, false);
-+      }
++        if (Reflector.ChunkEvent_Load_Constructor.exists()) {
++            Reflector.postForgeBusEvent(Reflector.ChunkEvent_Load_BUS, Reflector.ChunkEvent_Load_Constructor, chunk, false);
++        }
 +
-+      chunk.setLoaded(true);
++        chunk.setLoaded(true);
          return chunk;
      }
  
      @Override
 -    public void tick(final BooleanSupplier haveTime, final boolean tickChunks) {
-+   public void tick(BooleanSupplier haveTime, boolean tickChunks) {
++    public void tick(BooleanSupplier haveTime, boolean tickChunks) {
      }
  
 -    public void updateViewCenter(final int x, final int z) {
-+   public void updateViewCenter(int x, int z) {
++    public void updateViewCenter(int x, int z) {
          this.storage.viewCenterX = x;
          this.storage.viewCenterZ = z;
      }
  
 -    public void updateViewRadius(final int viewRange) {
-+   public void updateViewRadius(int viewRange) {
++    public void updateViewRadius(int viewRange) {
          int chunkRadius = this.storage.chunkRadius;
          int newChunkRadius = calculateStorageRange(viewRange);
          if (chunkRadius != newChunkRadius) {
@@ -140,7 +140,7 @@
      }
  
 -    private static int calculateStorageRange(final int viewRange) {
-+   private static int calculateStorageRange(int viewRange) {
++    private static int calculateStorageRange(int viewRange) {
          return Math.max(2, viewRange) + 3;
      }
  
@@ -149,7 +149,7 @@
  
      @Override
 -    public void onLightUpdate(final LightLayer layer, final SectionPos pos) {
-+   public void onLightUpdate(LightLayer layer, SectionPos pos) {
++    public void onLightUpdate(LightLayer layer, SectionPos pos) {
          Minecraft.getInstance().levelExtractor.setSectionDirty(pos.x(), pos.y(), pos.z());
      }
  
@@ -158,7 +158,7 @@
  
      @Override
 -    public void onSectionEmptinessChanged(final int sectionX, final int sectionY, final int sectionZ, final boolean empty) {
-+   public void onSectionEmptinessChanged(int sectionX, int sectionY, int sectionZ, boolean empty) {
++    public void onSectionEmptinessChanged(int sectionX, int sectionY, int sectionZ, boolean empty) {
          this.storage.onSectionEmptinessChanged(sectionX, sectionY, sectionZ, empty);
      }
  
@@ -166,7 +166,7 @@
      private final class Storage {
          private static final int UPDATE_TRACKING_BUFFERS = 2;
 -        private final AtomicReferenceArray<@Nullable LevelChunk> chunks;
-+      private final AtomicReferenceArray<LevelChunk> chunks;
++        private final AtomicReferenceArray<LevelChunk> chunks;
          private final LongOpenHashSet[] addedEmptySections = new LongOpenHashSet[2];
          private final LongOpenHashSet[] removedEmptySections = new LongOpenHashSet[2];
          private final LongOpenHashSet[] addedLoadedChunks = new LongOpenHashSet[2];
@@ -175,7 +175,7 @@
          private int chunkCount;
  
 -        private Storage(final int chunkRadius) {
-+      private Storage(int chunkRadius) {
++        private Storage(int chunkRadius) {
              this.chunkRadius = chunkRadius;
              this.viewRange = chunkRadius * 2 + 1;
              this.chunks = new AtomicReferenceArray<>(this.viewRange * this.viewRange);
@@ -184,12 +184,12 @@
          }
  
 -        private int getIndex(final int chunkX, final int chunkZ) {
-+      private int getIndex(int chunkX, int chunkZ) {
++        private int getIndex(int chunkX, int chunkZ) {
              return Math.floorMod(chunkZ, this.viewRange) * this.viewRange + Math.floorMod(chunkX, this.viewRange);
          }
  
 -        private void replace(final int index, final @Nullable LevelChunk newChunk) {
-+      private void replace(int index, LevelChunk newChunk) {
++        private void replace(int index, LevelChunk newChunk) {
              LevelChunk removedChunk = this.chunks.getAndSet(index, newChunk);
              if (removedChunk != null) {
                  this.chunkCount--;
@@ -198,7 +198,7 @@
          }
  
 -        private void drop(final int index, final LevelChunk oldChunk) {
-+      private void drop(int index, LevelChunk oldChunk) {
++        private void drop(int index, LevelChunk oldChunk) {
              if (this.chunks.compareAndSet(index, oldChunk, null)) {
                  this.chunkCount--;
                  this.onChunkRemoved(oldChunk);
@@ -207,7 +207,7 @@
          }
  
 -        public void onSectionEmptinessChanged(final int sectionX, final int sectionY, final int sectionZ, final boolean empty) {
-+      public void onSectionEmptinessChanged(int sectionX, int sectionY, int sectionZ, boolean empty) {
++        public void onSectionEmptinessChanged(int sectionX, int sectionY, int sectionZ, boolean empty) {
              if (this.inRange(sectionX, sectionZ)) {
                  long sectionNode = SectionPos.asLong(sectionX, sectionY, sectionZ);
                  if (empty) {
@@ -216,7 +216,7 @@
          }
  
 -        private void onChunkRemoved(final LevelChunk chunk) {
-+      private void onChunkRemoved(LevelChunk chunk) {
++        private void onChunkRemoved(LevelChunk chunk) {
              ChunkPos chunkPos = chunk.getPos();
              this.removedLoadedChunks[this.updatingSetsIndex].add(chunkPos.pack());
              LevelChunkSection[] sections = chunk.getSections();
@@ -225,7 +225,7 @@
          }
  
 -        private void onChunkAdded(final LevelChunk chunk) {
-+      private void onChunkAdded(LevelChunk chunk) {
++        private void onChunkAdded(LevelChunk chunk) {
              ChunkPos chunkPos = chunk.getPos();
              this.addedLoadedChunks[this.updatingSetsIndex].add(chunkPos.pack());
              LevelChunkSection[] sections = chunk.getSections();
@@ -234,7 +234,7 @@
          }
  
 -        private void refreshEmptySections(final LevelChunk chunk) {
-+      private void refreshEmptySections(LevelChunk chunk) {
++        private void refreshEmptySections(LevelChunk chunk) {
              ChunkPos chunkPos = chunk.getPos();
              LevelChunkSection[] sections = chunk.getSections();
  
@@ -243,17 +243,17 @@
          }
  
 -        private boolean inRange(final int chunkX, final int chunkZ) {
-+      private boolean inRange(int chunkX, int chunkZ) {
++        private boolean inRange(int chunkX, int chunkZ) {
              return Math.abs(chunkX - this.viewCenterX) <= this.chunkRadius && Math.abs(chunkZ - this.viewCenterZ) <= this.chunkRadius;
          }
  
 -        public @Nullable LevelChunk getChunk(final int index) {
-+      public LevelChunk getChunk(int index) {
++        public LevelChunk getChunk(int index) {
              return this.chunks.get(index);
          }
  
 -        private void dumpChunks(final String file) {
-+      private void dumpChunks(String file) {
++        private void dumpChunks(String file) {
              try (FileOutputStream stream = new FileOutputStream(file)) {
                  int chunkRadius = ClientChunkCache.this.storage.chunkRadius;
  

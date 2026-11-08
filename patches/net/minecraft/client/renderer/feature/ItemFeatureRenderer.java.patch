@@ -25,11 +25,11 @@
      private static final float SPECIAL_FOIL_TEXTURE_SCALE = 0.0078125F;
      public static final int NO_TINT = -1;
      private final QuadInstance quadInstance = new QuadInstance();
-+   private static boolean renderItemGui = false;
++    private static boolean renderItemGui = false;
  
      @Override
 -    protected void buildGroup(final FeatureFrameContext context, final List<ItemFeatureRenderer.Submit> submits) {
-+   protected void buildGroup(FeatureFrameContext context, List<ItemFeatureRenderer.Submit> submits) {
++    protected void buildGroup(FeatureFrameContext context, List<ItemFeatureRenderer.Submit> submits) {
          for (ItemFeatureRenderer.Submit submit : submits) {
              this.prepareSubmit(submit, false);
          }
@@ -38,7 +38,7 @@
      }
  
 -    private void prepareSubmit(final ItemFeatureRenderer.Submit submit, final boolean foil) {
-+   private void prepareSubmit(ItemFeatureRenderer.Submit submit, boolean foil) {
++    private void prepareSubmit(ItemFeatureRenderer.Submit submit, boolean foil) {
          if (foil) {
              this.prepareFoilSubmit(submit);
          } else if (submit.outlineColor() != 0) {
@@ -47,46 +47,46 @@
      }
  
 -    private void prepareMainSubmit(final ItemFeatureRenderer.Submit submit) {
-+   private void prepareMainSubmit(ItemFeatureRenderer.Submit submit) {
-+      setRenderItemGui(submit.displayContext() == ItemDisplayContext.GUI);
-+      if (EmissiveTextures.isActive()) {
-+         EmissiveTextures.beginRender();
-+      }
++    private void prepareMainSubmit(ItemFeatureRenderer.Submit submit) {
++        setRenderItemGui(submit.displayContext() == ItemDisplayContext.GUI);
++        if (EmissiveTextures.isActive()) {
++            EmissiveTextures.beginRender();
++        }
 +
-+      this.prepareMainSubmitImpl(submit);
-+      if (EmissiveTextures.isActive()) {
-+         if (EmissiveTextures.hasEmissive()) {
-+            EmissiveTextures.beginRenderEmissive();
-+            this.prepareMainSubmitImpl(submit);
-+            EmissiveTextures.endRenderEmissive();
-+         }
++        this.prepareMainSubmitImpl(submit);
++        if (EmissiveTextures.isActive()) {
++            if (EmissiveTextures.hasEmissive()) {
++                EmissiveTextures.beginRenderEmissive();
++                this.prepareMainSubmitImpl(submit);
++                EmissiveTextures.endRenderEmissive();
++            }
 +
-+         EmissiveTextures.endRender();
-+      }
++            EmissiveTextures.endRender();
++        }
 +
-+      setRenderItemGui(false);
-+   }
++        setRenderItemGui(false);
++    }
 +
-+   private void prepareMainSubmitImpl(ItemFeatureRenderer.Submit submit) {
++    private void prepareMainSubmitImpl(ItemFeatureRenderer.Submit submit) {
          this.quadInstance.setLightCoords(submit.lightCoords());
          this.quadInstance.setOverlayCoords(submit.overlayCoords());
-+      if (EmissiveTextures.isRenderEmissive()) {
-+         this.quadInstance.setLightCoords(Lightmap.MAX_BRIGHTNESS);
-+      }
++        if (EmissiveTextures.isRenderEmissive()) {
++            this.quadInstance.setLightCoords(Lightmap.MAX_BRIGHTNESS);
++        }
  
 -        for (BakedQuad quad : submit.quads()) {
-+      boolean emissiveActive = EmissiveTextures.isActive();
-+      List<BakedQuad> quads = submit.quads();
-+      int listSize = quads.size();
++        boolean emissiveActive = EmissiveTextures.isActive();
++        List<BakedQuad> quads = submit.quads();
++        int listSize = quads.size();
 +
-+      for (int ix = 0; ix < listSize; ix++) {
-+         BakedQuad quad = quads.get(ix);
-+         if (emissiveActive) {
-+            quad = EmissiveTextures.getEmissiveQuad(quad);
-+            if (quad == null) {
-+               continue;
++        for (int ix = 0; ix < listSize; ix++) {
++            BakedQuad quad = quads.get(ix);
++            if (emissiveActive) {
++                quad = EmissiveTextures.getEmissiveQuad(quad);
++                if (quad == null) {
++                    continue;
++                }
 +            }
-+         }
 +
              BakedQuad.MaterialInfo material = quad.materialInfo();
              RenderType renderType = material.itemRenderType();
@@ -96,7 +96,7 @@
      }
  
 -    private void prepareOutlineSubmit(final ItemFeatureRenderer.Submit submit) {
-+   private void prepareOutlineSubmit(ItemFeatureRenderer.Submit submit) {
++    private void prepareOutlineSubmit(ItemFeatureRenderer.Submit submit) {
          for (BakedQuad quad : submit.quads()) {
              BakedQuad.MaterialInfo material = quad.materialInfo();
              RenderType renderType = material.itemRenderType().outline().orElse(null);
@@ -105,13 +105,13 @@
      }
  
 -    private void prepareFoilSubmit(final ItemFeatureRenderer.Submit submit) {
-+   private void prepareFoilSubmit(ItemFeatureRenderer.Submit submit) {
++    private void prepareFoilSubmit(ItemFeatureRenderer.Submit submit) {
          ItemStackRenderState.FoilType foilType = submit.foilType();
          if (foilType != ItemStackRenderState.FoilType.NONE) {
 -            PoseStack.Pose foilDecalPose = foilType == ItemStackRenderState.FoilType.SPECIAL
 -                ? computeFoilDecalPose(submit.displayContext(), submit.pose())
 -                : null;
-+         PoseStack.Pose foilDecalPose = foilType == ItemStackRenderState.FoilType.SPECIAL ? computeFoilDecalPose(submit.displayContext(), submit.pose()) : null;
++            PoseStack.Pose foilDecalPose = foilType == ItemStackRenderState.FoilType.SPECIAL ? computeFoilDecalPose(submit.displayContext(), submit.pose()) : null;
  
              for (BakedQuad quad : submit.quads()) {
                  VertexConsumer foilBuffer = this.getFoilBuffer(quad.materialInfo().itemRenderType(), foilDecalPose);
@@ -120,7 +120,7 @@
      }
  
 -    private VertexConsumer getFoilBuffer(final RenderType renderType, final PoseStack.@Nullable Pose foilDecalPose) {
-+   private VertexConsumer getFoilBuffer(RenderType renderType, PoseStack.Pose foilDecalPose) {
++    private VertexConsumer getFoilBuffer(RenderType renderType, PoseStack.Pose foilDecalPose) {
          RenderType foilRenderType = useTransparentGlint(renderType) ? RenderTypes.glintTranslucent() : RenderTypes.glint();
          VertexConsumer foilBuffer = this.getVertexBuilder(foilRenderType);
          if (foilDecalPose != null) {
@@ -129,7 +129,7 @@
      }
  
 -    private static PoseStack.Pose computeFoilDecalPose(final ItemDisplayContext type, final PoseStack.Pose pose) {
-+   private static PoseStack.Pose computeFoilDecalPose(ItemDisplayContext type, PoseStack.Pose pose) {
++    private static PoseStack.Pose computeFoilDecalPose(ItemDisplayContext type, PoseStack.Pose pose) {
          PoseStack.Pose foilDecalPose = pose.copy();
          if (type == ItemDisplayContext.GUI) {
              MatrixUtil.mulComponentWise(foilDecalPose.pose(), 0.5F);
@@ -138,28 +138,28 @@
      }
  
 -    private static boolean useTransparentGlint(final RenderType renderType) {
-+   private static boolean useTransparentGlint(RenderType renderType) {
++    private static boolean useTransparentGlint(RenderType renderType) {
          return Minecraft.getInstance().gameRenderer.gameRenderState().useShaderTransparency() && renderType.outputTarget() == OutputTarget.ITEM_ENTITY_TARGET;
      }
  
 -    private static int getLayerColorSafe(final int[] layers, final int layer) {
-+   private static int getLayerColorSafe(int[] layers, int layer) {
++    private static int getLayerColorSafe(int[] layers, int layer) {
          return layer >= 0 && layer < layers.length ? layers[layer] : -1;
      }
  
 -    private static int getLayerColorSafe(final int[] tintLayers, final BakedQuad.MaterialInfo material) {
-+   private static int getLayerColorSafe(int[] tintLayers, BakedQuad.MaterialInfo material) {
++    private static int getLayerColorSafe(int[] tintLayers, BakedQuad.MaterialInfo material) {
          return material.isTinted() ? getLayerColorSafe(tintLayers, material.tintIndex()) : -1;
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public static boolean isRenderItemGui() {
-+      return renderItemGui;
-+   }
++    public static boolean isRenderItemGui() {
++        return renderItemGui;
++    }
 +
-+   public static void setRenderItemGui(boolean renderItemGui) {
-+      ItemFeatureRenderer.renderItemGui = renderItemGui;
-+   }
++    public static void setRenderItemGui(boolean renderItemGui) {
++        ItemFeatureRenderer.renderItemGui = renderItemGui;
++    }
 +
      public record Submit(
          PoseStack.Pose pose,

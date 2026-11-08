@@ -7,22 +7,22 @@ import net.minecraft.client.renderer.texture.atlas.SpriteSource.Output;
 import net.minecraft.resources.Identifier;
 
 public class SpriteSourceCollector implements Output {
-   private Set<Identifier> spriteNames;
+    private Set<Identifier> spriteNames;
 
-   public SpriteSourceCollector(Set<Identifier> spriteNames) {
-      this.spriteNames = spriteNames;
-   }
+    public SpriteSourceCollector(Set<Identifier> spriteNames) {
+        this.spriteNames = spriteNames;
+    }
 
-   @Override
-   public void add(Identifier locIn, DiscardableLoader supplierIn) {
-      this.spriteNames.add(locIn);
-   }
+    @Override
+    public void add(Identifier locIn, DiscardableLoader supplierIn) {
+        this.spriteNames.add(locIn);
+    }
 
-   @Override
-   public void removeAll(Predicate<Identifier> checkIn) {
-   }
+    @Override
+    public void removeAll(Predicate<Identifier> checkIn) {
+    }
 
-   public Set<Identifier> getSpriteNames() {
-      return this.spriteNames;
-   }
+    public Set<Identifier> getSpriteNames() {
+        return this.spriteNames;
+    }
 }

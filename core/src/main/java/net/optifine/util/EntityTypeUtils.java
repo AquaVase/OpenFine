@@ -5,7 +5,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
 
 public class EntityTypeUtils {
-   public static EntityType getEntityType(Identifier loc) {
-      return !BuiltInRegistries.ENTITY_TYPE.containsKey(loc) ? null : BuiltInRegistries.ENTITY_TYPE.getValue(loc);
-   }
+    public static EntityType getEntityType(Identifier loc) {
+        return !BuiltInRegistries.ENTITY_TYPE.containsKey(loc) ? null : BuiltInRegistries.ENTITY_TYPE.getValue(loc);
+    }
 }

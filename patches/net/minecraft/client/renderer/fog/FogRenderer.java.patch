@@ -24,7 +24,7 @@
      private static boolean fogEnabled = true;
      private final GpuBuffer emptyBuffer;
      private final MappableRingBuffer regularBuffer;
-+   private FogParameters lastFogParams;
++    private FogParameters lastFogParams;
  
      public FogRenderer() {
          GpuDevice device = RenderSystem.getDevice();
@@ -35,7 +35,7 @@
 -            this.updateBuffer(
 -                buffer, 0, new Vector4f(0.0F), Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE
 -            );
-+         this.updateBuffer(buffer, 0, new Vector4f(0.0F), Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
++            this.updateBuffer(buffer, 0, new Vector4f(0.0F), Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
              this.emptyBuffer = device.createBuffer(() -> "Empty fog", 128, buffer.flip());
          }
  
@@ -44,7 +44,7 @@
      }
  
 -    public GpuBufferSlice getBuffer(final FogRenderer.FogMode mode) {
-+   public GpuBufferSlice getBuffer(FogRenderer.FogMode mode) {
++    public GpuBufferSlice getBuffer(FogRenderer.FogMode mode) {
          if (!fogEnabled) {
              return this.emptyBuffer.slice(0L, FOG_UBO_SIZE);
          }
@@ -52,103 +52,102 @@
          return switch (mode) {
              case NONE -> this.emptyBuffer.slice(0L, FOG_UBO_SIZE);
 -            case WORLD -> this.regularBuffer.currentBuffer().slice(0L, FOG_UBO_SIZE);
-+         case WORLD -> this.regularBuffer.currentBuffer().slice(0L, FOG_UBO_SIZE, this.lastFogParams);
++            case WORLD -> this.regularBuffer.currentBuffer().slice(0L, FOG_UBO_SIZE, this.lastFogParams);
          };
      }
  
 -    private void computeFogColor(
 -        final Camera camera, final float partialTicks, final ClientLevel level, final int renderDistance, final float darkenWorldAmount, final Vector4f dest
 -    ) {
-+   private void computeFogColor(Camera camera, float partialTicks, ClientLevel level, int renderDistance, float darkenWorldAmount, Vector4f dest) {
++    private void computeFogColor(Camera camera, float partialTicks, ClientLevel level, int renderDistance, float darkenWorldAmount, Vector4f dest) {
          FogType fogType = this.getFogType(camera);
          Entity entity = camera.entity();
          FogEnvironment colorSourceEnvironment = null;
-@@ -139,9 +140,9 @@
+@@ -139,9 +140,8 @@
              } else {
                  brightenFactor = 1.0F;
              }
 -        } else if (entity instanceof LivingEntity livingEntity
 -            && livingEntity.hasEffect(MobEffects.NIGHT_VISION)
 -            && !livingEntity.hasEffect(MobEffects.DARKNESS)) {
-+      } else if (entity instanceof LivingEntity livingEntity && livingEntity.hasEffect(MobEffects.NIGHT_VISION) && !livingEntity.hasEffect(MobEffects.DARKNESS)
-+         )
-+       {
++        } else if (entity instanceof LivingEntity livingEntity && livingEntity.hasEffect(MobEffects.NIGHT_VISION) && !livingEntity.hasEffect(MobEffects.DARKNESS)
++        ) {
              brightenFactor = GameRenderer.nightVisionScale(livingEntity, partialTicks);
          } else {
              brightenFactor = 0.0F;
-@@ -159,6 +160,33 @@
+@@ -159,6 +159,33 @@
              fogBlue = Mth.lerp(brightenFactor, fogBlue, fogBlue * scale);
          }
  
-+      if (fogType == FogType.WATER) {
-+         Entity renderViewEntity = camera.entity();
-+         Vec3 colUnderwater = CustomColors.getUnderwaterColor(level, renderViewEntity.getX(), renderViewEntity.getY() + 1.0, renderViewEntity.getZ());
-+         if (colUnderwater != null) {
-+            fogRed = (float)colUnderwater.x;
-+            fogGreen = (float)colUnderwater.y;
-+            fogBlue = (float)colUnderwater.z;
-+         }
-+      } else if (fogType == FogType.LAVA) {
-+         Entity renderViewEntity = camera.entity();
-+         Vec3 colUnderlava = CustomColors.getUnderlavaColor(level, renderViewEntity.getX(), renderViewEntity.getY() + 1.0, renderViewEntity.getZ());
-+         if (colUnderlava != null) {
-+            fogRed = (float)colUnderlava.x;
-+            fogGreen = (float)colUnderlava.y;
-+            fogBlue = (float)colUnderlava.z;
-+         }
-+      }
++        if (fogType == FogType.WATER) {
++            Entity renderViewEntity = camera.entity();
++            Vec3 colUnderwater = CustomColors.getUnderwaterColor(level, renderViewEntity.getX(), renderViewEntity.getY() + 1.0, renderViewEntity.getZ());
++            if (colUnderwater != null) {
++                fogRed = (float)colUnderwater.x;
++                fogGreen = (float)colUnderwater.y;
++                fogBlue = (float)colUnderwater.z;
++            }
++        } else if (fogType == FogType.LAVA) {
++            Entity renderViewEntity = camera.entity();
++            Vec3 colUnderlava = CustomColors.getUnderlavaColor(level, renderViewEntity.getX(), renderViewEntity.getY() + 1.0, renderViewEntity.getZ());
++            if (colUnderlava != null) {
++                fogRed = (float)colUnderlava.x;
++                fogGreen = (float)colUnderlava.y;
++                fogBlue = (float)colUnderlava.z;
++            }
++        }
 +
-+      if (Reflector.ForgeHooksClient_getFogColor.exists()) {
-+         Vector3f fogColor = (Vector3f)Reflector.ForgeHooksClient_getFogColor
-+            .call(camera, partialTicks, level, renderDistance, darkenWorldAmount, fogRed, fogGreen, fogBlue);
-+         fogRed = fogColor.x();
-+         fogGreen = fogColor.y();
-+         fogBlue = fogColor.z();
-+      }
++        if (Reflector.ForgeHooksClient_getFogColor.exists()) {
++            Vector3f fogColor = (Vector3f)Reflector.ForgeHooksClient_getFogColor
++                .call(camera, partialTicks, level, renderDistance, darkenWorldAmount, fogRed, fogGreen, fogBlue);
++            fogRed = fogColor.x();
++            fogGreen = fogColor.y();
++            fogBlue = fogColor.z();
++        }
 +
-+      Shaders.setClearColor(fogRed, fogGreen, fogBlue, 0.0F);
++        Shaders.setClearColor(fogRed, fogGreen, fogBlue, 0.0F);
          dest.set(fogRed, fogGreen, fogBlue, 1.0F);
      }
  
-@@ -166,9 +194,7 @@
+@@ -166,9 +193,7 @@
          return fogEnabled = !fogEnabled;
      }
  
 -    public FogData setupFog(
 -        final Camera camera, final int renderDistanceInChunks, final DeltaTracker deltaTracker, final float darkenWorldAmount, final ClientLevel level
 -    ) {
-+   public FogData setupFog(Camera camera, int renderDistanceInChunks, DeltaTracker deltaTracker, float darkenWorldAmount, ClientLevel level) {
++    public FogData setupFog(Camera camera, int renderDistanceInChunks, DeltaTracker deltaTracker, float darkenWorldAmount, ClientLevel level) {
          float partialTickTime = deltaTracker.getGameTimeDeltaPartialTick(false);
          float renderDistanceInBlocks = renderDistanceInChunks * 16;
          FogType fogType = this.getFogType(camera);
-@@ -186,40 +212,51 @@
+@@ -186,40 +211,51 @@
          float renderDistanceFogSpan = Mth.clamp(renderDistanceInBlocks / 10.0F, 4.0F, 64.0F);
          fog.renderDistanceStart = renderDistanceInBlocks - renderDistanceFogSpan;
          fog.renderDistanceEnd = renderDistanceInBlocks;
-+      boolean fogStandard = false;
-+      float farPlaneDistance = renderDistanceInChunks * 16;
-+      if (fogType == FogType.ATMOSPHERIC) {
-+         fogStandard = true;
-+         fog.renderDistanceStart = farPlaneDistance * Config.getFogStart();
-+      }
++        boolean fogStandard = false;
++        float farPlaneDistance = renderDistanceInChunks * 16;
++        if (fogType == FogType.ATMOSPHERIC) {
++            fogStandard = true;
++            fog.renderDistanceStart = farPlaneDistance * Config.getFogStart();
++        }
 +
-+      if (Config.isFogOff() && fogStandard) {
-+         fog.environmentalStart = Float.MAX_VALUE;
-+         fog.environmentalEnd = Float.MAX_VALUE;
-+         fog.renderDistanceStart = Float.MAX_VALUE;
-+         fog.renderDistanceEnd = Float.MAX_VALUE;
-+      }
++        if (Config.isFogOff() && fogStandard) {
++            fog.environmentalStart = Float.MAX_VALUE;
++            fog.environmentalEnd = Float.MAX_VALUE;
++            fog.renderDistanceStart = Float.MAX_VALUE;
++            fog.renderDistanceEnd = Float.MAX_VALUE;
++        }
 +
-+      if (Reflector.ForgeHooksClient_setupFog.exists()) {
-+         fog.color = (Vector4f)Reflector.ForgeHooksClient_setupFog.call(fogType, camera, deltaTracker, fog, fog.color);
-+      }
++        if (Reflector.ForgeHooksClient_setupFog.exists()) {
++            fog.color = (Vector4f)Reflector.ForgeHooksClient_setupFog.call(fogType, camera, deltaTracker, fog, fog.color);
++        }
 +
-+      this.lastFogParams = Config.isShaders() ? new FogParameters(fog.color, fog) : null;
++        this.lastFogParams = Config.isShaders() ? new FogParameters(fog.color, fog) : null;
          return fog;
      }
  
 -    public void updateBuffer(final FogData fog) {
-+   public void updateBuffer(FogData fog) {
++    public void updateBuffer(FogData fog) {
          try (GpuBufferSlice.MappedView view = this.regularBuffer.currentBuffer().map(false, true)) {
              this.updateBuffer(
 -                view.data(),
@@ -160,13 +159,13 @@
 -                fog.renderDistanceEnd,
 -                fog.skyEnd,
 -                fog.cloudEnd
-+            view.data(), 0, fog.color, fog.environmentalStart, fog.environmentalEnd, fog.renderDistanceStart, fog.renderDistanceEnd, fog.skyEnd, fog.cloudEnd
++                view.data(), 0, fog.color, fog.environmentalStart, fog.environmentalEnd, fog.renderDistanceStart, fog.renderDistanceEnd, fog.skyEnd, fog.cloudEnd
              );
          }
      }
  
 -    private FogType getFogType(final Camera camera) {
-+   private FogType getFogType(Camera camera) {
++    private FogType getFogType(Camera camera) {
          FogType blockFogType = camera.getFluidInCamera();
          return blockFogType == FogType.NONE ? FogType.ATMOSPHERIC : blockFogType;
      }
@@ -181,31 +180,31 @@
 -        final float renderDistanceEnd,
 -        final float skyEnd,
 -        final float endClouds
-+      ByteBuffer byteBuffer,
-+      int offset,
-+      Vector4f fogColor,
-+      float environmentalStart,
-+      float environmentalEnd,
-+      float renderDistanceStart,
-+      float renderDistanceEnd,
-+      float skyEnd,
-+      float endClouds
++        ByteBuffer byteBuffer,
++        int offset,
++        Vector4f fogColor,
++        float environmentalStart,
++        float environmentalEnd,
++        float renderDistanceStart,
++        float renderDistanceEnd,
++        float skyEnd,
++        float endClouds
      ) {
          byteBuffer.position(offset);
          Std140Builder.intoBuffer(byteBuffer)
-@@ -232,9 +269,17 @@
+@@ -232,9 +268,17 @@
              .putFloat(endClouds);
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public static void setShadersFog(GpuBufferSlice sliceIn) {
-+      Object data = sliceIn.getData();
-+      if (data == null) {
-+         Shaders.setFogParameters(null, null);
-+      } else if (data instanceof FogParameters params) {
-+         Shaders.setFogParameters(params.getFogColor(), params.getFogData());
-+      }
-+   }
++    public static void setShadersFog(GpuBufferSlice sliceIn) {
++        Object data = sliceIn.getData();
++        if (data == null) {
++            Shaders.setFogParameters(null, null);
++        } else if (data instanceof FogParameters params) {
++            Shaders.setFogParameters(params.getFogColor(), params.getFogData());
++        }
++    }
 +
      public enum FogMode {
          NONE,

@@ -45,7 +45,7 @@
      private CursorType currentCursor = CursorType.DEFAULT;
      private final boolean exclusiveFullscreen;
      private final GpuBackend backend;
-+   private boolean closed;
++    private boolean closed;
  
      public Window(
 -        final WindowEventHandler eventHandler,
@@ -55,68 +55,84 @@
 -        final String title,
 -        final MonitorManager monitorManager,
 -        final GpuBackend backend
-+      WindowEventHandler eventHandler,
-+      DisplayData displayData,
-+      String fullscreenVideoModeString,
-+      boolean exclusiveFullscreen,
-+      String title,
-+      MonitorManager monitorManager,
-+      GpuBackend backend
++        WindowEventHandler eventHandler,
++        DisplayData displayData,
++        String fullscreenVideoModeString,
++        boolean exclusiveFullscreen,
++        String title,
++        MonitorManager monitorManager,
++        GpuBackend backend
      ) throws BackendCreationException {
          this.monitorManager = monitorManager;
          this.exclusiveFullscreen = exclusiveFullscreen;
-@@ -101,8 +107,37 @@
+@@ -101,20 +107,50 @@
          Monitor initialMonitor = monitorManager.getMonitor(GLFW.glfwGetPrimaryMonitor());
          this.windowedWidth = this.width = allowedWindowMinSize(displayData.width());
          this.windowedHeight = this.height = allowedWindowMinSize(displayData.height());
-+      long handleForge = 0L;
-+      if (Reflector.ImmediateWindowHandler_setupMinecraftWindow.exists()) {
-+         handleForge = Reflector.ImmediateWindowHandler_setupMinecraftWindow
-+            .callLong(
-+               (IntSupplier)() -> this.width,
-+               (IntSupplier)() -> this.height,
-+               (Supplier<String>)() -> title,
-+               (LongSupplier)() -> this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L
-+            );
-+         if (Config.isAntialiasing()) {
-+            GLFW.glfwDestroyWindow(handleForge);
-+            handleForge = 0L;
-+         }
-+      }
+-        this.handle = this.createWindow(backend, this.width, this.height, title, this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L);
+-        this.backend = backend;
+-        if (initialMonitor != null) {
+-            VideoMode mode = initialMonitor.getPreferredVidMode(this.fullscreen ? this.preferredFullscreenVideoMode : Optional.empty());
+-            this.windowedX = this.x = initialMonitor.x() + mode.getWidth() / 2 - this.width / 2;
+-            this.windowedY = this.y = initialMonitor.y() + mode.getHeight() / 2 - this.height / 2;
++        long handleForge = 0L;
++        if (Reflector.ImmediateWindowHandler_setupMinecraftWindow.exists()) {
++            handleForge = Reflector.ImmediateWindowHandler_setupMinecraftWindow
++                .callLong(
++                    (IntSupplier)() -> this.width,
++                    (IntSupplier)() -> this.height,
++                    (Supplier<String>)() -> title,
++                    (LongSupplier)() -> this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L
++                );
++            if (Config.isAntialiasing()) {
++                GLFW.glfwDestroyWindow(handleForge);
++                handleForge = 0L;
++            }
++        }
 +
-+      if (handleForge != 0L) {
-+         this.handle = handleForge;
-+      } else {
-         this.handle = this.createWindow(backend, this.width, this.height, title, this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L);
-+      }
-+
-         this.backend = backend;
-+      if (handleForge == 0L
-+         || !Reflector.ImmediateWindowHandler_positionWindow
-+            .callBoolean(
-+               Optional.ofNullable(initialMonitor),
-+               (IntConsumer)w -> this.width = this.windowedWidth = w,
-+               (IntConsumer)h -> this.height = this.windowedHeight = h,
-+               (IntConsumer)x -> this.x = this.windowedX = x,
-+               (IntConsumer)y -> this.y = this.windowedY = y
-+            )) {
-         if (initialMonitor != null) {
-             VideoMode mode = initialMonitor.getPreferredVidMode(this.fullscreen ? this.preferredFullscreenVideoMode : Optional.empty());
-             this.windowedX = this.x = initialMonitor.x() + mode.getWidth() / 2 - this.width / 2;
-@@ -114,6 +149,7 @@
-             this.windowedX = this.x = actualX[0];
-             this.windowedY = this.y = actualY[0];
++        if (handleForge != 0L) {
++            this.handle = handleForge;
+         } else {
+-            int[] actualX = new int[1];
+-            int[] actualY = new int[1];
+-            GLFW.glfwGetWindowPos(this.handle, actualX, actualY);
+-            this.windowedX = this.x = actualX[0];
+-            this.windowedY = this.y = actualY[0];
++            this.handle = this.createWindow(backend, this.width, this.height, title, this.fullscreen && initialMonitor != null ? initialMonitor.monitor() : 0L);
          }
-+      }
  
++        this.backend = backend;
++        if (handleForge == 0L
++            || !Reflector.ImmediateWindowHandler_positionWindow
++                .callBoolean(
++                    Optional.ofNullable(initialMonitor),
++                    (IntConsumer)w -> this.width = this.windowedWidth = w,
++                    (IntConsumer)h -> this.height = this.windowedHeight = h,
++                    (IntConsumer)x -> this.x = this.windowedX = x,
++                    (IntConsumer)y -> this.y = this.windowedY = y
++                )) {
++            if (initialMonitor != null) {
++                VideoMode mode = initialMonitor.getPreferredVidMode(this.fullscreen ? this.preferredFullscreenVideoMode : Optional.empty());
++                this.windowedX = this.x = initialMonitor.x() + mode.getWidth() / 2 - this.width / 2;
++                this.windowedY = this.y = initialMonitor.y() + mode.getHeight() / 2 - this.height / 2;
++            } else {
++                int[] actualX = new int[1];
++                int[] actualY = new int[1];
++                GLFW.glfwGetWindowPos(this.handle, actualX, actualY);
++                this.windowedX = this.x = actualX[0];
++                this.windowedY = this.y = actualY[0];
++            }
++        }
++
          this.setMode();
          this.refreshFramebufferSize();
+         GLFW.glfwSetFramebufferSizeCallback(this.handle, this::onFramebufferResize);
 @@ -125,7 +161,7 @@
          GLFW.glfwSetWindowIconifyCallback(this.handle, this::onIconify);
      }
  
 -    public static long createGlfwWindow(final int width, final int height, final String title, final long monitor, final GpuBackend backend) throws BackendCreationException {
-+   public static long createGlfwWindow(int width, int height, String title, long monitor, GpuBackend backend) throws BackendCreationException {
++    public static long createGlfwWindow(int width, int height, String title, long monitor, GpuBackend backend) throws BackendCreationException {
          GLFWErrorCapture glfwErrors = new GLFWErrorCapture();
  
          long windowHandle;
@@ -125,7 +141,7 @@
          }
  
 -        for (GLFWErrorCapture.Error error : glfwErrors) {
-+      for (Error error : glfwErrors) {
++        for (Error error : glfwErrors) {
              LOGGER.error("GLFW error collected during GL backend initialization: {}", error);
          }
  
@@ -133,7 +149,7 @@
      }
  
 -    private long createWindow(final GpuBackend backend, final int width, final int height, final String title, final long initialMonitor) throws BackendCreationException {
-+   private long createWindow(GpuBackend backend, int width, int height, String title, long initialMonitor) throws BackendCreationException {
++    private long createWindow(GpuBackend backend, int width, int height, String title, long initialMonitor) throws BackendCreationException {
          return createGlfwWindow(width, height, title, initialMonitor, backend);
      }
  
@@ -142,7 +158,7 @@
      }
  
 -    public static void checkGlfwError(final BiConsumer<Integer, String> errorConsumer) {
-+   public static void checkGlfwError(BiConsumer<Integer, String> errorConsumer) {
++    public static void checkGlfwError(BiConsumer<Integer, String> errorConsumer) {
          try (MemoryStack stack = MemoryStack.stackPush()) {
              PointerBuffer errorDescription = stack.mallocPointer(1);
              int errorCode = GLFW.glfwGetError(errorDescription);
@@ -151,7 +167,7 @@
      }
  
 -    public void setIcon(final PackResources resources, final IconSet iconSet) throws IOException {
-+   public void setIcon(PackResources resources, IconSet iconSet) throws IOException {
++    public void setIcon(PackResources resources, IconSet iconSet) throws IOException {
          int platform = GLX.getGlfwPlatform();
          switch (platform) {
              case 393217:
@@ -160,30 +176,30 @@
      }
  
 -    public void setErrorSection(final String string) {
-+   public void setErrorSection(String string) {
++    public void setErrorSection(String string) {
          this.errorSection = string;
-+      if (string.equals("Startup")) {
-+         TextureUtils.registerTickableTextures();
++        if (string.equals("Startup")) {
++            TextureUtils.registerTickableTextures();
++        }
++
++        if (string.equals("Render")) {
++            GpuFrameTimer.startRender();
++        }
      }
  
-+      if (string.equals("Render")) {
-+         GpuFrameTimer.startRender();
-+      }
-+   }
-+
      private void setBootErrorCallback() {
          GLFW.glfwSetErrorCallback(Window::bootCrash);
      }
  
 -    private static void bootCrash(final int error, final long description) {
-+   private static void bootCrash(int error, long description) {
++    private static void bootCrash(int error, long description) {
          String message = "GLFW error " + error + ": " + MemoryUtil.memUTF8(description);
          MessageBox.error(message + ".\n\nPlease make sure you have up-to-date drivers (see aka.ms/mcdriver for instructions).");
          throw new Window.WindowInitFailed(message);
      }
  
 -    public void defaultErrorCallback(final int errorCode, final long description) {
-+   public void defaultErrorCallback(int errorCode, long description) {
++    public void defaultErrorCallback(int errorCode, long description) {
          if (!RenderSystem.isOnRenderThread()) {
              LOGGER.error("Error callback from invalid thread ({})", Thread.currentThread().getName());
          }
@@ -192,13 +208,13 @@
              previousCallback.free();
          }
 +
-+      TextureUtils.registerResourceListener();
++        TextureUtils.registerResourceListener();
      }
  
      @Override
      public void close() {
          RenderSystem.assertOnRenderThread();
-+      this.closed = true;
++        this.closed = true;
          Callbacks.glfwFreeCallbacks(this.handle);
          GLFW.glfwSetErrorCallback(null);
          this.defaultErrorCallback.close();
@@ -206,7 +222,7 @@
      }
  
 -    private void onMove(final long handle, final int x, final int y) {
-+   private void onMove(long handle, int x, int y) {
++    private void onMove(long handle, int x, int y) {
          this.x = x;
          this.y = y;
      }
@@ -215,7 +231,7 @@
      }
  
 -    private void onFramebufferResize(final long handle, final int newWidth, final int newHeight) {
-+   private void onFramebufferResize(long handle, int newWidth, int newHeight) {
++    private void onFramebufferResize(long handle, int newWidth, int newHeight) {
          if (handle == this.handle) {
              int oldWidth = this.getWidth();
              int oldHeight = this.getHeight();
@@ -223,33 +239,33 @@
          outHeight[0] = this.isSoftScreen() ? outHeight[0] - 1 : outHeight[0];
          this.framebufferWidth = outWidth[0] > 0 ? outWidth[0] : 1;
          this.framebufferHeight = outHeight[0] > 0 ? outHeight[0] : 1;
-+      if (this.framebufferHeight == 0 || this.framebufferWidth == 0) {
-+         Reflector.ImmediateWindowHandler_updateFBSize.call((IntConsumer)w -> this.framebufferWidth = w, (IntConsumer)h -> this.framebufferHeight = h);
++        if (this.framebufferHeight == 0 || this.framebufferWidth == 0) {
++            Reflector.ImmediateWindowHandler_updateFBSize.call((IntConsumer)w -> this.framebufferWidth = w, (IntConsumer)h -> this.framebufferHeight = h);
++        }
      }
-+   }
  
 -    private void onResize(final long handle, final int newWidth, final int newHeight) {
-+   private void onResize(long handle, int newWidth, int newHeight) {
++    private void onResize(long handle, int newWidth, int newHeight) {
          this.width = newWidth;
          this.height = newHeight;
      }
  
 -    private void onFocus(final long handle, final boolean focused) {
-+   private void onFocus(long handle, boolean focused) {
++    private void onFocus(long handle, boolean focused) {
          if (handle == this.handle) {
              this.focused = focused;
          }
      }
  
 -    private void onEnter(final long handle, final boolean entered) {
-+   private void onEnter(long handle, boolean entered) {
++    private void onEnter(long handle, boolean entered) {
          if (entered) {
              this.eventHandler.cursorEntered();
          }
      }
  
 -    private void onIconify(final long handle, final boolean iconified) {
-+   private void onIconify(long handle, boolean iconified) {
++    private void onIconify(long handle, boolean iconified) {
          this.iconified = iconified;
      }
  
@@ -258,7 +274,7 @@
      }
  
 -    public void setPreferredFullscreenVideoMode(final Optional<VideoMode> preferredFullscreenVideoMode) {
-+   public void setPreferredFullscreenVideoMode(Optional<VideoMode> preferredFullscreenVideoMode) {
++    public void setPreferredFullscreenVideoMode(Optional<VideoMode> preferredFullscreenVideoMode) {
          boolean changed = !preferredFullscreenVideoMode.equals(this.preferredFullscreenVideoMode);
          this.preferredFullscreenVideoMode = preferredFullscreenVideoMode;
          if (changed) {
@@ -267,7 +283,7 @@
      }
  
 -    public void setWindowed(final int width, final int height) {
-+   public void setWindowed(int width, int height) {
++    public void setWindowed(int width, int height) {
          this.windowedWidth = allowedWindowMinSize(width);
          this.windowedHeight = allowedWindowMinSize(height);
          this.fullscreen = false;
@@ -275,7 +291,7 @@
      }
  
 -    public int calculateScale(final int maxScale, final boolean enforceUnicode) {
-+   public int calculateScale(int maxScale, boolean enforceUnicode) {
++    public int calculateScale(int maxScale, boolean enforceUnicode) {
          int scale = 1;
  
          while (
@@ -284,7 +300,7 @@
      }
  
 -    public void setGuiScale(final int guiScale) {
-+   public void setGuiScale(int guiScale) {
++    public void setGuiScale(int guiScale) {
          this.guiScale = guiScale;
          double doubleGuiScale = guiScale;
          int width = (int)(this.framebufferWidth / doubleGuiScale);
@@ -293,7 +309,7 @@
      }
  
 -    public void setTitle(final String title) {
-+   public void setTitle(String title) {
++    public void setTitle(String title) {
          GLFW.glfwSetWindowTitle(this.handle, title);
      }
  
@@ -302,12 +318,12 @@
      }
  
 -    public void setWidth(final int width) {
-+   public void setWidth(int width) {
++    public void setWidth(int width) {
          this.framebufferWidth = width;
      }
  
 -    public void setHeight(final int height) {
-+   public void setHeight(int height) {
++    public void setHeight(int height) {
          this.framebufferHeight = height;
      }
  
@@ -316,17 +332,17 @@
      }
  
 -    public @Nullable Monitor findBestMonitor() {
-+   public Monitor findBestMonitor() {
++    public Monitor findBestMonitor() {
          return this.monitorManager.findBestMonitor(this);
      }
  
 -    public void updateRawMouseInput(final boolean value) {
-+   public void updateRawMouseInput(boolean value) {
++    public void updateRawMouseInput(boolean value) {
          InputConstants.updateRawMouseInput(this, value);
      }
  
 -    public void setWindowCloseCallback(final Runnable task) {
-+   public void setWindowCloseCallback(Runnable task) {
++    public void setWindowCloseCallback(Runnable task) {
          GLFWWindowCloseCallback prev = GLFW.glfwSetWindowCloseCallback(this.handle, id -> task.run());
          if (prev != null) {
              prev.free();
@@ -335,12 +351,12 @@
      }
  
 -    public void setAllowCursorChanges(final boolean value) {
-+   public void setAllowCursorChanges(boolean value) {
++    public void setAllowCursorChanges(boolean value) {
          this.allowCursorChanges = value;
      }
  
 -    public void selectCursor(final CursorType cursor) {
-+   public void selectCursor(CursorType cursor) {
++    public void selectCursor(CursorType cursor) {
          CursorType effectiveCursor = this.allowCursorChanges ? cursor : CursorType.DEFAULT;
          if (this.currentCursor != effectiveCursor) {
              this.currentCursor = effectiveCursor;
@@ -349,22 +365,22 @@
      }
  
 -    private static int allowedWindowMinSize(final int size) {
-+   private static int allowedWindowMinSize(int size) {
++    private static int allowedWindowMinSize(int size) {
          return Math.max(size, 1);
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public void resizeFramebuffer(int width, int height) {
-+      this.onFramebufferResize(this.handle, width, height);
-+   }
++    public void resizeFramebuffer(int width, int height) {
++        this.onFramebufferResize(this.handle, width, height);
++    }
 +
-+   public boolean isClosed() {
-+      return this.closed;
-+   }
++    public boolean isClosed() {
++        return this.closed;
++    }
 +
      public static class WindowInitFailed extends SilentInitException {
 -        public WindowInitFailed(final String message) {
-+      public WindowInitFailed(String message) {
++        public WindowInitFailed(String message) {
              super(message);
          }
      }

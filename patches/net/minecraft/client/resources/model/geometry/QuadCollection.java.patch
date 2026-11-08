@@ -16,7 +16,7 @@
      private final List<BakedQuad> up;
      private final List<BakedQuad> down;
      private int materialFlags = -1;
-+   private boolean builtinGenerated;
++    private boolean builtinGenerated;
  
      private QuadCollection(
 -        final List<BakedQuad> all,
@@ -27,14 +27,14 @@
 -        final List<BakedQuad> west,
 -        final List<BakedQuad> up,
 -        final List<BakedQuad> down
-+      List<BakedQuad> all,
-+      List<BakedQuad> unculled,
-+      List<BakedQuad> north,
-+      List<BakedQuad> south,
-+      List<BakedQuad> east,
-+      List<BakedQuad> west,
-+      List<BakedQuad> up,
-+      List<BakedQuad> down
++        List<BakedQuad> all,
++        List<BakedQuad> unculled,
++        List<BakedQuad> north,
++        List<BakedQuad> south,
++        List<BakedQuad> east,
++        List<BakedQuad> west,
++        List<BakedQuad> up,
++        List<BakedQuad> down
      ) {
          this.all = all;
          this.unculled = unculled;
@@ -43,7 +43,7 @@
      }
  
 -    private static @BakedQuad.MaterialFlags int computeMaterialFlags(final List<BakedQuad> quads) {
-+   private static @BakedQuad.MaterialFlags int computeMaterialFlags(List<BakedQuad> quads) {
++    private static @BakedQuad.MaterialFlags int computeMaterialFlags(List<BakedQuad> quads) {
          int flags = 0;
  
          for (BakedQuad quad : quads) {
@@ -52,7 +52,7 @@
      }
  
 -    public List<BakedQuad> getQuads(final @Nullable Direction direction) {
-+   public List<BakedQuad> getQuads(Direction direction) {
++    public List<BakedQuad> getQuads(Direction direction) {
          return switch (direction) {
              case null -> this.unculled;
              case NORTH -> this.north;
@@ -61,37 +61,37 @@
      }
  
 -    public boolean hasMaterialFlag(final @BakedQuad.MaterialFlags int flag) {
-+   public boolean hasMaterialFlag(@BakedQuad.MaterialFlags int flag) {
++    public boolean hasMaterialFlag(@BakedQuad.MaterialFlags int flag) {
          return (this.materialFlags() & flag) != 0;
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public boolean isBuiltinGenerated() {
-+      return this.builtinGenerated;
-+   }
++    public boolean isBuiltinGenerated() {
++        return this.builtinGenerated;
++    }
 +
-+   public void setBuiltinGenerated(boolean builtinGenerated) {
-+      this.builtinGenerated = builtinGenerated;
-+   }
++    public void setBuiltinGenerated(boolean builtinGenerated) {
++        this.builtinGenerated = builtinGenerated;
++    }
 +
      public static class Builder {
          private final ImmutableList.Builder<BakedQuad> unculledFaces = ImmutableList.builder();
          private final Multimap<Direction, BakedQuad> culledFaces = ArrayListMultimap.create();
  
 -        public QuadCollection.Builder addCulledFace(final Direction direction, final BakedQuad quad) {
-+      public QuadCollection.Builder addCulledFace(Direction direction, BakedQuad quad) {
++        public QuadCollection.Builder addCulledFace(Direction direction, BakedQuad quad) {
              this.culledFaces.put(direction, quad);
              return this;
          }
  
 -        public QuadCollection.Builder addUnculledFace(final BakedQuad quad) {
-+      public QuadCollection.Builder addUnculledFace(BakedQuad quad) {
++        public QuadCollection.Builder addUnculledFace(BakedQuad quad) {
              this.unculledFaces.add(quad);
              return this;
          }
  
 -        public QuadCollection.Builder addAll(final QuadCollection quadCollection) {
-+      public QuadCollection.Builder addAll(QuadCollection quadCollection) {
++        public QuadCollection.Builder addAll(QuadCollection quadCollection) {
              this.culledFaces.putAll(Direction.UP, quadCollection.up);
              this.culledFaces.putAll(Direction.DOWN, quadCollection.down);
              this.culledFaces.putAll(Direction.NORTH, quadCollection.north);
@@ -107,7 +107,7 @@
 -            final int westCount,
 -            final int upCount,
 -            final int downCount
-+         List<BakedQuad> all, int unculledCount, int northCount, int southCount, int eastCount, int westCount, int upCount, int downCount
++            List<BakedQuad> all, int unculledCount, int northCount, int southCount, int eastCount, int westCount, int upCount, int downCount
          ) {
              int index = 0;
              int var16;

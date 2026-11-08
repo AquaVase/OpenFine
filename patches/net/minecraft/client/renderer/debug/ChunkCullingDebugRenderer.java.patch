@@ -25,7 +25,7 @@
      private final Minecraft minecraft;
  
 -    public ChunkCullingDebugRenderer(final Minecraft minecraft) {
-+   public ChunkCullingDebugRenderer(Minecraft minecraft) {
++    public ChunkCullingDebugRenderer(Minecraft minecraft) {
          this.minecraft = minecraft;
      }
  
@@ -33,14 +33,14 @@
 -    public void emitGizmos(
 -        final double camX, final double camY, final double camZ, final DebugValueAccess debugValues, final Frustum frustum, final float partialTicks
 -    ) {
-+   public void emitGizmos(double camX, double camY, double camZ, DebugValueAccess debugValues, Frustum frustum, float partialTicks) {
++    public void emitGizmos(double camX, double camY, double camZ, DebugValueAccess debugValues, Frustum frustum, float partialTicks) {
          LevelRenderer levelRenderer = this.minecraft.levelRenderer;
          boolean sectionPath = this.minecraft.debugEntries.isCurrentlyEnabled(DebugScreenEntries.CHUNK_SECTION_PATHS);
          boolean sectionVisibility = this.minecraft.debugEntries.isCurrentlyEnabled(DebugScreenEntries.CHUNK_SECTION_VISIBILITY);
          if (sectionPath || sectionVisibility) {
-+         if (Config.isShaders()) {
-+            Shaders.pushUseProgram(Shaders.ProgramBasic);
-+         }
++            if (Config.isShaders()) {
++                Shaders.pushUseProgram(Shaders.ProgramBasic);
++            }
 +
              SectionOcclusionGraph sectionOcclusionGraph = levelRenderer.sectionOcclusionGraph();
  
@@ -49,9 +49,9 @@
                  if (node != null) {
                      BlockPos renderOffset = section.getRenderOrigin();
                      if (sectionPath) {
-+                  if (Config.isShaders()) {
-+                     Shaders.beginLines();
-+                  }
++                        if (Config.isShaders()) {
++                            Shaders.beginLines();
++                        }
 +
                          int color = node.step == 0 ? 0 : Mth.hsvToRgb(node.step / 50.0F, 0.9F, 0.9F);
  
@@ -61,15 +61,15 @@
                              }
                          }
 +
-+                  if (Config.isShaders()) {
-+                     Shaders.endLines();
++                        if (Config.isShaders()) {
++                            Shaders.endLines();
++                        }
                      }
-+               }
  
                      if (sectionVisibility && section.getSectionMesh().hasRenderableLayers()) {
-+                  if (Config.isShaders()) {
-+                     Shaders.beginLines();
-+                  }
++                        if (Config.isShaders()) {
++                            Shaders.beginLines();
++                        }
 +
                          int c = 0;
  
@@ -78,9 +78,9 @@
                              }
                          }
  
-+                  if (Config.isShaders()) {
-+                     Shaders.endLines();
-+                  }
++                        if (Config.isShaders()) {
++                            Shaders.endLines();
++                        }
 +
                          if (c > 0) {
                              float delta = 0.5F;
@@ -90,16 +90,16 @@
                  }
              }
 +
-+         if (Config.isShaders()) {
-+            Shaders.popProgram();
++            if (Config.isShaders()) {
++                Shaders.popProgram();
++            }
          }
-+      }
  
          Frustum capturedFrustum = this.minecraft.gameRenderer.mainCamera().getCapturedFrustum();
          if (capturedFrustum != null) {
-+         if (Config.isShaders()) {
-+            Shaders.pushUseProgram(Shaders.ProgramBasic);
-+         }
++            if (Config.isShaders()) {
++                Shaders.pushUseProgram(Shaders.ProgramBasic);
++            }
 +
              Vec3 offset = new Vec3(capturedFrustum.getCamX(), capturedFrustum.getCamY(), capturedFrustum.getCamZ());
              Vector4f[] frustumPoints = capturedFrustum.getFrustumPoints();
@@ -108,9 +108,9 @@
              this.addFrustumQuad(offset, frustumPoints, 2, 3, 7, 6, 0, 0, 1);
              this.addFrustumQuad(offset, frustumPoints, 0, 4, 7, 3, 0, 1, 0);
              this.addFrustumQuad(offset, frustumPoints, 1, 5, 6, 2, 1, 0, 1);
-+         if (Config.isShaders()) {
-+            Shaders.beginLines();
-+         }
++            if (Config.isShaders()) {
++                Shaders.beginLines();
++            }
 +
              this.addFrustumLine(offset, frustumPoints[0], frustumPoints[1]);
              this.addFrustumLine(offset, frustumPoints[1], frustumPoints[2]);
@@ -119,25 +119,25 @@
              this.addFrustumLine(offset, frustumPoints[1], frustumPoints[5]);
              this.addFrustumLine(offset, frustumPoints[2], frustumPoints[6]);
              this.addFrustumLine(offset, frustumPoints[3], frustumPoints[7]);
-+         if (Config.isShaders()) {
-+            Shaders.endLines();
-         }
++            if (Config.isShaders()) {
++                Shaders.endLines();
++            }
 +
-+         if (Config.isShaders()) {
-+            Shaders.popProgram();
++            if (Config.isShaders()) {
++                Shaders.popProgram();
++            }
+         }
      }
-+      }
-+   }
  
 -    private void addFrustumLine(final Vec3 offset, final Vector4f a, final Vector4f b) {
-+   private void addFrustumLine(Vec3 offset, Vector4f a, Vector4f b) {
++    private void addFrustumLine(Vec3 offset, Vector4f a, Vector4f b) {
          Gizmos.line(new Vec3(offset.x + a.x, offset.y + a.y, offset.z + a.z), new Vec3(offset.x + b.x, offset.y + b.y, offset.z + b.z), -16777216);
      }
  
 -    private void addFrustumQuad(
 -        final Vec3 offset, final Vector4f[] frustumPoints, final int i0, final int i1, final int i2, final int i3, final int r, final int g, final int b
 -    ) {
-+   private void addFrustumQuad(Vec3 offset, Vector4f[] frustumPoints, int i0, int i1, int i2, int i3, int r, int g, int b) {
++    private void addFrustumQuad(Vec3 offset, Vector4f[] frustumPoints, int i0, int i1, int i2, int i3, int r, int g, int b) {
          float a = 0.25F;
          Gizmos.rect(
              new Vec3(frustumPoints[i0].x(), frustumPoints[i0].y(), frustumPoints[i0].z()).add(offset),

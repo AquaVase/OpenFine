@@ -12,29 +12,29 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterDrowned extends ModelAdapterZombie {
-   public ModelAdapterDrowned() {
-      super(EntityTypes.DROWNED, "drowned", ModelLayers.DROWNED);
-   }
+    public ModelAdapterDrowned() {
+        super(EntityTypes.DROWNED, "drowned", ModelLayers.DROWNED);
+    }
 
-   public ModelAdapterDrowned(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    public ModelAdapterDrowned(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterDrowned ma = new ModelAdapterDrowned(this.getEntityType(), "drowned_baby", ModelLayers.DROWNED_BABY);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterDrowned ma = new ModelAdapterDrowned(this.getEntityType(), "drowned_baby", ModelLayers.DROWNED_BABY);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new DrownedModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new DrownedModel(root);
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new DrownedRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new DrownedRenderer(context);
+    }
 }

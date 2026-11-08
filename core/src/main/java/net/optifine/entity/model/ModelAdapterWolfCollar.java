@@ -10,33 +10,33 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterWolfCollar extends ModelAdapterWolf {
-   public ModelAdapterWolfCollar() {
-      this(EntityTypes.WOLF, "wolf_collar", ModelLayers.WOLF);
-      this.setAlias("wolf");
-   }
+    public ModelAdapterWolfCollar() {
+        this(EntityTypes.WOLF, "wolf_collar", ModelLayers.WOLF);
+        this.setAlias("wolf");
+    }
 
-   protected ModelAdapterWolfCollar(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterWolfCollar(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterAgeable ma = new ModelAdapterWolfCollar(this.getEntityType(), "wolf_baby_collar", ModelLayers.WOLF_BABY);
-      ma.setBaby(true);
-      ma.setAliases(this.getName(), "wolf");
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterAgeable ma = new ModelAdapterWolfCollar(this.getEntityType(), "wolf_baby_collar", ModelLayers.WOLF_BABY);
+        ma.setBaby(true);
+        ma.setAliases(this.getName(), "wolf");
+        return ma;
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model model) {
-      WolfModel wolfModel = (WolfModel)model;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model model) {
+        WolfModel wolfModel = (WolfModel)model;
 
-      for (WolfCollarLayer layer : (java.lang.Iterable<WolfCollarLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, WolfCollarLayer.class))) {
-         if (this.isBaby()) {
-            layer.babyModel = wolfModel;
-         } else {
-            layer.adultModel = wolfModel;
-         }
-      }
-   }
+        for (WolfCollarLayer layer : (java.lang.Iterable<WolfCollarLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, WolfCollarLayer.class))) {
+            if (this.isBaby()) {
+                layer.babyModel = wolfModel;
+            } else {
+                layer.adultModel = wolfModel;
+            }
+        }
+    }
 }

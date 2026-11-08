@@ -8,11 +8,11 @@
 +import net.minecraft.world.level.block.state.BlockState;
 +
 +public interface IForgeBlockState {
-+   private BlockState self() {
-+      return (BlockState)this;
-+   }
++    private BlockState self() {
++        return (BlockState)this;
++    }
 +
-+   default int getLightEmission(BlockGetter level, BlockPos pos) {
-+      return this.self().getLightEmission();
-+   }
++    default int getLightEmission(BlockGetter level, BlockPos pos) {
++        return this.self().getLightEmission();
++    }
 +}

@@ -5,85 +5,85 @@ import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL20;
 
 public abstract class ShaderUniformBase {
-   private String name;
-   private int program = 0;
-   private int[] locations = new int[]{-1};
-   private static final int LOCATION_UNDEFINED = -1;
-   private static final int LOCATION_UNKNOWN = Integer.MIN_VALUE;
+    private String name;
+    private int program = 0;
+    private int[] locations = new int[]{-1};
+    private static final int LOCATION_UNDEFINED = -1;
+    private static final int LOCATION_UNKNOWN = Integer.MIN_VALUE;
 
-   public ShaderUniformBase(String name) {
-      this.name = name;
-   }
+    public ShaderUniformBase(String name) {
+        this.name = name;
+    }
 
-   public void setProgram(int program) {
-      if (this.program != program) {
-         this.program = program;
-         this.expandLocations();
-         this.onProgramSet(program);
-      }
-   }
+    public void setProgram(int program) {
+        if (this.program != program) {
+            this.program = program;
+            this.expandLocations();
+            this.onProgramSet(program);
+        }
+    }
 
-   private void expandLocations() {
-      if (this.program >= this.locations.length) {
-         int[] locationsNew = new int[this.program * 2];
-         Arrays.fill(locationsNew, Integer.MIN_VALUE);
-         System.arraycopy(this.locations, 0, locationsNew, 0, this.locations.length);
-         this.locations = locationsNew;
-      }
-   }
+    private void expandLocations() {
+        if (this.program >= this.locations.length) {
+            int[] locationsNew = new int[this.program * 2];
+            Arrays.fill(locationsNew, Integer.MIN_VALUE);
+            System.arraycopy(this.locations, 0, locationsNew, 0, this.locations.length);
+            this.locations = locationsNew;
+        }
+    }
 
-   protected abstract void onProgramSet(int var1);
+    protected abstract void onProgramSet(int var1);
 
-   public String getName() {
-      return this.name;
-   }
+    public String getName() {
+        return this.name;
+    }
 
-   public int getProgram() {
-      return this.program;
-   }
+    public int getProgram() {
+        return this.program;
+    }
 
-   public int getLocation() {
-      if (this.program <= 0) {
-         return -1;
-      }
+    public int getLocation() {
+        if (this.program <= 0) {
+            return -1;
+        }
 
-      int location = this.locations[this.program];
-      if (location == Integer.MIN_VALUE) {
-         location = GL20.glGetUniformLocation(this.program, this.name);
-         this.locations[this.program] = location;
-      }
+        int location = this.locations[this.program];
+        if (location == Integer.MIN_VALUE) {
+            location = GL20.glGetUniformLocation(this.program, this.name);
+            this.locations[this.program] = location;
+        }
 
-      return location;
-   }
+        return location;
+    }
 
-   public boolean isDefined() {
-      return this.getLocation() >= 0;
-   }
+    public boolean isDefined() {
+        return this.getLocation() >= 0;
+    }
 
-   public void disable() {
-      this.locations[this.program] = -1;
-   }
+    public void disable() {
+        this.locations[this.program] = -1;
+    }
 
-   public void reset() {
-      this.program = 0;
-      this.locations = new int[]{-1};
-      this.resetValue();
-   }
+    public void reset() {
+        this.program = 0;
+        this.locations = new int[]{-1};
+        this.resetValue();
+    }
 
-   protected abstract void resetValue();
+    protected abstract void resetValue();
 
-   protected void checkGLError() {
-      if (Shaders.checkGLError(this.name) != 0) {
-         this.disable();
-      }
-   }
+    protected void checkGLError() {
+        if (Shaders.checkGLError(this.name) != 0) {
+            this.disable();
+        }
+    }
 
-   protected static final void flushRenderBuffers() {
-      Shaders.flushRenderBuffers();
-   }
+    protected static final void flushRenderBuffers() {
+        Shaders.flushRenderBuffers();
+    }
 
-   @Override
-   public String toString() {
-      return this.name;
-   }
+    @Override
+    public String toString() {
+        return this.name;
+    }
 }

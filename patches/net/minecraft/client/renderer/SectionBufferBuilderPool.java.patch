@@ -15,16 +15,16 @@
  public class SectionBufferBuilderPool implements AutoCloseable {
      private static final Logger LOGGER = LogUtils.getLogger();
 -    private final ArrayBlockingQueue<SectionBufferBuilderPack> freeBuffers;
-+   private final Queue<SectionBufferBuilderPack> freeBuffers = Queues.newConcurrentLinkedQueue();
++    private final Queue<SectionBufferBuilderPack> freeBuffers = Queues.newConcurrentLinkedQueue();
  
 -    private SectionBufferBuilderPool(final List<SectionBufferBuilderPack> buffers) {
 -        this.freeBuffers = Queues.newArrayBlockingQueue(buffers.size());
-+   private SectionBufferBuilderPool(List<SectionBufferBuilderPack> buffers) {
++    private SectionBufferBuilderPool(List<SectionBufferBuilderPack> buffers) {
          this.freeBuffers.addAll(buffers);
      }
  
 -    public static SectionBufferBuilderPool allocate(final int maxWorkers) {
-+   public static SectionBufferBuilderPool allocate(int maxWorkers) {
++    public static SectionBufferBuilderPool allocate(int maxWorkers) {
          int maxBuffers = Math.max(1, (int)(Runtime.getRuntime().maxMemory() * 0.3) / SectionBufferBuilderPack.TOTAL_BUFFERS_SIZE);
          int targetBufferCount = Math.max(1, Math.min(maxWorkers, maxBuffers));
          List<SectionBufferBuilderPack> buffers = new ArrayList<>(targetBufferCount);
@@ -33,12 +33,12 @@
      }
  
 -    public @Nullable SectionBufferBuilderPack acquire() {
-+   public SectionBufferBuilderPack acquire() {
++    public SectionBufferBuilderPack acquire() {
          return this.freeBuffers.poll();
      }
  
 -    public void release(final SectionBufferBuilderPack buffer) {
-+   public void release(SectionBufferBuilderPack buffer) {
++    public void release(SectionBufferBuilderPack buffer) {
          this.freeBuffers.offer(buffer);
      }
  

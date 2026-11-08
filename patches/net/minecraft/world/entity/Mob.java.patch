@@ -74,7 +74,7 @@
      protected final GoalSelector goalSelector;
      protected final GoalSelector targetSelector;
 -    private @Nullable LivingEntity target;
-+   private LivingEntity target;
++    private LivingEntity target;
      private final Sensing sensing;
      private DropChances dropChances = DropChances.DEFAULT;
      private boolean canPickUpLoot = false;
@@ -83,14 +83,14 @@
      private Optional<ResourceKey<LootTable>> lootTable = Optional.empty();
      private long lootTableSeed;
 -    private Leashable.@Nullable LeashData leashData;
-+   private LeashData leashData;
++    private LeashData leashData;
      private BlockPos homePosition = BlockPos.ZERO;
      private int homeRadius = -1;
-+   private EntitySpawnReason spawnReason;
-+   private boolean spawnCancelled = false;
++    private EntitySpawnReason spawnReason;
++    private boolean spawnCancelled = false;
  
 -    protected Mob(final EntityType<? extends Mob> type, final Level level) {
-+   protected Mob(EntityType<? extends Mob> type, Level level) {
++    protected Mob(EntityType<? extends Mob> type, Level level) {
          super(type, level);
          this.goalSelector = new GoalSelector();
          this.targetSelector = new GoalSelector();
@@ -99,12 +99,12 @@
      }
  
 -    public static AttributeSupplier.Builder createMobAttributes() {
-+   public static Builder createMobAttributes() {
++    public static Builder createMobAttributes() {
          return LivingEntity.createLivingAttributes().add(Attributes.FOLLOW_RANGE, 16.0);
      }
  
 -    protected PathNavigation createNavigation(final Level level) {
-+   protected PathNavigation createNavigation(Level level) {
++    protected PathNavigation createNavigation(Level level) {
          return new GroundPathNavigation(this, level);
      }
  
@@ -113,7 +113,7 @@
      }
  
 -    public float getPathfindingMalus(final PathType pathType) {
-+   public float getPathfindingMalus(PathType pathType) {
++    public float getPathfindingMalus(PathType pathType) {
          Mob inheritFrom;
          if (this.getControlledVehicle() instanceof Mob riding && riding.shouldPassengersInheritMalus()) {
              inheritFrom = riding;
@@ -122,7 +122,7 @@
      }
  
 -    public void setPathfindingMalus(final PathType pathType, final float cost) {
-+   public void setPathfindingMalus(PathType pathType, float cost) {
++    public void setPathfindingMalus(PathType pathType, float cost) {
          this.pathfindingMalus.put(pathType, cost);
      }
  
@@ -131,7 +131,7 @@
  
      @Override
 -    public @Nullable LivingEntity getControllingPassenger() {
-+   public LivingEntity getControllingPassenger() {
++    public LivingEntity getControllingPassenger() {
          Entity firstPassenger = this.getFirstPassenger();
          return !this.isNoAi() && firstPassenger instanceof Mob passenger && firstPassenger.canControlVehicle() ? passenger : null;
      }
@@ -140,12 +140,12 @@
  
      @Override
 -    public @Nullable LivingEntity getTarget() {
-+   public LivingEntity getTarget() {
++    public LivingEntity getTarget() {
          return this.asValidTarget(this.target);
      }
  
 -    public @Nullable LivingEntity getTargetUnchecked() {
-+   public LivingEntity getTargetUnchecked() {
++    public LivingEntity getTargetUnchecked() {
          return this.target;
      }
  
@@ -153,39 +153,40 @@
 -        if (target instanceof Player player && (player.isCreative() || player.isSpectator())) {
 -            return null;
 -        } else {
-+   protected LivingEntity asValidTarget(LivingEntity target) {
-+      if (!(target instanceof Player player && (player.isCreative() || player.isSpectator()))) {
++    protected LivingEntity asValidTarget(LivingEntity target) {
++        if (!(target instanceof Player player && (player.isCreative() || player.isSpectator()))) {
              return target != null && !this.canAttack(target) ? null : target;
-+      } else {
-+         return null;
++        } else {
++            return null;
          }
      }
  
 -    protected final @Nullable LivingEntity getTargetFromBrain() {
-+   protected final LivingEntity getTargetFromBrain() {
++    protected final LivingEntity getTargetFromBrain() {
          return this.asValidTarget(this.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null));
      }
  
 -    public void setTarget(final @Nullable LivingEntity target) {
-+   public void setTarget(LivingEntity target) {
-+      if (Reflector.ForgeEventFactory_onLivingChangeTargetMob.exists()) {
-+         LivingChangeTargetEvent changeTargetEvent = (LivingChangeTargetEvent)Reflector.ForgeEventFactory_onLivingChangeTargetMob.call(this, target);
-+         if (changeTargetEvent != null) {
-+            this.target = changeTargetEvent.getNewTarget();
-+         }
-+      } else {
-         this.target = this.asValidTarget(target);
+-        this.target = this.asValidTarget(target);
++    public void setTarget(LivingEntity target) {
++        if (Reflector.ForgeEventFactory_onLivingChangeTargetMob.exists()) {
++            LivingChangeTargetEvent changeTargetEvent = (LivingChangeTargetEvent)Reflector.ForgeEventFactory_onLivingChangeTargetMob.call(this, target);
++            if (changeTargetEvent != null) {
++                this.target = changeTargetEvent.getNewTarget();
++            }
++        } else {
++            this.target = this.asValidTarget(target);
++        }
      }
-+   }
  
      @Override
 -    public boolean canAttack(final LivingEntity target) {
-+   public boolean canAttack(LivingEntity target) {
++    public boolean canAttack(LivingEntity target) {
          return !target.is(EntityTypes.GHAST) && super.canAttack(target);
      }
  
 -    public boolean canUseNonMeleeWeapon(final ItemStack item) {
-+   public boolean canUseNonMeleeWeapon(ItemStack item) {
++    public boolean canUseNonMeleeWeapon(ItemStack item) {
          return false;
      }
  
@@ -194,7 +195,7 @@
  
      @Override
 -    protected void defineSynchedData(final SynchedEntityData.Builder entityData) {
-+   protected void defineSynchedData(SynchedEntityData.Builder entityData) {
++    protected void defineSynchedData(SynchedEntityData.Builder entityData) {
          super.defineSynchedData(entityData);
          entityData.define(DATA_MOB_FLAGS_ID, (byte)0);
      }
@@ -203,7 +204,7 @@
  
      @Override
 -    protected void playHurtSound(final DamageSource source) {
-+   protected void playHurtSound(DamageSource source) {
++    protected void playHurtSound(DamageSource source) {
          this.resetAmbientSoundTime();
          super.playHurtSound(source);
      }
@@ -212,7 +213,7 @@
  
      @Override
 -    protected int getBaseExperienceReward(final ServerLevel level) {
-+   protected int getBaseExperienceReward(ServerLevel level) {
++    protected int getBaseExperienceReward(ServerLevel level) {
          if (this.xpReward > 0) {
              int result = this.xpReward;
  
@@ -221,7 +222,7 @@
  
      @Override
 -    public void handleEntityEvent(final byte id) {
-+   public void handleEntityEvent(byte id) {
++    public void handleEntityEvent(byte id) {
          if (id == 20) {
              this.spawnAnim();
          } else {
@@ -229,15 +230,18 @@
  
      @Override
      public void tick() {
-+      if (Config.isSmoothWorld() && this.canSkipUpdate()) {
-+         this.onUpdateMinimal();
-+      } else {
-         super.tick();
-         if (!this.level().isClientSide() && this.tickCount % 5 == 0) {
-             this.updateControlFlags();
+-        super.tick();
+-        if (!this.level().isClientSide() && this.tickCount % 5 == 0) {
+-            this.updateControlFlags();
++        if (Config.isSmoothWorld() && this.canSkipUpdate()) {
++            this.onUpdateMinimal();
++        } else {
++            super.tick();
++            if (!this.level().isClientSide() && this.tickCount % 5 == 0) {
++                this.updateControlFlags();
++            }
          }
      }
-+   }
  
      protected void updateControlFlags() {
          boolean noController = !(this.getControllingPassenger() instanceof Mob);
@@ -245,25 +249,25 @@
 -        this.goalSelector.setControlFlag(Goal.Flag.MOVE, noController);
 -        this.goalSelector.setControlFlag(Goal.Flag.JUMP, noController && notInBoat);
 -        this.goalSelector.setControlFlag(Goal.Flag.LOOK, noController);
-+      this.goalSelector.setControlFlag(Flag.MOVE, noController);
-+      this.goalSelector.setControlFlag(Flag.JUMP, noController && notInBoat);
-+      this.goalSelector.setControlFlag(Flag.LOOK, noController);
++        this.goalSelector.setControlFlag(Flag.MOVE, noController);
++        this.goalSelector.setControlFlag(Flag.JUMP, noController && notInBoat);
++        this.goalSelector.setControlFlag(Flag.LOOK, noController);
      }
  
      @Override
 -    protected void tickHeadTurn(final float yBodyRotT) {
-+   protected void tickHeadTurn(float yBodyRotT) {
++    protected void tickHeadTurn(float yBodyRotT) {
          this.bodyRotationControl.clientTick();
      }
  
 -    protected @Nullable SoundEvent getAmbientSound() {
-+   protected SoundEvent getAmbientSound() {
++    protected SoundEvent getAmbientSound() {
          return null;
      }
  
      @Override
 -    protected void addAdditionalSaveData(final ValueOutput output) {
-+   protected void addAdditionalSaveData(ValueOutput output) {
++    protected void addAdditionalSaveData(ValueOutput output) {
          super.addAdditionalSaveData(output);
          output.putBoolean("CanPickUpLoot", this.canPickUpLoot());
          output.putBoolean("PersistenceRequired", this.persistenceRequired);
@@ -272,14 +276,14 @@
              output.putBoolean("NoAI", this.isNoAi());
          }
 +
-+      if (this.spawnReason != null) {
-+         output.putString("forge:spawn_type", this.spawnReason.name());
++        if (this.spawnReason != null) {
++            output.putString("forge:spawn_type", this.spawnReason.name());
++        }
      }
-+   }
  
      @Override
 -    protected void readAdditionalSaveData(final ValueInput input) {
-+   protected void readAdditionalSaveData(ValueInput input) {
++    protected void readAdditionalSaveData(ValueInput input) {
          super.readAdditionalSaveData(input);
          this.setCanPickUpLoot(input.getBooleanOr("CanPickUpLoot", false));
          this.persistenceRequired = input.getBooleanOr("PersistenceRequired", false);
@@ -287,17 +291,17 @@
          this.lootTable = input.read("DeathLootTable", LootTable.KEY_CODEC);
          this.lootTableSeed = input.getLongOr("DeathLootTableSeed", 0L);
          this.setNoAi(input.getBooleanOr("NoAI", false));
-+      input.getString("forge:spawn_type").ifPresent(type -> {
-+         try {
-+            this.spawnReason = EntitySpawnReason.valueOf(type);
-+         } catch (Exception var3) {
++        input.getString("forge:spawn_type").ifPresent(type -> {
++            try {
++                this.spawnReason = EntitySpawnReason.valueOf(type);
++            } catch (Exception var3) {
++            }
++        });
      }
-+      });
-+   }
  
      @Override
 -    protected void dropFromLootTable(final ServerLevel level, final DamageSource source, final boolean playerKilled) {
-+   protected void dropFromLootTable(ServerLevel level, DamageSource source, boolean playerKilled) {
++    protected void dropFromLootTable(ServerLevel level, DamageSource source, boolean playerKilled) {
          super.dropFromLootTable(level, source, playerKilled);
          this.lootTable = Optional.empty();
      }
@@ -306,23 +310,23 @@
      }
  
 -    public void setZza(final float zza) {
-+   public void setZza(float zza) {
++    public void setZza(float zza) {
          this.zza = zza;
      }
  
 -    public void setYya(final float yya) {
-+   public void setYya(float yya) {
++    public void setYya(float yya) {
          this.yya = yya;
      }
  
 -    public void setXxa(final float xxa) {
-+   public void setXxa(float xxa) {
++    public void setXxa(float xxa) {
          this.xxa = xxa;
      }
  
      @Override
 -    public void setSpeed(final float speed) {
-+   public void setSpeed(float speed) {
++    public void setSpeed(float speed) {
          super.setSpeed(speed);
          this.setZza(speed);
      }
@@ -330,18 +334,18 @@
  
          ProfilerFiller profiler = Profiler.get();
          profiler.push("looting");
-+      boolean mobGriefing = this.level() instanceof ServerLevel serverlevel ? serverlevel.getGameRules().get(GameRules.MOB_GRIEFING) : false;
-+      if (Reflector.ForgeEventFactory_getMobGriefingEvent.exists() && this.level() instanceof ServerLevel serverlevel) {
-+         mobGriefing = Reflector.callBoolean(Reflector.ForgeEventFactory_getMobGriefingEvent, serverlevel, this);
-+      }
++        boolean mobGriefing = this.level() instanceof ServerLevel serverlevel ? serverlevel.getGameRules().get(GameRules.MOB_GRIEFING) : false;
++        if (Reflector.ForgeEventFactory_getMobGriefingEvent.exists() && this.level() instanceof ServerLevel serverlevel) {
++            mobGriefing = Reflector.callBoolean(Reflector.ForgeEventFactory_getMobGriefingEvent, serverlevel, this);
++        }
 +
          if (this.level() instanceof ServerLevel serverLevel
              && this.canPickUpLoot()
              && this.isAlive()
              && !this.dead
 -            && serverLevel.getGameRules().get(GameRules.MOB_GRIEFING)) {
-+         && serverLevel.getGameRules().get(GameRules.MOB_GRIEFING)
-+         && mobGriefing) {
++            && serverLevel.getGameRules().get(GameRules.MOB_GRIEFING)
++            && mobGriefing) {
              Vec3i pickupReach = this.getPickupReach();
  
              for (ItemEntity entity : this.level()
@@ -350,7 +354,7 @@
      }
  
 -    protected void pickUpItem(final ServerLevel level, final ItemEntity entity) {
-+   protected void pickUpItem(ServerLevel level, ItemEntity entity) {
++    protected void pickUpItem(ServerLevel level, ItemEntity entity) {
          ItemStack itemStack = entity.getItem();
          ItemStack equippedWithStack = this.equipItemIfPossible(level, itemStack.copy());
          if (!equippedWithStack.isEmpty()) {
@@ -359,7 +363,7 @@
      }
  
 -    public ItemStack equipItemIfPossible(final ServerLevel level, final ItemStack itemStack) {
-+   public ItemStack equipItemIfPossible(ServerLevel level, ItemStack itemStack) {
++    public ItemStack equipItemIfPossible(ServerLevel level, ItemStack itemStack) {
          EquipmentSlot slot = this.getEquipmentSlotForItem(itemStack);
          if (!this.isEquippableInSlot(itemStack, slot)) {
              return ItemStack.EMPTY;
@@ -368,18 +372,18 @@
      }
  
 -    protected void setItemSlotAndDropWhenKilled(final EquipmentSlot slot, final ItemStack itemStack) {
-+   protected void setItemSlotAndDropWhenKilled(EquipmentSlot slot, ItemStack itemStack) {
++    protected void setItemSlotAndDropWhenKilled(EquipmentSlot slot, ItemStack itemStack) {
          this.setItemSlot(slot, itemStack);
          this.setGuaranteedDrop(slot);
      }
  
 -    protected boolean canShearEquipment(final Player player) {
-+   protected boolean canShearEquipment(Player player) {
++    protected boolean canShearEquipment(Player player) {
          return !this.isVehicle();
      }
  
 -    protected boolean attemptToShearEquipment(final Player player, final InteractionHand hand, final ItemStack heldItem) {
-+   protected boolean attemptToShearEquipment(Player player, InteractionHand hand, ItemStack heldItem) {
++    protected boolean attemptToShearEquipment(Player player, InteractionHand hand, ItemStack heldItem) {
          for (EquipmentSlot slot : EquipmentSlot.VALUES) {
              ItemStack itemStack = this.getItemBySlot(slot);
              Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
@@ -390,7 +394,7 @@
 -    protected void shearItem(
 -        final Player player, final InteractionHand hand, final ItemStack heldItem, final EquipmentSlot slot, final ItemStack itemStackToShear
 -    ) {
-+   protected void shearItem(Player player, InteractionHand hand, ItemStack heldItem, EquipmentSlot slot, ItemStack itemStackToShear) {
++    protected void shearItem(Player player, InteractionHand hand, ItemStack heldItem, EquipmentSlot slot, ItemStack itemStackToShear) {
          heldItem.hurtAndBreak(1, player, hand.asEquipmentSlot());
          Vec3 equipmentSpawnOffset = this.getAttachments().getAverage(EntityAttachment.PASSENGER);
          this.setItemSlot(slot, ItemStack.EMPTY);
@@ -399,12 +403,12 @@
      }
  
 -    public void setGuaranteedDrop(final EquipmentSlot slot) {
-+   public void setGuaranteedDrop(EquipmentSlot slot) {
++    public void setGuaranteedDrop(EquipmentSlot slot) {
          this.dropChances = this.dropChances.withGuaranteedDrop(slot);
      }
  
 -    protected boolean canReplaceCurrentItem(final ItemStack newItemStack, final ItemStack currentItemStack, final EquipmentSlot slot) {
-+   protected boolean canReplaceCurrentItem(ItemStack newItemStack, ItemStack currentItemStack, EquipmentSlot slot) {
++    protected boolean canReplaceCurrentItem(ItemStack newItemStack, ItemStack currentItemStack, EquipmentSlot slot) {
          if (currentItemStack.isEmpty()) {
              return true;
          } else if (slot.isArmor()) {
@@ -413,7 +417,7 @@
      }
  
 -    private boolean compareArmor(final ItemStack newItemStack, final ItemStack currentItemStack, final EquipmentSlot slot) {
-+   private boolean compareArmor(ItemStack newItemStack, ItemStack currentItemStack, EquipmentSlot slot) {
++    private boolean compareArmor(ItemStack newItemStack, ItemStack currentItemStack, EquipmentSlot slot) {
          if (EnchantmentHelper.has(currentItemStack, EnchantmentEffectComponents.PREVENT_ARMOR_CHANGE)) {
              return false;
          } else {
@@ -422,7 +426,7 @@
      }
  
 -    private boolean compareWeapons(final ItemStack newItemStack, final ItemStack currentItemStack, final EquipmentSlot slot) {
-+   private boolean compareWeapons(ItemStack newItemStack, ItemStack currentItemStack, EquipmentSlot slot) {
++    private boolean compareWeapons(ItemStack newItemStack, ItemStack currentItemStack, EquipmentSlot slot) {
          TagKey<Item> preferredWeaponType = this.getPreferredWeaponType();
          if (preferredWeaponType != null) {
              if (currentItemStack.is(preferredWeaponType) && !newItemStack.is(preferredWeaponType)) {
@@ -431,14 +435,14 @@
      }
  
 -    private double getApproximateAttributeWith(final ItemStack itemStack, final Holder<Attribute> attribute, final EquipmentSlot slot) {
-+   private double getApproximateAttributeWith(ItemStack itemStack, Holder<Attribute> attribute, EquipmentSlot slot) {
++    private double getApproximateAttributeWith(ItemStack itemStack, Holder<Attribute> attribute, EquipmentSlot slot) {
          double baseValue = this.getAttributes().hasAttribute(attribute) ? this.getAttributeBaseValue(attribute) : 0.0;
          ItemAttributeModifiers attributeModifiers = itemStack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
          return attributeModifiers.compute(attribute, baseValue, slot);
      }
  
 -    public boolean canReplaceEqualItem(final ItemStack newItemStack, final ItemStack currentItemStack) {
-+   public boolean canReplaceEqualItem(ItemStack newItemStack, ItemStack currentItemStack) {
++    public boolean canReplaceEqualItem(ItemStack newItemStack, ItemStack currentItemStack) {
          Set<Entry<Holder<Enchantment>>> currentEnchantments = currentItemStack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY).entrySet();
          Set<Entry<Holder<Enchantment>>> newEnchantments = newItemStack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY).entrySet();
          if (newEnchantments.size() != currentEnchantments.size()) {
@@ -447,22 +451,22 @@
      }
  
 -    public boolean canHoldItem(final ItemStack itemStack) {
-+   public boolean canHoldItem(ItemStack itemStack) {
++    public boolean canHoldItem(ItemStack itemStack) {
          return true;
      }
  
 -    public boolean wantsToPickUp(final ServerLevel level, final ItemStack itemStack) {
-+   public boolean wantsToPickUp(ServerLevel level, ItemStack itemStack) {
++    public boolean wantsToPickUp(ServerLevel level, ItemStack itemStack) {
          return this.canHoldItem(itemStack);
      }
  
 -    public @Nullable TagKey<Item> getPreferredWeaponType() {
-+   public TagKey<Item> getPreferredWeaponType() {
++    public TagKey<Item> getPreferredWeaponType() {
          return null;
      }
  
 -    public boolean removeWhenFarAway(final double distSqr) {
-+   public boolean removeWhenFarAway(double distSqr) {
++    public boolean removeWhenFarAway(double distSqr) {
          return true;
      }
  
@@ -470,16 +474,16 @@
              this.discard();
          } else if (!this.isPersistenceRequired() && !this.requiresCustomPersistence()) {
              Entity player = this.level().getNearestPlayer(this, -1.0);
-+         if (Reflector.ForgeEventFactory_canEntityDespawn.exists()) {
-+            Object result = Reflector.ForgeEventFactory_canEntityDespawn.call(this, this.level());
-+            if (result == Result.DENY) {
-+               this.noActionTime = 0;
-+               player = null;
-+            } else if (result == Result.ALLOW) {
-+               this.discard();
-+               player = null;
++            if (Reflector.ForgeEventFactory_canEntityDespawn.exists()) {
++                Object result = Reflector.ForgeEventFactory_canEntityDespawn.call(this, this.level());
++                if (result == Result.DENY) {
++                    this.noActionTime = 0;
++                    player = null;
++                } else if (result == Result.ALLOW) {
++                    this.discard();
++                    player = null;
++                }
 +            }
-+         }
 +
              if (player != null) {
                  double distSqr = player.distanceToSqr(this);
@@ -489,7 +493,7 @@
      }
  
 -    protected void customServerAiStep(final ServerLevel level) {
-+   protected void customServerAiStep(ServerLevel level) {
++    protected void customServerAiStep(ServerLevel level) {
      }
  
      public int getMaxHeadXRot() {
@@ -498,7 +502,7 @@
      }
  
 -    public void lookAt(final Entity entity, final float yMax, final float xMax) {
-+   public void lookAt(Entity entity, float yMax, float xMax) {
++    public void lookAt(Entity entity, float yMax, float xMax) {
          double xd = entity.getX() - this.getX();
          double zd = entity.getZ() - this.getZ();
          double yd;
@@ -508,14 +512,14 @@
          double sd = Math.sqrt(xd * xd + zd * zd);
 -        float yRotD = (float)(Mth.atan2(zd, xd) * 180.0F / (float)Math.PI) - 90.0F;
 -        float xRotD = (float)(-(Mth.atan2(yd, sd) * 180.0F / (float)Math.PI));
-+      float yRotD = (float)(Mth.atan2(zd, xd) * 180.0 / (float) Math.PI) - 90.0F;
-+      float xRotD = (float)(-(Mth.atan2(yd, sd) * 180.0 / (float) Math.PI));
++        float yRotD = (float)(Mth.atan2(zd, xd) * 180.0 / (float) Math.PI) - 90.0F;
++        float xRotD = (float)(-(Mth.atan2(yd, sd) * 180.0 / (float) Math.PI));
          this.setXRot(this.rotlerp(this.getXRot(), xRotD, xMax));
          this.setYRot(this.rotlerp(this.getYRot(), yRotD, yMax));
      }
  
 -    private float rotlerp(final float a, final float b, final float max) {
-+   private float rotlerp(float a, float b, float max) {
++    private float rotlerp(float a, float b, float max) {
          float diff = Mth.wrapDegrees(b - a);
          if (diff > max) {
              diff = max;
@@ -524,19 +528,19 @@
  
      public static boolean checkMobSpawnRules(
 -        final EntityType<? extends Mob> type, final LevelAccessor level, final EntitySpawnReason spawnReason, final BlockPos pos, final RandomSource random
-+      EntityType<? extends Mob> type, LevelAccessor level, EntitySpawnReason spawnReason, BlockPos pos, RandomSource random
++        EntityType<? extends Mob> type, LevelAccessor level, EntitySpawnReason spawnReason, BlockPos pos, RandomSource random
      ) {
          BlockPos below = pos.below();
          return EntitySpawnReason.isSpawner(spawnReason) || level.getBlockState(below).isValidSpawn(level, below, type);
      }
  
 -    public boolean checkSpawnRules(final LevelAccessor level, final EntitySpawnReason spawnReason) {
-+   public boolean checkSpawnRules(LevelAccessor level, EntitySpawnReason spawnReason) {
++    public boolean checkSpawnRules(LevelAccessor level, EntitySpawnReason spawnReason) {
          return true;
      }
  
 -    public boolean checkSpawnObstruction(final LevelReader level) {
-+   public boolean checkSpawnObstruction(LevelReader level) {
++    public boolean checkSpawnObstruction(LevelReader level) {
          return !level.containsAnyLiquid(this.getBoundingBox()) && level.isUnobstructed(this);
      }
  
@@ -545,7 +549,7 @@
      }
  
 -    public boolean isMaxGroupSizeReached(final int groupSize) {
-+   public boolean isMaxGroupSizeReached(int groupSize) {
++    public boolean isMaxGroupSizeReached(int groupSize) {
          return false;
      }
  
@@ -554,7 +558,7 @@
      }
  
 -    private boolean hasValidEquippableItemForSlot(final EquipmentSlot slot) {
-+   private boolean hasValidEquippableItemForSlot(EquipmentSlot slot) {
++    private boolean hasValidEquippableItemForSlot(EquipmentSlot slot) {
          return this.hasItemInSlot(slot) && this.isEquippableInSlot(this.getItemBySlot(slot), slot);
      }
  
@@ -563,7 +567,7 @@
  
              @Override
 -            public void setTheItem(final ItemStack itemStack) {
-+         public void setTheItem(ItemStack itemStack) {
++            public void setTheItem(ItemStack itemStack) {
                  Mob.this.setItemSlot(slot, itemStack);
                  if (!itemStack.isEmpty()) {
                      Mob.this.setGuaranteedDrop(slot);
@@ -572,7 +576,7 @@
  
              @Override
 -            public boolean stillValid(final Player player) {
-+         public boolean stillValid(Player player) {
++            public boolean stillValid(Player player) {
                  return player.getVehicle() == Mob.this || player.isWithinEntityInteractionRange(Mob.this, 4.0);
              }
          };
@@ -580,7 +584,7 @@
  
      @Override
 -    protected void dropCustomDeathLoot(final ServerLevel level, final DamageSource source, final boolean killedByPlayer) {
-+   protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
++    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
          super.dropCustomDeathLoot(level, source, killedByPlayer);
  
          for (EquipmentSlot slot : EquipmentSlot.VALUES) {
@@ -591,7 +595,7 @@
 -                        itemStack.setDamageValue(
 -                            itemStack.getMaxDamage() - this.random.nextInt(1 + this.random.nextInt(Math.max(itemStack.getMaxDamage() - 3, 1)))
 -                        );
-+                  itemStack.setDamageValue(itemStack.getMaxDamage() - this.random.nextInt(1 + this.random.nextInt(Math.max(itemStack.getMaxDamage() - 3, 1))));
++                        itemStack.setDamageValue(itemStack.getMaxDamage() - this.random.nextInt(1 + this.random.nextInt(Math.max(itemStack.getMaxDamage() - 3, 1))));
                      }
  
                      this.spawnAtLocation(level, itemStack);
@@ -600,12 +604,12 @@
      }
  
 -    public void dropPreservedEquipment(final ServerLevel level) {
-+   public void dropPreservedEquipment(ServerLevel level) {
++    public void dropPreservedEquipment(ServerLevel level) {
          this.dropPreservedEquipment(level, stack -> true);
      }
  
 -    public Set<EquipmentSlot> dropPreservedEquipment(final ServerLevel level, final Predicate<ItemStack> shouldDrop) {
-+   public Set<EquipmentSlot> dropPreservedEquipment(ServerLevel level, Predicate<ItemStack> shouldDrop) {
++    public Set<EquipmentSlot> dropPreservedEquipment(ServerLevel level, Predicate<ItemStack> shouldDrop) {
          Set<EquipmentSlot> slotsPreventedFromDropping = new HashSet<>();
  
          for (EquipmentSlot slot : EquipmentSlot.VALUES) {
@@ -615,27 +619,27 @@
  
 -    private LootParams createEquipmentParams(final ServerLevel serverLevel) {
 -        return new LootParams.Builder(serverLevel)
-+   private LootParams createEquipmentParams(ServerLevel serverLevel) {
-+      return new net.minecraft.world.level.storage.loot.LootParams.Builder(serverLevel)
++    private LootParams createEquipmentParams(ServerLevel serverLevel) {
++        return new net.minecraft.world.level.storage.loot.LootParams.Builder(serverLevel)
              .withParameter(LootContextParams.ORIGIN, this.position())
              .withParameter(LootContextParams.THIS_ENTITY, this)
              .create(LootContextParamSets.EQUIPMENT);
      }
  
 -    public void equip(final EquipmentTable equipment) {
-+   public void equip(EquipmentTable equipment) {
++    public void equip(EquipmentTable equipment) {
          this.equip(equipment.lootTable(), equipment.slotDropChances());
      }
  
 -    public void equip(final ResourceKey<LootTable> lootTable, final Map<EquipmentSlot, Float> dropChances) {
-+   public void equip(ResourceKey<LootTable> lootTable, Map<EquipmentSlot, Float> dropChances) {
++    public void equip(ResourceKey<LootTable> lootTable, Map<EquipmentSlot, Float> dropChances) {
          if (this.level() instanceof ServerLevel serverLevel) {
              this.equip(lootTable, this.createEquipmentParams(serverLevel), dropChances);
          }
      }
  
 -    protected void populateDefaultEquipmentSlots(final RandomSource random, final DifficultyInstance difficulty) {
-+   protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
++    protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
          if (random.nextFloat() < 0.15F * difficulty.getSpecialMultiplier()) {
              int armorType = random.nextInt(3);
  
@@ -644,7 +648,7 @@
      }
  
 -    public static @Nullable Item getEquipmentForSlot(final EquipmentSlot slot, final int type) {
-+   public static Item getEquipmentForSlot(EquipmentSlot slot, int type) {
++    public static Item getEquipmentForSlot(EquipmentSlot slot, int type) {
          switch (slot) {
              case HEAD:
                  if (type == 0) {
@@ -653,33 +657,33 @@
      }
  
 -    protected void populateDefaultEquipmentEnchantments(final ServerLevelAccessor level, final RandomSource random, final DifficultyInstance localDifficulty) {
-+   protected void populateDefaultEquipmentEnchantments(ServerLevelAccessor level, RandomSource random, DifficultyInstance localDifficulty) {
++    protected void populateDefaultEquipmentEnchantments(ServerLevelAccessor level, RandomSource random, DifficultyInstance localDifficulty) {
          this.enchantSpawnedWeapon(level, random, localDifficulty);
  
          for (EquipmentSlot slot : EquipmentSlot.VALUES) {
 -            if (slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
-+         if (slot.getType() == Type.HUMANOID_ARMOR) {
++            if (slot.getType() == Type.HUMANOID_ARMOR) {
                  this.enchantSpawnedArmor(level, random, slot, localDifficulty);
              }
          }
      }
  
 -    protected void enchantSpawnedWeapon(final ServerLevelAccessor level, final RandomSource random, final DifficultyInstance difficulty) {
-+   protected void enchantSpawnedWeapon(ServerLevelAccessor level, RandomSource random, DifficultyInstance difficulty) {
++    protected void enchantSpawnedWeapon(ServerLevelAccessor level, RandomSource random, DifficultyInstance difficulty) {
          this.enchantSpawnedEquipment(level, EquipmentSlot.MAINHAND, random, 0.25F, difficulty);
      }
  
 -    protected void enchantSpawnedArmor(
 -        final ServerLevelAccessor level, final RandomSource random, final EquipmentSlot slot, final DifficultyInstance difficulty
 -    ) {
-+   protected void enchantSpawnedArmor(ServerLevelAccessor level, RandomSource random, EquipmentSlot slot, DifficultyInstance difficulty) {
++    protected void enchantSpawnedArmor(ServerLevelAccessor level, RandomSource random, EquipmentSlot slot, DifficultyInstance difficulty) {
          this.enchantSpawnedEquipment(level, slot, random, 0.5F, difficulty);
      }
  
 -    private void enchantSpawnedEquipment(
 -        final ServerLevelAccessor level, final EquipmentSlot slot, final RandomSource random, final float chance, final DifficultyInstance difficulty
 -    ) {
-+   private void enchantSpawnedEquipment(ServerLevelAccessor level, EquipmentSlot slot, RandomSource random, float chance, DifficultyInstance difficulty) {
++    private void enchantSpawnedEquipment(ServerLevelAccessor level, EquipmentSlot slot, RandomSource random, float chance, DifficultyInstance difficulty) {
          ItemStack itemStack = this.getItemBySlot(slot);
          if (!itemStack.isEmpty() && random.nextFloat() < chance * difficulty.getSpecialMultiplier()) {
              EnchantmentHelper.enchantItemFromProvider(itemStack, level.registryAccess(), VanillaEnchantmentProviders.MOB_SPAWN_EQUIPMENT, difficulty, random);
@@ -690,18 +694,18 @@
 -    public @Nullable SpawnGroupData finalizeSpawn(
 -        final ServerLevelAccessor level, final DifficultyInstance difficulty, final EntitySpawnReason spawnReason, final @Nullable SpawnGroupData groupData
 -    ) {
-+   public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, EntitySpawnReason spawnReason, SpawnGroupData groupData) {
++    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, EntitySpawnReason spawnReason, SpawnGroupData groupData) {
          RandomSource random = level.getRandom();
          AttributeInstance followRange = Objects.requireNonNull(this.getAttribute(Attributes.FOLLOW_RANGE));
          if (!followRange.hasModifier(RANDOM_SPAWN_BONUS_ID)) {
              followRange.addPermanentModifier(
 -                new AttributeModifier(RANDOM_SPAWN_BONUS_ID, random.triangle(0.0, 0.11485000000000001), AttributeModifier.Operation.ADD_MULTIPLIED_BASE)
-+            new AttributeModifier(RANDOM_SPAWN_BONUS_ID, random.triangle(0.0, 0.11485000000000001), Operation.ADD_MULTIPLIED_BASE)
++                new AttributeModifier(RANDOM_SPAWN_BONUS_ID, random.triangle(0.0, 0.11485000000000001), Operation.ADD_MULTIPLIED_BASE)
              );
          }
  
          this.setLeftHanded(random.nextFloat() < 0.05F);
-+      this.spawnReason = spawnReason;
++        this.spawnReason = spawnReason;
          return groupData;
      }
  
@@ -710,7 +714,7 @@
  
      @Override
 -    public void setDropChance(final EquipmentSlot slot, final float percent) {
-+   public void setDropChance(EquipmentSlot slot, float percent) {
++    public void setDropChance(EquipmentSlot slot, float percent) {
          this.dropChances = this.dropChances.withEquipmentChance(slot, percent);
      }
  
@@ -719,13 +723,13 @@
      }
  
 -    public void setCanPickUpLoot(final boolean canPickUpLoot) {
-+   public void setCanPickUpLoot(boolean canPickUpLoot) {
++    public void setCanPickUpLoot(boolean canPickUpLoot) {
          this.canPickUpLoot = canPickUpLoot;
      }
  
      @Override
 -    protected boolean canDispenserEquipIntoSlot(final EquipmentSlot slot) {
-+   protected boolean canDispenserEquipIntoSlot(EquipmentSlot slot) {
++    protected boolean canDispenserEquipIntoSlot(EquipmentSlot slot) {
          return this.canPickUpLoot();
      }
  
@@ -734,7 +738,7 @@
  
      @Override
 -    public InteractionResult interact(final Player player, final InteractionHand hand, final Vec3 location) {
-+   public InteractionResult interact(Player player, InteractionHand hand, Vec3 location) {
++    public InteractionResult interact(Player player, InteractionHand hand, Vec3 location) {
          if (!this.isAlive()) {
              return InteractionResult.PASS;
          } else {
@@ -743,7 +747,7 @@
      }
  
 -    private InteractionResult checkAndHandleImportantInteractions(final Player player, final InteractionHand hand) {
-+   private InteractionResult checkAndHandleImportantInteractions(Player player, InteractionHand hand) {
++    private InteractionResult checkAndHandleImportantInteractions(Player player, InteractionHand hand) {
          ItemStack itemStack = player.getItemInHand(hand);
          if (itemStack.is(Items.NAME_TAG)) {
              InteractionResult nameTagInteractionResult = itemStack.interactLivingEntity(player, this, hand);
@@ -752,16 +756,16 @@
      }
  
 -    protected void onOffspringSpawnedFromEgg(final Player spawner, final Mob offspring) {
-+   protected void onOffspringSpawnedFromEgg(Player spawner, Mob offspring) {
++    protected void onOffspringSpawnedFromEgg(Player spawner, Mob offspring) {
      }
  
 -    protected InteractionResult mobInteract(final Player player, final InteractionHand hand) {
-+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
++    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
          return InteractionResult.PASS;
      }
  
 -    protected void usePlayerItem(final Player player, final InteractionHand hand, final ItemStack itemStack) {
-+   protected void usePlayerItem(Player player, InteractionHand hand, ItemStack itemStack) {
++    protected void usePlayerItem(Player player, InteractionHand hand, ItemStack itemStack) {
          int beforeUseCount = itemStack.getCount();
          UseRemainder useRemainder = itemStack.get(DataComponents.USE_REMAINDER);
          itemStack.consume(1, player);
@@ -770,17 +774,17 @@
      }
  
 -    public boolean isWithinHome(final BlockPos pos) {
-+   public boolean isWithinHome(BlockPos pos) {
++    public boolean isWithinHome(BlockPos pos) {
          return this.homeRadius == -1 ? true : this.homePosition.distSqr(pos) < this.homeRadius * this.homeRadius;
      }
  
 -    public boolean isWithinHome(final Vec3 pos) {
-+   public boolean isWithinHome(Vec3 pos) {
++    public boolean isWithinHome(Vec3 pos) {
          return this.homeRadius == -1 ? true : this.homePosition.distToCenterSqr(pos) < this.homeRadius * this.homeRadius;
      }
  
 -    public void setHomeTo(final BlockPos newCenter, final int radius) {
-+   public void setHomeTo(BlockPos newCenter, int radius) {
++    public void setHomeTo(BlockPos newCenter, int radius) {
          this.homePosition = newCenter;
          this.homeRadius = radius;
      }
@@ -794,7 +798,7 @@
 -        final EntitySpawnReason spawnReason,
 -        final ConversionParams.AfterConversion<T> afterConversion
 -    ) {
-+   public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams params, EntitySpawnReason spawnReason, AfterConversion<T> afterConversion) {
++    public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams params, EntitySpawnReason spawnReason, AfterConversion<T> afterConversion) {
          if (this.isRemoved()) {
              return null;
          }
@@ -805,13 +809,13 @@
 -    public <T extends Mob> @Nullable T convertTo(
 -        final EntityType<T> entityType, final ConversionParams params, final ConversionParams.AfterConversion<T> afterConversion
 -    ) {
-+   public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams params, AfterConversion<T> afterConversion) {
++    public <T extends Mob> T convertTo(EntityType<T> entityType, ConversionParams params, AfterConversion<T> afterConversion) {
          return this.convertTo(entityType, params, EntitySpawnReason.CONVERSION, afterConversion);
      }
  
      @Override
 -    public Leashable.@Nullable LeashData getLeashData() {
-+   public LeashData getLeashData() {
++    public LeashData getLeashData() {
          return this.leashData;
      }
  
@@ -820,7 +824,7 @@
  
      @Override
 -    public void setLeashData(final Leashable.@Nullable LeashData leashData) {
-+   public void setLeashData(LeashData leashData) {
++    public void setLeashData(LeashData leashData) {
          this.leashData = leashData;
      }
  
@@ -829,7 +833,7 @@
      public void leashTooFarBehaviour() {
          Leashable.super.leashTooFarBehaviour();
 -        this.goalSelector.disableControlFlag(Goal.Flag.MOVE);
-+      this.goalSelector.disableControlFlag(Flag.MOVE);
++        this.goalSelector.disableControlFlag(Flag.MOVE);
      }
  
      @Override
@@ -838,7 +842,7 @@
  
      @Override
 -    public boolean startRiding(final Entity entity, final boolean force, final boolean sendEventAndTriggers) {
-+   public boolean startRiding(Entity entity, boolean force, boolean sendEventAndTriggers) {
++    public boolean startRiding(Entity entity, boolean force, boolean sendEventAndTriggers) {
          boolean result = super.startRiding(entity, force, sendEventAndTriggers);
          if (result && this.isLeashed()) {
              this.dropLeash();
@@ -847,19 +851,19 @@
      }
  
 -    public void setNoAi(final boolean flag) {
-+   public void setNoAi(boolean flag) {
++    public void setNoAi(boolean flag) {
          byte val = this.entityData.get(DATA_MOB_FLAGS_ID);
          this.entityData.set(DATA_MOB_FLAGS_ID, flag ? (byte)(val | 1) : (byte)(val & -2));
      }
  
 -    public void setLeftHanded(final boolean flag) {
-+   public void setLeftHanded(boolean flag) {
++    public void setLeftHanded(boolean flag) {
          byte val = this.entityData.get(DATA_MOB_FLAGS_ID);
          this.entityData.set(DATA_MOB_FLAGS_ID, flag ? (byte)(val | 2) : (byte)(val & -3));
      }
  
 -    public void setAggressive(final boolean flag) {
-+   public void setAggressive(boolean flag) {
++    public void setAggressive(boolean flag) {
          byte val = this.entityData.get(DATA_MOB_FLAGS_ID);
          this.entityData.set(DATA_MOB_FLAGS_ID, flag ? (byte)(val | 4) : (byte)(val & -5));
      }
@@ -868,7 +872,7 @@
      }
  
 -    public void setBaby(final boolean baby) {
-+   public void setBaby(boolean baby) {
++    public void setBaby(boolean baby) {
      }
  
      @Override
@@ -877,7 +881,7 @@
      }
  
 -    public boolean isWithinMeleeAttackRange(final LivingEntity target) {
-+   public boolean isWithinMeleeAttackRange(LivingEntity target) {
++    public boolean isWithinMeleeAttackRange(LivingEntity target) {
          AttackRange attackRange = this.getActiveItem().get(DataComponents.ATTACK_RANGE);
          double maxRange;
          double minRange;
@@ -886,7 +890,7 @@
      }
  
 -    protected AABB getAttackBoundingBox(final double horizontalExpansion) {
-+   protected AABB getAttackBoundingBox(double horizontalExpansion) {
++    protected AABB getAttackBoundingBox(double horizontalExpansion) {
          Entity vehicle = this.getVehicle();
          AABB aabb;
          if (vehicle != null) {
@@ -895,7 +899,7 @@
  
      @Override
 -    public boolean doHurtTarget(final ServerLevel level, final Entity target) {
-+   public boolean doHurtTarget(ServerLevel level, Entity target) {
++    public boolean doHurtTarget(ServerLevel level, Entity target) {
          float dmg = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
          ItemStack weaponItem = this.getWeaponItem();
          DamageSource damageSource = weaponItem.getDamageSource(this);
@@ -904,39 +908,39 @@
  
      @Override
 -    protected void jumpInLiquid(final TagKey<Fluid> type) {
-+   protected void jumpInLiquid(TagKey<Fluid> type) {
-+      this.jumpInLiquidInternal(() -> super.jumpInLiquid(type));
-+   }
++    protected void jumpInLiquid(TagKey<Fluid> type) {
++        this.jumpInLiquidInternal(() -> super.jumpInLiquid(type));
++    }
 +
-+   private void jumpInLiquidInternal(Runnable onSuper) {
++    private void jumpInLiquidInternal(Runnable onSuper) {
          if (this.getNavigation().canFloat()) {
 -            super.jumpInLiquid(type);
-+         onSuper.run();
++            onSuper.run();
          } else {
              this.setDeltaMovement(this.getDeltaMovement().add(0.0, 0.3, 0.0));
          }
      }
  
-+   @Override
-+   public void jumpInFluid(FluidType type) {
-+      this.jumpInLiquidInternal(() -> IForgeLivingEntity.super.jumpInFluid(type));
-+   }
++    @Override
++    public void jumpInFluid(FluidType type) {
++        this.jumpInLiquidInternal(() -> IForgeLivingEntity.super.jumpInFluid(type));
++    }
 +
-+   public final EntitySpawnReason getSpawnReason() {
-+      return this.spawnReason;
-+   }
++    public final EntitySpawnReason getSpawnReason() {
++        return this.spawnReason;
++    }
 +
-+   public final boolean isSpawnCancelled() {
-+      return this.spawnCancelled;
-+   }
++    public final boolean isSpawnCancelled() {
++        return this.spawnCancelled;
++    }
 +
-+   public final void setSpawnCancelled(boolean cancel) {
-+      if (this.isAddedToWorld()) {
-+         throw new UnsupportedOperationException("Late invocations of Mob#setSpawnCancelled are not permitted.");
-+      }
++    public final void setSpawnCancelled(boolean cancel) {
++        if (this.isAddedToWorld()) {
++            throw new UnsupportedOperationException("Late invocations of Mob#setSpawnCancelled are not permitted.");
++        }
 +
-+      this.spawnCancelled = cancel;
-+   }
++        this.spawnCancelled = cancel;
++    }
 +
      @VisibleForTesting
      public void removeFreeWill() {
@@ -946,7 +950,7 @@
      }
  
 -    public void removeAllGoals(final Predicate<Goal> predicate) {
-+   public void removeAllGoals(Predicate<Goal> predicate) {
++    public void removeAllGoals(Predicate<Goal> predicate) {
          this.goalSelector.removeAllGoals(predicate);
      }
  
@@ -955,13 +959,13 @@
  
      @Override
 -    public @Nullable ItemStack getPickResult() {
-+   public ItemStack getPickResult() {
++    public ItemStack getPickResult() {
          return SpawnEggItem.byId(this.getType()).map(ItemStack::new).orElse(null);
      }
  
      @Override
 -    protected void onAttributeUpdated(final Holder<Attribute> attribute) {
-+   protected void onAttributeUpdated(Holder<Attribute> attribute) {
++    protected void onAttributeUpdated(Holder<Attribute> attribute) {
          super.onAttributeUpdated(attribute);
          if (attribute.is(Attributes.FOLLOW_RANGE) || attribute.is(Attributes.TEMPT_RANGE)) {
              this.getNavigation().updatePathfinderMaxVisitedNodes();
@@ -970,7 +974,7 @@
  
      @Override
 -    public void registerDebugValues(final ServerLevel level, final DebugValueSource.Registration registration) {
-+   public void registerDebugValues(ServerLevel level, Registration registration) {
++    public void registerDebugValues(ServerLevel level, Registration registration) {
          registration.register(DebugSubscriptions.ENTITY_PATHS, () -> {
              Path path = this.getNavigation().getPath();
              return path != null && path.debugData() != null ? new DebugPathInfo(path.copy(), this.getNavigation().getMaxDistanceToWaypoint()) : null;
@@ -978,18 +982,20 @@
 -        registration.register(
 -            DebugSubscriptions.GOAL_SELECTORS,
 -            () -> {
-+      registration.register(DebugSubscriptions.GOAL_SELECTORS, () -> {
-                 Set<WrappedGoal> availableGoals = this.goalSelector.getAvailableGoals();
+-                Set<WrappedGoal> availableGoals = this.goalSelector.getAvailableGoals();
 -                List<DebugGoalInfo.DebugGoal> goalInfo = new ArrayList<>(availableGoals.size());
 -                availableGoals.forEach(
 -                    goal -> goalInfo.add(new DebugGoalInfo.DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().getClass().getSimpleName()))
 -                );
-+         List<DebugGoal> goalInfo = new ArrayList<>(availableGoals.size());
-+         availableGoals.forEach(goal -> goalInfo.add(new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().getClass().getSimpleName())));
-                 return new DebugGoalInfo(goalInfo);
+-                return new DebugGoalInfo(goalInfo);
 -            }
 -        );
-+      });
++        registration.register(DebugSubscriptions.GOAL_SELECTORS, () -> {
++            Set<WrappedGoal> availableGoals = this.goalSelector.getAvailableGoals();
++            List<DebugGoal> goalInfo = new ArrayList<>(availableGoals.size());
++            availableGoals.forEach(goal -> goalInfo.add(new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().getClass().getSimpleName())));
++            return new DebugGoalInfo(goalInfo);
++        });
          if (!this.brain.isBrainDead()) {
              registration.register(DebugSubscriptions.BRAINS, () -> DebugBrainDump.takeBrainDump(level, this));
          }
@@ -1000,52 +1006,52 @@
 -}
 \ No newline at end of file
 +
-+   private boolean canSkipUpdate() {
-+      if (this.isBaby()) {
-+         return false;
-+      }
++    private boolean canSkipUpdate() {
++        if (this.isBaby()) {
++            return false;
++        }
 +
-+      if (this.hurtTime > 0) {
-+         return false;
-+      }
++        if (this.hurtTime > 0) {
++            return false;
++        }
 +
-+      if (this.tickCount < 20) {
-+         return false;
-+      }
++        if (this.tickCount < 20) {
++            return false;
++        }
 +
-+      List listPlayers = this.getListPlayers(this.level());
-+      if (listPlayers == null) {
-+         return false;
-+      }
++        List listPlayers = this.getListPlayers(this.level());
++        if (listPlayers == null) {
++            return false;
++        }
 +
-+      if (listPlayers.size() != 1) {
-+         return false;
-+      }
++        if (listPlayers.size() != 1) {
++            return false;
++        }
 +
-+      Entity player = (Entity)listPlayers.get(0);
-+      double dx = Math.max(Math.abs(this.getX() - player.getX()) - 16.0, 0.0);
-+      double dz = Math.max(Math.abs(this.getZ() - player.getZ()) - 16.0, 0.0);
-+      double distSq = dx * dx + dz * dz;
-+      return !this.shouldRenderAtSqrDistance(distSq);
-+   }
++        Entity player = (Entity)listPlayers.get(0);
++        double dx = Math.max(Math.abs(this.getX() - player.getX()) - 16.0, 0.0);
++        double dz = Math.max(Math.abs(this.getZ() - player.getZ()) - 16.0, 0.0);
++        double distSq = dx * dx + dz * dz;
++        return !this.shouldRenderAtSqrDistance(distSq);
++    }
 +
-+   private List getListPlayers(Level entityWorld) {
-+      Level world = this.level();
-+      if (world instanceof ClientLevel worldClient) {
-+         return worldClient.players();
-+      } else {
-+         return world instanceof ServerLevel worldServer ? worldServer.players() : null;
-+      }
-+   }
++    private List getListPlayers(Level entityWorld) {
++        Level world = this.level();
++        if (world instanceof ClientLevel worldClient) {
++            return worldClient.players();
++        } else {
++            return world instanceof ServerLevel worldServer ? worldServer.players() : null;
++        }
++    }
 +
-+   private void onUpdateMinimal() {
-+      this.noActionTime++;
-+      if (this instanceof Monster) {
-+         float brightness = this.getLightLevelDependentMagicValue();
-+         boolean raider = this instanceof Raider;
-+         if (brightness > 0.5F || raider) {
-+            this.noActionTime += 2;
-+         }
-+      }
-+   }
++    private void onUpdateMinimal() {
++        this.noActionTime++;
++        if (this instanceof Monster) {
++            float brightness = this.getLightLevelDependentMagicValue();
++            boolean raider = this instanceof Raider;
++            if (brightness > 0.5F || raider) {
++                this.noActionTime += 2;
++            }
++        }
++    }
 +}

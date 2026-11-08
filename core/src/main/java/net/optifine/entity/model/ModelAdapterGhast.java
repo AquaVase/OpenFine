@@ -14,38 +14,38 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterGhast extends ModelAdapterLiving {
-   public ModelAdapterGhast() {
-      super(EntityTypes.GHAST, "ghast", ModelLayers.GHAST);
-   }
+    public ModelAdapterGhast() {
+        super(EntityTypes.GHAST, "ghast", ModelLayers.GHAST);
+    }
 
-   protected ModelAdapterGhast(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterGhast(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new GhastModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new GhastModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      return makeStaticMapParts();
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        return makeStaticMapParts();
+    }
 
-   public static Map<String, String> makeStaticMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "body");
+    public static Map<String, String> makeStaticMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "body");
 
-      for (int i = 0; i < 9; i++) {
-         map.put("tentacle" + (i + 1), "tentacle" + i);
-      }
+        for (int i = 0; i < 9; i++) {
+            map.put("tentacle" + (i + 1), "tentacle" + i);
+        }
 
-      map.put("root", "root");
-      return map;
-   }
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new GhastRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new GhastRenderer(context);
+    }
 }

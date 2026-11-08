@@ -26,13 +26,13 @@
      private final List<Identifier> currentlyEnabled = new ArrayList<>();
      private boolean isOverlayVisible = false;
 -    private @Nullable DebugScreenProfile profile;
-+   private DebugScreenProfile profile;
++    private DebugScreenProfile profile;
      private final File debugProfileFile;
      private long currentlyEnabledVersion;
      private final Codec<DebugScreenEntryList.SerializedOptions> codec;
  
 -    public DebugScreenEntryList(final File workingDirectory, final DataFixer dataFixer) {
-+   public DebugScreenEntryList(File workingDirectory, DataFixer dataFixer) {
++    public DebugScreenEntryList(File workingDirectory, DataFixer dataFixer) {
          this.debugProfileFile = new File(workingDirectory, "debug-profile.json");
          this.codec = DataFixTypes.DEBUG_PROFILE.wrapCodec(DebugScreenEntryList.SerializedOptions.CODEC, dataFixer, 4649);
          this.load();
@@ -41,35 +41,35 @@
      }
  
 -    private void resetStatuses(final Map<Identifier, DebugScreenEntryStatus> newEntries) {
-+   private void resetStatuses(Map<Identifier, DebugScreenEntryStatus> newEntries) {
++    private void resetStatuses(Map<Identifier, DebugScreenEntryStatus> newEntries) {
          this.allStatuses.clear();
          this.allStatuses.putAll(newEntries);
      }
  
 -    private void resetToProfile(final DebugScreenProfile profile) {
-+   private void resetToProfile(DebugScreenProfile profile) {
++    private void resetToProfile(DebugScreenProfile profile) {
          this.profile = profile;
          this.resetStatuses(DebugScreenEntries.PROFILES.get(profile));
      }
  
 -    public void loadProfile(final DebugScreenProfile profile) {
-+   public void loadProfile(DebugScreenProfile profile) {
++    public void loadProfile(DebugScreenProfile profile) {
          this.resetToProfile(profile);
          this.rebuildCurrentList();
      }
  
 -    public DebugScreenEntryStatus getStatus(final Identifier location) {
-+   public DebugScreenEntryStatus getStatus(Identifier location) {
++    public DebugScreenEntryStatus getStatus(Identifier location) {
          return this.allStatuses.getOrDefault(location, DebugScreenEntryStatus.NEVER);
      }
  
 -    public boolean isCurrentlyEnabled(final Identifier location) {
-+   public boolean isCurrentlyEnabled(Identifier location) {
++    public boolean isCurrentlyEnabled(Identifier location) {
          return this.currentlyEnabled.contains(location);
      }
  
 -    public void setStatus(final Identifier location, final DebugScreenEntryStatus status) {
-+   public void setStatus(Identifier location, DebugScreenEntryStatus status) {
++    public void setStatus(Identifier location, DebugScreenEntryStatus status) {
          this.profile = null;
          this.allStatuses.put(location, status);
          this.rebuildCurrentList();
@@ -77,7 +77,7 @@
      }
  
 -    public boolean toggleStatus(final Identifier location) {
-+   public boolean toggleStatus(Identifier location) {
++    public boolean toggleStatus(Identifier location) {
          DebugScreenEntryStatus status = this.allStatuses.get(location);
          switch (status) {
              case ALWAYS_ON:
@@ -86,7 +86,7 @@
      }
  
 -    public void setOverlayVisible(final boolean visible) {
-+   public void setOverlayVisible(boolean visible) {
++    public void setOverlayVisible(boolean visible) {
          if (this.isOverlayVisible != visible) {
              this.isOverlayVisible = visible;
              this.rebuildCurrentList();
@@ -95,7 +95,7 @@
              }
          });
 -        this.currentlyEnabled.sort(Comparator.naturalOrder());
-+      this.currentlyEnabled.sort(DebugScreenEntries::compareIndex);
++        this.currentlyEnabled.sort(DebugScreenEntries::compareIndex);
          this.currentlyEnabledVersion++;
      }
  
@@ -104,7 +104,7 @@
      }
  
 -    public boolean isUsingProfile(final DebugScreenProfile profile) {
-+   public boolean isUsingProfile(DebugScreenProfile profile) {
++    public boolean isUsingProfile(DebugScreenProfile profile) {
          return this.profile == profile;
      }
  

@@ -11,22 +11,22 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterWanderingTrader extends ModelAdapterLiving {
-   public ModelAdapterWanderingTrader() {
-      super(EntityTypes.WANDERING_TRADER, "wandering_trader", ModelLayers.WANDERING_TRADER);
-   }
+    public ModelAdapterWanderingTrader() {
+        super(EntityTypes.WANDERING_TRADER, "wandering_trader", ModelLayers.WANDERING_TRADER);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new VillagerModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new VillagerModel(root);
+    }
 
-   @Override
-   protected Map<String, String> makeMapParts() {
-      return ModelAdapterVillager.makeStaticMapParts();
-   }
+    @Override
+    protected Map<String, String> makeMapParts() {
+        return ModelAdapterVillager.makeStaticMapParts();
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new WanderingTraderRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new WanderingTraderRenderer(context);
+    }
 }

@@ -5,24 +5,24 @@ import java.util.Collections;
 import java.util.List;
 
 public class ReflectorResolver {
-   private static final List<IResolvable> RESOLVABLES = Collections.synchronizedList(new ArrayList<>());
-   private static boolean resolved = false;
+    private static final List<IResolvable> RESOLVABLES = Collections.synchronizedList(new ArrayList<>());
+    private static boolean resolved = false;
 
-   protected static void register(IResolvable resolvable) {
-      if (!resolved) {
-         RESOLVABLES.add(resolvable);
-      } else {
-         resolvable.resolve();
-      }
-   }
-
-   public static void resolve() {
-      if (!resolved) {
-         for (IResolvable resolvable : RESOLVABLES) {
+    protected static void register(IResolvable resolvable) {
+        if (!resolved) {
+            RESOLVABLES.add(resolvable);
+        } else {
             resolvable.resolve();
-         }
+        }
+    }
 
-         resolved = true;
-      }
-   }
+    public static void resolve() {
+        if (!resolved) {
+            for (IResolvable resolvable : RESOLVABLES) {
+                resolvable.resolve();
+            }
+
+            resolved = true;
+        }
+    }
 }

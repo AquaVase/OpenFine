@@ -19,8 +19,8 @@
      public static final long NANOS_PER_MILLI = 1000000L;
 -    private static TimeSource.NanoTimeSource timeSource = System::nanoTime;
 -    private static final TimeSource.NanoTimeSource INDIRECT_TIME_SOURCE = () -> timeSource.getAsLong();
-+   private static NanoTimeSource timeSource = System::nanoTime;
-+   private static final NanoTimeSource INDIRECT_TIME_SOURCE = () -> timeSource.getAsLong();
++    private static NanoTimeSource timeSource = System::nanoTime;
++    private static final NanoTimeSource INDIRECT_TIME_SOURCE = () -> timeSource.getAsLong();
      public static final Ticker TICKER = new Ticker() {
          @Override
          public long read() {
@@ -28,8 +28,8 @@
          escaper.addEscape('\\', "\\\\");
      }).build();
      private static Consumer<String> thePauser = msg -> {};
-+   private static Exception exceptionOpenUrl;
-+   private static final TracingExecutor CAPE_EXECUTOR = makeExecutor("Cape");
++    private static Exception exceptionOpenUrl;
++    private static final TracingExecutor CAPE_EXECUTOR = makeExecutor("Cape");
  
      public static <K, V> Collector<Entry<? extends K, ? extends V>, ?, Map<K, V>> toMap() {
          return Collectors.toMap(Entry::getKey, Entry::getValue);
@@ -38,22 +38,22 @@
      }
  
 -    public static <T extends Comparable<T>> String getPropertyName(final Property<T> key, final Object value) {
-+   public static <T extends Comparable<T>> String getPropertyName(Property<T> key, Object value) {
++    public static <T extends Comparable<T>> String getPropertyName(Property<T> key, Object value) {
          return key.getName((T)value);
      }
  
 -    public static String makeDescriptionId(final String prefix, final @Nullable Identifier location) {
-+   public static String makeDescriptionId(String prefix, Identifier location) {
++    public static String makeDescriptionId(String prefix, Identifier location) {
          return location == null ? prefix + ".unregistered_sadface" : prefix + "." + location.getNamespace() + "." + location.getPath().replace('/', '.');
      }
  
 -    public static TimeSource.NanoTimeSource timeSource() {
-+   public static NanoTimeSource timeSource() {
++    public static NanoTimeSource timeSource() {
          return INDIRECT_TIME_SOURCE;
      }
  
 -    public static void setTimeSource(final TimeSource.NanoTimeSource timeSource) {
-+   public static void setTimeSource(NanoTimeSource timeSource) {
++    public static void setTimeSource(NanoTimeSource timeSource) {
          Util.timeSource = timeSource;
      }
  
@@ -62,7 +62,7 @@
      }
  
 -    private static TracingExecutor makeExecutor(final String name) {
-+   private static TracingExecutor makeExecutor(String name) {
++    private static TracingExecutor makeExecutor(String name) {
          int threads = maxAllowedExecutorThreads();
          ExecutorService executor;
          if (threads <= 0) {
@@ -71,7 +71,7 @@
  
                      @Override
 -                    protected void onTermination(final @Nullable Throwable exception) {
-+               protected void onTermination(Throwable exception) {
++                    protected void onTermination(Throwable exception) {
                          if (exception != null) {
                              Util.LOGGER.warn("{} died", this.getName(), exception);
                          } else {
@@ -79,37 +79,37 @@
                      }
                  };
                  thread.setName(threadName);
-+            if (name.equals("Bootstrap")) {
-+               thread.setPriority(1);
-+            }
++                if (name.equals("Bootstrap")) {
++                    thread.setPriority(1);
++                }
 +
                  return thread;
              }, Util::onThreadException, true);
          }
  
-+      if (name.equals("Bootstrap")) {
-+         executor = createSmartExecutor(executor);
-+      }
++        if (name.equals("Bootstrap")) {
++            executor = createSmartExecutor(executor);
++        }
 +
          return new TracingExecutor(executor);
      }
  
-+   private static ExecutorService createSmartExecutor(ExecutorService executor) {
-+      int cpus = Runtime.getRuntime().availableProcessors();
-+      return cpus <= 1 ? executor : new SmartExecutorService(executor);
-+   }
++    private static ExecutorService createSmartExecutor(ExecutorService executor) {
++        int cpus = Runtime.getRuntime().availableProcessors();
++        return cpus <= 1 ? executor : new SmartExecutorService(executor);
++    }
 +
-+   public static Exception getExceptionOpenUrl() {
-+      return exceptionOpenUrl;
-+   }
++    public static Exception getExceptionOpenUrl() {
++        return exceptionOpenUrl;
++    }
 +
-+   public static void setExceptionOpenUrl(Exception exceptionOpenUrl) {
-+      Util.exceptionOpenUrl = exceptionOpenUrl;
-+   }
++    public static void setExceptionOpenUrl(Exception exceptionOpenUrl) {
++        Util.exceptionOpenUrl = exceptionOpenUrl;
++    }
 +
-+   public static TracingExecutor getCapeExecutor() {
-+      return CAPE_EXECUTOR;
-+   }
++    public static TracingExecutor getCapeExecutor() {
++        return CAPE_EXECUTOR;
++    }
 +
      public static int maxAllowedExecutorThreads() {
          return Mth.clamp(Runtime.getRuntime().availableProcessors() - 1, 1, getMaxThreads());
@@ -118,11 +118,11 @@
      public static void shutdownExecutors() {
          BACKGROUND_EXECUTOR.shutdownAndAwait(3L, TimeUnit.SECONDS);
          IO_POOL.shutdownAndAwait(3L, TimeUnit.SECONDS);
-+      CAPE_EXECUTOR.shutdownAndAwait(3L, TimeUnit.SECONDS);
++        CAPE_EXECUTOR.shutdownAndAwait(3L, TimeUnit.SECONDS);
      }
  
 -    private static TracingExecutor makeIoExecutor(final String prefix, final boolean daemon) {
-+   private static TracingExecutor makeIoExecutor(String prefix, boolean daemon) {
++    private static TracingExecutor makeIoExecutor(String prefix, boolean daemon) {
          AtomicInteger workerCount = new AtomicInteger(1);
          return new TracingExecutor(Executors.newCachedThreadPool(runnable -> {
              String name = prefix + workerCount.getAndIncrement();
@@ -131,12 +131,12 @@
      }
  
 -    public static void throwAsRuntime(final Throwable throwable) {
-+   public static void throwAsRuntime(Throwable throwable) {
++    public static void throwAsRuntime(Throwable throwable) {
          throw throwable instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(throwable);
      }
  
 -    private static void onThreadException(final Thread thread, Throwable throwable) {
-+   private static void onThreadException(Thread thread, Throwable throwable) {
++    private static void onThreadException(Thread thread, Throwable throwable) {
          pauseInIde(throwable);
          if (throwable instanceof CompletionException) {
              throwable = throwable.getCause();
@@ -145,12 +145,12 @@
      }
  
 -    public static @Nullable Type<?> fetchChoiceType(final TypeReference reference, final String name) {
-+   public static Type<?> fetchChoiceType(TypeReference reference, String name) {
++    public static Type<?> fetchChoiceType(TypeReference reference, String name) {
          return !SharedConstants.CHECK_DATA_FIXER_SCHEMA ? null : doFetchChoiceType(reference, name);
      }
  
 -    private static @Nullable Type<?> doFetchChoiceType(final TypeReference reference, final String name) {
-+   private static Type<?> doFetchChoiceType(TypeReference reference, String name) {
++    private static Type<?> doFetchChoiceType(TypeReference reference, String name) {
          Type<?> dataType = null;
  
          try {
@@ -159,7 +159,7 @@
                  .getChoiceType(reference, name);
          } catch (IllegalArgumentException e) {
 -            LOGGER.error("No data fixer registered for {}", name);
-+         LOGGER.debug("No data fixer registered for {}", name);
++            LOGGER.debug("No data fixer registered for {}", name);
              if (SharedConstants.IS_RUNNING_IN_IDE) {
                  throw e;
              }
@@ -168,7 +168,7 @@
      }
  
 -    public static void runNamed(final Runnable runnable, final String name) {
-+   public static void runNamed(Runnable runnable, String name) {
++    public static void runNamed(Runnable runnable, String name) {
          if (SharedConstants.IS_RUNNING_IN_IDE) {
              Thread thread = Thread.currentThread();
              String oldName = thread.getName();
@@ -177,7 +177,7 @@
      }
  
 -    public static <T> String getRegisteredName(final Registry<T> registry, final T entry) {
-+   public static <T> String getRegisteredName(Registry<T> registry, T entry) {
++    public static <T> String getRegisteredName(Registry<T> registry, T entry) {
          Identifier key = registry.getKey(entry);
          return key == null ? "[unregistered]" : key.toString();
      }
@@ -186,17 +186,17 @@
      }
  
 -    public static <T> Predicate<T> allOf(final Predicate<? super T> condition) {
-+   public static <T> Predicate<T> allOf(Predicate<? super T> condition) {
++    public static <T> Predicate<T> allOf(Predicate<? super T> condition) {
          return (Predicate<T>)condition;
      }
  
 -    public static <T> Predicate<T> allOf(final Predicate<? super T> condition1, final Predicate<? super T> condition2) {
-+   public static <T> Predicate<T> allOf(Predicate<? super T> condition1, Predicate<? super T> condition2) {
++    public static <T> Predicate<T> allOf(Predicate<? super T> condition1, Predicate<? super T> condition2) {
          return context -> condition1.test(context) && condition2.test(context);
      }
  
 -    public static <T> Predicate<T> allOf(final Predicate<? super T> condition1, final Predicate<? super T> condition2, final Predicate<? super T> condition3) {
-+   public static <T> Predicate<T> allOf(Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3) {
++    public static <T> Predicate<T> allOf(Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3) {
          return context -> condition1.test(context) && condition2.test(context) && condition3.test(context);
      }
  
@@ -205,7 +205,7 @@
 -        final Predicate<? super T> condition2,
 -        final Predicate<? super T> condition3,
 -        final Predicate<? super T> condition4
-+      Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3, Predicate<? super T> condition4
++        Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3, Predicate<? super T> condition4
      ) {
          return context -> condition1.test(context) && condition2.test(context) && condition3.test(context) && condition4.test(context);
      }
@@ -216,11 +216,11 @@
 -        final Predicate<? super T> condition3,
 -        final Predicate<? super T> condition4,
 -        final Predicate<? super T> condition5
-+      Predicate<? super T> condition1,
-+      Predicate<? super T> condition2,
-+      Predicate<? super T> condition3,
-+      Predicate<? super T> condition4,
-+      Predicate<? super T> condition5
++        Predicate<? super T> condition1,
++        Predicate<? super T> condition2,
++        Predicate<? super T> condition3,
++        Predicate<? super T> condition4,
++        Predicate<? super T> condition5
      ) {
          return context -> condition1.test(context)
              && condition2.test(context)
@@ -230,7 +230,7 @@
  
 -    @SafeVarargs
 -    public static <T> Predicate<T> allOf(final Predicate<? super T>... conditions) {
-+   public static <T> Predicate<T> allOf(Predicate<? super T>... conditions) {
++    public static <T> Predicate<T> allOf(Predicate<? super T>... conditions) {
          return context -> {
              for (Predicate<? super T> entry : conditions) {
                  if (!entry.test(context)) {
@@ -239,7 +239,7 @@
      }
  
 -    public static <T> Predicate<T> allOf(final List<? extends Predicate<? super T>> conditions) {
-+   public static <T> Predicate<T> allOf(List<? extends Predicate<? super T>> conditions) {
++    public static <T> Predicate<T> allOf(List<? extends Predicate<? super T>> conditions) {
          return switch (conditions.size()) {
              case 0 -> allOf();
              case 1 -> allOf((Predicate<? super T>)conditions.get(0));
@@ -248,17 +248,17 @@
      }
  
 -    public static <T> Predicate<T> anyOf(final Predicate<? super T> condition1) {
-+   public static <T> Predicate<T> anyOf(Predicate<? super T> condition1) {
++    public static <T> Predicate<T> anyOf(Predicate<? super T> condition1) {
          return (Predicate<T>)condition1;
      }
  
 -    public static <T> Predicate<T> anyOf(final Predicate<? super T> condition1, final Predicate<? super T> condition2) {
-+   public static <T> Predicate<T> anyOf(Predicate<? super T> condition1, Predicate<? super T> condition2) {
++    public static <T> Predicate<T> anyOf(Predicate<? super T> condition1, Predicate<? super T> condition2) {
          return context -> condition1.test(context) || condition2.test(context);
      }
  
 -    public static <T> Predicate<T> anyOf(final Predicate<? super T> condition1, final Predicate<? super T> condition2, final Predicate<? super T> condition3) {
-+   public static <T> Predicate<T> anyOf(Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3) {
++    public static <T> Predicate<T> anyOf(Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3) {
          return context -> condition1.test(context) || condition2.test(context) || condition3.test(context);
      }
  
@@ -267,7 +267,7 @@
 -        final Predicate<? super T> condition2,
 -        final Predicate<? super T> condition3,
 -        final Predicate<? super T> condition4
-+      Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3, Predicate<? super T> condition4
++        Predicate<? super T> condition1, Predicate<? super T> condition2, Predicate<? super T> condition3, Predicate<? super T> condition4
      ) {
          return context -> condition1.test(context) || condition2.test(context) || condition3.test(context) || condition4.test(context);
      }
@@ -278,11 +278,11 @@
 -        final Predicate<? super T> condition3,
 -        final Predicate<? super T> condition4,
 -        final Predicate<? super T> condition5
-+      Predicate<? super T> condition1,
-+      Predicate<? super T> condition2,
-+      Predicate<? super T> condition3,
-+      Predicate<? super T> condition4,
-+      Predicate<? super T> condition5
++        Predicate<? super T> condition1,
++        Predicate<? super T> condition2,
++        Predicate<? super T> condition3,
++        Predicate<? super T> condition4,
++        Predicate<? super T> condition5
      ) {
          return context -> condition1.test(context)
              || condition2.test(context)
@@ -292,7 +292,7 @@
  
 -    @SafeVarargs
 -    public static <T> Predicate<T> anyOf(final Predicate<? super T>... conditions) {
-+   public static <T> Predicate<T> anyOf(Predicate<? super T>... conditions) {
++    public static <T> Predicate<T> anyOf(Predicate<? super T>... conditions) {
          return context -> {
              for (Predicate<? super T> entry : conditions) {
                  if (entry.test(context)) {
@@ -301,7 +301,7 @@
      }
  
 -    public static <T> Predicate<T> anyOf(final List<? extends Predicate<? super T>> conditions) {
-+   public static <T> Predicate<T> anyOf(List<? extends Predicate<? super T>> conditions) {
++    public static <T> Predicate<T> anyOf(List<? extends Predicate<? super T>> conditions) {
          return switch (conditions.size()) {
              case 0 -> anyOf();
              case 1 -> anyOf((Predicate<? super T>)conditions.get(0));
@@ -310,7 +310,7 @@
      }
  
 -    public static <T> boolean isSymmetrical(final int width, final int height, final List<T> ingredients) {
-+   public static <T> boolean isSymmetrical(int width, int height, List<T> ingredients) {
++    public static <T> boolean isSymmetrical(int width, int height, List<T> ingredients) {
          if (width == 1) {
              return true;
          }
@@ -319,13 +319,13 @@
      }
  
 -    public static int growByHalf(final int currentSize, final int minimalNewSize) {
-+   public static int growByHalf(int currentSize, int minimalNewSize) {
++    public static int growByHalf(int currentSize, int minimalNewSize) {
          return (int)Math.max(Math.min((long)currentSize + (currentSize >> 1), 2147483639L), minimalNewSize);
      }
  
      @SuppressForbidden(reason = "Intentional use of default locale for user-visible date")
 -    public static DateTimeFormatter localizedDateFormatter(final FormatStyle formatStyle) {
-+   public static DateTimeFormatter localizedDateFormatter(FormatStyle formatStyle) {
++    public static DateTimeFormatter localizedDateFormatter(FormatStyle formatStyle) {
          return DateTimeFormatter.ofLocalizedDateTime(formatStyle);
      }
  
@@ -334,7 +334,7 @@
      }
  
 -    public static URI parseAndValidateUntrustedUri(final String uri) throws URISyntaxException {
-+   public static URI parseAndValidateUntrustedUri(String uri) throws URISyntaxException {
++    public static URI parseAndValidateUntrustedUri(String uri) throws URISyntaxException {
          URI parsedUri = new URI(uri);
          String scheme = parsedUri.getScheme();
          if (scheme == null) {
@@ -343,7 +343,7 @@
      }
  
 -    public static <T> T findNextInIterable(final Iterable<T> collection, final @Nullable T current) {
-+   public static <T> T findNextInIterable(Iterable<T> collection, T current) {
++    public static <T> T findNextInIterable(Iterable<T> collection, T current) {
          Iterator<T> iterator = collection.iterator();
          T first = iterator.next();
          if (current != null) {
@@ -352,7 +352,7 @@
      }
  
 -    public static <T> T findPreviousInIterable(final Iterable<T> collection, final @Nullable T current) {
-+   public static <T> T findPreviousInIterable(Iterable<T> collection, T current) {
++    public static <T> T findPreviousInIterable(Iterable<T> collection, T current) {
          Iterator<T> iterator = collection.iterator();
          T last = null;
  
@@ -361,18 +361,18 @@
      }
  
 -    public static <T> T make(final Supplier<T> factory) {
-+   public static <T> T make(Supplier<T> factory) {
++    public static <T> T make(Supplier<T> factory) {
          return factory.get();
      }
  
 -    public static <T> T make(final T t, final Consumer<? super T> consumer) {
-+   public static <T> T make(T t, Consumer<? super T> consumer) {
++    public static <T> T make(T t, Consumer<? super T> consumer) {
          consumer.accept(t);
          return t;
      }
  
 -    public static <K extends Enum<K>, V> Map<K, V> makeEnumMap(final Class<K> keyType, final Function<K, V> function) {
-+   public static <K extends Enum<K>, V> Map<K, V> makeEnumMap(Class<K> keyType, Function<K, V> function) {
++    public static <K extends Enum<K>, V> Map<K, V> makeEnumMap(Class<K> keyType, Function<K, V> function) {
          EnumMap<K, V> map = new EnumMap<>(keyType);
  
          for (K key : keyType.getEnumConstants()) {
@@ -381,22 +381,22 @@
      }
  
 -    public static <K, V1, V2> Map<K, V2> mapValues(final Map<K, V1> map, final Function<? super V1, V2> valueMapper) {
-+   public static <K, V1, V2> Map<K, V2> mapValues(Map<K, V1> map, Function<? super V1, V2> valueMapper) {
++    public static <K, V1, V2> Map<K, V2> mapValues(Map<K, V1> map, Function<? super V1, V2> valueMapper) {
          return map.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> valueMapper.apply(e.getValue())));
      }
  
 -    public static <K, V1, V2> Map<K, V2> mapValuesLazy(final Map<K, V1> map, final com.google.common.base.Function<V1, V2> valueMapper) {
-+   public static <K, V1, V2> Map<K, V2> mapValuesLazy(Map<K, V1> map, com.google.common.base.Function<V1, V2> valueMapper) {
++    public static <K, V1, V2> Map<K, V2> mapValuesLazy(Map<K, V1> map, com.google.common.base.Function<V1, V2> valueMapper) {
          return Maps.transformValues(map, valueMapper);
      }
  
 -    public static <T extends Enum<T>> Set<T> allOfEnumExcept(final T value) {
-+   public static <T extends Enum<T>> Set<T> allOfEnumExcept(T value) {
++    public static <T extends Enum<T>> Set<T> allOfEnumExcept(T value) {
          return EnumSet.complementOf(EnumSet.of(value));
      }
  
 -    public static <V> CompletableFuture<List<V>> sequence(final List<? extends CompletableFuture<V>> futures) {
-+   public static <V> CompletableFuture<List<V>> sequence(List<? extends CompletableFuture<V>> futures) {
++    public static <V> CompletableFuture<List<V>> sequence(List<? extends CompletableFuture<V>> futures) {
          if (futures.isEmpty()) {
              return CompletableFuture.completedFuture(List.of());
          }
@@ -405,13 +405,13 @@
      }
  
 -    public static <V> CompletableFuture<List<V>> sequenceFailFast(final List<? extends CompletableFuture<? extends V>> futures) {
-+   public static <V> CompletableFuture<List<V>> sequenceFailFast(List<? extends CompletableFuture<? extends V>> futures) {
++    public static <V> CompletableFuture<List<V>> sequenceFailFast(List<? extends CompletableFuture<? extends V>> futures) {
          CompletableFuture<List<V>> failureFuture = new CompletableFuture<>();
          return fallibleSequence(futures, failureFuture::completeExceptionally).applyToEither(failureFuture, Function.identity());
      }
  
 -    public static <V> CompletableFuture<List<V>> sequenceFailFastAndCancel(final List<? extends CompletableFuture<? extends V>> futures) {
-+   public static <V> CompletableFuture<List<V>> sequenceFailFastAndCancel(List<? extends CompletableFuture<? extends V>> futures) {
++    public static <V> CompletableFuture<List<V>> sequenceFailFastAndCancel(List<? extends CompletableFuture<? extends V>> futures) {
          CompletableFuture<List<V>> failureFuture = new CompletableFuture<>();
          return fallibleSequence(futures, exception -> {
              if (failureFuture.completeExceptionally(exception)) {
@@ -422,7 +422,7 @@
 -    private static <V> CompletableFuture<List<V>> fallibleSequence(
 -        final List<? extends CompletableFuture<? extends V>> futures, final Consumer<Throwable> failureHandler
 -    ) {
-+   private static <V> CompletableFuture<List<V>> fallibleSequence(List<? extends CompletableFuture<? extends V>> futures, Consumer<Throwable> failureHandler) {
++    private static <V> CompletableFuture<List<V>> fallibleSequence(List<? extends CompletableFuture<? extends V>> futures, Consumer<Throwable> failureHandler) {
          ObjectArrayList<V> results = new ObjectArrayList<>();
          results.size(futures.size());
          CompletableFuture<?>[] decoratedFutures = new CompletableFuture[futures.size()];
@@ -431,7 +431,7 @@
      }
  
 -    public static <T> Optional<T> ifElse(final Optional<T> input, final Consumer<T> onTrue, final Runnable onFalse) {
-+   public static <T> Optional<T> ifElse(Optional<T> input, Consumer<T> onTrue, Runnable onFalse) {
++    public static <T> Optional<T> ifElse(Optional<T> input, Consumer<T> onTrue, Runnable onFalse) {
          if (input.isPresent()) {
              onTrue.accept(input.get());
          } else {
@@ -440,7 +440,7 @@
      }
  
 -    public static <T> Supplier<T> name(final Supplier<T> task, final Supplier<String> nameGetter) {
-+   public static <T> Supplier<T> name(final Supplier<T> task, Supplier<String> nameGetter) {
++    public static <T> Supplier<T> name(final Supplier<T> task, Supplier<String> nameGetter) {
          if (SharedConstants.DEBUG_NAMED_RUNNABLES) {
              final String name = nameGetter.get();
              return new Supplier<T>() {
@@ -449,7 +449,7 @@
      }
  
 -    public static Runnable name(final Runnable task, final Supplier<String> nameGetter) {
-+   public static Runnable name(final Runnable task, Supplier<String> nameGetter) {
++    public static Runnable name(final Runnable task, Supplier<String> nameGetter) {
          if (SharedConstants.DEBUG_NAMED_RUNNABLES) {
              final String name = nameGetter.get();
              return new Runnable() {
@@ -458,7 +458,7 @@
      }
  
 -    public static void logAndPauseIfInIde(final String message) {
-+   public static void logAndPauseIfInIde(String message) {
++    public static void logAndPauseIfInIde(String message) {
          LOGGER.error(message);
          if (SharedConstants.IS_RUNNING_IN_IDE) {
              doPause(message);
@@ -466,7 +466,7 @@
      }
  
 -    public static void logAndPauseIfInIde(final String message, final Throwable throwable) {
-+   public static void logAndPauseIfInIde(String message, Throwable throwable) {
++    public static void logAndPauseIfInIde(String message, Throwable throwable) {
          LOGGER.error(message, throwable);
          if (SharedConstants.IS_RUNNING_IN_IDE) {
              doPause(message);
@@ -474,7 +474,7 @@
      }
  
 -    public static <T extends Throwable> T pauseInIde(final T t) {
-+   public static <T extends Throwable> T pauseInIde(T t) {
++    public static <T extends Throwable> T pauseInIde(T t) {
          if (SharedConstants.IS_RUNNING_IN_IDE) {
              LOGGER.error("Trying to throw a fatal exception, pausing in IDE", t);
              doPause(t.getMessage());
@@ -483,12 +483,12 @@
      }
  
 -    public static void setPause(final Consumer<String> pauseFunction) {
-+   public static void setPause(Consumer<String> pauseFunction) {
++    public static void setPause(Consumer<String> pauseFunction) {
          thePauser = pauseFunction;
      }
  
 -    private static void doPause(final String message) {
-+   private static void doPause(String message) {
++    private static void doPause(String message) {
          Instant preLog = Instant.now();
          LOGGER.warn("Did you remember to set a breakpoint here?");
          boolean dontBotherWithPause = Duration.between(preLog, Instant.now()).toMillis() > 500L;
@@ -497,7 +497,7 @@
      }
  
 -    public static String describeError(final Throwable err) {
-+   public static String describeError(Throwable err) {
++    public static String describeError(Throwable err) {
          if (err.getCause() != null) {
              return describeError(err.getCause());
          } else {
@@ -506,22 +506,22 @@
      }
  
 -    public static <T> T getRandom(final T[] array, final RandomSource random) {
-+   public static <T> T getRandom(T[] array, RandomSource random) {
++    public static <T> T getRandom(T[] array, RandomSource random) {
          return array[random.nextInt(array.length)];
      }
  
 -    public static int getRandom(final int[] array, final RandomSource random) {
-+   public static int getRandom(int[] array, RandomSource random) {
++    public static int getRandom(int[] array, RandomSource random) {
          return array[random.nextInt(array.length)];
      }
  
 -    public static <T> T getRandom(final List<T> list, final RandomSource random) {
-+   public static <T> T getRandom(List<T> list, RandomSource random) {
++    public static <T> T getRandom(List<T> list, RandomSource random) {
          return list.get(random.nextInt(list.size()));
      }
  
 -    public static <T> Optional<T> getRandomSafe(final List<T> list, final RandomSource random) {
-+   public static <T> Optional<T> getRandomSafe(List<T> list, RandomSource random) {
++    public static <T> Optional<T> getRandomSafe(List<T> list, RandomSource random) {
          return list.isEmpty() ? Optional.empty() : Optional.of(getRandom(list, random));
      }
  
@@ -530,7 +530,7 @@
      }
  
 -    private static boolean executeInSequence(final BooleanSupplier... operations) {
-+   private static boolean executeInSequence(BooleanSupplier... operations) {
++    private static boolean executeInSequence(BooleanSupplier... operations) {
          for (BooleanSupplier operation : operations) {
              if (!operation.getAsBoolean()) {
                  LOGGER.warn("Failed to execute {}", operation);
@@ -539,7 +539,7 @@
      }
  
 -    private static boolean runWithRetries(final int numberOfRetries, final String description, final BooleanSupplier... operations) {
-+   private static boolean runWithRetries(int numberOfRetries, String description, BooleanSupplier... operations) {
++    private static boolean runWithRetries(int numberOfRetries, String description, BooleanSupplier... operations) {
          for (int retry = 0; retry < numberOfRetries; retry++) {
              if (executeInSequence(operations)) {
                  return true;
@@ -548,17 +548,17 @@
      }
  
 -    public static boolean safeMoveFile(final Path fromPath, final Path toPath, final CopyOption... options) {
-+   public static boolean safeMoveFile(Path fromPath, Path toPath, CopyOption... options) {
++    public static boolean safeMoveFile(Path fromPath, Path toPath, CopyOption... options) {
          return runWithRetries(10, "move from  " + fromPath + " to " + toPath, createRenamer(fromPath, toPath, options), createFileCreatedCheck(toPath));
      }
  
 -    public static void safeReplaceFile(final Path targetPath, final Path newPath, final Path backupPath) {
-+   public static void safeReplaceFile(Path targetPath, Path newPath, Path backupPath) {
++    public static void safeReplaceFile(Path targetPath, Path newPath, Path backupPath) {
          safeReplaceOrMoveFile(targetPath, newPath, backupPath, false);
      }
  
 -    public static boolean safeReplaceOrMoveFile(final Path targetPath, final Path newPath, final Path backupPath, final boolean noRollback) {
-+   public static boolean safeReplaceOrMoveFile(Path targetPath, Path newPath, Path backupPath, boolean noRollback) {
++    public static boolean safeReplaceOrMoveFile(Path targetPath, Path newPath, Path backupPath, boolean noRollback) {
          if (Files.exists(targetPath)
              && !runWithRetries(
                  10, "create backup " + backupPath, createDeleter(backupPath), createRenamer(targetPath, backupPath), createFileCreatedCheck(backupPath)
@@ -567,7 +567,7 @@
      }
  
 -    public static int offsetByCodepoints(final String input, int pos, final int offset) {
-+   public static int offsetByCodepoints(String input, int pos, int offset) {
++    public static int offsetByCodepoints(String input, int pos, int offset) {
          int length = input.length();
          if (offset >= 0) {
              for (int i = 0; pos < length && i < offset; i++) {
@@ -576,12 +576,12 @@
      }
  
 -    public static Consumer<String> prefix(final String prefix, final Consumer<String> consumer) {
-+   public static Consumer<String> prefix(String prefix, Consumer<String> consumer) {
++    public static Consumer<String> prefix(String prefix, Consumer<String> consumer) {
          return s -> consumer.accept(prefix + s);
      }
  
 -    public static DataResult<int[]> fixedSize(final IntStream stream, final int size) {
-+   public static DataResult<int[]> fixedSize(IntStream stream, int size) {
++    public static DataResult<int[]> fixedSize(IntStream stream, int size) {
          int[] ints = stream.limit(size + 1).toArray();
          if (ints.length != size) {
              Supplier<String> message = () -> "Input is not a list of " + size + " ints";
@@ -590,7 +590,7 @@
      }
  
 -    public static DataResult<long[]> fixedSize(final LongStream stream, final int size) {
-+   public static DataResult<long[]> fixedSize(LongStream stream, int size) {
++    public static DataResult<long[]> fixedSize(LongStream stream, int size) {
          long[] longs = stream.limit(size + 1).toArray();
          if (longs.length != size) {
              Supplier<String> message = () -> "Input is not a list of " + size + " longs";
@@ -599,7 +599,7 @@
      }
  
 -    public static <T> DataResult<List<T>> fixedSize(final List<T> list, final int size) {
-+   public static <T> DataResult<List<T>> fixedSize(List<T> list, int size) {
++    public static <T> DataResult<List<T>> fixedSize(List<T> list, int size) {
          if (list.size() != size) {
              Supplier<String> message = () -> "Input is not a list of " + size + " elements";
              return list.size() >= size ? DataResult.error(message, list.subList(0, size)) : DataResult.error(message);
@@ -608,14 +608,14 @@
      }
  
 -    public static void copyBetweenDirs(final Path sourceDir, final Path targetDir, final Path sourcePath) throws IOException {
-+   public static void copyBetweenDirs(Path sourceDir, Path targetDir, Path sourcePath) throws IOException {
++    public static void copyBetweenDirs(Path sourceDir, Path targetDir, Path sourcePath) throws IOException {
          Path relative = sourceDir.relativize(sourcePath);
          Path target = targetDir.resolve(relative);
          Files.copy(sourcePath, target);
      }
  
 -    public static String sanitizeName(final String value, final CharPredicate isAllowedChar) {
-+   public static String sanitizeName(String value, CharPredicate isAllowedChar) {
++    public static String sanitizeName(String value, CharPredicate isAllowedChar) {
          return value.toLowerCase(Locale.ROOT)
              .chars()
              .mapToObj(c -> isAllowedChar.test((char)c) ? Character.toString((char)c) : "_")
@@ -623,7 +623,7 @@
      }
  
 -    public static <K, V> SingleKeyCache<K, V> singleKeyCache(final Function<K, V> computeValueFunction) {
-+   public static <K, V> SingleKeyCache<K, V> singleKeyCache(Function<K, V> computeValueFunction) {
++    public static <K, V> SingleKeyCache<K, V> singleKeyCache(Function<K, V> computeValueFunction) {
          return new SingleKeyCache<>(computeValueFunction);
      }
  
@@ -632,7 +632,7 @@
  
              @Override
 -            public R apply(final T arg) {
-+         public R apply(T arg) {
++            public R apply(T arg) {
                  return this.cache.computeIfAbsent(arg, function);
              }
  
@@ -641,7 +641,7 @@
  
              @Override
 -            public R apply(final T a, final U b) {
-+         public R apply(T a, U b) {
++            public R apply(T a, U b) {
                  return this.cache.computeIfAbsent(Pair.of(a, b), args -> function.apply(args.getFirst(), args.getSecond()));
              }
  
@@ -650,14 +650,14 @@
      }
  
 -    public static <T> List<T> toShuffledList(final Stream<T> stream, final RandomSource random) {
-+   public static <T> List<T> toShuffledList(Stream<T> stream, RandomSource random) {
++    public static <T> List<T> toShuffledList(Stream<T> stream, RandomSource random) {
          ObjectArrayList<T> result = stream.collect(ObjectArrayList.toList());
          shuffle(result, random);
          return result;
      }
  
 -    public static IntArrayList toShuffledList(final IntStream stream, final RandomSource random) {
-+   public static IntArrayList toShuffledList(IntStream stream, RandomSource random) {
++    public static IntArrayList toShuffledList(IntStream stream, RandomSource random) {
          IntArrayList result = IntArrayList.wrap(stream.toArray());
          int size = result.size();
  
@@ -666,21 +666,21 @@
      }
  
 -    public static <T> List<T> shuffledCopy(final T[] array, final RandomSource random) {
-+   public static <T> List<T> shuffledCopy(T[] array, RandomSource random) {
++    public static <T> List<T> shuffledCopy(T[] array, RandomSource random) {
          ObjectArrayList<T> copy = new ObjectArrayList<>(array);
          shuffle(copy, random);
          return copy;
      }
  
 -    public static <T> List<T> shuffledCopy(final ObjectArrayList<T> list, final RandomSource random) {
-+   public static <T> List<T> shuffledCopy(ObjectArrayList<T> list, RandomSource random) {
++    public static <T> List<T> shuffledCopy(ObjectArrayList<T> list, RandomSource random) {
          ObjectArrayList<T> copy = new ObjectArrayList<>(list);
          shuffle(copy, random);
          return copy;
      }
  
 -    public static <T> void shuffle(final List<T> list, final RandomSource random) {
-+   public static <T> void shuffle(List<T> list, RandomSource random) {
++    public static <T> void shuffle(List<T> list, RandomSource random) {
          int size = list.size();
  
          for (int i = size; i > 1; i--) {
@@ -689,12 +689,12 @@
      }
  
 -    public static <T> CompletableFuture<T> blockUntilDone(final Function<Executor, CompletableFuture<T>> task) {
-+   public static <T> CompletableFuture<T> blockUntilDone(Function<Executor, CompletableFuture<T>> task) {
++    public static <T> CompletableFuture<T> blockUntilDone(Function<Executor, CompletableFuture<T>> task) {
          return blockUntilDone(task, CompletableFuture::isDone);
      }
  
 -    public static <T> T blockUntilDone(final Function<Executor, T> task, final Predicate<T> completionCheck) {
-+   public static <T> T blockUntilDone(Function<Executor, T> task, Predicate<T> completionCheck) {
++    public static <T> T blockUntilDone(Function<Executor, T> task, Predicate<T> completionCheck) {
          BlockingQueue<Runnable> tasks = new LinkedBlockingQueue<>();
          T result = task.apply(tasks::add);
  
@@ -703,7 +703,7 @@
      }
  
 -    public static <T> ToIntFunction<T> createIndexLookup(final List<T> values) {
-+   public static <T> ToIntFunction<T> createIndexLookup(List<T> values) {
++    public static <T> ToIntFunction<T> createIndexLookup(List<T> values) {
          int size = values.size();
          if (size < 8) {
              return values::indexOf;
@@ -712,7 +712,7 @@
      }
  
 -    public static <T> ToIntFunction<T> createIndexIdentityLookup(final List<T> values) {
-+   public static <T> ToIntFunction<T> createIndexIdentityLookup(List<T> values) {
++    public static <T> ToIntFunction<T> createIndexIdentityLookup(List<T> values) {
          int size = values.size();
          if (size < 8) {
              ReferenceList<T> referenceLookup = new ReferenceImmutableList<>(values);
@@ -721,18 +721,18 @@
      }
  
 -    public static <A, B> Typed<B> writeAndReadTypedOrThrow(final Typed<A> typed, final Type<B> newType, final UnaryOperator<Dynamic<?>> function) {
-+   public static <A, B> Typed<B> writeAndReadTypedOrThrow(Typed<A> typed, Type<B> newType, UnaryOperator<Dynamic<?>> function) {
++    public static <A, B> Typed<B> writeAndReadTypedOrThrow(Typed<A> typed, Type<B> newType, UnaryOperator<Dynamic<?>> function) {
          Dynamic<?> dynamic = (Dynamic<?>)typed.write().getOrThrow();
          return readTypedOrThrow(newType, function.apply(dynamic), true);
      }
  
 -    public static <T> Typed<T> readTypedOrThrow(final Type<T> type, final Dynamic<?> dynamic) {
-+   public static <T> Typed<T> readTypedOrThrow(Type<T> type, Dynamic<?> dynamic) {
++    public static <T> Typed<T> readTypedOrThrow(Type<T> type, Dynamic<?> dynamic) {
          return readTypedOrThrow(type, dynamic, false);
      }
  
 -    public static <T> Typed<T> readTypedOrThrow(final Type<T> type, final Dynamic<?> dynamic, final boolean acceptPartial) {
-+   public static <T> Typed<T> readTypedOrThrow(Type<T> type, Dynamic<?> dynamic, boolean acceptPartial) {
++    public static <T> Typed<T> readTypedOrThrow(Type<T> type, Dynamic<?> dynamic, boolean acceptPartial) {
          DataResult<Typed<T>> result = type.readTyped(dynamic).map(Pair::getFirst);
  
          try {
@@ -741,22 +741,22 @@
      }
  
 -    public static <T> List<T> copyAndAdd(final List<T> list, final T element) {
-+   public static <T> List<T> copyAndAdd(List<T> list, T element) {
++    public static <T> List<T> copyAndAdd(List<T> list, T element) {
          return ImmutableList.<T>builderWithExpectedSize(list.size() + 1).addAll(list).add(element).build();
      }
  
 -    public static <T> List<T> copyAndAdd(final List<T> list, final T... elements) {
-+   public static <T> List<T> copyAndAdd(List<T> list, T... elements) {
++    public static <T> List<T> copyAndAdd(List<T> list, T... elements) {
          return ImmutableList.<T>builderWithExpectedSize(list.size() + elements.length).addAll(list).add(elements).build();
      }
  
 -    public static <T> List<T> copyAndAdd(final T element, final List<T> list) {
-+   public static <T> List<T> copyAndAdd(T element, List<T> list) {
++    public static <T> List<T> copyAndAdd(T element, List<T> list) {
          return ImmutableList.<T>builderWithExpectedSize(list.size() + 1).add(element).addAll(list).build();
      }
  
 -    public static <T> List<T> join(final List<T> first, final List<T> second) {
-+   public static <T> List<T> join(List<T> first, List<T> second) {
++    public static <T> List<T> join(List<T> first, List<T> second) {
          Builder<T> builder = ImmutableList.builderWithExpectedSize(first.size() + second.size());
          builder.addAll(first);
          builder.addAll(second);
@@ -764,7 +764,7 @@
      }
  
 -    public static <T> List<T> join(final List<T>... lists) {
-+   public static <T> List<T> join(List<T>... lists) {
++    public static <T> List<T> join(List<T>... lists) {
          int size = 0;
  
          for (List<T> list : lists) {
@@ -773,7 +773,7 @@
      }
  
 -    public static <K, V> Map<K, V> copyAndPut(final Map<K, V> map, final K key, final V value) {
-+   public static <K, V> Map<K, V> copyAndPut(Map<K, V> map, K key, V value) {
++    public static <K, V> Map<K, V> copyAndPut(Map<K, V> map, K key, V value) {
          return ImmutableMap.<K, V>builderWithExpectedSize(map.size() + 1).putAll(map).put(key, value).buildKeepingLast();
      }
  
@@ -782,14 +782,14 @@
          WINDOWS("windows") {
              @Override
 -            protected String[] getOpenUriArguments(final URI uri) {
-+         protected String[] getOpenUriArguments(URI uri) {
++            protected String[] getOpenUriArguments(URI uri) {
                  return new String[]{"rundll32", "url.dll,FileProtocolHandler", uri.toString()};
              }
          },
          OSX("mac") {
              @Override
 -            protected String[] getOpenUriArguments(final URI uri) {
-+         protected String[] getOpenUriArguments(URI uri) {
++            protected String[] getOpenUriArguments(URI uri) {
                  return new String[]{"open", uri.toString()};
              }
          },
@@ -798,12 +798,12 @@
          private final String telemetryName;
  
 -        OS(final String telemetryName) {
-+      OS(String telemetryName) {
++        OS(String telemetryName) {
              this.telemetryName = telemetryName;
          }
  
 -        public void openUri(final URI uri) {
-+      public void openUri(URI uri) {
++        public void openUri(URI uri) {
              try {
                  Process process = Runtime.getRuntime().exec(this.getOpenUriArguments(uri));
                  process.getInputStream().close();
@@ -811,22 +811,22 @@
                  process.getOutputStream().close();
              } catch (IOException e) {
                  Util.LOGGER.error("Couldn't open location '{}'", uri, e);
-+            Util.exceptionOpenUrl = e;
++                Util.exceptionOpenUrl = e;
              }
          }
  
 -        public void openFile(final File file) {
-+      public void openFile(File file) {
++        public void openFile(File file) {
              this.openUri(file.toURI());
          }
  
 -        public void openPath(final Path path) {
-+      public void openPath(Path path) {
++        public void openPath(Path path) {
              this.openUri(path.toUri());
          }
  
 -        protected String[] getOpenUriArguments(final URI uri) {
-+      protected String[] getOpenUriArguments(URI uri) {
++        protected String[] getOpenUriArguments(URI uri) {
              String string = uri.toString();
              if ("file".equals(uri.getScheme())) {
                  string = string.replace("file:", "file://");
@@ -835,7 +835,7 @@
          }
  
 -        public void openUri(final String uri) {
-+      public void openUri(String uri) {
++        public void openUri(String uri) {
              try {
                  this.openUri(new URI(uri));
              } catch (URISyntaxException | IllegalArgumentException e) {

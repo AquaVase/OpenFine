@@ -14,24 +14,24 @@
      private final DataComponentMap prototype;
      private Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch;
      private boolean copyOnWrite;
-+   private CompoundTag tag;
++    private CompoundTag tag;
  
 -    public PatchedDataComponentMap(final DataComponentMap prototype) {
-+   public PatchedDataComponentMap(DataComponentMap prototype) {
++    public PatchedDataComponentMap(DataComponentMap prototype) {
          this(prototype, Reference2ObjectMaps.emptyMap(), true);
      }
  
 -    private PatchedDataComponentMap(
 -        final DataComponentMap prototype, final Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch, final boolean copyOnWrite
 -    ) {
-+   private PatchedDataComponentMap(DataComponentMap prototype, Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch, boolean copyOnWrite) {
++    private PatchedDataComponentMap(DataComponentMap prototype, Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch, boolean copyOnWrite) {
          this.prototype = prototype;
          this.patch = patch;
          this.copyOnWrite = copyOnWrite;
      }
  
 -    public static PatchedDataComponentMap fromPatch(final DataComponentMap prototype, final DataComponentPatch patch) {
-+   public static PatchedDataComponentMap fromPatch(DataComponentMap prototype, DataComponentPatch patch) {
++    public static PatchedDataComponentMap fromPatch(DataComponentMap prototype, DataComponentPatch patch) {
          if (isPatchSanitized(prototype, patch.map)) {
              return new PatchedDataComponentMap(prototype, patch.map, true);
          }
@@ -40,7 +40,7 @@
      }
  
 -    private static boolean isPatchSanitized(final DataComponentMap prototype, final Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch) {
-+   private static boolean isPatchSanitized(DataComponentMap prototype, Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch) {
++    private static boolean isPatchSanitized(DataComponentMap prototype, Reference2ObjectMap<DataComponentType<?>, Optional<?>> patch) {
          for (Entry<DataComponentType<?>, Optional<?>> entry : Reference2ObjectMaps.fastIterable(patch)) {
              Object defaultValue = prototype.get(entry.getKey());
              Optional<?> value = entry.getValue();
@@ -49,17 +49,17 @@
  
      @Override
 -    public <T> @Nullable T get(final DataComponentType<? extends T> type) {
-+   public <T> T get(DataComponentType<? extends T> type) {
++    public <T> T get(DataComponentType<? extends T> type) {
          return DataComponentPatch.getFromPatchAndPrototype(this.patch, this.prototype, type);
      }
  
 -    public boolean hasNonDefault(final DataComponentType<?> type) {
-+   public boolean hasNonDefault(DataComponentType<?> type) {
++    public boolean hasNonDefault(DataComponentType<?> type) {
          return this.patch.containsKey(type);
      }
  
 -    public <T> @Nullable T set(final DataComponentType<T> type, final @Nullable T value) {
-+   public <T> T set(DataComponentType<T> type, T value) {
++    public <T> T set(DataComponentType<T> type, T value) {
          this.ensureMapOwnership();
          T defaultValue = this.prototype.get(type);
          Optional<T> lastValue;
@@ -67,17 +67,17 @@
              lastValue = (Optional<T>)this.patch.put(type, Optional.ofNullable(value));
          }
  
-+      this.markDirty();
++        this.markDirty();
          return lastValue != null ? lastValue.orElse(defaultValue) : defaultValue;
      }
  
 -    public <T> @Nullable T set(final TypedDataComponent<T> value) {
-+   public <T> T set(TypedDataComponent<T> value) {
++    public <T> T set(TypedDataComponent<T> value) {
          return this.set(value.type(), value.value());
      }
  
 -    public <T> @Nullable T remove(final DataComponentType<? extends T> type) {
-+   public <T> T remove(DataComponentType<? extends T> type) {
++    public <T> T remove(DataComponentType<? extends T> type) {
          this.ensureMapOwnership();
          T defaultValue = this.prototype.get(type);
          Optional<? extends T> lastValue;
@@ -86,7 +86,7 @@
      }
  
 -    public void applyPatch(final DataComponentPatch patch) {
-+   public void applyPatch(DataComponentPatch patch) {
++    public void applyPatch(DataComponentPatch patch) {
          this.ensureMapOwnership();
  
          for (Entry<DataComponentType<?>, Optional<?>> entry : Reference2ObjectMaps.fastIterable(patch.map)) {
@@ -95,7 +95,7 @@
      }
  
 -    private void applyPatch(final DataComponentType<?> type, final Optional<?> value) {
-+   private void applyPatch(DataComponentType<?> type, Optional<?> value) {
++    private void applyPatch(DataComponentType<?> type, Optional<?> value) {
          Object defaultValue = this.prototype.get(type);
          if (value.isPresent()) {
              if (value.get().equals(defaultValue)) {
@@ -104,7 +104,7 @@
      }
  
 -    public void restorePatch(final DataComponentPatch patch) {
-+   public void restorePatch(DataComponentPatch patch) {
++    public void restorePatch(DataComponentPatch patch) {
          this.ensureMapOwnership();
          this.patch.clear();
          this.patch.putAll(patch.map);
@@ -113,7 +113,7 @@
      }
  
 -    public void setAll(final DataComponentMap components) {
-+   public void setAll(DataComponentMap components) {
++    public void setAll(DataComponentMap components) {
          for (TypedDataComponent<?> entry : components) {
              entry.applyTo(this);
          }
@@ -122,7 +122,7 @@
  
      @Override
 -    public boolean equals(final Object obj) {
-+   public boolean equals(Object obj) {
++    public boolean equals(Object obj) {
          return this == obj
              ? true
              : obj instanceof PatchedDataComponentMap otherMap && this.prototype.equals(otherMap.prototype) && this.patch.equals(otherMap.patch);
@@ -133,21 +133,21 @@
 -}
 \ No newline at end of file
 +
-+   public CompoundTag getTag() {
-+      if (this.tag == null) {
-+         Level world = Minecraft.getInstance().level;
-+         if (world != null) {
-+            DataComponentPatch patch = this.asPatch();
-+            this.tag = (CompoundTag)DataComponentPatch.CODEC
-+               .encodeStart(world.registryAccess().createSerializationContext(NbtOps.INSTANCE), patch)
-+               .getOrThrow();
-+         }
-+      }
++    public CompoundTag getTag() {
++        if (this.tag == null) {
++            Level world = Minecraft.getInstance().level;
++            if (world != null) {
++                DataComponentPatch patch = this.asPatch();
++                this.tag = (CompoundTag)DataComponentPatch.CODEC
++                    .encodeStart(world.registryAccess().createSerializationContext(NbtOps.INSTANCE), patch)
++                    .getOrThrow();
++            }
++        }
 +
-+      return this.tag;
-+   }
++        return this.tag;
++    }
 +
-+   private void markDirty() {
-+      this.tag = null;
-+   }
++    private void markDirty() {
++        this.tag = null;
++    }
 +}

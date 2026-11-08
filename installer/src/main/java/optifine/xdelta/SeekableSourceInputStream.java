@@ -4,26 +4,26 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class SeekableSourceInputStream extends InputStream {
-   SeekableSource ss;
+    SeekableSource ss;
 
-   public SeekableSourceInputStream(SeekableSource ss) {
-      this.ss = ss;
-   }
+    public SeekableSourceInputStream(SeekableSource ss) {
+        this.ss = ss;
+    }
 
-   @Override
-   public int read() throws IOException {
-      byte[] b = new byte[1];
-      this.ss.read(b, 0, 1);
-      return b[0];
-   }
+    @Override
+    public int read() throws IOException {
+        byte[] b = new byte[1];
+        this.ss.read(b, 0, 1);
+        return b[0];
+    }
 
-   @Override
-   public int read(byte[] b, int off, int len) throws IOException {
-      return this.ss.read(b, off, len);
-   }
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        return this.ss.read(b, off, len);
+    }
 
-   @Override
-   public void close() throws IOException {
-      this.ss.close();
-   }
+    @Override
+    public void close() throws IOException {
+        this.ss.close();
+    }
 }

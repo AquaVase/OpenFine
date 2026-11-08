@@ -34,41 +34,41 @@
      private static final int CIRCULAR_LOG_SIZE = 10;
      private final Queue<GlDebug.LogEntry> MESSAGE_BUFFER = EvictingQueue.create(10);
 -    private volatile GlDebug.@Nullable LogEntry lastEntry;
-+   private volatile GlDebug.LogEntry lastEntry;
++    private volatile GlDebug.LogEntry lastEntry;
      private static final List<Integer> DEBUG_LEVELS = ImmutableList.of(37190, 37191, 37192, 33387);
      private static final List<Integer> DEBUG_LEVELS_ARB = ImmutableList.of(37190, 37191, 37192);
-+   private static int[] ignoredErrors = makeIgnoredErrors();
++    private static int[] ignoredErrors = makeIgnoredErrors();
  
 -    private static String printUnknownToken(final int token) {
-+   private static int[] makeIgnoredErrors() {
-+      String prop = System.getProperty("gl.ignore.errors");
-+      if (prop == null) {
-+         return new int[0];
-+      }
++    private static int[] makeIgnoredErrors() {
++        String prop = System.getProperty("gl.ignore.errors");
++        if (prop == null) {
++            return new int[0];
++        }
 +
-+      String[] parts = Config.tokenize(prop, ",");
-+      int[] ids = new int[0];
++        String[] parts = Config.tokenize(prop, ",");
++        int[] ids = new int[0];
 +
-+      for (int i = 0; i < parts.length; i++) {
-+         String part = parts[i].trim();
-+         int id = part.startsWith("0x") ? Config.parseHexInt(part, -1) : Config.parseInt(part, -1);
-+         if (id < 0) {
-+            Config.warn("Invalid error id: " + part);
-+         } else {
-+            Config.log("Ignore OpenGL error: " + id);
-+            ids = ArrayUtils.addIntToArray(ids, id);
-+         }
-+      }
++        for (int i = 0; i < parts.length; i++) {
++            String part = parts[i].trim();
++            int id = part.startsWith("0x") ? Config.parseHexInt(part, -1) : Config.parseInt(part, -1);
++            if (id < 0) {
++                Config.warn("Invalid error id: " + part);
++            } else {
++                Config.log("Ignore OpenGL error: " + id);
++                ids = ArrayUtils.addIntToArray(ids, id);
++            }
++        }
 +
-+      return ids;
-+   }
++        return ids;
++    }
 +
-+   private static String printUnknownToken(int token) {
++    private static String printUnknownToken(int token) {
          return "Unknown (0x" + HexFormat.of().withUpperCase().toHexDigits(token) + ")";
      }
  
 -    public static String sourceToString(final int source) {
-+   public static String sourceToString(int source) {
++    public static String sourceToString(int source) {
          return switch (source) {
              case 33350 -> "API";
              case 33351 -> "WINDOW SYSTEM";
@@ -77,7 +77,7 @@
      }
  
 -    public static String typeToString(final int type) {
-+   public static String typeToString(int type) {
++    public static String typeToString(int type) {
          return switch (type) {
              case 33356 -> "ERROR";
              case 33357 -> "DEPRECATED BEHAVIOR";
@@ -86,81 +86,89 @@
      }
  
 -    public static String severityToString(final int severity) {
-+   public static String severityToString(int severity) {
++    public static String severityToString(int severity) {
          return switch (severity) {
              case 33387 -> "NOTIFICATION";
              case 37190 -> "HIGH";
-@@ -68,11 +98,46 @@
+@@ -68,21 +98,59 @@
          };
      }
  
 -    private void printDebugLog(final int source, final int type, final int id, final int severity, final int length, final long message, final long userParam) {
-+   private void printDebugLog(int source, int type, int id, int severity, int length, long message, long userParam) {
-+      if (type != 33385 && type != 33386) {
-+         if (!ArrayUtils.contains(ignoredErrors, id)) {
-+            if (!Config.isShaders() || source != 33352) {
-+               Minecraft mc = Minecraft.getInstance();
-+               if (mc == null || mc.getWindow() == null || !mc.getWindow().isClosed()) {
-+                  if (GlErrors.isEnabled(id)) {
-+                     String sourceStr = sourceToString(source);
-+                     String typeStr = typeToString(type);
-+                     String severityStr = severityToString(severity);
-+                     String messageStr = GLDebugMessageCallback.getMessage(length, message);
-+                     messageStr = StrUtils.trim(messageStr, " \n\r\t");
-+                     String log = String.format("OpenGL %s %s: %s (%s)", sourceStr, typeStr, id, messageStr);
-+                     Exception exc = new Exception("Stack trace");
-+                     StackTraceElement[] stes = exc.getStackTrace();
-+                     StackTraceElement[] stes2 = stes.length > 2 ? Arrays.copyOfRange(stes, 2, stes.length) : stes;
-+                     exc.setStackTrace(stes2);
-+                     if (RenderType.drawRenderType != null) {
-+                        LOGGER.info("Draw RenderType: " + RenderType.drawRenderType);
-+                     }
-+
-+                     if (type == 33356) {
-+                        LOGGER.error(log, exc);
-+                     } else {
-+                        LOGGER.info(log, exc);
-+                     }
-+
-+                     if (Config.isShowGlErrors() && TimedEvent.isActive("ShowGlErrorDebug", 10000L) && mc.level != null) {
-+                        String errorText = Config.getGlErrorString(id);
-+                        if (id == 0 || Config.equals(errorText, "Unknown")) {
-+                           errorText = messageStr;
-+                        }
-+
-+                        String messageChat = I18n.get("of.message.openglError", id, errorText);
-+                        mc.schedule(() -> mc.gui.hud.getChat().addClientSystemMessage(Component.literal(messageChat)));
-+                     }
-+
-         String msg = GLDebugMessageCallback.getMessage(length, message);
+-        String msg = GLDebugMessageCallback.getMessage(length, message);
 -        GlDebug.LogEntry entry;
-         synchronized (this.MESSAGE_BUFFER) {
+-        synchronized (this.MESSAGE_BUFFER) {
 -            entry = this.lastEntry;
-+                        GlDebug.LogEntry entry = this.lastEntry;
-             if (entry != null && entry.isSame(source, type, id, severity, msg)) {
-                 entry.count++;
-             } else {
-@@ -81,9 +146,12 @@
-                 this.lastEntry = entry;
+-            if (entry != null && entry.isSame(source, type, id, severity, msg)) {
+-                entry.count++;
+-            } else {
+-                entry = new GlDebug.LogEntry(source, type, id, severity, msg);
+-                this.MESSAGE_BUFFER.add(entry);
+-                this.lastEntry = entry;
++    private void printDebugLog(int source, int type, int id, int severity, int length, long message, long userParam) {
++        if (type != 33385 && type != 33386) {
++            if (!ArrayUtils.contains(ignoredErrors, id)) {
++                if (!Config.isShaders() || source != 33352) {
++                    Minecraft mc = Minecraft.getInstance();
++                    if (mc == null || mc.getWindow() == null || !mc.getWindow().isClosed()) {
++                        if (GlErrors.isEnabled(id)) {
++                            String sourceStr = sourceToString(source);
++                            String typeStr = typeToString(type);
++                            String severityStr = severityToString(severity);
++                            String messageStr = GLDebugMessageCallback.getMessage(length, message);
++                            messageStr = StrUtils.trim(messageStr, " \n\r\t");
++                            String log = String.format("OpenGL %s %s: %s (%s)", sourceStr, typeStr, id, messageStr);
++                            Exception exc = new Exception("Stack trace");
++                            StackTraceElement[] stes = exc.getStackTrace();
++                            StackTraceElement[] stes2 = stes.length > 2 ? Arrays.copyOfRange(stes, 2, stes.length) : stes;
++                            exc.setStackTrace(stes2);
++                            if (RenderType.drawRenderType != null) {
++                                LOGGER.info("Draw RenderType: " + RenderType.drawRenderType);
++                            }
++
++                            if (type == 33356) {
++                                LOGGER.error(log, exc);
++                            } else {
++                                LOGGER.info(log, exc);
++                            }
++
++                            if (Config.isShowGlErrors() && TimedEvent.isActive("ShowGlErrorDebug", 10000L) && mc.level != null) {
++                                String errorText = Config.getGlErrorString(id);
++                                if (id == 0 || Config.equals(errorText, "Unknown")) {
++                                    errorText = messageStr;
++                                }
++
++                                String messageChat = I18n.get("of.message.openglError", id, errorText);
++                                mc.schedule(() -> mc.gui.hud.getChat().addClientSystemMessage(Component.literal(messageChat)));
++                            }
++
++                            String msg = GLDebugMessageCallback.getMessage(length, message);
++                            synchronized (this.MESSAGE_BUFFER) {
++                                GlDebug.LogEntry entry = this.lastEntry;
++                                if (entry != null && entry.isSame(source, type, id, severity, msg)) {
++                                    entry.count++;
++                                } else {
++                                    entry = new GlDebug.LogEntry(source, type, id, severity, msg);
++                                    this.MESSAGE_BUFFER.add(entry);
++                                    this.lastEntry = entry;
++                                }
++                            }
++                        }
++                    }
++                }
              }
          }
 -
 -        LOGGER.info("OpenGL debug message: {}", entry);
      }
-+               }
-+            }
-+         }
-+      }
-+   }
  
      public List<String> getLastOpenGlDebugMessages() {
-         synchronized (this.MESSAGE_BUFFER) {
 @@ -97,7 +165,7 @@
          }
      }
  
 -    public static @Nullable GlDebug enableDebugCallback(final int verbosity, final boolean debugSynchronousGlLogs, final Set<String> enabledExtensions) {
-+   public static GlDebug enableDebugCallback(int verbosity, boolean debugSynchronousGlLogs, Set<String> enabledExtensions) {
++    public static GlDebug enableDebugCallback(int verbosity, boolean debugSynchronousGlLogs, Set<String> enabledExtensions) {
          if (verbosity <= 0) {
              return null;
          }
@@ -177,7 +185,7 @@
          private int count = 1;
  
 -        private LogEntry(final int source, final int type, final int id, final int severity, final String message) {
-+      private LogEntry(int source, int type, int id, int severity, String message) {
++        private LogEntry(int source, int type, int id, int severity, String message) {
              this.id = id;
              this.source = source;
              this.type = type;
@@ -186,7 +194,7 @@
          }
  
 -        private boolean isSame(final int source, final int type, final int id, final int severity, final String message) {
-+      private boolean isSame(int source, int type, int id, int severity, String message) {
++        private boolean isSame(int source, int type, int id, int severity, String message) {
              return type == this.type && source == this.source && id == this.id && severity == this.severity && message.equals(this.message);
          }
  

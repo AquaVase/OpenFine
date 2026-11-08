@@ -38,7 +38,7 @@
      private Map<PlayerModelType, AvatarRenderer<ClientMannequin>> mannequinRenderers = Map.of();
      public final TextureManager textureManager;
 -    public @Nullable Camera camera;
-+   public Camera camera;
++    public Camera camera;
      public Entity crosshairPickEntity;
      private final BlockModelResolver blockModelResolver;
      private final ItemModelResolver itemModelResolver;
@@ -46,10 +46,10 @@
      private final Supplier<EntityModelSet> entityModels;
      private final EquipmentAssetManager equipmentAssets;
      private final PlayerSkinRenderCache playerSkinRenderCache;
-+   private Context context = null;
++    private Context context = null;
  
 -    public <E extends Entity> int getPackedLightCoords(final E entity, final float partialTickTime) {
-+   public <E extends Entity> int getPackedLightCoords(E entity, float partialTickTime) {
++    public <E extends Entity> int getPackedLightCoords(E entity, float partialTickTime) {
          return this.getRenderer(entity).getPackedLightCoords(entity, partialTickTime);
      }
  
@@ -65,17 +65,17 @@
 -        final Supplier<EntityModelSet> entityModels,
 -        final EquipmentAssetManager equipmentAssets,
 -        final PlayerSkinRenderCache playerSkinRenderCache
-+      Minecraft minecraft,
-+      TextureManager textureManager,
-+      BlockModelResolver blockModelResolver,
-+      ItemModelResolver itemModelResolver,
-+      MapRenderer mapRenderer,
-+      AtlasManager atlasManager,
-+      Font font,
-+      Options options,
-+      Supplier<EntityModelSet> entityModels,
-+      EquipmentAssetManager equipmentAssets,
-+      PlayerSkinRenderCache playerSkinRenderCache
++        Minecraft minecraft,
++        TextureManager textureManager,
++        BlockModelResolver blockModelResolver,
++        ItemModelResolver itemModelResolver,
++        MapRenderer mapRenderer,
++        AtlasManager atlasManager,
++        Font font,
++        Options options,
++        Supplier<EntityModelSet> entityModels,
++        EquipmentAssetManager equipmentAssets,
++        PlayerSkinRenderCache playerSkinRenderCache
      ) {
          this.textureManager = textureManager;
          this.blockModelResolver = blockModelResolver;
@@ -87,29 +87,29 @@
 -        return (EntityRenderer<? super T, ?>)(switch (entity) {
 -            case AbstractClientPlayer player -> this.getAvatarRenderer(this.playerRenderers, player);
 -            case ClientMannequin mannequin -> this.getAvatarRenderer(this.mannequinRenderers, mannequin);
-+   public <T extends Entity> EntityRenderer<? super T, ?> getRenderer(T entity) {
-+      return switch (entity) {
-+         case AbstractClientPlayer player -> (EntityRenderer)this.getAvatarRenderer(this.playerRenderers, player);
-+         case ClientMannequin mannequin -> (EntityRenderer)this.getAvatarRenderer(this.mannequinRenderers, mannequin);
++    public <T extends Entity> EntityRenderer<? super T, ?> getRenderer(T entity) {
++        return switch (entity) {
++            case AbstractClientPlayer player -> (EntityRenderer)this.getAvatarRenderer(this.playerRenderers, player);
++            case ClientMannequin mannequin -> (EntityRenderer)this.getAvatarRenderer(this.mannequinRenderers, mannequin);
              default -> (EntityRenderer)this.renderers.get(entity.getType());
 -        });
-+      };
++        };
      }
  
 -    public AvatarRenderer<AbstractClientPlayer> getPlayerRenderer(final AbstractClientPlayer player) {
-+   public AvatarRenderer<AbstractClientPlayer> getPlayerRenderer(AbstractClientPlayer player) {
++    public AvatarRenderer<AbstractClientPlayer> getPlayerRenderer(AbstractClientPlayer player) {
          return this.getAvatarRenderer(this.playerRenderers, player);
      }
  
 -    private <T extends Avatar & ClientAvatarEntity> AvatarRenderer<T> getAvatarRenderer(final Map<PlayerModelType, AvatarRenderer<T>> renderers, final T entity) {
-+   private <T extends Avatar & ClientAvatarEntity> AvatarRenderer<T> getAvatarRenderer(Map<PlayerModelType, AvatarRenderer<T>> renderers, T entity) {
++    private <T extends Avatar & ClientAvatarEntity> AvatarRenderer<T> getAvatarRenderer(Map<PlayerModelType, AvatarRenderer<T>> renderers, T entity) {
          PlayerModelType model = entity.getSkin().model();
          AvatarRenderer<T> playerRenderer = renderers.get(model);
          return playerRenderer != null ? playerRenderer : renderers.get(PlayerModelType.WIDE);
      }
  
 -    public <S extends EntityRenderState> EntityRenderer<?, ? super S> getRenderer(final S entityRenderState) {
-+   public <S extends EntityRenderState> EntityRenderer<?, ? super S> getRenderer(S entityRenderState) {
++    public <S extends EntityRenderState> EntityRenderer<?, ? super S> getRenderer(S entityRenderState) {
          if (entityRenderState instanceof AvatarRenderState player) {
              PlayerModelType model = player.skin.model();
              EntityRenderer<? extends Avatar, ?> playerRenderer = (EntityRenderer<? extends Avatar, ?>)this.playerRenderers.get(model);
@@ -118,19 +118,19 @@
      }
  
 -    public void prepare(final Camera camera, final Entity crosshairPickEntity) {
-+   public void prepare(Camera camera, Entity crosshairPickEntity) {
++    public void prepare(Camera camera, Entity crosshairPickEntity) {
          this.camera = camera;
          this.crosshairPickEntity = crosshairPickEntity;
      }
  
 -    public <E extends Entity> boolean shouldRender(final E entity, final Frustum culler, final double camX, final double camY, final double camZ) {
-+   public <E extends Entity> boolean shouldRender(E entity, Frustum culler, double camX, double camY, double camZ) {
++    public <E extends Entity> boolean shouldRender(E entity, Frustum culler, double camX, double camY, double camZ) {
          EntityRenderer<? super E, ?> renderer = this.getRenderer(entity);
          return renderer.shouldRender(entity, culler, camX, camY, camZ);
      }
  
 -    public <E extends Entity> EntityRenderState extractEntity(final E entity, final float partialTicks) {
-+   public <E extends Entity> EntityRenderState extractEntity(E entity, float partialTicks) {
++    public <E extends Entity> EntityRenderState extractEntity(E entity, float partialTicks) {
          EntityRenderer<? super E, ?> renderer = this.getRenderer(entity);
  
          try {
@@ -145,7 +145,7 @@
 -        final double z,
 -        final PoseStack poseStack,
 -        final SubmitNodeCollector submitNodeCollector
-+      S renderState, CameraRenderState camera, double x, double y, double z, PoseStack poseStack, SubmitNodeCollector submitNodeCollector
++        S renderState, CameraRenderState camera, double x, double y, double z, PoseStack poseStack, SubmitNodeCollector submitNodeCollector
      ) {
          EntityRenderer<?, ? super S> renderer = this.getRenderer(renderState);
  
@@ -153,48 +153,47 @@
              double relativeZ = z + pos.z();
              poseStack.pushPose();
              poseStack.translate(relativeX, relativeY, relativeZ);
-+         if (renderState.entity != null) {
-+            renderer = CustomEntityModels.getEntityRenderer(renderState.entity, renderer);
-+         }
++            if (renderState.entity != null) {
++                renderer = CustomEntityModels.getEntityRenderer(renderState.entity, renderer);
++            }
 +
-+         renderState.entityRenderer = renderer;
-+         EntityRenderState statePrev = RenderState.setEntityRenderState(renderState);
++            renderState.entityRenderer = renderer;
++            EntityRenderState statePrev = RenderState.setEntityRenderState(renderState);
              renderer.submit(renderState, poseStack, submitNodeCollector, camera);
-+         RenderState.setEntityRenderState(statePrev);
++            RenderState.setEntityRenderState(statePrev);
              if (renderState.displayFireAnimation) {
                  submitNodeCollector.submitFlame(poseStack, renderState, Mth.rotationAroundAxis(Mth.Y_AXIS, camera.orientation, new Quaternionf()));
              }
-@@ -172,8 +178,24 @@
+@@ -172,7 +178,23 @@
              }
  
              if (!renderState.shadowPieces.isEmpty()) {
-+            boolean shadowOffset = CustomEntityModels.isActive() && renderer.shadowOffsetX != 0.0F && renderer.shadowOffsetZ != 0.0F;
-+            if (shadowOffset) {
-+               float sx = renderer.shadowOffsetX;
-+               float sz = renderer.shadowOffsetZ;
-+               float yaw = renderState.entity != null ? -renderState.entity.getYRot() * (float) (Math.PI / 180.0) : 0.0F;
-+               float cYaw = Mth.cos(yaw);
-+               float sYaw = Mth.sin(yaw);
-+               float tx = sx * cYaw + sz * sYaw;
-+               float tz = sz * cYaw - sx * sYaw;
-+               poseStack.pushPose();
-+               poseStack.translate(tx, 0.0F, tz);
-+            }
++                boolean shadowOffset = CustomEntityModels.isActive() && renderer.shadowOffsetX != 0.0F && renderer.shadowOffsetZ != 0.0F;
++                if (shadowOffset) {
++                    float sx = renderer.shadowOffsetX;
++                    float sz = renderer.shadowOffsetZ;
++                    float yaw = renderState.entity != null ? -renderState.entity.getYRot() * (float) (Math.PI / 180.0) : 0.0F;
++                    float cYaw = Mth.cos(yaw);
++                    float sYaw = Mth.sin(yaw);
++                    float tx = sx * cYaw + sz * sYaw;
++                    float tz = sz * cYaw - sx * sYaw;
++                    poseStack.pushPose();
++                    poseStack.translate(tx, 0.0F, tz);
++                }
 +
                  submitNodeCollector.submitShadow(poseStack, renderState.shadowRadius, renderState.shadowPieces);
-+            if (shadowOffset) {
-+               poseStack.popPose();
++                if (shadowOffset) {
++                    poseStack.popPose();
++                }
              }
-+         }
  
              if (!(renderState instanceof AvatarRenderState)) {
-                 poseStack.translate(-pos.x(), -pos.y(), -pos.z());
 @@ -189,7 +211,7 @@
          }
      }
  
 -    private <S extends EntityRenderState> CrashReportCategory fillRendererDetails(final EntityRenderer<?, S> renderer, final CrashReport report) {
-+   private <S extends EntityRenderState> CrashReportCategory fillRendererDetails(EntityRenderer<?, S> renderer, CrashReport report) {
++    private <S extends EntityRenderState> CrashReportCategory fillRendererDetails(EntityRenderer<?, S> renderer, CrashReport report) {
          CrashReportCategory category = report.addCategory("Renderer details");
          category.setDetail("Assigned renderer", renderer);
          return category;
@@ -203,7 +202,7 @@
      }
  
 -    public double distanceToSqr(final Entity entity) {
-+   public double distanceToSqr(Entity entity) {
++    public double distanceToSqr(Entity entity) {
          return this.camera.position().distanceToSqr(entity.position());
      }
  
@@ -213,8 +212,8 @@
      @Override
 -    public void onResourceManagerReload(final ResourceManager resourceManager) {
 -        EntityRendererProvider.Context context = new EntityRendererProvider.Context(
-+   public void onResourceManagerReload(ResourceManager resourceManager) {
-+      Context context = new Context(
++    public void onResourceManagerReload(ResourceManager resourceManager) {
++        Context context = new Context(
              this,
              this.blockModelResolver,
              this.itemModelResolver,
@@ -222,47 +221,47 @@
              this.font,
              this.playerSkinRenderCache
          );
-+      this.context = context;
++        this.context = context;
          this.renderers = EntityRenderers.createEntityRenderers(context);
          this.playerRenderers = EntityRenderers.createAvatarRenderers(context);
          this.mannequinRenderers = EntityRenderers.createAvatarRenderers(context);
-+      registerPlayerItems(this.playerRenderers);
-+      if (Reflector.ForgeEventFactoryClient_onGatherLayers.exists()) {
-+         Reflector.ForgeEventFactoryClient_onGatherLayers.call(this.renderers, this.playerRenderers, this.mannequinRenderers, context);
++        registerPlayerItems(this.playerRenderers);
++        if (Reflector.ForgeEventFactoryClient_onGatherLayers.exists()) {
++            Reflector.ForgeEventFactoryClient_onGatherLayers.call(this.renderers, this.playerRenderers, this.mannequinRenderers, context);
++        }
      }
++
++    private static void registerPlayerItems(Map<PlayerModelType, AvatarRenderer<AbstractClientPlayer>> renderPlayerMap) {
++        boolean registered = false;
++
++        for (AvatarRenderer<AbstractClientPlayer> renderer : renderPlayerMap.values()) {
++            renderer.removeLayers(PlayerItemsLayer.class);
++            renderer.addLayer(new PlayerItemsLayer(renderer));
++            registered = true;
++        }
++
++        if (!registered) {
++            Config.warn("PlayerItemsLayer not registered");
++        }
++    }
++
++    public Map<EntityType, EntityRenderer> getEntityRenderMap() {
++        if (this.renderers instanceof ImmutableMap) {
++            this.renderers = new HashMap<>(this.renderers);
++        }
++
++        return (Map)this.renderers;
++    }
++
++    public Context getContext() {
++        return this.context;
++    }
++
++    public Map<PlayerModelType, AvatarRenderer<AbstractClientPlayer>> getPlayerRenderers() {
++        return Collections.unmodifiableMap(this.playerRenderers);
++    }
++
++    public Map<PlayerModelType, AvatarRenderer<ClientMannequin>> getMannequinRenderers() {
++        return Collections.unmodifiableMap(this.mannequinRenderers);
++    }
  }
-+
-+   private static void registerPlayerItems(Map<PlayerModelType, AvatarRenderer<AbstractClientPlayer>> renderPlayerMap) {
-+      boolean registered = false;
-+
-+      for (AvatarRenderer<AbstractClientPlayer> renderer : renderPlayerMap.values()) {
-+         renderer.removeLayers(PlayerItemsLayer.class);
-+         renderer.addLayer(new PlayerItemsLayer(renderer));
-+         registered = true;
-+      }
-+
-+      if (!registered) {
-+         Config.warn("PlayerItemsLayer not registered");
-+      }
-+   }
-+
-+   public Map<EntityType, EntityRenderer> getEntityRenderMap() {
-+      if (this.renderers instanceof ImmutableMap) {
-+         this.renderers = new HashMap<>(this.renderers);
-+      }
-+
-+      return (Map)this.renderers;
-+   }
-+
-+   public Context getContext() {
-+      return this.context;
-+   }
-+
-+   public Map<PlayerModelType, AvatarRenderer<AbstractClientPlayer>> getPlayerRenderers() {
-+      return Collections.unmodifiableMap(this.playerRenderers);
-+   }
-+
-+   public Map<PlayerModelType, AvatarRenderer<ClientMannequin>> getMannequinRenderers() {
-+      return Collections.unmodifiableMap(this.mannequinRenderers);
-+   }
-+}

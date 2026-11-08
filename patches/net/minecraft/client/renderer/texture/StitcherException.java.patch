@@ -12,7 +12,7 @@
      private final Collection<Stitcher.Entry> allSprites;
  
 -    public StitcherException(final Stitcher.Entry sprite, final Collection<Stitcher.Entry> allSprites) {
-+   public StitcherException(Stitcher.Entry sprite, Collection<Stitcher.Entry> allSprites) {
++    public StitcherException(Stitcher.Entry sprite, Collection<Stitcher.Entry> allSprites) {
          super(
              String.format(
                  Locale.ROOT, "Unable to fit: %s - size: %dx%d - Maybe try a lower resolution resourcepack?", sprite.name(), sprite.width(), sprite.height()
@@ -23,20 +23,20 @@
 -}
 \ No newline at end of file
 +
-+   public StitcherException(Stitcher.Entry entryIn, Collection<Stitcher.Entry> entriesIn, int atlasWidth, int atlasHeight, int maxWidth, int maxHeight) {
-+      super(
-+         String.format(
-+            Locale.ROOT,
-+            "Unable to fit: %s - size: %dx%d, atlas: %dx%d, atlasMax: %dx%d - Maybe try a lower resolution resourcepack?",
-+            entryIn.name() + "",
-+            entryIn.width(),
-+            entryIn.height(),
-+            atlasWidth,
-+            atlasHeight,
-+            maxWidth,
-+            maxHeight
-+         )
-+      );
-+      this.allSprites = entriesIn;
-+   }
++    public StitcherException(Stitcher.Entry entryIn, Collection<Stitcher.Entry> entriesIn, int atlasWidth, int atlasHeight, int maxWidth, int maxHeight) {
++        super(
++            String.format(
++                Locale.ROOT,
++                "Unable to fit: %s - size: %dx%d, atlas: %dx%d, atlasMax: %dx%d - Maybe try a lower resolution resourcepack?",
++                entryIn.name() + "",
++                entryIn.width(),
++                entryIn.height(),
++                atlasWidth,
++                atlasHeight,
++                maxWidth,
++                maxHeight
++            )
++        );
++        this.allSprites = entriesIn;
++    }
 +}

@@ -22,7 +22,7 @@
 -        final AnimationDefinition rollUp,
 -        final AnimationDefinition peek
 -    ) {
-+   public ArmadilloModel(ModelPart root, AnimationDefinition walk, AnimationDefinition rollOut, AnimationDefinition rollUp, AnimationDefinition peek) {
++    public ArmadilloModel(ModelPart root, AnimationDefinition walk, AnimationDefinition rollOut, AnimationDefinition rollUp, AnimationDefinition peek) {
          super(root);
          this.body = root.getChild("body");
          this.rightHindLeg = root.getChild("right_hind_leg");
@@ -31,7 +31,7 @@
      }
  
 -    public void setupAnim(final ArmadilloRenderState state) {
-+   public void setupAnim(ArmadilloRenderState state) {
++    public void setupAnim(ArmadilloRenderState state) {
          super.setupAnim(state);
          if (state.isHidingInShell) {
              this.body.skipDraw = true;
@@ -39,13 +39,13 @@
              this.head.yRot = Mth.clamp(state.yRot, -32.5F, 32.5F) * (float) (Math.PI / 180.0);
          }
  
-+      if (this.body.cubes.isEmpty()) {
-+         for (ModelPart part : this.body.childModelsList) {
-+            if (part.isCustom()) {
-+               part.visible = !this.body.skipDraw;
++        if (this.body.cubes.isEmpty()) {
++            for (ModelPart part : this.body.childModelsList) {
++                if (part.isCustom()) {
++                    part.visible = !this.body.skipDraw;
++                }
 +            }
-+         }
-+      }
++        }
 +
          if (!state.isHidingInShell) {
              this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 16.5F, 2.5F);

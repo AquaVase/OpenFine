@@ -17,7 +17,7 @@
      GpuBufferSlice[] chunkSectionInfos
  ) {
 -    public void renderGroup(final ChunkSectionLayerGroup group, final GpuSampler sampler) {
-+   public void renderGroup(ChunkSectionLayerGroup group, GpuSampler sampler) {
++    public void renderGroup(ChunkSectionLayerGroup group, GpuSampler sampler) {
          RenderSystem.AutoStorageIndexBuffer autoIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
          GpuBuffer defaultIndexBuffer = this.maxIndicesRequired == 0 ? null : autoIndices.getBuffer(this.maxIndicesRequired);
          IndexType defaultIndexType = this.maxIndicesRequired == 0 ? null : autoIndices.type();
@@ -25,7 +25,7 @@
          Minecraft minecraft = Minecraft.getInstance();
          boolean wireframe = SharedConstants.DEBUG_HOTKEYS && minecraft.wireframe;
          RenderTarget renderTarget = group.outputTarget();
-+      boolean shaders = Config.isShaders();
++        boolean shaders = Config.isShaders();
  
          try (RenderPass renderPass = RenderSystem.getDevice()
                  .createCommandEncoder()
@@ -35,7 +35,7 @@
 -                    Optional.empty(),
 -                    renderTarget.getDepthTextureView(),
 -                    OptionalDouble.empty()
-+               () -> "BL: " + group.label(), renderTarget.getColorTextureView(), Optional.empty(), renderTarget.getDepthTextureView(), OptionalDouble.empty()
++                    () -> "BL: " + group.label(), renderTarget.getColorTextureView(), Optional.empty(), renderTarget.getDepthTextureView(), OptionalDouble.empty()
                  )) {
              RenderSystem.bindDefaultUniforms(renderPass);
              renderPass.bindTexture("Sampler0", this.textureView, sampler);
@@ -43,17 +43,18 @@
  
                  for (List<RenderPass.Draw<GpuBufferSlice[]>> draws : drawGroup.values()) {
                      if (!draws.isEmpty()) {
-+                  if (shaders) {
-+                     ShadersRender.preRenderChunkLayer(layer);
-+                  }
++                        if (shaders) {
++                            ShadersRender.preRenderChunkLayer(layer);
++                        }
 +
                          if (layer == ChunkSectionLayer.TRANSLUCENT) {
                              draws = draws.reversed();
                          }
  
                          renderPass.drawMultipleIndexed(draws, defaultIndexBuffer, defaultIndexType, List.of("ChunkSection"), this.chunkSectionInfos);
-+                  if (shaders) {
-+                     ShadersRender.postRenderChunkLayer(layer);
++                        if (shaders) {
++                            ShadersRender.postRenderChunkLayer(layer);
++                        }
                      }
                  }
              }
@@ -61,5 +62,4 @@
      }
 -}
 \ No newline at end of file
-+   }
 +}

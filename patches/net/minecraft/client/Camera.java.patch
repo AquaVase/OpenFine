@@ -48,11 +48,11 @@
      private boolean initialized;
 -    private @Nullable Level level;
 -    private @Nullable Entity entity;
-+   private Level level;
-+   private Entity entity;
++    private Level level;
++    private Entity entity;
      private Vec3 position = Vec3.ZERO;
 -    private final BlockPos.MutableBlockPos blockPosition = new BlockPos.MutableBlockPos();
-+   private final MutableBlockPos blockPosition = new MutableBlockPos();
++    private final MutableBlockPos blockPosition = new MutableBlockPos();
      private final Vector3f forwards = new Vector3f(FORWARDS);
      private final Vector3f panoramicForwards = new Vector3f(FORWARDS);
      private final Vector3f up = new Vector3f(UP);
@@ -61,7 +61,7 @@
      private final Projection projection = new Projection();
      private Frustum cullFrustum = new Frustum(new Matrix4f(), new Matrix4f());
 -    private @Nullable Frustum capturedFrustum;
-+   private Frustum capturedFrustum;
++    private Frustum capturedFrustum;
      private boolean captureFrustum;
      private final Matrix4f cachedViewRotMatrix = new Matrix4f();
      private final Matrix4f cachedViewRotProjMatrix = new Matrix4f();
@@ -69,7 +69,7 @@
      private boolean isPanoramicMode;
      private final EnvironmentAttributeProbe attributeProbe = new EnvironmentAttributeProbe();
      private final Minecraft minecraft = Minecraft.getInstance();
-+   private boolean debugFixTerrainFrustumShadow;
++    private boolean debugFixTerrainFrustumShadow;
  
      public void tick() {
          if (this.level != null && this.entity != null) {
@@ -78,7 +78,7 @@
      }
  
 -    public void update(final DeltaTracker deltaTracker) {
-+   public void update(DeltaTracker deltaTracker) {
++    public void update(DeltaTracker deltaTracker) {
          float renderDistance = this.minecraft.options.getEffectiveRenderDistance() * 16;
          this.depthFar = Math.max(renderDistance * 4.0F, this.minecraft.options.cloudRange().get() * 16);
          LocalPlayer player = this.minecraft.player;
@@ -87,12 +87,12 @@
      }
  
 -    public float getCameraEntityPartialTicks(final DeltaTracker deltaTracker) {
-+   public float getCameraEntityPartialTicks(DeltaTracker deltaTracker) {
++    public float getCameraEntityPartialTicks(DeltaTracker deltaTracker) {
          return this.level.tickRateManager().isEntityFrozen(this.entity) ? 1.0F : deltaTracker.getGameTimeDeltaPartialTick(true);
      }
  
 -    public void extractRenderState(final CameraRenderState cameraState, final float cameraEntityPartialTicks) {
-+   public void extractRenderState(CameraRenderState cameraState, float cameraEntityPartialTicks) {
++    public void extractRenderState(CameraRenderState cameraState, float cameraEntityPartialTicks) {
          cameraState.initialized = this.isInitialized();
          cameraState.isPanoramicMode = this.isPanoramicMode;
          cameraState.isFrustumCaptured = this.capturedFrustum != null;
@@ -101,16 +101,16 @@
      }
  
 -    private Matrix4f createProjectionMatrixForCulling() {
-+   public Matrix4f createProjectionMatrixForCulling() {
++    public Matrix4f createProjectionMatrixForCulling() {
          float fovForCulling = Math.max(this.fov, this.minecraft.options.fov().get().intValue());
          Matrix4f projection = new Matrix4f();
-+      float clipDistance = this.depthFar + 1024.0F;
++        float clipDistance = this.depthFar + 1024.0F;
          return projection.perspective(
              fovForCulling * (float) (Math.PI / 180.0),
              (float)this.minecraft.getWindow().getWidth() / this.minecraft.getWindow().getHeight(),
              0.05F,
 -            this.depthFar,
-+         clipDistance,
++            clipDistance,
              RenderSystem.getDevice().getDeviceInfo().isZZeroToOne()
          );
      }
@@ -119,7 +119,7 @@
      }
  
 -    private void prepareCullFrustum(final Matrix4fc modelViewMatrix, final Matrix4f projectionMatrixForCulling, final Vec3 cameraPos) {
-+   private void prepareCullFrustum(Matrix4fc modelViewMatrix, Matrix4f projectionMatrixForCulling, Vec3 cameraPos) {
++    private void prepareCullFrustum(Matrix4fc modelViewMatrix, Matrix4f projectionMatrixForCulling, Vec3 cameraPos) {
          if (this.capturedFrustum != null && !this.captureFrustum) {
              this.cullFrustum = this.capturedFrustum;
          } else {
@@ -127,28 +127,28 @@
          if (this.captureFrustum) {
              this.capturedFrustum = this.cullFrustum;
              this.captureFrustum = false;
-+         this.cullFrustum = this.capturedFrustum;
-+         this.cullFrustum.disabled = Config.isShaders() && !Shaders.isFrustumCulling();
-+         this.cullFrustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
-+         Config.getLevelExtractor().applyFrustum(this.cullFrustum, false, -1);
-+         Config.getLevelExtractor().applyFrustumEntities(this.cullFrustum, -1);
++            this.cullFrustum = this.capturedFrustum;
++            this.cullFrustum.disabled = Config.isShaders() && !Shaders.isFrustumCulling();
++            this.cullFrustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
++            Config.getLevelExtractor().applyFrustum(this.cullFrustum, false, -1);
++            Config.getLevelExtractor().applyFrustumEntities(this.cullFrustum, -1);
          }
 +
-+      if (this.debugFixTerrainFrustumShadow) {
-+         boolean flag = this.capturedFrustum != null;
-+         this.capturedFrustum = flag ? new Frustum(modelViewMatrix, projectionMatrixForCulling) : this.cullFrustum;
-+         this.capturedFrustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
-+         this.debugFixTerrainFrustumShadow = false;
-+         this.cullFrustum = this.capturedFrustum;
-+         this.cullFrustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
-+         ShadersRender.frustumTerrainShadowChanged = true;
-+         ShadersRender.frustumEntitiesShadowChanged = true;
-+         ShadersRender.applyFrustumShadow(Config.getWorldRenderer(), this.cullFrustum);
++        if (this.debugFixTerrainFrustumShadow) {
++            boolean flag = this.capturedFrustum != null;
++            this.capturedFrustum = flag ? new Frustum(modelViewMatrix, projectionMatrixForCulling) : this.cullFrustum;
++            this.capturedFrustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
++            this.debugFixTerrainFrustumShadow = false;
++            this.cullFrustum = this.capturedFrustum;
++            this.cullFrustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
++            ShadersRender.frustumTerrainShadowChanged = true;
++            ShadersRender.frustumEntitiesShadowChanged = true;
++            ShadersRender.applyFrustumShadow(Config.getWorldRenderer(), this.cullFrustum);
++        }
      }
-+   }
  
 -    public @Nullable Frustum getCapturedFrustum() {
-+   public Frustum getCapturedFrustum() {
++    public Frustum getCapturedFrustum() {
          return this.capturedFrustum;
      }
  
@@ -157,64 +157,64 @@
      }
  
 -    private float calculateFov(final float partialTicks) {
-+   private float calculateFov(float partialTicks) {
++    private float calculateFov(float partialTicks) {
          if (this.isPanoramicMode) {
              return 90.0F;
          }
  
          float fov = this.minecraft.options.fov().get().intValue() * Mth.lerp(partialTicks, this.oldFovModifier, this.fovModifier);
 -        return this.modifyFovBasedOnDeathOrFluid(partialTicks, fov);
-+      boolean zoomActive = false;
-+      if (this.minecraft.gui.screen() == null) {
-+         zoomActive = this.minecraft.options.ofKeyBindZoom.isDown();
++        boolean zoomActive = false;
++        if (this.minecraft.gui.screen() == null) {
++            zoomActive = this.minecraft.options.ofKeyBindZoom.isDown();
++        }
++
++        if (zoomActive) {
++            if (!Config.zoomMode) {
++                Config.zoomMode = true;
++                Config.zoomSmoothCamera = this.minecraft.options.smoothCamera;
++                this.minecraft.options.smoothCamera = true;
++                this.minecraft.levelRenderer.sectionOcclusionGraph().invalidate();
++            }
++
++            if (Config.zoomMode) {
++                fov /= 4.0F;
++            }
++        } else if (Config.zoomMode) {
++            Config.zoomMode = false;
++            this.minecraft.options.smoothCamera = Config.zoomSmoothCamera;
++            this.minecraft.levelRenderer.sectionOcclusionGraph().invalidate();
++        }
++
++        float ret = this.modifyFovBasedOnDeathOrFluid(partialTicks, fov);
++        if (Reflector.ForgeEventFactoryClient_fireComputeFov.exists()) {
++            ViewportEvent.ComputeFov event = (ViewportEvent.ComputeFov)Reflector.ForgeEventFactoryClient_fireComputeFov
++                .call(this.minecraft.gameRenderer, this, partialTicks, ret, true);
++            if (event != null) {
++                return event.getFOV();
++            }
++        }
++
++        return ret;
      }
  
 -    private float calculateHudFov(final float partialTicks) {
 -        return this.modifyFovBasedOnDeathOrFluid(partialTicks, 70.0F);
-+      if (zoomActive) {
-+         if (!Config.zoomMode) {
-+            Config.zoomMode = true;
-+            Config.zoomSmoothCamera = this.minecraft.options.smoothCamera;
-+            this.minecraft.options.smoothCamera = true;
-+            this.minecraft.levelRenderer.sectionOcclusionGraph().invalidate();
++    private float calculateHudFov(float partialTicks) {
++        float ret = this.modifyFovBasedOnDeathOrFluid(partialTicks, 70.0F);
++        if (Reflector.ForgeEventFactoryClient_fireComputeFov.exists()) {
++            ViewportEvent.ComputeFov event = (ViewportEvent.ComputeFov)Reflector.ForgeEventFactoryClient_fireComputeFov
++                .call(this.minecraft.gameRenderer, this, partialTicks, ret, false);
++            if (event != null) {
++                return event.getFOV();
++            }
++        }
++
++        return ret;
      }
  
 -    private float modifyFovBasedOnDeathOrFluid(final float partialTicks, float fov) {
-+         if (Config.zoomMode) {
-+            fov /= 4.0F;
-+         }
-+      } else if (Config.zoomMode) {
-+         Config.zoomMode = false;
-+         this.minecraft.options.smoothCamera = Config.zoomSmoothCamera;
-+         this.minecraft.levelRenderer.sectionOcclusionGraph().invalidate();
-+      }
-+
-+      float ret = this.modifyFovBasedOnDeathOrFluid(partialTicks, fov);
-+      if (Reflector.ForgeEventFactoryClient_fireComputeFov.exists()) {
-+         ViewportEvent.ComputeFov event = (ViewportEvent.ComputeFov)Reflector.ForgeEventFactoryClient_fireComputeFov
-+            .call(this.minecraft.gameRenderer, this, partialTicks, ret, true);
-+         if (event != null) {
-+            return event.getFOV();
-+         }
-+      }
-+
-+      return ret;
-+   }
-+
-+   private float calculateHudFov(float partialTicks) {
-+      float ret = this.modifyFovBasedOnDeathOrFluid(partialTicks, 70.0F);
-+      if (Reflector.ForgeEventFactoryClient_fireComputeFov.exists()) {
-+         ViewportEvent.ComputeFov event = (ViewportEvent.ComputeFov)Reflector.ForgeEventFactoryClient_fireComputeFov
-+            .call(this.minecraft.gameRenderer, this, partialTicks, ret, false);
-+         if (event != null) {
-+            return event.getFOV();
-+         }
-+      }
-+
-+      return ret;
-+   }
-+
-+   private float modifyFovBasedOnDeathOrFluid(float partialTicks, float fov) {
++    private float modifyFovBasedOnDeathOrFluid(float partialTicks, float fov) {
          if (this.entity instanceof LivingEntity cameraEntity && cameraEntity.isDeadOrDying()) {
              float duration = Math.min(cameraEntity.deathTime + partialTicks, 20.0F);
              fov /= (1.0F - 500.0F / (duration + 500.0F)) * 2.0F + 1.0F;
@@ -223,7 +223,7 @@
      }
  
 -    private void alignWithEntity(final float partialTicks) {
-+   private void alignWithEntity(float partialTicks) {
++    private void alignWithEntity(float partialTicks) {
          if (this.entity.isPassenger()
              && this.entity.getVehicle() instanceof Minecart minecart
              && minecart.getBehavior() instanceof NewMinecartBehavior behavior
@@ -233,8 +233,8 @@
              Vec3 to = from.add(new Vec3(this.forwards).scale(-cameraDist));
 -            HitResult hitResult = this.level.clip(new ClipContext(from, to, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, this.entity));
 -            if (hitResult.getType() != HitResult.Type.MISS) {
-+         HitResult hitResult = this.level.clip(new ClipContext(from, to, Block.VISUAL, Fluid.NONE, this.entity));
-+         if (hitResult.getType() != Type.MISS) {
++            HitResult hitResult = this.level.clip(new ClipContext(from, to, Block.VISUAL, Fluid.NONE, this.entity));
++            if (hitResult.getType() != Type.MISS) {
                  float distSq = (float)hitResult.getLocation().distanceToSqr(this.position);
                  if (distSq < Mth.square(cameraDist)) {
                      cameraDist = Mth.sqrt(distSq);
@@ -243,31 +243,31 @@
      }
  
 -    private void setupPerspective(final float zNear, final float zFar, final float fov, final float width, final float height) {
-+   private void setupPerspective(float zNear, float zFar, float fov, float width, float height) {
++    private void setupPerspective(float zNear, float zFar, float fov, float width, float height) {
          this.projection.setupPerspective(zNear, zFar, fov, width, height);
      }
  
 -    private void setupOrtho(final float zNear, final float zFar, final float width, final float height, final boolean invertY) {
-+   private void setupOrtho(float zNear, float zFar, float width, float height, boolean invertY) {
++    private void setupOrtho(float zNear, float zFar, float width, float height, boolean invertY) {
          this.projection.setupOrtho(zNear, zFar, width, height, invertY);
      }
  
 -    protected void move(final float forwards, final float up, final float right) {
-+   protected void move(float forwards, float up, float right) {
++    protected void move(float forwards, float up, float right) {
          Vector3f offset = new Vector3f(right, up, -forwards).rotate(this.rotation);
          this.setPosition(new Vec3(this.position.x + offset.x, this.position.y + offset.y, this.position.z + offset.z));
      }
  
 -    protected void setRotation(final float yRot, final float xRot) {
-+   protected void setRotation(float yRot, float xRot) {
-+      this.setRotation(yRot, xRot, 0.0F);
-+   }
++    protected void setRotation(float yRot, float xRot) {
++        this.setRotation(yRot, xRot, 0.0F);
++    }
 +
-+   public void setRotation(float yRot, float xRot, float z) {
++    public void setRotation(float yRot, float xRot, float z) {
          this.xRot = xRot;
          this.yRot = yRot;
 -        this.rotation.rotationYXZ((float) Math.PI - yRot * (float) (Math.PI / 180.0), -xRot * (float) (Math.PI / 180.0), 0.0F);
-+      this.rotation.rotationYXZ((float) Math.PI - yRot * (float) (Math.PI / 180.0), -xRot * (float) (Math.PI / 180.0), z * (float) (Math.PI / 180.0));
++        this.rotation.rotationYXZ((float) Math.PI - yRot * (float) (Math.PI / 180.0), -xRot * (float) (Math.PI / 180.0), z * (float) (Math.PI / 180.0));
          FORWARDS.rotate(this.rotation, this.forwards);
          UP.rotate(this.rotation, this.up);
          LEFT.rotate(this.rotation, this.left);
@@ -275,12 +275,12 @@
      }
  
 -    protected void setPosition(final double x, final double y, final double z) {
-+   protected void setPosition(double x, double y, double z) {
++    protected void setPosition(double x, double y, double z) {
          this.setPosition(new Vec3(x, y, z));
      }
  
 -    protected void setPosition(final Vec3 position) {
-+   protected void setPosition(Vec3 position) {
++    protected void setPosition(Vec3 position) {
          this.position = position;
          this.blockPosition.set(position.x, position.y, position.z);
      }
@@ -289,7 +289,7 @@
      }
  
 -    public Matrix4f getViewRotationMatrix(final Matrix4f dest) {
-+   public Matrix4f getViewRotationMatrix(Matrix4f dest) {
++    public Matrix4f getViewRotationMatrix(Matrix4f dest) {
          if ((this.matrixPropertiesDirty & 1) != 0) {
              Quaternionf inverseRotation = this.rotation().conjugate(new Quaternionf());
              this.cachedViewRotMatrix.rotation(inverseRotation);
@@ -298,7 +298,7 @@
      }
  
 -    public Matrix4f getViewRotationProjectionMatrix(final Matrix4f dest) {
-+   public Matrix4f getViewRotationProjectionMatrix(Matrix4f dest) {
++    public Matrix4f getViewRotationProjectionMatrix(Matrix4f dest) {
          long projectionVersion = this.projection.getMatrixVersion();
          if ((this.matrixPropertiesDirty & 2) != 0 || this.lastProjectionVersion != this.projection.getMatrixVersion()) {
              this.getViewRotationMatrix(this.cachedViewRotMatrix);
@@ -307,12 +307,12 @@
      }
  
 -    public @Nullable Entity entity() {
-+   public Entity entity() {
++    public Entity entity() {
          return this.entity;
      }
  
 -    public void setEntity(final Entity entity) {
-+   public void setEntity(Entity entity) {
++    public void setEntity(Entity entity) {
          this.entity = entity;
      }
  
@@ -321,7 +321,7 @@
      }
  
 -    public Camera.NearPlane getNearPlane(final float fov) {
-+   public Camera.NearPlane getNearPlane(float fov) {
++    public Camera.NearPlane getNearPlane(float fov) {
          double aspectRatio = (double)this.projection.width() / this.projection.height();
          double planeHeight = Math.tan(fov * (float) (Math.PI / 180.0) / 2.0) * this.projection.zNear();
          double planeWidth = planeHeight * aspectRatio;
@@ -329,35 +329,35 @@
          return FogType.NONE;
      }
  
-+   public BlockState getBlockState() {
-+      return !this.initialized ? Blocks.AIR.defaultBlockState() : this.level.getBlockState(this.blockPosition);
-+   }
++    public BlockState getBlockState() {
++        return !this.initialized ? Blocks.AIR.defaultBlockState() : this.level.getBlockState(this.blockPosition);
++    }
 +
-+   public void setAnglesInternal(float yRot, float xRot) {
-+      this.yRot = yRot;
-+      this.xRot = xRot;
-+   }
++    public void setAnglesInternal(float yRot, float xRot) {
++        this.yRot = yRot;
++        this.xRot = xRot;
++    }
 +
-+   public void captureFrustumShadow() {
-+      this.debugFixTerrainFrustumShadow = true;
-+   }
++    public void captureFrustumShadow() {
++        this.debugFixTerrainFrustumShadow = true;
++    }
 +
-+   public boolean isDebugFrustum() {
-+      return this.capturedFrustum != null;
-+   }
++    public boolean isDebugFrustum() {
++        return this.capturedFrustum != null;
++    }
 +
-+   public BlockState getBlockAtCamera() {
-+      if (!this.initialized) {
-+         return Blocks.AIR.defaultBlockState();
-+      }
++    public BlockState getBlockAtCamera() {
++        if (!this.initialized) {
++            return Blocks.AIR.defaultBlockState();
++        }
 +
-+      BlockState state = this.level.getBlockState(this.blockPosition);
-+      if (Reflector.IForgeBlockState_getStateAtViewpoint.exists()) {
-+         state = (BlockState)Reflector.call(state, Reflector.IForgeBlockState_getStateAtViewpoint, this.level, this.blockPosition, this.position);
-+      }
++        BlockState state = this.level.getBlockState(this.blockPosition);
++        if (Reflector.IForgeBlockState_getStateAtViewpoint.exists()) {
++            state = (BlockState)Reflector.call(state, Reflector.IForgeBlockState_getStateAtViewpoint, this.level, this.blockPosition, this.position);
++        }
 +
-+      return state;
-+   }
++        return state;
++    }
 +
      public Vector3fc forwardVector() {
          return this.forwards;
@@ -367,7 +367,7 @@
      }
  
 -    public void setLevel(final @Nullable ClientLevel level) {
-+   public void setLevel(ClientLevel level) {
++    public void setLevel(ClientLevel level) {
          this.level = level;
      }
  
@@ -382,7 +382,7 @@
          private final Vec3 up;
  
 -        private NearPlane(final Vec3 forward, final Vec3 left, final Vec3 up) {
-+      private NearPlane(Vec3 forward, Vec3 left, Vec3 up) {
++        private NearPlane(Vec3 forward, Vec3 left, Vec3 up) {
              this.forward = forward;
              this.left = left;
              this.up = up;
@@ -391,7 +391,7 @@
          }
  
 -        public Vec3 getPointOnPlane(final float x, final float y) {
-+      public Vec3 getPointOnPlane(float x, float y) {
++        public Vec3 getPointOnPlane(float x, float y) {
              return this.forward.add(this.up.scale(y)).subtract(this.left.scale(x));
          }
      }

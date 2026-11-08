@@ -7,31 +7,31 @@ import java.util.Properties;
 import java.util.Set;
 
 public class PropertiesOrdered extends Properties {
-   private Set<Object> keysOrdered = new LinkedHashSet<>();
+    private Set<Object> keysOrdered = new LinkedHashSet<>();
 
-   @Override
-   public synchronized Object put(Object key, Object value) {
-      if (key instanceof String) {
-         key = ((String)key).trim();
-      }
+    @Override
+    public synchronized Object put(Object key, Object value) {
+        if (key instanceof String) {
+            key = ((String)key).trim();
+        }
 
-      if (value instanceof String) {
-         value = ((String)value).trim();
-      }
+        if (value instanceof String) {
+            value = ((String)value).trim();
+        }
 
-      this.keysOrdered.add(key);
-      return super.put(key, value);
-   }
+        this.keysOrdered.add(key);
+        return super.put(key, value);
+    }
 
-   @Override
-   public Set<Object> keySet() {
-      Set<Object> keysParent = super.keySet();
-      this.keysOrdered.retainAll(keysParent);
-      return Collections.unmodifiableSet(this.keysOrdered);
-   }
+    @Override
+    public Set<Object> keySet() {
+        Set<Object> keysParent = super.keySet();
+        this.keysOrdered.retainAll(keysParent);
+        return Collections.unmodifiableSet(this.keysOrdered);
+    }
 
-   @Override
-   public synchronized Enumeration<Object> keys() {
-      return Collections.enumeration(this.keySet());
-   }
+    @Override
+    public synchronized Enumeration<Object> keys() {
+        return Collections.enumeration(this.keySet());
+    }
 }

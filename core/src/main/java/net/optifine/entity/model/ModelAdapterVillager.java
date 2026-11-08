@@ -14,49 +14,49 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterVillager extends ModelAdapterAgeable {
-   public ModelAdapterVillager() {
-      super(EntityTypes.VILLAGER, "villager", ModelLayers.VILLAGER);
-   }
+    public ModelAdapterVillager() {
+        super(EntityTypes.VILLAGER, "villager", ModelLayers.VILLAGER);
+    }
 
-   protected ModelAdapterVillager(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    protected ModelAdapterVillager(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterVillager mb = new ModelAdapterVillager(this.getEntityType(), "villager_baby", ModelLayers.VILLAGER_BABY);
-      mb.setBaby(true);
-      mb.setAlias(this.getName());
-      return mb;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterVillager mb = new ModelAdapterVillager(this.getEntityType(), "villager_baby", ModelLayers.VILLAGER_BABY);
+        mb.setBaby(true);
+        mb.setAlias(this.getName());
+        return mb;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new VillagerModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new VillagerModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      return makeStaticMapParts();
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        return makeStaticMapParts();
+    }
 
-   public static Map<String, String> makeStaticMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("head", "head");
-      map.put("headwear", "hat");
-      map.put("headwear2", "hat_rim");
-      map.put("body", "body");
-      map.put("bodywear", "jacket");
-      map.put("arms", "arms");
-      map.put("right_leg", "right_leg");
-      map.put("left_leg", "left_leg");
-      map.put("nose", "nose");
-      map.put("root", "root");
-      return map;
-   }
+    public static Map<String, String> makeStaticMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("head", "head");
+        map.put("headwear", "hat");
+        map.put("headwear2", "hat_rim");
+        map.put("body", "body");
+        map.put("bodywear", "jacket");
+        map.put("arms", "arms");
+        map.put("right_leg", "right_leg");
+        map.put("left_leg", "left_leg");
+        map.put("nose", "nose");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new VillagerRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new VillagerRenderer(context);
+    }
 }

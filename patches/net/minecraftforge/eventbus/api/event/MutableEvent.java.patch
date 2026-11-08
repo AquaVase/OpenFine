@@ -7,12 +7,12 @@
 +import net.minecraftforge.common.util.Result;
 +
 +public class MutableEvent implements HasResult {
-+   @Override
-+   public Result getResult() {
-+      return null;
-+   }
++    @Override
++    public Result getResult() {
++        return null;
++    }
 +
-+   @Override
-+   public void setResult(Result result) {
-+   }
++    @Override
++    public void setResult(Result result) {
++    }
 +}

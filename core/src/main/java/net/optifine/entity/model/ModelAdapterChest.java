@@ -15,53 +15,53 @@ import net.optifine.Config;
 import net.optifine.reflect.Reflector;
 
 public class ModelAdapterChest extends ModelAdapterBlockEntity {
-   private BlockEntityType blockEntityType;
-   private ModelLayerLocation modelLayer;
-   private static Map<String, String> mapParts = makeMapParts();
+    private BlockEntityType blockEntityType;
+    private ModelLayerLocation modelLayer;
+    private static Map<String, String> mapParts = makeMapParts();
 
-   public ModelAdapterChest() {
-      this(BlockEntityTypes.CHEST, "chest", ModelLayers.CHEST);
-   }
+    public ModelAdapterChest() {
+        this(BlockEntityTypes.CHEST, "chest", ModelLayers.CHEST);
+    }
 
-   protected ModelAdapterChest(BlockEntityType blockEntityType, String name, ModelLayerLocation modelLayer) {
-      super(blockEntityType, name);
-      this.blockEntityType = blockEntityType;
-      this.modelLayer = modelLayer;
-   }
+    protected ModelAdapterChest(BlockEntityType blockEntityType, String name, ModelLayerLocation modelLayer) {
+        super(blockEntityType, name);
+        this.blockEntityType = blockEntityType;
+        this.modelLayer = modelLayer;
+    }
 
-   @Override
-   public Model makeModel() {
-      return new ChestModel(bakeModelLayer(this.modelLayer));
-   }
+    @Override
+    public Model makeModel() {
+        return new ChestModel(bakeModelLayer(this.modelLayer));
+    }
 
-   @Override
-   public ModelPart getModelRenderer(Model model, String modelPart) {
-      return this.getModelRenderer(model.root(), mapParts.get(modelPart));
-   }
+    @Override
+    public ModelPart getModelRenderer(Model model, String modelPart) {
+        return this.getModelRenderer(model.root(), mapParts.get(modelPart));
+    }
 
-   @Override
-   public String[] getModelRendererNames() {
-      return toArray(mapParts.keySet());
-   }
+    @Override
+    public String[] getModelRendererNames() {
+        return toArray(mapParts.keySet());
+    }
 
-   private static Map<String, String> makeMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("base", "bottom");
-      map.put("lid", "lid");
-      map.put("knob", "lock");
-      map.put("root", "root");
-      return map;
-   }
+    private static Map<String, String> makeMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("base", "bottom");
+        map.put("lid", "lid");
+        map.put("knob", "lock");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   public IEntityRenderer makeEntityRender(Model modelBase, RendererCache rendererCache, int index) {
-      BlockEntityRenderer renderer = rendererCache.get(this.blockEntityType, index, () -> new ChestRenderer(this.getContext()));
-      if (!Reflector.TileEntityChestRenderer_singleModel.exists()) {
-         Config.warn("Field not found: ChestRenderer.singleModel");
-         return null;
-      } else {
-         Reflector.TileEntityChestRenderer_singleModel.setValue(renderer, modelBase);
-         return renderer;
-      }
-   }
+    @Override
+    public IEntityRenderer makeEntityRender(Model modelBase, RendererCache rendererCache, int index) {
+        BlockEntityRenderer renderer = rendererCache.get(this.blockEntityType, index, () -> new ChestRenderer(this.getContext()));
+        if (!Reflector.TileEntityChestRenderer_singleModel.exists()) {
+            Config.warn("Field not found: ChestRenderer.singleModel");
+            return null;
+        } else {
+            Reflector.TileEntityChestRenderer_singleModel.setValue(renderer, modelBase);
+            return renderer;
+        }
+    }
 }

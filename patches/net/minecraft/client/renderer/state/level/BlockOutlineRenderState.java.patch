@@ -17,43 +17,46 @@
      boolean isTranslucent,
      boolean highContrast,
      VoxelShape shape,
-+   VoxelShape collisionShape,
-+   VoxelShape occlusionShape,
-+   VoxelShape interactionShape,
-+   RenderHighlightEvent.Callback customRenderer,
-+   BlockState blockState
-+) {
-+   public BlockOutlineRenderState(
-+      BlockPos pos,
-+      boolean isTranslucent,
-+      boolean highContrast,
-+      VoxelShape shape,
-     @Nullable VoxelShape collisionShape,
-     @Nullable VoxelShape occlusionShape,
-     @Nullable VoxelShape interactionShape
+-    @Nullable VoxelShape collisionShape,
+-    @Nullable VoxelShape occlusionShape,
+-    @Nullable VoxelShape interactionShape
++    VoxelShape collisionShape,
++    VoxelShape occlusionShape,
++    VoxelShape interactionShape,
++    RenderHighlightEvent.Callback customRenderer,
++    BlockState blockState
  ) {
 -    public BlockOutlineRenderState(final BlockPos pos, final boolean isTranslucent, final boolean highContrast, final VoxelShape shape) {
-+      this(pos, isTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape, null, null);
-+   }
++    public BlockOutlineRenderState(
++        BlockPos pos,
++        boolean isTranslucent,
++        boolean highContrast,
++        VoxelShape shape,
++        @Nullable VoxelShape collisionShape,
++        @Nullable VoxelShape occlusionShape,
++        @Nullable VoxelShape interactionShape
++    ) {
++        this(pos, isTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape, null, null);
++    }
 +
-+   public BlockOutlineRenderState(
-+      BlockPos pos,
-+      boolean isTranslucent,
-+      boolean highContrast,
-+      VoxelShape shape,
-+      @Nullable VoxelShape collisionShape,
-+      @Nullable VoxelShape occlusionShape,
-+      @Nullable VoxelShape interactionShape,
-+      RenderHighlightEvent.Callback customRenderer
-+   ) {
-+      this(pos, isTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape, customRenderer, null);
-+   }
++    public BlockOutlineRenderState(
++        BlockPos pos,
++        boolean isTranslucent,
++        boolean highContrast,
++        VoxelShape shape,
++        @Nullable VoxelShape collisionShape,
++        @Nullable VoxelShape occlusionShape,
++        @Nullable VoxelShape interactionShape,
++        RenderHighlightEvent.Callback customRenderer
++    ) {
++        this(pos, isTranslucent, highContrast, shape, collisionShape, occlusionShape, interactionShape, customRenderer, null);
++    }
 +
-+   public BlockOutlineRenderState(BlockPos pos, boolean isTranslucent, boolean highContrast, VoxelShape shape, BlockState blockState) {
-+      this(pos, isTranslucent, highContrast, shape, null, null, null, null, blockState);
-+   }
++    public BlockOutlineRenderState(BlockPos pos, boolean isTranslucent, boolean highContrast, VoxelShape shape, BlockState blockState) {
++        this(pos, isTranslucent, highContrast, shape, null, null, null, null, blockState);
++    }
 +
-+   public BlockOutlineRenderState(BlockPos pos, boolean isTranslucent, boolean highContrast, VoxelShape shape) {
++    public BlockOutlineRenderState(BlockPos pos, boolean isTranslucent, boolean highContrast, VoxelShape shape) {
          this(pos, isTranslucent, highContrast, shape, null, null, null);
      }
 -}

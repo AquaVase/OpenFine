@@ -10,10 +10,10 @@
 -@OnlyIn(Dist.CLIENT)
  public abstract class RenderLayer<S extends EntityRenderState, M extends EntityModel<? super S>> {
      private final RenderLayerParent<S, M> renderer;
-+   public boolean custom = false;
++    public boolean custom = false;
  
 -    public RenderLayer(final RenderLayerParent<S, M> renderer) {
-+   public RenderLayer(RenderLayerParent<S, M> renderer) {
++    public RenderLayer(RenderLayerParent<S, M> renderer) {
          this.renderer = renderer;
      }
  
@@ -26,7 +26,7 @@
 -        final S state,
 -        final int color,
 -        final int order
-+      Model<? super S> model, Identifier texture, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, int color, int order
++        Model<? super S> model, Identifier texture, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, int color, int order
      ) {
          if (!state.isInvisible) {
              renderColoredCutoutModel(model, texture, poseStack, submitNodeCollector, lightCoords, state, color, order);
@@ -42,11 +42,11 @@
 -        final S state,
 -        final int color,
 -        final int order
-+      Model<? super S> model, Identifier texture, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, int color, int order
++        Model<? super S> model, Identifier texture, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, S state, int color, int order
      ) {
-+      if (model.locationTextureCustom != null) {
-+         texture = model.locationTextureCustom;
-+      }
++        if (model.locationTextureCustom != null) {
++            texture = model.locationTextureCustom;
++        }
 +
          submitNodeCollector.order(order)
              .submitModel(
@@ -60,5 +60,5 @@
 -    );
 -}
 \ No newline at end of file
-+   public abstract void submit(PoseStack var1, SubmitNodeCollector var2, int var3, S var4, float var5, float var6);
++    public abstract void submit(PoseStack var1, SubmitNodeCollector var2, int var3, S var4, float var5, float var6);
 +}

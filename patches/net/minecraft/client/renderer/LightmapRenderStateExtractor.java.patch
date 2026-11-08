@@ -20,7 +20,7 @@
      private float blockLightFlicker;
  
 -    public LightmapRenderStateExtractor(final GameRenderer renderer, final Minecraft minecraft) {
-+   public LightmapRenderStateExtractor(GameRenderer renderer, Minecraft minecraft) {
++    public LightmapRenderStateExtractor(GameRenderer renderer, Minecraft minecraft) {
          this.renderer = renderer;
          this.minecraft = minecraft;
      }
@@ -29,13 +29,13 @@
      }
  
 -    private float calculateDarknessScale(final LivingEntity camera, final float darknessGamma, final float partialTickTime) {
-+   public float calculateDarknessScale(LivingEntity camera, float darknessGamma, float partialTickTime) {
++    public float calculateDarknessScale(LivingEntity camera, float darknessGamma, float partialTickTime) {
          float darkness = 0.45F * darknessGamma;
          return Math.max(0.0F, Mth.cos((camera.tickCount - partialTickTime) * (float) Math.PI * 0.025F) * darkness);
      }
  
 -    public void extract(final LightmapRenderState renderState, final float partialTicks) {
-+   public void extract(LightmapRenderState renderState, float partialTicks) {
++    public void extract(LightmapRenderState renderState, float partialTicks) {
          renderState.needsUpdate = this.needsUpdate;
          if (this.needsUpdate) {
              ClientLevel level = this.minecraft.level;
@@ -45,11 +45,11 @@
                  renderState.brightness = Math.max(0.0F, brightnessOption - darknessEffectBrightnessModifier);
 -                renderState.darknessEffectScale = this.calculateDarknessScale(player, darknessEffectBrightnessModifier, partialTicks)
 -                    * darknessEffectScaleOption;
-+            renderState.darknessEffectScale = this.calculateDarknessScale(player, darknessEffectBrightnessModifier, partialTicks) * darknessEffectScaleOption;
-+            if (Config.isShaders()) {
-+               Shaders.setDarknessFactor(darknessEffectBrightnessModifier);
-+               Shaders.setDarknessLightFactor(renderState.darknessEffectScale);
-+            }
++                renderState.darknessEffectScale = this.calculateDarknessScale(player, darknessEffectBrightnessModifier, partialTicks) * darknessEffectScaleOption;
++                if (Config.isShaders()) {
++                    Shaders.setDarknessFactor(darknessEffectBrightnessModifier);
++                    Shaders.setDarknessLightFactor(renderState.darknessEffectScale);
++                }
 +
                  float waterVision = player.getWaterVision();
                  if (player.hasEffect(MobEffects.NIGHT_VISION)) {

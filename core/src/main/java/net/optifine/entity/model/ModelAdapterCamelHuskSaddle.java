@@ -14,33 +14,33 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterCamelHuskSaddle extends ModelAdapterCamelHusk {
-   public ModelAdapterCamelHuskSaddle() {
-      super(EntityTypes.CAMEL_HUSK, "camel_husk_saddle", ModelLayers.CAMEL_HUSK_SADDLE);
-   }
+    public ModelAdapterCamelHuskSaddle() {
+        super(EntityTypes.CAMEL_HUSK, "camel_husk_saddle", ModelLayers.CAMEL_HUSK_SADDLE);
+    }
 
-   protected ModelAdapterCamelHuskSaddle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterCamelHuskSaddle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new CamelSaddleModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new CamelSaddleModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      return ModelAdapterCamelSaddle.appendSaddleParts(map);
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        return ModelAdapterCamelSaddle.appendSaddleParts(map);
+    }
 
-   @Override
-   protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
-      CamelModel camelModel = (CamelModel)modelBase;
+    @Override
+    protected void modifyLivingRenderer(LivingEntityRenderer renderer, Model modelBase) {
+        CamelModel camelModel = (CamelModel)modelBase;
 
-      for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
-         if (layer.getLayerType() == LayerType.CAMEL_HUSK_SADDLE) {
-            layer.adultModel = camelModel;
-         }
-      }
-   }
+        for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
+            if (layer.getLayerType() == LayerType.CAMEL_HUSK_SADDLE) {
+                layer.adultModel = camelModel;
+            }
+        }
+    }
 }

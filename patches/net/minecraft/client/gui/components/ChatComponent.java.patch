@@ -53,36 +53,36 @@
      private static final Style QUEUE_EXPAND_TEXT_STYLE = Style.EMPTY
 -        .withClickEvent(new ClickEvent.Custom(QUEUE_EXPAND_ID, Optional.empty()))
 -        .withHoverEvent(new HoverEvent.ShowText(Component.translatable("chat.queue.tooltip")));
-+      .withClickEvent(new Custom(QUEUE_EXPAND_ID, Optional.empty()))
-+      .withHoverEvent(new ShowText(Component.translatable("chat.queue.tooltip")));
++        .withClickEvent(new Custom(QUEUE_EXPAND_ID, Optional.empty()))
++        .withHoverEvent(new ShowText(Component.translatable("chat.queue.tooltip")));
      public static final Identifier GO_TO_RESTRICTIONS_SCREEN = Identifier.withDefaultNamespace("internal/go_to_restrictions_screen");
      private static final Component RESTRICTED_CHAT_MESSAGE = Component.translatable("chat_screen.restricted")
 -        .withStyle(
 -            Style.EMPTY.withColor(ChatFormatting.RED).withUnderlined(true).withClickEvent(new ClickEvent.Custom(GO_TO_RESTRICTIONS_SCREEN, Optional.empty()))
 -        );
-+      .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withUnderlined(true).withClickEvent(new Custom(GO_TO_RESTRICTIONS_SCREEN, Optional.empty())));
++        .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withUnderlined(true).withClickEvent(new Custom(GO_TO_RESTRICTIONS_SCREEN, Optional.empty())));
      private static final Component RESTRICTED_CHAT_MESSAGE_WITH_HOVER = ComponentUtils.mergeStyles(
 -        RESTRICTED_CHAT_MESSAGE, Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Component.translatable("chat_screen.restricted")))
-+      RESTRICTED_CHAT_MESSAGE, Style.EMPTY.withHoverEvent(new ShowText(Component.translatable("chat_screen.restricted")))
++        RESTRICTED_CHAT_MESSAGE, Style.EMPTY.withHoverEvent(new ShowText(Component.translatable("chat_screen.restricted")))
      );
      private final Minecraft minecraft;
      private final CommandHistory commandHistory;
      private final ArrayListDeque<String> recentChat = new ArrayListDeque<>(100);
      private final List<GuiMessage> allMessages = Lists.newArrayList();
 -    private final List<GuiMessage.Line> trimmedMessages = Lists.newArrayList();
-+   private final List<Line> trimmedMessages = Lists.newArrayList();
++    private final List<Line> trimmedMessages = Lists.newArrayList();
      private int chatScrollbarPos;
      private boolean newMessageSinceScroll;
 -    private ChatComponent.@Nullable Draft latestDraft;
 -    private @Nullable ChatScreen preservedScreen;
-+   private ChatComponent.Draft latestDraft;
-+   private ChatScreen preservedScreen;
++    private ChatComponent.Draft latestDraft;
++    private ChatScreen preservedScreen;
      private final List<ChatComponent.DelayedMessageDeletion> messageDeletionQueue = new ArrayList<>();
      private Predicate<GuiMessage> visibleMessageFilter = var0 -> true;
-+   private int lastChatWidth = 0;
++    private int lastChatWidth = 0;
  
 -    public ChatComponent(final Minecraft minecraft) {
-+   public ChatComponent(Minecraft minecraft) {
++    public ChatComponent(Minecraft minecraft) {
          this.minecraft = minecraft;
          this.commandHistory = new CommandHistory(minecraft.gameDirectory.toPath());
          this.recentChat.addAll(this.commandHistory.history());
@@ -91,20 +91,20 @@
      }
  
 -    public void setVisibleMessageFilter(final Predicate<GuiMessage> visibleMessageFilter) {
-+   public void setVisibleMessageFilter(Predicate<GuiMessage> visibleMessageFilter) {
++    public void setVisibleMessageFilter(Predicate<GuiMessage> visibleMessageFilter) {
          this.visibleMessageFilter = visibleMessageFilter;
          this.refreshTrimmedMessages();
      }
  
 -    private int forEachLine(final ChatComponent.AlphaCalculator alphaCalculator, final ChatComponent.LineConsumer lineConsumer) {
-+   private int forEachLine(ChatComponent.AlphaCalculator alphaCalculator, ChatComponent.LineConsumer lineConsumer) {
++    private int forEachLine(ChatComponent.AlphaCalculator alphaCalculator, ChatComponent.LineConsumer lineConsumer) {
          int perPage = this.getLinesPerPage();
          int count = 0;
  
          for (int i = Math.min(this.trimmedMessages.size() - this.chatScrollbarPos, perPage) - 1; i >= 0; i--) {
              int messageIndex = i + this.chatScrollbarPos;
 -            GuiMessage.Line message = this.trimmedMessages.get(messageIndex);
-+         Line message = this.trimmedMessages.get(messageIndex);
++            Line message = this.trimmedMessages.get(messageIndex);
              float alpha = alphaCalculator.calculate(message);
              if (alpha > 1.0E-5F) {
                  count++;
@@ -119,7 +119,7 @@
 -        final int mouseY,
 -        final ChatComponent.DisplayMode displayMode,
 -        final boolean changeCursorOnInsertions
-+      GuiGraphicsExtractor graphics, Font font, int ticks, int mouseX, int mouseY, ChatComponent.DisplayMode displayMode, boolean changeCursorOnInsertions
++        GuiGraphicsExtractor graphics, Font font, int ticks, int mouseX, int mouseY, ChatComponent.DisplayMode displayMode, boolean changeCursorOnInsertions
      ) {
          graphics.pose().pushMatrix();
          this.extractRenderState(
@@ -130,19 +130,19 @@
 -    public void captureClickableText(
 -        final ActiveTextCollector activeTextCollector, final int screenHeight, final int ticks, final ChatComponent.DisplayMode displayMode
 -    ) {
-+   public void captureClickableText(ActiveTextCollector activeTextCollector, int screenHeight, int ticks, ChatComponent.DisplayMode displayMode) {
++    public void captureClickableText(ActiveTextCollector activeTextCollector, int screenHeight, int ticks, ChatComponent.DisplayMode displayMode) {
          this.extractRenderState(new ChatComponent.ClickableTextOnlyGraphicsAccess(activeTextCollector), screenHeight, ticks, displayMode);
      }
  
 -    private void extractRenderState(
 -        final ChatComponent.ChatGraphicsAccess graphics, final int screenHeight, final int ticks, final ChatComponent.DisplayMode displayMode
 -    ) {
-+   private void extractRenderState(final ChatComponent.ChatGraphicsAccess graphics, int screenHeight, int ticks, ChatComponent.DisplayMode displayMode) {
-+      int chatWidth = this.getWidth();
-+      if (this.lastChatWidth != chatWidth) {
-+         this.lastChatWidth = chatWidth;
-+         this.rescaleChat();
-+      }
++    private void extractRenderState(final ChatComponent.ChatGraphicsAccess graphics, int screenHeight, int ticks, ChatComponent.DisplayMode displayMode) {
++        int chatWidth = this.getWidth();
++        if (this.lastChatWidth != chatWidth) {
++            this.lastChatWidth = chatWidth;
++            this.rescaleChat();
++        }
 +
          boolean isForeground = displayMode.foreground;
          boolean isRestricted = displayMode.showRestrictedPrompt;
@@ -152,11 +152,11 @@
              final float textOpacity = this.minecraft.options.chatOpacity().get().floatValue() * 0.9F + 0.1F;
              float backgroundOpacity = this.minecraft.options.textBackgroundOpacity().get().floatValue();
 -            final int messageHeight = 9;
-+         int messageHeight = 9;
++            int messageHeight = 9;
              int messageBottomToMessageTop = 8;
              double chatLineSpacing = this.minecraft.options.chatLineSpacing().get();
 -            final int entryHeight = (int)(messageHeight * (chatLineSpacing + 1.0));
-+         final int entryHeight = (int)(9.0 * (chatLineSpacing + 1.0));
++            final int entryHeight = (int)(9.0 * (chatLineSpacing + 1.0));
              final int entryBottomToMessageY = (int)Math.round(8.0 * (chatLineSpacing + 1.0) - 4.0 * chatLineSpacing);
              long queueSize = this.minecraft.gui.chatListener().queueSize();
              ChatComponent.AlphaCalculator alphaCalculator = isForeground
@@ -165,19 +165,19 @@
                  int entryBottom = chatBottom - lineIndex * entryHeight;
                  int entryTop = entryBottom - entryHeight;
 -                graphics.fill(-4, entryTop, maxWidth + 4 + 4, entryBottom, ARGB.black(alphax * backgroundOpacity));
-+            int lineWidth = maxWidth;
-+            if (this.minecraft.options.ofChatBackground == 5) {
-+               lineWidth = this.minecraft.font.width(var5x.content()) - 2;
-+            }
++                int lineWidth = maxWidth;
++                if (this.minecraft.options.ofChatBackground == 5) {
++                    lineWidth = this.minecraft.font.width(var5x.content()) - 2;
++                }
 +
-+            if (this.minecraft.options.ofChatBackground != 3) {
-+               graphics.fill(-4, entryTop, lineWidth + 4 + 4, entryBottom, ARGB.black(alphax * backgroundOpacity));
-+            }
++                if (this.minecraft.options.ofChatBackground != 3) {
++                    graphics.fill(-4, entryTop, lineWidth + 4 + 4, entryBottom, ARGB.black(alphax * backgroundOpacity));
++                }
              });
              int lineAboveMessagesY = chatBottom - (count + 1) * entryHeight;
              if (queueSize > 0L) {
 -                graphics.fill(-2, chatBottom, maxWidth + 4, chatBottom + messageHeight, ARGB.black(backgroundOpacity));
-+            graphics.fill(-2, chatBottom, maxWidth + 4, chatBottom + 9, ARGB.black(backgroundOpacity));
++                graphics.fill(-2, chatBottom, maxWidth + 4, chatBottom + 9, ARGB.black(backgroundOpacity));
              }
  
              if (isRestricted) {
@@ -186,7 +186,7 @@
  
                  @Override
 -                public void accept(final GuiMessage.Line line, final int lineIndex, final float alpha) {
-+            public void accept(Line line, int lineIndex, float alpha) {
++                public void accept(Line line, int lineIndex, float alpha) {
                      int entryBottom = chatBottom - lineIndex * entryHeight;
                      int entryTop = entryBottom - entryHeight;
                      int textTop = entryBottom - entryBottomToMessageY;
@@ -195,7 +195,7 @@
                          if (tag.icon() != null) {
                              int iconLeft = line.getTagIconLeft(ChatComponent.this.minecraft.font);
 -                            int textBottom = textTop + messageHeight;
-+                     int textBottom = textTop + 9;
++                            int textBottom = textTop + 9;
                              graphics.handleTagIcon(iconLeft, textBottom, forceIconRendering, tag, tag.icon());
                          }
                      }
@@ -203,7 +203,7 @@
              });
              if (queueSize > 0L) {
 -                int queueLineBottom = chatBottom + messageHeight;
-+            int queueLineBottom = chatBottom + 9;
++                int queueLineBottom = chatBottom + 9;
                  Component queueMessage = Component.translatable("chat.queue", queueSize).setStyle(QUEUE_EXPAND_TEXT_STYLE);
                  graphics.handleMessage(queueLineBottom - 8, 0.5F * textOpacity, queueMessage.getVisualOrderText());
              }
@@ -212,7 +212,7 @@
      }
  
 -    public void clearMessages(final boolean history) {
-+   public void clearMessages(boolean history) {
++    public void clearMessages(boolean history) {
          this.minecraft.gui.chatListener().flushQueue();
          this.messageDeletionQueue.clear();
          this.trimmedMessages.clear();
@@ -221,24 +221,24 @@
      }
  
 -    public void addClientSystemMessage(final Component message) {
-+   public void addClientSystemMessage(Component message) {
++    public void addClientSystemMessage(Component message) {
          this.addMessage(message, null, GuiMessageSource.SYSTEM_CLIENT, GuiMessageTag.systemSinglePlayer());
      }
  
 -    public void addServerSystemMessage(final Component message) {
-+   public void addServerSystemMessage(Component message) {
++    public void addServerSystemMessage(Component message) {
          this.addMessage(message, null, GuiMessageSource.SYSTEM_SERVER, GuiMessageTag.systemSinglePlayer());
      }
  
 -    public void addPlayerMessage(final Component message, final @Nullable MessageSignature signature, final @Nullable GuiMessageTag tag) {
-+   public void addPlayerMessage(Component message, MessageSignature signature, GuiMessageTag tag) {
++    public void addPlayerMessage(Component message, MessageSignature signature, GuiMessageTag tag) {
          this.addMessage(message, signature, GuiMessageSource.PLAYER, tag);
      }
  
 -    private void addMessage(
 -        final Component contents, final @Nullable MessageSignature signature, final GuiMessageSource source, final @Nullable GuiMessageTag tag
 -    ) {
-+   private void addMessage(Component contents, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag) {
++    private void addMessage(Component contents, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag) {
          GuiMessage message = new GuiMessage(this.minecraft.gui.hud.getGuiTicks(), contents, signature, source, tag);
          if (this.visibleMessageFilter.test(message)) {
              this.logChatMessage(message);
@@ -247,7 +247,7 @@
      }
  
 -    private void logChatMessage(final GuiMessage message) {
-+   private void logChatMessage(GuiMessage message) {
++    private void logChatMessage(GuiMessage message) {
          String messageString = message.content().getString().replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n");
          String logTag = Optionull.map(message.tag(), GuiMessageTag::logTag);
          if (logTag != null) {
@@ -256,7 +256,7 @@
      }
  
 -    private void addMessageToDisplayQueue(final GuiMessage message) {
-+   private void addMessageToDisplayQueue(GuiMessage message) {
++    private void addMessageToDisplayQueue(GuiMessage message) {
          int maxWidth = Mth.floor(this.getWidth() / this.getScale());
          List<FormattedCharSequence> lines = message.splitLines(this.minecraft.font, maxWidth);
          boolean chatting = this.isChatFocused();
@@ -265,7 +265,7 @@
  
              boolean endOfEntry = i == lines.size() - 1;
 -            this.trimmedMessages.addFirst(new GuiMessage.Line(message, line, endOfEntry));
-+         this.trimmedMessages.addFirst(new Line(message, line, endOfEntry));
++            this.trimmedMessages.addFirst(new Line(message, line, endOfEntry));
          }
  
          while (this.trimmedMessages.size() > 100) {
@@ -274,7 +274,7 @@
      }
  
 -    private void addMessageToQueue(final GuiMessage message) {
-+   private void addMessageToQueue(GuiMessage message) {
++    private void addMessageToQueue(GuiMessage message) {
          this.allMessages.addFirst(message);
  
          while (this.allMessages.size() > 100) {
@@ -283,7 +283,7 @@
      }
  
 -    public void deleteMessage(final MessageSignature signature) {
-+   public void deleteMessage(MessageSignature signature) {
++    public void deleteMessage(MessageSignature signature) {
          ChatComponent.DelayedMessageDeletion delayedMessage = this.deleteMessageOrDelay(signature);
          if (delayedMessage != null) {
              this.messageDeletionQueue.add(delayedMessage);
@@ -291,18 +291,18 @@
      }
  
 -    private ChatComponent.@Nullable DelayedMessageDeletion deleteMessageOrDelay(final MessageSignature signature) {
-+   private ChatComponent.DelayedMessageDeletion deleteMessageOrDelay(MessageSignature signature) {
++    private ChatComponent.DelayedMessageDeletion deleteMessageOrDelay(MessageSignature signature) {
          int time = this.minecraft.gui.hud.getGuiTicks();
          ListIterator<GuiMessage> iterator = this.allMessages.listIterator();
  
          while (iterator.hasNext()) {
              GuiMessage message = iterator.next();
              if (signature.equals(message.signature())) {
-+            if (signature.equals(LevelRenderer.loadVisibleChunksMessageId)) {
-+               iterator.remove();
-+               this.refreshTrimmedMessages();
-+               return null;
-+            }
++                if (signature.equals(LevelRenderer.loadVisibleChunksMessageId)) {
++                    iterator.remove();
++                    this.refreshTrimmedMessages();
++                    return null;
++                }
 +
                  int deletableAfter = message.addedTime() + 60;
                  if (time >= deletableAfter) {
@@ -312,7 +312,7 @@
      }
  
 -    private static GuiMessage createDeletedMarker(final GuiMessage message) {
-+   private static GuiMessage createDeletedMarker(GuiMessage message) {
++    private static GuiMessage createDeletedMarker(GuiMessage message) {
          return new GuiMessage(message.addedTime(), DELETED_CHAT_MESSAGE, null, GuiMessageSource.SYSTEM_SERVER, GuiMessageTag.system());
      }
  
@@ -321,7 +321,7 @@
      }
  
 -    public void addRecentChat(final String message) {
-+   public void addRecentChat(String message) {
++    public void addRecentChat(String message) {
          if (!message.equals(this.recentChat.peekLast())) {
              if (this.recentChat.size() >= 100) {
                  this.recentChat.removeFirst();
@@ -330,7 +330,7 @@
      }
  
 -    public void scrollChat(final int dir) {
-+   public void scrollChat(int dir) {
++    public void scrollChat(int dir) {
          this.chatScrollbarPos += dir;
          int max = this.trimmedMessages.size();
          if (this.chatScrollbarPos > max - this.getLinesPerPage()) {
@@ -339,10 +339,10 @@
  
      private int getWidth() {
 -        return getWidth(this.minecraft.options.chatWidth().get());
-+      int width = getWidth(this.minecraft.options.chatWidth().get());
-+      Window win = Minecraft.getInstance().getWindow();
-+      int widthWindow = (win.getWidth() - 3) / win.getGuiScale();
-+      return Mth.clamp(width, 0, widthWindow);
++        int width = getWidth(this.minecraft.options.chatWidth().get());
++        Window win = Minecraft.getInstance().getWindow();
++        int widthWindow = (win.getWidth() - 3) / win.getGuiScale();
++        return Mth.clamp(width, 0, widthWindow);
      }
  
      private int getHeight() {
@@ -351,14 +351,14 @@
      }
  
 -    public static int getWidth(final double pct) {
-+   public static int getWidth(double pct) {
++    public static int getWidth(double pct) {
          int max = 320;
          int min = 40;
          return Mth.floor(pct * 280.0 + 40.0);
      }
  
 -    public static int getHeight(final double pct) {
-+   public static int getHeight(double pct) {
++    public static int getHeight(double pct) {
          int max = 180;
          int min = 20;
          return Mth.floor(pct * 160.0 + 20.0);
@@ -367,7 +367,7 @@
      }
  
 -    public void saveAsDraft(final String text) {
-+   public void saveAsDraft(String text) {
++    public void saveAsDraft(String text) {
          boolean isCommand = text.startsWith("/");
          this.latestDraft = new ChatComponent.Draft(text, isCommand ? ChatComponent.ChatMethod.COMMAND : ChatComponent.ChatMethod.MESSAGE);
      }
@@ -376,7 +376,7 @@
      }
  
 -    public <T extends ChatScreen> T createScreen(final ChatComponent.ChatMethod chatMethod, final ChatScreen.ChatConstructor<T> chat) {
-+   public <T extends ChatScreen> T createScreen(ChatComponent.ChatMethod chatMethod, ChatScreen.ChatConstructor<T> chat) {
++    public <T extends ChatScreen> T createScreen(ChatComponent.ChatMethod chatMethod, ChatScreen.ChatConstructor<T> chat) {
          return this.latestDraft != null && chatMethod.isDraftRestorable(this.latestDraft)
              ? chat.create(this.latestDraft.text(), true)
              : chat.create(chatMethod.prefix(), false);
@@ -384,8 +384,8 @@
  
 -    public void openScreen(final ChatComponent.ChatMethod chatMethod, final ChatScreen.ChatConstructor<?> chat) {
 -        this.minecraft.gui.setScreen(this.createScreen(chatMethod, (ChatScreen.ChatConstructor<ChatScreen>)chat));
-+   public void openScreen(ChatComponent.ChatMethod chatMethod, ChatScreen.ChatConstructor<?> chat) {
-+      this.minecraft.gui.setScreen(this.createScreen(chatMethod, (ChatScreen.ChatConstructor)chat));
++    public void openScreen(ChatComponent.ChatMethod chatMethod, ChatScreen.ChatConstructor<?> chat) {
++        this.minecraft.gui.setScreen(this.createScreen(chatMethod, (ChatScreen.ChatConstructor)chat));
      }
  
      public void preserveCurrentChatScreen() {
@@ -394,7 +394,7 @@
      }
  
 -    public @Nullable ChatScreen restoreChatScreen() {
-+   public ChatScreen restoreChatScreen() {
++    public ChatScreen restoreChatScreen() {
          ChatScreen restoredScreen = this.preservedScreen;
          this.preservedScreen = null;
          return restoredScreen;
@@ -403,7 +403,7 @@
      }
  
 -    public void restoreState(final ChatComponent.State state) {
-+   public void restoreState(ChatComponent.State state) {
++    public void restoreState(ChatComponent.State state) {
          this.recentChat.clear();
          this.recentChat.addAll(state.history);
          this.messageDeletionQueue.clear();
@@ -416,7 +416,7 @@
          ChatComponent.AlphaCalculator FULLY_VISIBLE = var0 -> 1.0F;
  
 -        static ChatComponent.AlphaCalculator timeBased(final int currentTickTime) {
-+      static ChatComponent.AlphaCalculator timeBased(int currentTickTime) {
++        static ChatComponent.AlphaCalculator timeBased(int currentTickTime) {
              return message -> {
                  int tickDelta = currentTickTime - message.addedTime();
                  double t = tickDelta / 200.0;
@@ -425,25 +425,25 @@
          }
  
 -        float calculate(GuiMessage.Line message);
-+      float calculate(Line var1);
++        float calculate(Line var1);
      }
  
 -    @OnlyIn(Dist.CLIENT)
      public interface ChatGraphicsAccess {
 -        void updatePose(final Consumer<Matrix3x2f> updater);
-+      void updatePose(Consumer<Matrix3x2f> var1);
++        void updatePose(Consumer<Matrix3x2f> var1);
  
 -        void fill(int x0, int y0, int x1, int y1, int color);
-+      void fill(int var1, int var2, int var3, int var4, int var5);
++        void fill(int var1, int var2, int var3, int var4, int var5);
  
 -        boolean handleMessage(int textTop, float opacity, FormattedCharSequence message);
-+      boolean handleMessage(int var1, float var2, FormattedCharSequence var3);
++        boolean handleMessage(int var1, float var2, FormattedCharSequence var3);
  
 -        void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag);
-+      void handleTag(int var1, int var2, int var3, int var4, float var5, GuiMessageTag var6);
++        void handleTag(int var1, int var2, int var3, int var4, float var5, GuiMessageTag var6);
  
 -        void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, GuiMessageTag.Icon icon);
-+      void handleTagIcon(int var1, int var2, boolean var3, GuiMessageTag var4, Icon var5);
++        void handleTagIcon(int var1, int var2, boolean var3, GuiMessageTag var4, Icon var5);
      }
  
 -    @OnlyIn(Dist.CLIENT)
@@ -451,14 +451,14 @@
          MESSAGE("") {
              @Override
 -            public boolean isDraftRestorable(final ChatComponent.Draft draft) {
-+         public boolean isDraftRestorable(ChatComponent.Draft draft) {
++            public boolean isDraftRestorable(ChatComponent.Draft draft) {
                  return true;
              }
          },
          COMMAND("/") {
              @Override
 -            public boolean isDraftRestorable(final ChatComponent.Draft draft) {
-+         public boolean isDraftRestorable(ChatComponent.Draft draft) {
++            public boolean isDraftRestorable(ChatComponent.Draft draft) {
                  return this == draft.chatMethod;
              }
          };
@@ -466,7 +466,7 @@
          private final String prefix;
  
 -        ChatMethod(final String prefix) {
-+      ChatMethod(String prefix) {
++        ChatMethod(String prefix) {
              this.prefix = prefix;
          }
  
@@ -475,7 +475,7 @@
          }
  
 -        public abstract boolean isDraftRestorable(ChatComponent.Draft draft);
-+      public abstract boolean isDraftRestorable(ChatComponent.Draft var1);
++        public abstract boolean isDraftRestorable(ChatComponent.Draft var1);
      }
  
 -    @OnlyIn(Dist.CLIENT)
@@ -483,15 +483,15 @@
          private final ActiveTextCollector output;
  
 -        public ClickableTextOnlyGraphicsAccess(final ActiveTextCollector output) {
-+      public ClickableTextOnlyGraphicsAccess(ActiveTextCollector output) {
++        public ClickableTextOnlyGraphicsAccess(ActiveTextCollector output) {
              this.output = output;
          }
  
          @Override
 -        public void updatePose(final Consumer<Matrix3x2f> updater) {
 -            ActiveTextCollector.Parameters defaultParameters = this.output.defaultParameters();
-+      public void updatePose(Consumer<Matrix3x2f> updater) {
-+         Parameters defaultParameters = this.output.defaultParameters();
++        public void updatePose(Consumer<Matrix3x2f> updater) {
++            Parameters defaultParameters = this.output.defaultParameters();
              Matrix3x2f newPose = new Matrix3x2f(defaultParameters.pose());
              updater.accept(newPose);
              this.output.defaultParameters(defaultParameters.withPose(newPose));
@@ -499,24 +499,24 @@
  
          @Override
 -        public void fill(final int x0, final int y0, final int x1, final int y1, final int color) {
-+      public void fill(int x0, int y0, int x1, int y1, int color) {
++        public void fill(int x0, int y0, int x1, int y1, int color) {
          }
  
          @Override
 -        public boolean handleMessage(final int textTop, final float opacity, final FormattedCharSequence message) {
-+      public boolean handleMessage(int textTop, float opacity, FormattedCharSequence message) {
++        public boolean handleMessage(int textTop, float opacity, FormattedCharSequence message) {
              this.output.accept(TextAlignment.LEFT, 0, textTop, message);
              return false;
          }
  
          @Override
 -        public void handleTag(final int x0, final int y0, final int x1, final int y1, final float opacity, final GuiMessageTag tag) {
-+      public void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag) {
++        public void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag) {
          }
  
          @Override
 -        public void handleTagIcon(final int left, final int bottom, final boolean forceVisible, final GuiMessageTag tag, final GuiMessageTag.Icon icon) {
-+      public void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, Icon icon) {
++        public void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, Icon icon) {
          }
      }
  
@@ -533,7 +533,7 @@
          public final boolean showRestrictedPrompt;
  
 -        DisplayMode(final boolean foreground, final boolean showRestrictedPrompt) {
-+      DisplayMode(boolean foreground, boolean showRestrictedPrompt) {
++        DisplayMode(boolean foreground, boolean showRestrictedPrompt) {
              this.foreground = foreground;
              this.showRestrictedPrompt = showRestrictedPrompt;
          }
@@ -548,10 +548,10 @@
          private final GuiGraphicsExtractor graphics;
          private final ActiveTextCollector textRenderer;
 -        private ActiveTextCollector.Parameters parameters;
-+      private Parameters parameters;
++        private Parameters parameters;
  
 -        public DrawingBackgroundGraphicsAccess(final GuiGraphicsExtractor graphics) {
-+      public DrawingBackgroundGraphicsAccess(GuiGraphicsExtractor graphics) {
++        public DrawingBackgroundGraphicsAccess(GuiGraphicsExtractor graphics) {
              this.graphics = graphics;
              this.textRenderer = graphics.textRenderer(GuiGraphicsExtractor.HoveredTextEffects.NONE, null);
              this.parameters = this.textRenderer.defaultParameters();
@@ -559,34 +559,34 @@
  
          @Override
 -        public void updatePose(final Consumer<Matrix3x2f> updater) {
-+      public void updatePose(Consumer<Matrix3x2f> updater) {
++        public void updatePose(Consumer<Matrix3x2f> updater) {
              updater.accept(this.graphics.pose());
              this.parameters = this.parameters.withPose(new Matrix3x2f(this.graphics.pose()));
          }
  
          @Override
 -        public void fill(final int x0, final int y0, final int x1, final int y1, final int color) {
-+      public void fill(int x0, int y0, int x1, int y1, int color) {
++        public void fill(int x0, int y0, int x1, int y1, int color) {
              this.graphics.fill(x0, y0, x1, y1, color);
          }
  
          @Override
 -        public boolean handleMessage(final int textTop, final float opacity, final FormattedCharSequence message) {
-+      public boolean handleMessage(int textTop, float opacity, FormattedCharSequence message) {
++        public boolean handleMessage(int textTop, float opacity, FormattedCharSequence message) {
              this.textRenderer.accept(TextAlignment.LEFT, 0, textTop, this.parameters.withOpacity(opacity), message);
              return false;
          }
  
          @Override
 -        public void handleTag(final int x0, final int y0, final int x1, final int y1, final float opacity, final GuiMessageTag tag) {
-+      public void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag) {
++        public void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag) {
              int indicatorColor = ARGB.color(opacity, tag.indicatorColor());
              this.graphics.fill(x0, y0, x1, y1, indicatorColor);
          }
  
          @Override
 -        public void handleTagIcon(final int left, final int bottom, final boolean forceVisible, final GuiMessageTag tag, final GuiMessageTag.Icon icon) {
-+      public void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, Icon icon) {
++        public void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, Icon icon) {
          }
      }
  
@@ -596,18 +596,18 @@
          private final Font font;
          private final ActiveTextCollector textRenderer;
 -        private ActiveTextCollector.Parameters parameters;
-+      private Parameters parameters;
++        private Parameters parameters;
          private final int globalMouseX;
          private final int globalMouseY;
          private final Vector2f localMousePos = new Vector2f();
 -        private @Nullable Style hoveredStyle;
-+      private Style hoveredStyle;
++        private Style hoveredStyle;
          private final boolean changeCursorOnInsertions;
  
 -        public DrawingFocusedGraphicsAccess(
 -            final GuiGraphicsExtractor graphics, final Font font, final int mouseX, final int mouseY, final boolean changeCursorOnInsertions
 -        ) {
-+      public DrawingFocusedGraphicsAccess(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, boolean changeCursorOnInsertions) {
++        public DrawingFocusedGraphicsAccess(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, boolean changeCursorOnInsertions) {
              this.graphics = graphics;
              this.font = font;
              this.textRenderer = graphics.textRenderer(GuiGraphicsExtractor.HoveredTextEffects.TOOLTIP_AND_CURSOR, this);
@@ -616,7 +616,7 @@
  
          @Override
 -        public void updatePose(final Consumer<Matrix3x2f> updater) {
-+      public void updatePose(Consumer<Matrix3x2f> updater) {
++        public void updatePose(Consumer<Matrix3x2f> updater) {
              updater.accept(this.graphics.pose());
              this.parameters = this.parameters.withPose(new Matrix3x2f(this.graphics.pose()));
              this.updateLocalMousePos();
@@ -624,18 +624,18 @@
  
          @Override
 -        public void fill(final int x0, final int y0, final int x1, final int y1, final int color) {
-+      public void fill(int x0, int y0, int x1, int y1, int color) {
++        public void fill(int x0, int y0, int x1, int y1, int color) {
              this.graphics.fill(x0, y0, x1, y1, color);
          }
  
 -        public void accept(final Style style) {
-+      public void accept(Style style) {
++        public void accept(Style style) {
              this.hoveredStyle = style;
          }
  
          @Override
 -        public boolean handleMessage(final int textTop, final float opacity, final FormattedCharSequence message) {
-+      public boolean handleMessage(int textTop, float opacity, FormattedCharSequence message) {
++        public boolean handleMessage(int textTop, float opacity, FormattedCharSequence message) {
              this.hoveredStyle = null;
              this.textRenderer.accept(TextAlignment.LEFT, 0, textTop, this.parameters.withOpacity(opacity), message);
              if (this.changeCursorOnInsertions && this.hoveredStyle != null && this.hoveredStyle.getInsertion() != null) {
@@ -644,13 +644,13 @@
          }
  
 -        private boolean isMouseOver(final int left, final int top, final int right, final int bottom) {
-+      private boolean isMouseOver(int left, int top, int right, int bottom) {
++        private boolean isMouseOver(int left, int top, int right, int bottom) {
              return ActiveTextCollector.isPointInRectangle(this.localMousePos.x, this.localMousePos.y, left, top, right, bottom);
          }
  
          @Override
 -        public void handleTag(final int x0, final int y0, final int x1, final int y1, final float opacity, final GuiMessageTag tag) {
-+      public void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag) {
++        public void handleTag(int x0, int y0, int x1, int y1, float opacity, GuiMessageTag tag) {
              int indicatorColor = ARGB.color(opacity, tag.indicatorColor());
              this.graphics.fill(x0, y0, x1, y1, indicatorColor);
              if (this.isMouseOver(x0, y0, x1, y1)) {
@@ -659,7 +659,7 @@
  
          @Override
 -        public void handleTagIcon(final int left, final int bottom, final boolean forceVisible, final GuiMessageTag tag, final GuiMessageTag.Icon icon) {
-+      public void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, Icon icon) {
++        public void handleTagIcon(int left, int bottom, boolean forceVisible, GuiMessageTag tag, Icon icon) {
              int top = bottom - icon.height - 1;
              int right = left + icon.width;
              boolean isMouseOver = this.isMouseOver(left, top, right, bottom);
@@ -668,7 +668,7 @@
          }
  
 -        private void showTooltip(final GuiMessageTag tag) {
-+      private void showTooltip(GuiMessageTag tag) {
++        private void showTooltip(GuiMessageTag tag) {
              if (tag.text() != null) {
                  this.graphics.setTooltipForNextFrame(this.font, this.font.split(tag.text(), 210), this.globalMouseX, this.globalMouseY);
              }
@@ -679,7 +679,7 @@
 -    @OnlyIn(Dist.CLIENT)
      private interface LineConsumer {
 -        void accept(GuiMessage.Line line, int lineIndex, float alpha);
-+      void accept(Line var1, int var2, float var3);
++        void accept(Line var1, int var2, float var3);
      }
  
 -    @OnlyIn(Dist.CLIENT)
@@ -689,7 +689,7 @@
          private final List<ChatComponent.DelayedMessageDeletion> delayedMessageDeletions;
  
 -        public State(final List<GuiMessage> messages, final List<String> history, final List<ChatComponent.DelayedMessageDeletion> delayedMessageDeletions) {
-+      public State(List<GuiMessage> messages, List<String> history, List<ChatComponent.DelayedMessageDeletion> delayedMessageDeletions) {
++        public State(List<GuiMessage> messages, List<String> history, List<ChatComponent.DelayedMessageDeletion> delayedMessageDeletions) {
              this.messages = messages;
              this.history = history;
              this.delayedMessageDeletions = delayedMessageDeletions;

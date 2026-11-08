@@ -15,11 +15,11 @@
      private static final Identifier CAT_BABY_COLLAR_LOCATION = Identifier.withDefaultNamespace("textures/entity/cat/cat_collar_baby.png");
 -    private final AdultCatModel adultModel;
 -    private final BabyCatModel babyModel;
-+   public AdultCatModel adultModel;
-+   public BabyCatModel babyModel;
++    public AdultCatModel adultModel;
++    public BabyCatModel babyModel;
  
 -    public CatCollarLayer(final RenderLayerParent<CatRenderState, AbstractFelineModel<CatRenderState>> renderer, final EntityModelSet modelSet) {
-+   public CatCollarLayer(RenderLayerParent<CatRenderState, AbstractFelineModel<CatRenderState>> renderer, EntityModelSet modelSet) {
++    public CatCollarLayer(RenderLayerParent<CatRenderState, AbstractFelineModel<CatRenderState>> renderer, EntityModelSet modelSet) {
          super(renderer);
          this.adultModel = new AdultCatModel(modelSet.bakeLayer(ModelLayers.CAT_COLLAR));
          this.babyModel = new BabyCatModel(modelSet.bakeLayer(ModelLayers.CAT_BABY_COLLAR));
@@ -33,13 +33,13 @@
 -        final float yRot,
 -        final float xRot
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, CatRenderState state, float yRot, float xRot) {
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, CatRenderState state, float yRot, float xRot) {
          DyeColor collarColor = state.collarColor;
          if (collarColor != null) {
              int color = collarColor.getTextureDiffuseColor();
-+         if (Config.isCustomColors()) {
-+            color = CustomColors.getWolfCollarColors(collarColor, color);
-+         }
++            if (Config.isCustomColors()) {
++                color = CustomColors.getWolfCollarColors(collarColor, color);
++            }
 +
              AbstractFelineModel<CatRenderState> model = state.isBaby ? this.babyModel : this.adultModel;
              Identifier texture = state.isBaby ? CAT_BABY_COLLAR_LOCATION : CAT_COLLAR_LOCATION;

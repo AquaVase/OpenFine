@@ -24,9 +24,9 @@
      private static boolean vulkanLoaderAvailable;
  
      public static void loadLibraries() throws IOException {
-+      if (Boolean.getBoolean("renderdoc.wait")) {
-+         DebugUtils.waitRenderDoc();
-+      }
++        if (Boolean.getBoolean("renderdoc.wait")) {
++            DebugUtils.waitRenderDoc();
++        }
 +
          Stopwatch stopwatch = Stopwatch.createStarted();
          configureLWJGLLibraryPath();
@@ -37,12 +37,12 @@
  
 -        long var13 = stopwatch.stop().elapsed(TimeUnit.MILLISECONDS);
 -        LOGGER.debug("Library load time: {} ms", var13);
-+      long var131 = stopwatch.stop().elapsed(TimeUnit.MILLISECONDS);
-+      LOGGER.debug("Library load time: {} ms", var131);
++        long var131 = stopwatch.stop().elapsed(TimeUnit.MILLISECONDS);
++        LOGGER.debug("Library load time: {} ms", var131);
      }
  
 -    private static void createAndCheckDirectory(final String libraryDir) throws IOException {
-+   private static void createAndCheckDirectory(String libraryDir) throws IOException {
++    private static void createAndCheckDirectory(String libraryDir) throws IOException {
          if (!libraryDir.isEmpty()) {
              Path libraryDirPath = Path.of(libraryDir);
              Files.createDirectories(libraryDirPath);
@@ -55,7 +55,7 @@
 -                            + "', but got '"
 -                            + HEX_FORMAT.formatHex(readBytes)
 -                            + "'"
-+                  "Unexpected probe file contents, expected '" + HEX_FORMAT.formatHex(expectedBytes) + "', but got '" + HEX_FORMAT.formatHex(readBytes) + "'"
++                        "Unexpected probe file contents, expected '" + HEX_FORMAT.formatHex(expectedBytes) + "', but got '" + HEX_FORMAT.formatHex(readBytes) + "'"
                      );
                  }
              } finally {
@@ -64,7 +64,7 @@
      }
  
 -    private static @Nullable FileLock tryLock(final FileChannel fc) throws IOException {
-+   private static FileLock tryLock(FileChannel fc) throws IOException {
++    private static FileLock tryLock(FileChannel fc) throws IOException {
          for (int i = 0; i < 5; i++) {
              FileLock lock = fc.tryLock(0L, Long.MAX_VALUE, true);
              if (lock != null) {
@@ -73,7 +73,7 @@
      }
  
 -    private static void loadLibrary(final Supplier<String> debugCapture, final String name, final Runnable loader) {
-+   private static void loadLibrary(Supplier<String> debugCapture, String name, Runnable loader) {
++    private static void loadLibrary(Supplier<String> debugCapture, String name, Runnable loader) {
          try {
              LOGGER.debug("Loading {}", name);
              loader.run();
@@ -82,7 +82,7 @@
      }
  
 -    private static String listLibrariesDirectory(final @Nullable String libraryDirProperty) throws IOException {
-+   private static String listLibrariesDirectory(String libraryDirProperty) throws IOException {
++    private static String listLibrariesDirectory(String libraryDirProperty) throws IOException {
          if (libraryDirProperty == null || libraryDirProperty.isEmpty()) {
              return "<not set>";
          }
@@ -91,13 +91,13 @@
      }
  
 -    private static String identifyFileContents(final Path path) {
-+   private static String identifyFileContents(Path path) {
++    private static String identifyFileContents(Path path) {
          try {
              if (Files.isRegularFile(path)) {
                  if (path.getFileName().toString().endsWith(".dll")) {
 -                    Optional<String> detailedModuleInfo = NativeModuleLister.tryGetModuleVersion(path.toString())
 -                        .map(NativeModuleLister.NativeModuleVersion::toString);
-+               Optional<String> detailedModuleInfo = NativeModuleLister.tryGetModuleVersion(path.toString()).map(NativeModuleVersion::toString);
++                    Optional<String> detailedModuleInfo = NativeModuleLister.tryGetModuleVersion(path.toString()).map(NativeModuleVersion::toString);
                      if (detailedModuleInfo.isPresent()) {
                          return "module: " + detailedModuleInfo.get();
                      }
@@ -110,7 +110,7 @@
          private final NativeLibrariesBootstrap.CapturingStream collector;
  
 -        public CapturingPrintStream(final OutputStream out) {
-+      public CapturingPrintStream(OutputStream out) {
++        public CapturingPrintStream(OutputStream out) {
              NativeLibrariesBootstrap.CapturingStream logStream = new NativeLibrariesBootstrap.CapturingStream();
              super(new TeeOutputStream(out, logStream), false, StandardCharsets.UTF_8);
              this.collector = logStream;
@@ -121,11 +121,11 @@
 -    @OnlyIn(Dist.CLIENT)
      private static class CapturingStream extends OutputStream {
 -        private @Nullable ByteArrayOutputStream buffer;
-+      private ByteArrayOutputStream buffer;
++        private ByteArrayOutputStream buffer;
  
          @Override
 -        public void write(final byte[] b, final int off, final int len) {
-+      public void write(byte[] b, int off, int len) {
++        public void write(byte[] b, int off, int len) {
              if (this.buffer != null) {
                  this.buffer.write(b, off, len);
              }
@@ -133,7 +133,7 @@
  
          @Override
 -        public void write(final int b) {
-+      public void write(int b) {
++        public void write(int b) {
              if (this.buffer != null) {
                  this.buffer.write(b);
              }

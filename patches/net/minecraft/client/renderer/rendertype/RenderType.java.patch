@@ -26,26 +26,26 @@
      private final RenderSetup state;
      private final Optional<RenderType> outline;
      protected final String name;
-+   private Identifier textureLocation;
-+   private Map<Identifier, RenderType> mapTextured = new HashMap<>();
-+   public static RenderType drawRenderType;
-+   public static String SAMPLER0 = "Sampler0";
++    private Identifier textureLocation;
++    private Map<Identifier, RenderType> mapTextured = new HashMap<>();
++    public static RenderType drawRenderType;
++    public static String SAMPLER0 = "Sampler0";
  
 -    private RenderType(final String name, final RenderSetup state) {
-+   private RenderType(String name, RenderSetup state) {
++    private RenderType(String name, RenderSetup state) {
          this.name = name;
          this.state = state;
          this.outline = state.outlineProperty == RenderSetup.OutlineProperty.AFFECTS_OUTLINE
              ? state.textures.values().stream().findFirst().map(texture -> RenderTypes.OUTLINE.apply(texture.location(), state.pipeline.isCull()))
              : Optional.empty();
-+      RenderSetup.TextureBinding texBind = state.textures.get(SAMPLER0);
-+      if (texBind != null) {
-+         this.textureLocation = texBind.location();
++        RenderSetup.TextureBinding texBind = state.textures.get(SAMPLER0);
++        if (texBind != null) {
++            this.textureLocation = texBind.location();
++        }
      }
-+   }
  
 -    static RenderType create(final String name, final RenderSetup state) {
-+   static RenderType create(String name, RenderSetup state) {
++    static RenderType create(String name, RenderSetup state) {
          return new RenderType(name, state);
      }
  
@@ -54,13 +54,13 @@
              this.writeDynamicTransforms(RenderSystem.getModelViewMatrixCopy()),
              new ScissorState(RenderSystem.getScissorStateForRenderTypeDraws()),
 -            textures
-+         textures,
-+         this
++            textures,
++            this
          );
      }
  
 -    private GpuBufferSlice writeDynamicTransforms(final Matrix4f modelViewMatrix) {
-+   private GpuBufferSlice writeDynamicTransforms(Matrix4f modelViewMatrix) {
++    private GpuBufferSlice writeDynamicTransforms(Matrix4f modelViewMatrix) {
          Consumer<Matrix4f> modelViewModifier = this.state.layeringTransform.getModifier();
          if (modelViewModifier != null) {
              modelViewModifier.accept(modelViewMatrix);
@@ -71,54 +71,54 @@
 -}
 \ No newline at end of file
 +
-+   public String getName() {
-+      return this.name;
-+   }
++    public String getName() {
++        return this.name;
++    }
 +
-+   public boolean isEntitySolid() {
-+      return this.state.pipeline == RenderPipelines.ENTITY_SOLID;
-+   }
++    public boolean isEntitySolid() {
++        return this.state.pipeline == RenderPipelines.ENTITY_SOLID;
++    }
 +
-+   public boolean isEyes() {
-+      return this.state.pipeline == RenderPipelines.EYES;
-+   }
++    public boolean isEyes() {
++        return this.state.pipeline == RenderPipelines.EYES;
++    }
 +
-+   public Identifier getTextureLocation() {
-+      return this.textureLocation;
-+   }
++    public Identifier getTextureLocation() {
++        return this.textureLocation;
++    }
 +
-+   public boolean isGlint() {
-+      return this.getTextureLocation() == ItemFeatureRenderer.ENCHANTED_GLINT_ARMOR | this.getTextureLocation() == ItemFeatureRenderer.ENCHANTED_GLINT_ITEM;
-+   }
++    public boolean isGlint() {
++        return this.getTextureLocation() == ItemFeatureRenderer.ENCHANTED_GLINT_ARMOR | this.getTextureLocation() == ItemFeatureRenderer.ENCHANTED_GLINT_ITEM;
++    }
 +
-+   public boolean isAtlasTextureBlocks() {
-+      Identifier loc = this.getTextureLocation();
-+      return loc == TextureAtlas.LOCATION_BLOCKS;
-+   }
++    public boolean isAtlasTextureBlocks() {
++        Identifier loc = this.getTextureLocation();
++        return loc == TextureAtlas.LOCATION_BLOCKS;
++    }
 +
-+   public RenderType getTextured(Identifier textureLocationIn) {
-+      if (this.textureLocation == null) {
-+         return this;
-+      }
++    public RenderType getTextured(Identifier textureLocationIn) {
++        if (this.textureLocation == null) {
++            return this;
++        }
 +
-+      if (this.textureLocation.equals(textureLocationIn)) {
-+         return this;
-+      }
++        if (this.textureLocation.equals(textureLocationIn)) {
++            return this;
++        }
 +
-+      RenderType typeTex = this.mapTextured.get(textureLocationIn);
-+      if (typeTex == null) {
-+         RenderSetup.TextureBinding texBind = this.state.textures.get(SAMPLER0);
-+         RenderSetup.TextureBinding texBind2 = new RenderSetup.TextureBinding(textureLocationIn, texBind.sampler());
-+         RenderSetup stateTex = this.state.duplicate();
-+         stateTex.textures.put(SAMPLER0, texBind2);
-+         typeTex = create(this.name, stateTex);
-+         this.mapTextured.put(textureLocationIn, typeTex);
-+      }
++        RenderType typeTex = this.mapTextured.get(textureLocationIn);
++        if (typeTex == null) {
++            RenderSetup.TextureBinding texBind = this.state.textures.get(SAMPLER0);
++            RenderSetup.TextureBinding texBind2 = new RenderSetup.TextureBinding(textureLocationIn, texBind.sampler());
++            RenderSetup stateTex = this.state.duplicate();
++            stateTex.textures.put(SAMPLER0, texBind2);
++            typeTex = create(this.name, stateTex);
++            this.mapTextured.put(textureLocationIn, typeTex);
++        }
 +
-+      return typeTex;
-+   }
++        return typeTex;
++    }
 +
-+   public boolean affectsOutline() {
-+      return this.state.outlineProperty == RenderSetup.OutlineProperty.AFFECTS_OUTLINE;
-+   }
++    public boolean affectsOutline() {
++        return this.state.outlineProperty == RenderSetup.OutlineProperty.AFFECTS_OUTLINE;
++    }
 +}

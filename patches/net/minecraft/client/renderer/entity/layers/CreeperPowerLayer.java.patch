@@ -11,30 +11,30 @@
  public class CreeperPowerLayer extends EnergySwirlLayer<CreeperRenderState, CreeperModel> {
      private static final Identifier POWER_LOCATION = Identifier.withDefaultNamespace("textures/entity/creeper/creeper_armor.png");
 -    private final CreeperModel model;
-+   public CreeperModel model;
-+   public Identifier customTextureLocation;
++    public CreeperModel model;
++    public Identifier customTextureLocation;
  
 -    public CreeperPowerLayer(final RenderLayerParent<CreeperRenderState, CreeperModel> renderer, final EntityModelSet modelSet) {
-+   public CreeperPowerLayer(RenderLayerParent<CreeperRenderState, CreeperModel> renderer, EntityModelSet modelSet) {
++    public CreeperPowerLayer(RenderLayerParent<CreeperRenderState, CreeperModel> renderer, EntityModelSet modelSet) {
          super(renderer);
          this.model = new CreeperModel(modelSet.bakeLayer(ModelLayers.CREEPER_ARMOR));
      }
  
 -    protected boolean isPowered(final CreeperRenderState state) {
-+   protected boolean isPowered(CreeperRenderState state) {
++    protected boolean isPowered(CreeperRenderState state) {
          return state.isPowered;
      }
  
      @Override
 -    protected float xOffset(final float t) {
-+   protected float xOffset(float t) {
++    protected float xOffset(float t) {
          return t * 0.01F;
      }
  
      @Override
      protected Identifier getTextureLocation() {
 -        return POWER_LOCATION;
-+      return this.customTextureLocation != null ? this.customTextureLocation : POWER_LOCATION;
++        return this.customTextureLocation != null ? this.customTextureLocation : POWER_LOCATION;
      }
  
      protected CreeperModel model() {

@@ -13,7 +13,7 @@
  
      public static String getClientModName() {
 -        return "vanilla";
-+      return Reflector.BrandingControl_getBranding.exists() ? Reflector.BrandingControl_getBranding.callString() : "optifine";
++        return Reflector.BrandingControl_getBranding.exists() ? Reflector.BrandingControl_getBranding.callString() : "optifine";
      }
 -}
 \ No newline at end of file

@@ -8,89 +8,89 @@ import net.optifine.shaders.Shaders;
 import net.optifine.util.StrUtils;
 
 public class ShaderOptionVariable extends ShaderOption {
-   private static final Pattern PATTERN_VARIABLE = Pattern.compile("^\\s*#define\\s+(\\w+)\\s+(-?[0-9\\.Ff]+|\\w+)\\s*(//.*)?$");
+    private static final Pattern PATTERN_VARIABLE = Pattern.compile("^\\s*#define\\s+(\\w+)\\s+(-?[0-9\\.Ff]+|\\w+)\\s*(//.*)?$");
 
-   public ShaderOptionVariable(String name, String description, String value, String[] values, String path) {
-      super(name, description, value, values, value, path);
-      this.setVisible(this.getValues().length > 1);
-   }
+    public ShaderOptionVariable(String name, String description, String value, String[] values, String path) {
+        super(name, description, value, values, value, path);
+        this.setVisible(this.getValues().length > 1);
+    }
 
-   @Override
-   public String getSourceLine() {
-      return "#define " + this.getName() + " " + this.getValue() + " // Shader option " + this.getValue();
-   }
+    @Override
+    public String getSourceLine() {
+        return "#define " + this.getName() + " " + this.getValue() + " // Shader option " + this.getValue();
+    }
 
-   @Override
-   public String getValueText(String val) {
-      String prefix = Shaders.translate("prefix." + this.getName(), "");
-      String text = super.getValueText(val);
-      String suffix = Shaders.translate("suffix." + this.getName(), "");
-      return prefix + text + suffix;
-   }
+    @Override
+    public String getValueText(String val) {
+        String prefix = Shaders.translate("prefix." + this.getName(), "");
+        String text = super.getValueText(val);
+        String suffix = Shaders.translate("suffix." + this.getName(), "");
+        return prefix + text + suffix;
+    }
 
-   @Override
-   public String getValueColor(String val) {
-      String valLow = val.toLowerCase();
-      return !valLow.equals("false") && !valLow.equals("off") ? "Â§a" : "Â§c";
-   }
+    @Override
+    public String getValueColor(String val) {
+        String valLow = val.toLowerCase();
+        return !valLow.equals("false") && !valLow.equals("off") ? "Â§a" : "Â§c";
+    }
 
-   @Override
-   public boolean matchesLine(String line) {
-      Matcher m = PATTERN_VARIABLE.matcher(line);
-      if (!m.matches()) {
-         return false;
-      }
+    @Override
+    public boolean matchesLine(String line) {
+        Matcher m = PATTERN_VARIABLE.matcher(line);
+        if (!m.matches()) {
+            return false;
+        }
 
-      String defName = m.group(1);
-      return defName.matches(this.getName());
-   }
+        String defName = m.group(1);
+        return defName.matches(this.getName());
+    }
 
-   public static ShaderOption parseOption(String line, String path) {
-      Matcher m = PATTERN_VARIABLE.matcher(line);
-      if (!m.matches()) {
-         return null;
-      }
+    public static ShaderOption parseOption(String line, String path) {
+        Matcher m = PATTERN_VARIABLE.matcher(line);
+        if (!m.matches()) {
+            return null;
+        }
 
-      String name = m.group(1);
-      String value = m.group(2);
-      String description = m.group(3);
-      String vals = StrUtils.getSegment(description, "[", "]");
-      if (vals != null && vals.length() > 0) {
-         description = description.replace(vals, "").trim();
-      }
+        String name = m.group(1);
+        String value = m.group(2);
+        String description = m.group(3);
+        String vals = StrUtils.getSegment(description, "[", "]");
+        if (vals != null && vals.length() > 0) {
+            description = description.replace(vals, "").trim();
+        }
 
-      String[] values = parseValues(value, vals);
-      if (name != null && name.length() > 0) {
-         path = StrUtils.removePrefix(path, "/shaders/");
-         return new ShaderOptionVariable(name, description, value, values, path);
-      } else {
-         return null;
-      }
-   }
+        String[] values = parseValues(value, vals);
+        if (name != null && name.length() > 0) {
+            path = StrUtils.removePrefix(path, "/shaders/");
+            return new ShaderOptionVariable(name, description, value, values, path);
+        } else {
+            return null;
+        }
+    }
 
-   public static String[] parseValues(String value, String valuesStr) {
-      String[] values = new String[]{value};
-      if (valuesStr == null) {
-         return values;
-      }
+    public static String[] parseValues(String value, String valuesStr) {
+        String[] values = new String[]{value};
+        if (valuesStr == null) {
+            return values;
+        }
 
-      valuesStr = valuesStr.trim();
-      valuesStr = StrUtils.removePrefix(valuesStr, "[");
-      valuesStr = StrUtils.removeSuffix(valuesStr, "]");
-      valuesStr = valuesStr.trim();
-      if (valuesStr.length() <= 0) {
-         return values;
-      }
+        valuesStr = valuesStr.trim();
+        valuesStr = StrUtils.removePrefix(valuesStr, "[");
+        valuesStr = StrUtils.removeSuffix(valuesStr, "]");
+        valuesStr = valuesStr.trim();
+        if (valuesStr.length() <= 0) {
+            return values;
+        }
 
-      String[] parts = Config.tokenize(valuesStr, " ");
-      if (parts.length <= 0) {
-         return values;
-      }
+        String[] parts = Config.tokenize(valuesStr, " ");
+        if (parts.length <= 0) {
+            return values;
+        }
 
-      if (!Arrays.asList(parts).contains(value)) {
-         parts = (String[])Config.addObjectToArray(parts, value, 0);
-      }
+        if (!Arrays.asList(parts).contains(value)) {
+            parts = (String[])Config.addObjectToArray(parts, value, 0);
+        }
 
-      return parts;
-   }
+        return parts;
+    }
 }

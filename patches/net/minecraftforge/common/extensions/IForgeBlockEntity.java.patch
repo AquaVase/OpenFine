@@ -6,22 +6,22 @@
 +import net.minecraft.world.phys.AABB;
 +
 +public interface IForgeBlockEntity {
-+   AABB INFINITE_EXTENT_AABB = new AABB(
-+      Double.NEGATIVE_INFINITY,
-+      Double.NEGATIVE_INFINITY,
-+      Double.NEGATIVE_INFINITY,
-+      Double.POSITIVE_INFINITY,
-+      Double.POSITIVE_INFINITY,
-+      Double.POSITIVE_INFINITY
-+   );
++    AABB INFINITE_EXTENT_AABB = new AABB(
++        Double.NEGATIVE_INFINITY,
++        Double.NEGATIVE_INFINITY,
++        Double.NEGATIVE_INFINITY,
++        Double.POSITIVE_INFINITY,
++        Double.POSITIVE_INFINITY,
++        Double.POSITIVE_INFINITY
++    );
 +
-+   default void requestModelDataUpdate() {
-+   }
++    default void requestModelDataUpdate() {
++    }
 +
-+   default void onChunkUnloaded() {
-+   }
++    default void onChunkUnloaded() {
++    }
 +
-+   default boolean hasCustomOutlineRendering() {
-+      return false;
-+   }
++    default boolean hasCustomOutlineRendering() {
++        return false;
++    }
 +}

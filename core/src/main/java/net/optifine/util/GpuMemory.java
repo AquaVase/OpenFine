@@ -12,63 +12,63 @@ import net.optifine.Config;
 import net.optifine.shaders.SimpleShaderTexture;
 
 public class GpuMemory {
-   private static long bufferAllocated = 0L;
-   private static long textureAllocated = 0L;
-   private static long textureAllocatedUpdateTime = 0L;
+    private static long bufferAllocated = 0L;
+    private static long textureAllocated = 0L;
+    private static long textureAllocatedUpdateTime = 0L;
 
-   public static synchronized void bufferAllocated(long size) {
-      bufferAllocated += size;
-   }
+    public static synchronized void bufferAllocated(long size) {
+        bufferAllocated += size;
+    }
 
-   public static synchronized void bufferFreed(long size) {
-      bufferAllocated -= size;
-   }
+    public static synchronized void bufferFreed(long size) {
+        bufferAllocated -= size;
+    }
 
-   public static long getBufferAllocated() {
-      return bufferAllocated;
-   }
+    public static long getBufferAllocated() {
+        return bufferAllocated;
+    }
 
-   public static long getTextureAllocated() {
-      if (System.currentTimeMillis() > textureAllocatedUpdateTime) {
-         textureAllocated = calculateTextureAllocated();
-         textureAllocatedUpdateTime = System.currentTimeMillis() + 1000L;
-      }
+    public static long getTextureAllocated() {
+        if (System.currentTimeMillis() > textureAllocatedUpdateTime) {
+            textureAllocated = calculateTextureAllocated();
+            textureAllocatedUpdateTime = System.currentTimeMillis() + 1000L;
+        }
 
-      return textureAllocated;
-   }
+        return textureAllocated;
+    }
 
-   private static long calculateTextureAllocated() {
-      TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-      long sum = 0L;
+    private static long calculateTextureAllocated() {
+        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+        long sum = 0L;
 
-      for (AbstractTexture texture : textureManager.getTextures()) {
-         long size = getTextureSize(texture);
-         if (Config.isShaders()) {
-            size *= 3L;
-         }
+        for (AbstractTexture texture : textureManager.getTextures()) {
+            long size = getTextureSize(texture);
+            if (Config.isShaders()) {
+                size *= 3L;
+            }
 
-         sum += size;
-      }
+            sum += size;
+        }
 
-      return sum;
-   }
+        return sum;
+    }
 
-   public static long getTextureSize(AbstractTexture texture) {
-      if (texture instanceof DynamicTexture dt) {
-         NativeImage img = dt.getPixels();
-         if (img != null) {
-            return img.getSize();
-         }
-      }
+    public static long getTextureSize(AbstractTexture texture) {
+        if (texture instanceof DynamicTexture dt) {
+            NativeImage img = dt.getPixels();
+            if (img != null) {
+                return img.getSize();
+            }
+        }
 
-      if (texture instanceof FontTexture ft) {
-         return 262144L;
-      } else if (texture instanceof SimpleShaderTexture sst) {
-         return sst.getSize();
-      } else if (texture instanceof SimpleTexture st) {
-         return st.size;
-      } else {
-         return texture instanceof TextureAtlas ta ? ta.getWidth() * ta.getHeight() * 4 : 0L;
-      }
-   }
+        if (texture instanceof FontTexture ft) {
+            return 262144L;
+        } else if (texture instanceof SimpleShaderTexture sst) {
+            return sst.getSize();
+        } else if (texture instanceof SimpleTexture st) {
+            return st.size;
+        } else {
+            return texture instanceof TextureAtlas ta ? ta.getWidth() * ta.getHeight() * 4 : 0L;
+        }
+    }
 }

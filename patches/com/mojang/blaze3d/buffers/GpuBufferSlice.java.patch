@@ -13,11 +13,11 @@
 -public record GpuBufferSlice(GpuBuffer buffer, long offset, long length) {
 -    public GpuBufferSlice slice(final long offset, final long length) {
 +public record GpuBufferSlice(GpuBuffer buffer, long offset, long length, Mutable<Object> mutableData) {
-+   public GpuBufferSlice(GpuBuffer buffer, long offset, long length) {
-+      this(buffer, offset, length, new Mutable<>());
-+   }
++    public GpuBufferSlice(GpuBuffer buffer, long offset, long length) {
++        this(buffer, offset, length, new Mutable<>());
++    }
 +
-+   public GpuBufferSlice slice(long offset, long length) {
++    public GpuBufferSlice slice(long offset, long length) {
          if (offset >= 0L && length >= 0L && offset + length <= this.length) {
              return new GpuBufferSlice(this.buffer, this.offset + offset, length);
          } else {
@@ -26,22 +26,22 @@
      }
  
 -    public GpuBufferSlice.MappedView map(final boolean read, final boolean write) {
-+   public GpuBufferSlice.MappedView map(boolean read, boolean write) {
++    public GpuBufferSlice.MappedView map(boolean read, boolean write) {
          return this.buffer.map(this.offset, this.length, read, write);
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public GlBuffer glBuffer() {
-+      return (GlBuffer)this.buffer;
-+   }
++    public GlBuffer glBuffer() {
++        return (GlBuffer)this.buffer;
++    }
 +
-+   public Object getData() {
-+      return this.mutableData.get();
-+   }
++    public Object getData() {
++        return this.mutableData.get();
++    }
 +
-+   public void setData(Object data) {
-+      this.mutableData.set(data);
-+   }
++    public void setData(Object data) {
++        this.mutableData.set(data);
++    }
 +
      public record MappedView(GpuBufferSlice slice, ByteBuffer data, Runnable onClose) implements AutoCloseable {
          @Override

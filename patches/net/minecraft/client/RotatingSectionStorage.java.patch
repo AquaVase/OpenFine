@@ -32,10 +32,10 @@
      private final int sectionGridSizeY;
      private final int sectionGridSizeXZ;
      private SectionPos centerSectionPos = SectionPos.of(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
-+   private Map<ChunkPos, VboRegion[]> mapVboRegions = new HashMap<>();
++    private Map<ChunkPos, VboRegion[]> mapVboRegions = new HashMap<>();
  
 -    public RotatingSectionStorage(final int radius, final int minY, final int maxY, final RotatingSectionStorage.ValueCreator<T> valueCreator) {
-+   public RotatingSectionStorage(int radius, int minY, int maxY, RotatingSectionStorage.ValueCreator<T> valueCreator) {
++    public RotatingSectionStorage(int radius, int minY, int maxY, RotatingSectionStorage.ValueCreator<T> valueCreator) {
          this.radius = radius;
          this.minY = minY;
          this.maxY = maxY;
@@ -43,19 +43,19 @@
                      int index = this.getSectionIndex(x, y, z);
                      long sectionNode = SectionPos.asLong(x, y + minY, z);
                      this.nodes[index] = new RotatingSectionStorage.Node<>(valueCreator.createValue(index, sectionNode));
-+               if (Config.isRenderRegions()) {
-+                  SectionRenderDispatcher.RenderSection rs = this.nodes[index].getRenderSection();
-+                  if (rs != null) {
-+                     this.updateVboRegion(rs);
++                    if (Config.isRenderRegions()) {
++                        SectionRenderDispatcher.RenderSection rs = this.nodes[index].getRenderSection();
++                        if (rs != null) {
++                            this.updateVboRegion(rs);
++                        }
++                    }
                  }
              }
          }
      }
-+      }
-+   }
  
 -    public boolean repositionCenter(final SectionPos newCenterSectionPos) {
-+   public boolean repositionCenter(SectionPos newCenterSectionPos) {
++    public boolean repositionCenter(SectionPos newCenterSectionPos) {
          if (newCenterSectionPos.equals(this.centerSectionPos)) {
              return false;
          }
@@ -64,12 +64,12 @@
      }
  
 -    public @Nullable T getValueAt(final BlockPos pos) {
-+   public T getValueAt(BlockPos pos) {
++    public T getValueAt(BlockPos pos) {
          return this.getValue(SectionPos.asLong(pos));
      }
  
 -    public @Nullable T getValue(final long sectionNode) {
-+   public T getValue(long sectionNode) {
++    public T getValue(long sectionNode) {
          int sectionX = SectionPos.x(sectionNode);
          int sectionY = SectionPos.y(sectionNode);
          int sectionZ = SectionPos.z(sectionNode);
@@ -77,7 +77,7 @@
      }
  
 -    public @Nullable T getValue(final int sectionX, final int sectionY, final int sectionZ) {
-+   public T getValue(int sectionX, int sectionY, int sectionZ) {
++    public T getValue(int sectionX, int sectionY, int sectionZ) {
          if (!this.containsSection(sectionX, sectionY, sectionZ)) {
              return null;
          }
@@ -86,21 +86,21 @@
      }
  
 -    private boolean containsSection(final int sectionX, final int sectionY, final int sectionZ) {
-+   private boolean containsSection(int sectionX, int sectionY, int sectionZ) {
++    private boolean containsSection(int sectionX, int sectionY, int sectionZ) {
          if (sectionY >= this.minY && sectionY <= this.maxY) {
 -            return sectionX < this.centerSectionPos.x() - this.radius || sectionX > this.centerSectionPos.x() + this.radius
 -                ? false
 -                : sectionZ >= this.centerSectionPos.z() - this.radius && sectionZ <= this.centerSectionPos.z() + this.radius;
-+         return sectionX >= this.centerSectionPos.x() - this.radius && sectionX <= this.centerSectionPos.x() + this.radius
-+            ? sectionZ >= this.centerSectionPos.z() - this.radius && sectionZ <= this.centerSectionPos.z() + this.radius
-+            : false;
++            return sectionX >= this.centerSectionPos.x() - this.radius && sectionX <= this.centerSectionPos.x() + this.radius
++                ? sectionZ >= this.centerSectionPos.z() - this.radius && sectionZ <= this.centerSectionPos.z() + this.radius
++                : false;
          } else {
              return false;
          }
      }
  
 -    private int getSectionIndex(final int x, final int y, final int z) {
-+   private int getSectionIndex(int x, int y, int z) {
++    private int getSectionIndex(int x, int y, int z) {
          return (z * this.sectionGridSizeY + y) * this.sectionGridSizeXZ + x;
      }
  
@@ -109,7 +109,7 @@
  
      @Override
 -    public void forEach(final Consumer<? super T> action) {
-+   public void forEach(Consumer<? super T> action) {
++    public void forEach(Consumer<? super T> action) {
          for (RotatingSectionStorage.Node<T> node : this.nodes) {
              action.accept(node.value);
          }
@@ -118,74 +118,74 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   private void updateVboRegion(SectionRenderDispatcher.RenderSection renderChunk) {
-+      BlockPos pos = renderChunk.getPosition();
-+      int rx = pos.getX() >> 8 << 8;
-+      int rz = pos.getZ() >> 8 << 8;
-+      ChunkPos cp = new ChunkPos(rx, rz);
-+      ChunkSectionLayer[] layers = ChunkSectionLayer.VALUES;
-+      VboRegion[] regions = this.mapVboRegions.get(cp);
-+      if (regions == null) {
-+         regions = new VboRegion[layers.length];
++    private void updateVboRegion(SectionRenderDispatcher.RenderSection renderChunk) {
++        BlockPos pos = renderChunk.getPosition();
++        int rx = pos.getX() >> 8 << 8;
++        int rz = pos.getZ() >> 8 << 8;
++        ChunkPos cp = new ChunkPos(rx, rz);
++        ChunkSectionLayer[] layers = ChunkSectionLayer.VALUES;
++        VboRegion[] regions = this.mapVboRegions.get(cp);
++        if (regions == null) {
++            regions = new VboRegion[layers.length];
 +
-+         for (int ix = 0; ix < layers.length; ix++) {
-+            if (RegionLayerRenderer.canRenderLayer(layers[ix])) {
-+               regions[ix] = new VboRegion(cp, layers[ix]);
-+            }
-+         }
-+
-+         this.mapVboRegions.put(cp, regions);
-+      }
-+
-+      renderChunk.setVboRegions(regions);
-+   }
-+
-+   public void deleteVboRegions() {
-+      for (ChunkPos cp : this.mapVboRegions.keySet()) {
-+         VboRegion[] vboRegions = this.mapVboRegions.get(cp);
-+
-+         for (int i = 0; i < vboRegions.length; i++) {
-+            VboRegion vboRegion = vboRegions[i];
-+            if (vboRegion != null) {
-+               vboRegion.deleteGlBuffers();
++            for (int ix = 0; ix < layers.length; ix++) {
++                if (RegionLayerRenderer.canRenderLayer(layers[ix])) {
++                    regions[ix] = new VboRegion(cp, layers[ix]);
++                }
 +            }
 +
-+            vboRegions[i] = null;
-+         }
-+      }
++            this.mapVboRegions.put(cp, regions);
++        }
 +
-+      this.mapVboRegions.clear();
-+   }
++        renderChunk.setVboRegions(regions);
++    }
 +
-+   public int getHighestUsedChunkIndex(int chunkX, int minChunkIndex, int chunkZ) {
-+      chunkX = Mth.positiveModulo(chunkX, this.sectionGridSizeXZ);
-+      minChunkIndex = Mth.clamp(minChunkIndex, 0, this.sectionGridSizeY);
-+      chunkZ = Mth.positiveModulo(chunkZ, this.sectionGridSizeXZ);
++    public void deleteVboRegions() {
++        for (ChunkPos cp : this.mapVboRegions.keySet()) {
++            VboRegion[] vboRegions = this.mapVboRegions.get(cp);
 +
-+      for (int chunkY = this.sectionGridSizeY - 1; chunkY >= minChunkIndex; chunkY--) {
-+         SectionRenderDispatcher.RenderSection rc = this.nodes[this.getSectionIndex(chunkX, chunkY, chunkZ)].getRenderSection();
-+         if (!rc.getSectionMesh().isEmpty()) {
-+            return chunkY;
-+         }
-+      }
++            for (int i = 0; i < vboRegions.length; i++) {
++                VboRegion vboRegion = vboRegions[i];
++                if (vboRegion != null) {
++                    vboRegion.deleteGlBuffers();
++                }
 +
-+      return -1;
-+   }
++                vboRegions[i] = null;
++            }
++        }
 +
-+   public Iterator<SectionRenderDispatcher.RenderSection> getRenderSectionIterator() {
-+      return new MemberIterator<>(this.nodes, RotatingSectionStorage.Node::getRenderSection);
-+   }
++        this.mapVboRegions.clear();
++    }
++
++    public int getHighestUsedChunkIndex(int chunkX, int minChunkIndex, int chunkZ) {
++        chunkX = Mth.positiveModulo(chunkX, this.sectionGridSizeXZ);
++        minChunkIndex = Mth.clamp(minChunkIndex, 0, this.sectionGridSizeY);
++        chunkZ = Mth.positiveModulo(chunkZ, this.sectionGridSizeXZ);
++
++        for (int chunkY = this.sectionGridSizeY - 1; chunkY >= minChunkIndex; chunkY--) {
++            SectionRenderDispatcher.RenderSection rc = this.nodes[this.getSectionIndex(chunkX, chunkY, chunkZ)].getRenderSection();
++            if (!rc.getSectionMesh().isEmpty()) {
++                return chunkY;
++            }
++        }
++
++        return -1;
++    }
++
++    public Iterator<SectionRenderDispatcher.RenderSection> getRenderSectionIterator() {
++        return new MemberIterator<>(this.nodes, RotatingSectionStorage.Node::getRenderSection);
++    }
 +
      private record Node<T>(T value) {
-+      public SectionRenderDispatcher.RenderSection getRenderSection() {
-+         return this.value instanceof SectionRenderDispatcher.RenderSection ? (SectionRenderDispatcher.RenderSection)this.value : null;
++        public SectionRenderDispatcher.RenderSection getRenderSection() {
++            return this.value instanceof SectionRenderDispatcher.RenderSection ? (SectionRenderDispatcher.RenderSection)this.value : null;
++        }
      }
-+   }
  
 -    @OnlyIn(Dist.CLIENT)
      public interface Value {
 -        void setSectionNode(long sectionNode);
-+      void setSectionNode(long var1);
++        void setSectionNode(long var1);
  
          long getSectionNode();
      }
@@ -193,7 +193,7 @@
 -    @OnlyIn(Dist.CLIENT)
      public interface ValueCreator<T extends RotatingSectionStorage.Value> {
 -        T createValue(int index, long sectionNode);
-+      T createValue(int var1, long var2);
++        T createValue(int var1, long var2);
      }
 -}
 \ No newline at end of file

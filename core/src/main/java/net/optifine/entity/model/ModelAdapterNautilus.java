@@ -14,44 +14,44 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterNautilus extends ModelAdapterAgeable {
-   public ModelAdapterNautilus() {
-      super(EntityTypes.NAUTILUS, "nautilus", ModelLayers.NAUTILUS);
-   }
+    public ModelAdapterNautilus() {
+        super(EntityTypes.NAUTILUS, "nautilus", ModelLayers.NAUTILUS);
+    }
 
-   protected ModelAdapterNautilus(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterNautilus(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterNautilus ma = new ModelAdapterNautilus(this.getEntityType(), "nautilus_baby", ModelLayers.NAUTILUS_BABY);
-      ma.setBaby(true);
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterNautilus ma = new ModelAdapterNautilus(this.getEntityType(), "nautilus_baby", ModelLayers.NAUTILUS_BABY);
+        ma.setBaby(true);
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new NautilusModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new NautilusModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      return makeStaticMapParts();
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        return makeStaticMapParts();
+    }
 
-   public static Map<String, String> makeStaticMapParts() {
-      Map<String, String> map = new LinkedHashMap<>();
-      map.put("body", "body");
-      map.put("shell", "shell");
-      map.put("upper_mouth", "upper_mouth");
-      map.put("inner_mouth", "inner_mouth");
-      map.put("lower_mouth", "lower_mouth");
-      map.put("root", "root");
-      return map;
-   }
+    public static Map<String, String> makeStaticMapParts() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("body", "body");
+        map.put("shell", "shell");
+        map.put("upper_mouth", "upper_mouth");
+        map.put("inner_mouth", "inner_mouth");
+        map.put("lower_mouth", "lower_mouth");
+        map.put("root", "root");
+        return map;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new NautilusRenderer(context);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new NautilusRenderer(context);
+    }
 }

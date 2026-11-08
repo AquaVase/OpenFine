@@ -34,22 +34,22 @@
 -    private NativeImage[] byMipLevel;
 -    private final SpriteContents.@Nullable AnimatedTexture animatedTexture;
 -    private final List<MetadataSectionType.WithValue<?>> additionalMetadata;
-+   protected int width;
-+   protected int height;
-+   private NativeImage originalImage;
-+   protected NativeImage[] byMipLevel;
-+   private final SpriteContents.AnimatedTexture animatedTexture;
-+   private final List<WithValue<?>> additionalMetadata;
++    protected int width;
++    protected int height;
++    private NativeImage originalImage;
++    protected NativeImage[] byMipLevel;
++    private final SpriteContents.AnimatedTexture animatedTexture;
++    private final List<WithValue<?>> additionalMetadata;
      private final MipmapStrategy mipmapStrategy;
      private final float alphaCutoffBias;
      private final Transparency transparency;
-+   private double scaleFactor = 1.0;
-+   private TextureAtlasSprite sprite;
-+   private Optional<AnimationMetadataSection> animMetadata;
-+   private Optional<TextureMetadataSection> textureMetadata;
++    private double scaleFactor = 1.0;
++    private TextureAtlasSprite sprite;
++    private Optional<AnimationMetadataSection> animMetadata;
++    private Optional<TextureMetadataSection> textureMetadata;
  
 -    public SpriteContents(final Identifier name, final FrameSize frameSize, final NativeImage image) {
-+   public SpriteContents(Identifier name, FrameSize frameSize, NativeImage image) {
++    public SpriteContents(Identifier name, FrameSize frameSize, NativeImage image) {
          this(name, frameSize, image, Optional.empty(), List.of(), Optional.empty());
      }
  
@@ -60,12 +60,12 @@
 -        final Optional<AnimationMetadataSection> animationInfo,
 -        final List<MetadataSectionType.WithValue<?>> additionalMetadata,
 -        final Optional<TextureMetadataSection> textureInfo
-+      Identifier name,
-+      FrameSize frameSize,
-+      NativeImage image,
-+      Optional<AnimationMetadataSection> animationInfo,
-+      List<WithValue<?>> additionalMetadata,
-+      Optional<TextureMetadataSection> textureInfo
++        Identifier name,
++        FrameSize frameSize,
++        NativeImage image,
++        Optional<AnimationMetadataSection> animationInfo,
++        List<WithValue<?>> additionalMetadata,
++        Optional<TextureMetadataSection> textureInfo
      ) {
          this.name = name;
          this.width = frameSize.width();
@@ -73,28 +73,28 @@
          this.mipmapStrategy = textureInfo.map(TextureMetadataSection::mipmapStrategy).orElse(MipmapStrategy.AUTO);
          this.alphaCutoffBias = textureInfo.map(TextureMetadataSection::alphaCutoffBias).orElse(0.0F);
          this.transparency = image.computeTransparency();
-+      this.animMetadata = animationInfo;
-+      this.textureMetadata = textureInfo;
++        this.animMetadata = animationInfo;
++        this.textureMetadata = textureInfo;
      }
  
 -    public void increaseMipLevel(final int mipLevel) {
-+   public void increaseMipLevel(int mipLevel) {
-+      IColorBlender colorBlender = null;
-+      if (this.sprite != null) {
-+         colorBlender = this.sprite.getTextureAtlas().getShadersColorBlender(this.sprite.spriteShadersType);
-+         if (this.sprite.spriteShadersType == null && colorBlender == null && this.name.getPath().endsWith("glass_pane_top")) {
-+            colorBlender = new ColorBlenderKeepAlpha();
-+         }
-+      }
++    public void increaseMipLevel(int mipLevel) {
++        IColorBlender colorBlender = null;
++        if (this.sprite != null) {
++            colorBlender = this.sprite.getTextureAtlas().getShadersColorBlender(this.sprite.spriteShadersType);
++            if (this.sprite.spriteShadersType == null && colorBlender == null && this.name.getPath().endsWith("glass_pane_top")) {
++                colorBlender = new ColorBlenderKeepAlpha();
++            }
++        }
 +
          try {
              this.byMipLevel = MipmapGenerator.generateMipLevels(
 -                this.name, this.byMipLevel, mipLevel, this.mipmapStrategy, this.alphaCutoffBias, this.transparency
-+            this.name, this.byMipLevel, mipLevel, this.mipmapStrategy, this.alphaCutoffBias, this.transparency, colorBlender
++                this.name, this.byMipLevel, mipLevel, this.mipmapStrategy, this.alphaCutoffBias, this.transparency, colorBlender
              );
-+         if (this.sprite.spriteSingle != null) {
-+            this.sprite.spriteSingle.contents().byMipLevel = this.byMipLevel;
-+         }
++            if (this.sprite.spriteSingle != null) {
++                this.sprite.spriteSingle.contents().byMipLevel = this.byMipLevel;
++            }
          } catch (Throwable t) {
              CrashReport report = CrashReport.forThrowable(t, "Generating mipmaps for frame");
              CrashReportCategory frameCategory = report.addCategory("Frame being iterated");
@@ -105,7 +105,7 @@
 -    private SpriteContents.@Nullable AnimatedTexture createAnimatedTexture(
 -        final FrameSize frameSize, final int fullWidth, final int fullHeight, final AnimationMetadataSection metadata
 -    ) {
-+   private SpriteContents.AnimatedTexture createAnimatedTexture(FrameSize frameSize, int fullWidth, int fullHeight, AnimationMetadataSection metadata) {
++    private SpriteContents.AnimatedTexture createAnimatedTexture(FrameSize frameSize, int fullWidth, int fullHeight, AnimationMetadataSection metadata) {
          int frameRowSize = fullWidth / frameSize.width();
          int frameColumnSize = fullHeight / frameSize.height();
          int totalFrameCount = frameRowSize * frameColumnSize;
@@ -114,14 +114,14 @@
      }
  
 -    public SpriteContents.@Nullable AnimationState createAnimationState(final GpuBufferSlice uboSlice, final int spriteUboSize) {
-+   public SpriteContents.AnimationState createAnimationState(GpuBufferSlice uboSlice, int spriteUboSize) {
++    public SpriteContents.AnimationState createAnimationState(GpuBufferSlice uboSlice, int spriteUboSize) {
          return this.animatedTexture != null ? this.animatedTexture.createAnimationState(uboSlice, spriteUboSize) : null;
      }
  
 -    public <T> Optional<T> getAdditionalMetadata(final MetadataSectionType<T> type) {
 -        for (MetadataSectionType.WithValue<?> metadata : this.additionalMetadata) {
-+   public <T> Optional<T> getAdditionalMetadata(MetadataSectionType<T> type) {
-+      for (WithValue<?> metadata : this.additionalMetadata) {
++    public <T> Optional<T> getAdditionalMetadata(MetadataSectionType<T> type) {
++        for (WithValue<?> metadata : this.additionalMetadata) {
              Optional<T> result = metadata.unwrapToType(type);
              if (result.isPresent()) {
                  return result;
@@ -130,7 +130,7 @@
      }
  
 -    public boolean isTransparent(final int frame, final int x, final int y) {
-+   public boolean isTransparent(int frame, int x, int y) {
++    public boolean isTransparent(int frame, int x, int y) {
          int actualX = x;
          int actualY = y;
          if (this.animatedTexture != null) {
@@ -139,7 +139,7 @@
      }
  
 -    public Transparency computeTransparency(final float u0, final float v0, final float u1, final float v1) {
-+   public Transparency computeTransparency(float u0, float v0, float u1, float v1) {
++    public Transparency computeTransparency(float u0, float v0, float u1, float v1) {
          if (this.transparency.isOpaque()) {
              return this.transparency;
          }
@@ -149,9 +149,9 @@
  
 -    public void uploadFirstFrame(final GpuTexture destination, final int level) {
 -        RenderSystem.getDevice().createCommandEncoder().writeToTexture(destination, this.byMipLevel[level], level, 0, 0, 0);
-+   public void uploadFirstFrame(GpuTexture destination, int level) {
-+      ByteBuffer imageBuffer = this.byMipLevel[level].getPixelBytes();
-+      RenderSystem.getDevice().createCommandEncoder().writeToTexture(destination, imageBuffer, level, 0, 0, 0, this.width >> level, this.height >> level);
++    public void uploadFirstFrame(GpuTexture destination, int level) {
++        ByteBuffer imageBuffer = this.byMipLevel[level].getPixelBytes();
++        RenderSystem.getDevice().createCommandEncoder().writeToTexture(destination, imageBuffer, level, 0, 0, 0, this.width >> level, this.height >> level);
      }
  
 -    @OnlyIn(Dist.CLIENT)
@@ -160,82 +160,82 @@
 -        private final IntList uniqueFrames;
 -        private final int frameRowSize;
 -        private final boolean interpolateFrames;
-+   public int getSpriteWidth() {
-+      return this.width;
-+   }
++    public int getSpriteWidth() {
++        return this.width;
++    }
  
 -        private AnimatedTexture(final List<SpriteContents.FrameInfo> frames, final int frameRowSize, final boolean interpolateFrames) {
-+   public int getSpriteHeight() {
-+      return this.height;
-+   }
++    public int getSpriteHeight() {
++        return this.height;
++    }
 +
-+   public Identifier getSpriteLocation() {
-+      return this.name;
-+   }
++    public Identifier getSpriteLocation() {
++        return this.name;
++    }
 +
-+   public void setSpriteWidth(int spriteWidth) {
-+      this.width = spriteWidth;
-+   }
++    public void setSpriteWidth(int spriteWidth) {
++        this.width = spriteWidth;
++    }
 +
-+   public void setSpriteHeight(int spriteHeight) {
-+      this.height = spriteHeight;
-+   }
++    public void setSpriteHeight(int spriteHeight) {
++        this.height = spriteHeight;
++    }
 +
-+   public double getScaleFactor() {
-+      return this.scaleFactor;
-+   }
++    public double getScaleFactor() {
++        return this.scaleFactor;
++    }
 +
-+   public void setScaleFactor(double scaleFactor) {
-+      this.scaleFactor = scaleFactor;
-+   }
++    public void setScaleFactor(double scaleFactor) {
++        this.scaleFactor = scaleFactor;
++    }
 +
-+   public void rescale() {
-+      if (this.scaleFactor > 1.0) {
-+         int widthScaled = (int)Math.round(this.originalImage.getWidth() * this.scaleFactor);
-+         NativeImage imageScaled = TextureUtils.scaleImage(this.originalImage, widthScaled);
-+         if (imageScaled != this.originalImage) {
-+            this.originalImage.close();
-+            this.originalImage = imageScaled;
-+            this.byMipLevel[0] = this.originalImage;
-+         }
-+      }
-+   }
++    public void rescale() {
++        if (this.scaleFactor > 1.0) {
++            int widthScaled = (int)Math.round(this.originalImage.getWidth() * this.scaleFactor);
++            NativeImage imageScaled = TextureUtils.scaleImage(this.originalImage, widthScaled);
++            if (imageScaled != this.originalImage) {
++                this.originalImage.close();
++                this.originalImage = imageScaled;
++                this.byMipLevel[0] = this.originalImage;
++            }
++        }
++    }
 +
-+   public SpriteContents.AnimatedTexture getAnimatedTexture() {
-+      return this.animatedTexture;
-+   }
++    public SpriteContents.AnimatedTexture getAnimatedTexture() {
++        return this.animatedTexture;
++    }
 +
-+   public NativeImage getOriginalImage() {
-+      return this.originalImage;
-+   }
++    public NativeImage getOriginalImage() {
++        return this.originalImage;
++    }
 +
-+   public TextureAtlasSprite getSprite() {
-+      return this.sprite;
-+   }
++    public TextureAtlasSprite getSprite() {
++        return this.sprite;
++    }
 +
-+   public void setSprite(TextureAtlasSprite sprite) {
-+      this.sprite = sprite;
-+   }
++    public void setSprite(TextureAtlasSprite sprite) {
++        this.sprite = sprite;
++    }
 +
-+   public Optional<AnimationMetadataSection> getAnimMetadata() {
-+      return this.animMetadata;
-+   }
++    public Optional<AnimationMetadataSection> getAnimMetadata() {
++        return this.animMetadata;
++    }
 +
-+   public List<WithValue<?>> getAdditionalMetadata() {
-+      return this.additionalMetadata;
-+   }
++    public List<WithValue<?>> getAdditionalMetadata() {
++        return this.additionalMetadata;
++    }
 +
-+   public Optional<TextureMetadataSection> getTextureMetadata() {
-+      return this.textureMetadata;
-+   }
++    public Optional<TextureMetadataSection> getTextureMetadata() {
++        return this.textureMetadata;
++    }
 +
-+   public class AnimatedTexture {
-+      final List<SpriteContents.FrameInfo> frames;
-+      final IntList uniqueFrames;
-+      final int frameRowSize;
-+      final boolean interpolateFrames;
++    public class AnimatedTexture {
++        final List<SpriteContents.FrameInfo> frames;
++        final IntList uniqueFrames;
++        final int frameRowSize;
++        final boolean interpolateFrames;
 +
-+      private AnimatedTexture(List<SpriteContents.FrameInfo> frames, int frameRowSize, boolean interpolateFrames) {
++        private AnimatedTexture(List<SpriteContents.FrameInfo> frames, int frameRowSize, boolean interpolateFrames) {
              this.frames = frames;
              this.frameRowSize = frameRowSize;
              this.interpolateFrames = interpolateFrames;
@@ -243,32 +243,32 @@
          }
  
 -        private int getFrameX(final int index) {
-+      public int getFrameX(int index) {
++        public int getFrameX(int index) {
              return index % this.frameRowSize;
          }
  
 -        private int getFrameY(final int index) {
-+      public int getFrameY(int index) {
++        public int getFrameY(int index) {
              return index / this.frameRowSize;
          }
  
 -        public SpriteContents.AnimationState createAnimationState(final GpuBufferSlice uboSlice, final int spriteUboSize) {
-+      public SpriteContents.AnimationState createAnimationState(GpuBufferSlice uboSlice, int spriteUboSize) {
++        public SpriteContents.AnimationState createAnimationState(GpuBufferSlice uboSlice, int spriteUboSize) {
              GpuDevice device = RenderSystem.getDevice();
              Int2ObjectMap<GpuTextureView> frameTexturesByIndex = new Int2ObjectOpenHashMap<>();
              GpuBufferSlice[] spriteUbosByMip = new GpuBufferSlice[SpriteContents.this.byMipLevel.length];
-@@ -324,8 +408,10 @@
+@@ -324,7 +408,9 @@
              }
  
              for (int level = 0; level < SpriteContents.this.byMipLevel.length; level++) {
-+            if (uboSlice != null) {
-                 spriteUbosByMip[level] = uboSlice.slice(level * spriteUboSize, spriteUboSize);
+-                spriteUbosByMip[level] = uboSlice.slice(level * spriteUboSize, spriteUboSize);
++                if (uboSlice != null) {
++                    spriteUbosByMip[level] = uboSlice.slice(level * spriteUboSize, spriteUboSize);
++                }
              }
-+         }
  
              return SpriteContents.this.new AnimationState(this, frameTexturesByIndex, spriteUbosByMip);
-         }
-@@ -335,26 +421,29 @@
+@@ -335,41 +421,59 @@
          }
      }
  
@@ -276,59 +276,74 @@
      public class AnimationState implements AutoCloseable {
 -        private int frame;
 -        private int subFrame;
-+      protected int frame;
-+      protected int subFrame;
++        protected int frame;
++        protected int subFrame;
          private final SpriteContents.AnimatedTexture animationInfo;
          private final Int2ObjectMap<GpuTextureView> frameTexturesByIndex;
          private final GpuBufferSlice[] spriteUbosByMip;
          private boolean isDirty = true;
-+      protected boolean animationActive = false;
-+      protected TextureAtlasSprite sprite;
++        protected boolean animationActive = false;
++        protected TextureAtlasSprite sprite;
  
 -        private AnimationState(
 -            final SpriteContents.AnimatedTexture animationInfo,
 -            final Int2ObjectMap<GpuTextureView> frameTexturesByIndex,
 -            final GpuBufferSlice[] spriteUbosByMip
 -        ) {
-+      private AnimationState(SpriteContents.AnimatedTexture animationInfo, Int2ObjectMap<GpuTextureView> frameTexturesByIndex, GpuBufferSlice[] spriteUbosByMip) {
++        private AnimationState(SpriteContents.AnimatedTexture animationInfo, Int2ObjectMap<GpuTextureView> frameTexturesByIndex, GpuBufferSlice[] spriteUbosByMip) {
              this.animationInfo = animationInfo;
              this.frameTexturesByIndex = frameTexturesByIndex;
              this.spriteUbosByMip = spriteUbosByMip;
          }
  
          public void tick() {
-+         if (this.sprite != null && this.sprite.parentSprite != null && this.sprite.usesParentAnimationTime) {
-+            SpriteContents.AnimationState parentAnim = this.sprite.parentSprite.getSpriteContentsTicker();
-+            this.frame = parentAnim.frame;
-+            this.subFrame = parentAnim.subFrame;
-+            this.isDirty = parentAnim.isDirty;
-+         } else {
-             this.subFrame++;
-             this.isDirty = false;
-             SpriteContents.FrameInfo currentFrame = this.animationInfo.frames.get(this.frame);
-@@ -367,9 +456,24 @@
-                     this.isDirty = true;
+-            this.subFrame++;
+-            this.isDirty = false;
+-            SpriteContents.FrameInfo currentFrame = this.animationInfo.frames.get(this.frame);
+-            if (this.subFrame >= currentFrame.time) {
+-                int oldFrame = currentFrame.index;
+-                this.frame = (this.frame + 1) % this.animationInfo.frames.size();
+-                this.subFrame = 0;
+-                int newFrame = this.animationInfo.frames.get(this.frame).index;
+-                if (oldFrame != newFrame) {
+-                    this.isDirty = true;
++            if (this.sprite != null && this.sprite.parentSprite != null && this.sprite.usesParentAnimationTime) {
++                SpriteContents.AnimationState parentAnim = this.sprite.parentSprite.getSpriteContentsTicker();
++                this.frame = parentAnim.frame;
++                this.subFrame = parentAnim.subFrame;
++                this.isDirty = parentAnim.isDirty;
++            } else {
++                this.subFrame++;
++                this.isDirty = false;
++                SpriteContents.FrameInfo currentFrame = this.animationInfo.frames.get(this.frame);
++                if (this.subFrame >= currentFrame.time) {
++                    int oldFrame = currentFrame.index;
++                    this.frame = (this.frame + 1) % this.animationInfo.frames.size();
++                    this.subFrame = 0;
++                    int newFrame = this.animationInfo.frames.get(this.frame).index;
++                    if (oldFrame != newFrame) {
++                        this.isDirty = true;
++                    }
                  }
-             }
 +
-+            if (this.sprite != null) {
-+               if (this.sprite.spriteSingle != null && this.sprite.spriteSingle.getSpriteContentsTicker() != null) {
-+                  this.sprite.spriteSingle.getSpriteContentsTicker().tick();
++                if (this.sprite != null) {
++                    if (this.sprite.spriteSingle != null && this.sprite.spriteSingle.getSpriteContentsTicker() != null) {
++                        this.sprite.spriteSingle.getSpriteContentsTicker().tick();
++                    }
++
++                    if (this.sprite.spriteNormal != null && this.sprite.spriteNormal.getSpriteContentsTicker() != null) {
++                        this.sprite.spriteNormal.getSpriteContentsTicker().tick();
++                    }
++
++                    if (this.sprite.spriteSpecular != null && this.sprite.spriteSpecular.getSpriteContentsTicker() != null) {
++                        this.sprite.spriteSpecular.getSpriteContentsTicker().tick();
++                    }
++                }
+             }
          }
  
 -        public GpuBufferSlice getDrawUbo(final int level) {
-+               if (this.sprite.spriteNormal != null && this.sprite.spriteNormal.getSpriteContentsTicker() != null) {
-+                  this.sprite.spriteNormal.getSpriteContentsTicker().tick();
-+               }
-+
-+               if (this.sprite.spriteSpecular != null && this.sprite.spriteSpecular.getSpriteContentsTicker() != null) {
-+                  this.sprite.spriteSpecular.getSpriteContentsTicker().tick();
-+               }
-+            }
-+         }
-+      }
-+
-+      public GpuBufferSlice getDrawUbo(int level) {
++        public GpuBufferSlice getDrawUbo(int level) {
              return this.spriteUbosByMip[level];
          }
  
@@ -337,7 +352,7 @@
          }
  
 -        public void drawToAtlas(final RenderPass renderPass, final GpuBufferSlice ubo) {
-+      public void drawToAtlas(RenderPass renderPass, GpuBufferSlice ubo) {
++        public void drawToAtlas(RenderPass renderPass, GpuBufferSlice ubo) {
              GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST, true);
              List<SpriteContents.FrameInfo> frames = this.animationInfo.frames;
              int oldFrame = frames.get(this.frame).index;
@@ -346,30 +361,30 @@
              }
          }
 +
-+      public TextureAtlasSprite getSprite() {
-+         return this.sprite;
++        public TextureAtlasSprite getSprite() {
++            return this.sprite;
++        }
++
++        public void setSprite(TextureAtlasSprite sprite) {
++            this.sprite = sprite;
++        }
++
++        public void setSpriteUbosByMip(GpuBufferSlice[] ubosByMip) {
++            for (int i = 0; i < this.spriteUbosByMip.length; i++) {
++                this.spriteUbosByMip[i] = ubosByMip[i];
++            }
++        }
++
++        @Override
++        public String toString() {
++            return "animation:" + SpriteContents.this.toString();
++        }
      }
  
 -    @OnlyIn(Dist.CLIENT)
 -    private record FrameInfo(int index, int time) {
-+      public void setSprite(TextureAtlasSprite sprite) {
-+         this.sprite = sprite;
++    public record FrameInfo(int index, int time) {
      }
 -}
 \ No newline at end of file
-+
-+      public void setSpriteUbosByMip(GpuBufferSlice[] ubosByMip) {
-+         for (int i = 0; i < this.spriteUbosByMip.length; i++) {
-+            this.spriteUbosByMip[i] = ubosByMip[i];
-+         }
-+      }
-+
-+      @Override
-+      public String toString() {
-+         return "animation:" + SpriteContents.this.toString();
-+      }
-+   }
-+
-+   public record FrameInfo(int index, int time) {
-+   }
 +}

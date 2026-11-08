@@ -5,91 +5,91 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class Matches {
-   public static boolean block(BlockState blockStateBase, MatchBlock[] matchBlocks) {
-      if (matchBlocks == null) {
-         return true;
-      }
-
-      for (int i = 0; i < matchBlocks.length; i++) {
-         MatchBlock mb = matchBlocks[i];
-         if (mb.matches(blockStateBase)) {
+    public static boolean block(BlockState blockStateBase, MatchBlock[] matchBlocks) {
+        if (matchBlocks == null) {
             return true;
-         }
-      }
+        }
 
-      return false;
-   }
+        for (int i = 0; i < matchBlocks.length; i++) {
+            MatchBlock mb = matchBlocks[i];
+            if (mb.matches(blockStateBase)) {
+                return true;
+            }
+        }
 
-   public static boolean block(int blockId, int metadata, MatchBlock[] matchBlocks) {
-      if (matchBlocks == null) {
-         return true;
-      }
+        return false;
+    }
 
-      for (int i = 0; i < matchBlocks.length; i++) {
-         MatchBlock mb = matchBlocks[i];
-         if (mb.matches(blockId, metadata)) {
+    public static boolean block(int blockId, int metadata, MatchBlock[] matchBlocks) {
+        if (matchBlocks == null) {
             return true;
-         }
-      }
+        }
 
-      return false;
-   }
+        for (int i = 0; i < matchBlocks.length; i++) {
+            MatchBlock mb = matchBlocks[i];
+            if (mb.matches(blockId, metadata)) {
+                return true;
+            }
+        }
 
-   public static boolean blockId(int blockId, MatchBlock[] matchBlocks) {
-      if (matchBlocks == null) {
-         return true;
-      }
+        return false;
+    }
 
-      for (int i = 0; i < matchBlocks.length; i++) {
-         MatchBlock mb = matchBlocks[i];
-         if (mb.getBlockId() == blockId) {
+    public static boolean blockId(int blockId, MatchBlock[] matchBlocks) {
+        if (matchBlocks == null) {
             return true;
-         }
-      }
+        }
 
-      return false;
-   }
+        for (int i = 0; i < matchBlocks.length; i++) {
+            MatchBlock mb = matchBlocks[i];
+            if (mb.getBlockId() == blockId) {
+                return true;
+            }
+        }
 
-   public static boolean metadata(int metadata, int[] metadatas) {
-      if (metadatas == null) {
-         return true;
-      }
+        return false;
+    }
 
-      for (int i = 0; i < metadatas.length; i++) {
-         if (metadatas[i] == metadata) {
+    public static boolean metadata(int metadata, int[] metadatas) {
+        if (metadatas == null) {
             return true;
-         }
-      }
+        }
 
-      return false;
-   }
+        for (int i = 0; i < metadatas.length; i++) {
+            if (metadatas[i] == metadata) {
+                return true;
+            }
+        }
 
-   public static boolean sprite(TextureAtlasSprite sprite, TextureAtlasSprite[] sprites) {
-      if (sprites == null) {
-         return true;
-      }
+        return false;
+    }
 
-      for (int i = 0; i < sprites.length; i++) {
-         if (sprites[i] == sprite) {
+    public static boolean sprite(TextureAtlasSprite sprite, TextureAtlasSprite[] sprites) {
+        if (sprites == null) {
             return true;
-         }
-      }
+        }
 
-      return false;
-   }
+        for (int i = 0; i < sprites.length; i++) {
+            if (sprites[i] == sprite) {
+                return true;
+            }
+        }
 
-   public static boolean biome(Biome biome, BiomeId[] biomes) {
-      if (biomes == null) {
-         return true;
-      }
+        return false;
+    }
 
-      for (int i = 0; i < biomes.length; i++) {
-         BiomeId bi = biomes[i];
-         if (bi != null && bi.getBiome() == biome) {
+    public static boolean biome(Biome biome, BiomeId[] biomes) {
+        if (biomes == null) {
             return true;
-         }
-      }
+        }
 
-      return false;
-   }
+        for (int i = 0; i < biomes.length; i++) {
+            BiomeId bi = biomes[i];
+            if (bi != null && bi.getBiome() == biome) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

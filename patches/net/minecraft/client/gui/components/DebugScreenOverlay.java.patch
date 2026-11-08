@@ -30,9 +30,9 @@
 -    private @Nullable ChunkPos lastPos;
 -    private @Nullable LevelChunk clientChunk;
 -    private @Nullable CompletableFuture<LevelChunk> serverChunk;
-+   private ChunkPos lastPos;
-+   private LevelChunk clientChunk;
-+   private CompletableFuture<LevelChunk> serverChunk;
++    private ChunkPos lastPos;
++    private LevelChunk clientChunk;
++    private CompletableFuture<LevelChunk> serverChunk;
      private boolean renderProfilerChart;
      private boolean renderFpsCharts;
      private boolean renderNetworkCharts;
@@ -40,10 +40,10 @@
      private final PingDebugChart pingChart;
      private final BandwidthDebugChart bandwidthChart;
      private final ProfilerPieChart profilerPieChart;
-+   private GuiRenderCache renderCache;
++    private GuiRenderCache renderCache;
  
 -    public DebugScreenOverlay(final Minecraft minecraft) {
-+   public DebugScreenOverlay(Minecraft minecraft) {
++    public DebugScreenOverlay(Minecraft minecraft) {
          this.minecraft = minecraft;
          this.font = minecraft.font;
          this.fpsChart = new FpsDebugChart(this.font, this.frameTimeLogger);
@@ -51,7 +51,7 @@
          this.pingChart = new PingDebugChart(this.font, this.pingLogger);
          this.bandwidthChart = new BandwidthDebugChart(this.font, this.bandwidthLogger);
          this.profilerPieChart = new ProfilerPieChart(this.font);
-+      this.renderCache = new GuiRenderCache(minecraft.gameRenderer.getGuiRenderer(), 100L);
++        this.renderCache = new GuiRenderCache(minecraft.gameRenderer.getGuiRenderer(), 100L);
      }
  
      public void clearChunkCache() {
@@ -60,11 +60,11 @@
      }
  
 -    public void extractRenderState(final GuiGraphicsExtractor graphics) {
-+   public void extractRenderState(GuiGraphicsExtractor graphics) {
++    public void extractRenderState(GuiGraphicsExtractor graphics) {
          Options options = this.minecraft.options;
          if (this.minecraft.isGameLoadFinished() && (!this.minecraft.gui.hud.isHidden() || this.minecraft.gui.screen() != null)) {
              Collection<Identifier> visibleEntries = this.minecraft.debugEntries.getCurrentlyEnabled();
-+         boolean debugLinesRendered = false;
++            boolean debugLinesRendered = false;
              if (!visibleEntries.isEmpty()) {
                  graphics.nextStratum();
                  ProfilerFiller profiler = Profiler.get();
@@ -76,13 +76,13 @@
 -                final List<String> rightLines = new ArrayList<>();
 -                final Map<Identifier, Collection<String>> groups = new LinkedHashMap<>();
 -                final List<String> regularLines = new ArrayList<>();
-+            List<String> leftLines = new ArrayList<>();
-+            List<String> rightLines = new ArrayList<>();
-+            final List<String> linesLeft = leftLines;
-+            final List<String> linesRight = rightLines;
-+            final Mutable<Identifier> debugLocation = new Mutable<>();
++                List<String> leftLines = new ArrayList<>();
++                List<String> rightLines = new ArrayList<>();
++                final List<String> linesLeft = leftLines;
++                final List<String> linesRight = rightLines;
++                final Mutable<Identifier> debugLocation = new Mutable<>();
                  DebugScreenDisplayer displayer = new DebugScreenDisplayer() {
-+               private int indexFps = -1;
++                    private int indexFps = -1;
 +
                      @Override
 -                    public void addPriorityLine(final String line) {
@@ -90,58 +90,58 @@
 -                            rightLines.add(line);
 -                        } else {
 -                            leftLines.add(line);
-+               public void addPriorityLine(String line) {
-+                  this.addLine(line);
-                         }
--                    }
+-                        }
++                    public void addPriorityLine(String line) {
++                        this.addLine(line);
+                     }
  
                      @Override
 -                    public void addLine(final String line) {
 -                        regularLines.add(line);
-+               public void addLine(String line) {
-+                  if (DebugScreenEntries.isFpsLine(debugLocation.get())) {
-+                     if (this.indexFps >= 0) {
-+                        String lineFps = linesLeft.get(this.indexFps);
-+                        lineFps = lineFps + " " + line;
-+                        linesLeft.set(this.indexFps, lineFps);
-+                        return;
++                    public void addLine(String line) {
++                        if (DebugScreenEntries.isFpsLine(debugLocation.get())) {
++                            if (this.indexFps >= 0) {
++                                String lineFps = linesLeft.get(this.indexFps);
++                                lineFps = lineFps + " " + line;
++                                linesLeft.set(this.indexFps, lineFps);
++                                return;
++                            }
++
++                            this.indexFps = linesLeft.size();
++                        }
++
++                        List<String> lines = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
++                        lines.add(line);
                      }
  
-+                     this.indexFps = linesLeft.size();
-+                  }
-+
-+                  List<String> lines = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
-+                  lines.add(line);
-+               }
-+
                      @Override
 -                    public void addToGroup(final Identifier group, final Collection<String> lines) {
 -                        groups.computeIfAbsent(group, k -> new ArrayList<>()).addAll(lines);
-+               public void addToGroup(Identifier group, Collection<String> lines) {
-+                  List<String> lines2 = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
-+                  if (DebugScreenEntries.isNewLine(debugLocation.get())) {
-+                     lines2.add("");
++                    public void addToGroup(Identifier group, Collection<String> lines) {
++                        List<String> lines2 = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
++                        if (DebugScreenEntries.isNewLine(debugLocation.get())) {
++                            lines2.add("");
++                        }
++
++                        lines2.addAll(lines);
                      }
  
-+                  lines2.addAll(lines);
-+               }
-+
                      @Override
 -                    public void addToGroup(final Identifier group, final String lines) {
 -                        groups.computeIfAbsent(group, k -> new ArrayList<>()).add(lines);
-+               public void addToGroup(Identifier group, String lines) {
-+                  List<String> lines2 = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
-+                  if (DebugScreenEntries.isNewLine(debugLocation.get())) {
-+                     lines2.add("");
-                     }
++                    public void addToGroup(Identifier group, String lines) {
++                        List<String> lines2 = DebugScreenEntries.isLineLeft(debugLocation.get()) ? linesLeft : linesRight;
++                        if (DebugScreenEntries.isNewLine(debugLocation.get())) {
++                            lines2.add("");
++                        }
 +
-+                  lines2.add(lines);
-+               }
++                        lines2.add(lines);
+                     }
                  };
                  Level level = this.getLevel();
  
                  for (Identifier id : visibleEntries) {
-+               debugLocation.set(id);
++                    debugLocation.set(id);
                      DebugScreenEntry entry = DebugScreenEntries.getEntry(id);
                      if (entry != null) {
                          entry.display(displayer, level, this.getClientChunk(), this.getServerChunk());
@@ -191,17 +191,18 @@
  
                  this.extractLines(graphics, leftLines, true);
                  this.extractLines(graphics, rightLines, false);
-+            debugLinesRendered = !leftLines.isEmpty() || !rightLines.isEmpty();
++                debugLinesRendered = !leftLines.isEmpty() || !rightLines.isEmpty();
                  graphics.nextStratum();
                  this.profilerPieChart.setBottomOffset(10);
                  if (this.showFpsCharts()) {
                      int scaledWidth = graphics.guiWidth();
                      int maxWidth = scaledWidth / 2;
-+               if (Boolean.TRUE) {
-+                  Lagometer.renderLagometer(graphics, this.minecraft.getWindow().getGuiScale());
-+               } else {
-                     this.fpsChart.extractRenderState(graphics, 0, this.fpsChart.getWidth(maxWidth));
-+               }
+-                    this.fpsChart.extractRenderState(graphics, 0, this.fpsChart.getWidth(maxWidth));
++                    if (Boolean.TRUE) {
++                        Lagometer.renderLagometer(graphics, this.minecraft.getWindow().getGuiScale());
++                    } else {
++                        this.fpsChart.extractRenderState(graphics, 0, this.fpsChart.getWidth(maxWidth));
++                    }
 +
                      if (this.tickTimeLogger.size() > 0) {
                          int width = this.tpsChart.getWidth(maxWidth);
@@ -211,20 +212,20 @@
                  profiler.pop();
              }
 +
-+         if (!debugLinesRendered && this.minecraft.options.ofQuickInfo) {
-+            graphics.nextStratum();
-+            QuickInfo.render(graphics);
++            if (!debugLinesRendered && this.minecraft.options.ofQuickInfo) {
++                graphics.nextStratum();
++                QuickInfo.render(graphics);
++            }
          }
      }
-+   }
  
 -    private static String formatChart(final KeyMapping keyDebugModifier, final KeyMapping keybind, final String name, final boolean status) {
-+   private static String formatChart(KeyMapping keyDebugModifier, KeyMapping keybind, String name, boolean status) {
++    private static String formatChart(KeyMapping keyDebugModifier, KeyMapping keybind, String name, boolean status) {
          return formatKeybind(keyDebugModifier, keybind) + " " + name + " " + (status ? "visible" : "hidden");
      }
  
 -    private static String formatKeybind(final KeyMapping keyDebugModifier, final KeyMapping keybind) {
-+   private static String formatKeybind(KeyMapping keyDebugModifier, KeyMapping keybind) {
++    private static String formatKeybind(KeyMapping keyDebugModifier, KeyMapping keybind) {
          return "["
              + (keyDebugModifier.isUnbound() ? "" : keyDebugModifier.getTranslatedKeyMessage().getString() + "+")
              + keybind.getTranslatedKeyMessage().getString()
@@ -232,7 +233,7 @@
      }
  
 -    private void extractLines(final GuiGraphicsExtractor graphics, final List<String> lines, final boolean alignLeft) {
-+   private void extractLines(GuiGraphicsExtractor graphics, List<String> lines, boolean alignLeft) {
++    private void extractLines(GuiGraphicsExtractor graphics, List<String> lines, boolean alignLeft) {
          int height = 9;
  
          for (int i = 0; i < lines.size(); i++) {
@@ -241,7 +242,7 @@
      }
  
 -    private @Nullable ServerLevel getServerLevel() {
-+   private ServerLevel getServerLevel() {
++    private ServerLevel getServerLevel() {
          if (this.minecraft.level == null) {
              return null;
          }
@@ -250,7 +251,7 @@
      }
  
 -    private @Nullable Level getLevel() {
-+   private Level getLevel() {
++    private Level getLevel() {
          return this.minecraft.level == null
              ? null
              : DataFixUtils.orElse(
@@ -259,7 +260,7 @@
      }
  
 -    private @Nullable LevelChunk getServerChunk() {
-+   private LevelChunk getServerChunk() {
++    private LevelChunk getServerChunk() {
          if (this.minecraft.level != null && this.lastPos != null) {
              if (this.serverChunk == null) {
                  ServerLevel level = this.getServerLevel();
@@ -268,7 +269,7 @@
      }
  
 -    private @Nullable LevelChunk getClientChunk() {
-+   private LevelChunk getClientChunk() {
++    private LevelChunk getClientChunk() {
          if (this.minecraft.level != null && this.lastPos != null) {
              if (this.clientChunk == null) {
                  this.clientChunk = this.minecraft.level.getChunk(this.lastPos.x(), this.lastPos.z());
@@ -277,7 +278,7 @@
      }
  
 -    public void logFrameDuration(final long frameDuration) {
-+   public void logFrameDuration(long frameDuration) {
++    public void logFrameDuration(long frameDuration) {
          this.frameTimeLogger.logSample(frameDuration);
      }
  
@@ -286,7 +287,7 @@
      }
  
 -    public void logRemoteSample(final long[] sample, final RemoteDebugSampleType type) {
-+   public void logRemoteSample(long[] sample, RemoteDebugSampleType type) {
++    public void logRemoteSample(long[] sample, RemoteDebugSampleType type) {
          LocalSampleLogger logger = this.remoteSupportingLoggers.get(type);
          if (logger != null) {
              logger.logFullSample(sample);
@@ -297,15 +298,15 @@
 -}
 \ No newline at end of file
 +
-+   public LocalSampleLogger getFrameTimeLogger() {
-+      return this.frameTimeLogger;
-+   }
++    public LocalSampleLogger getFrameTimeLogger() {
++        return this.frameTimeLogger;
++    }
 +
-+   public boolean isRenderFpsCharts() {
-+      return this.renderFpsCharts;
-+   }
++    public boolean isRenderFpsCharts() {
++        return this.renderFpsCharts;
++    }
 +
-+   public boolean isRenderProfilerChart() {
-+      return this.renderProfilerChart;
-+   }
++    public boolean isRenderProfilerChart() {
++        return this.renderProfilerChart;
++    }
 +}

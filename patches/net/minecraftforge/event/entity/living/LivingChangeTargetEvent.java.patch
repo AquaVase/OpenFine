@@ -6,12 +6,12 @@
 +import net.minecraft.world.entity.LivingEntity;
 +
 +public class LivingChangeTargetEvent extends LivingEvent {
-+   public LivingEntity getNewTarget() {
-+      return null;
-+   }
++    public LivingEntity getNewTarget() {
++        return null;
++    }
 +
-+   public enum LivingTargetType implements ILivingTargetType {
-+      MOB_TARGET,
-+      BEHAVIOR_TARGET;
-+   }
++    public enum LivingTargetType implements ILivingTargetType {
++        MOB_TARGET,
++        BEHAVIOR_TARGET;
++    }
 +}

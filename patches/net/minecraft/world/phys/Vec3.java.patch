@@ -5,12 +5,12 @@
          );
      public static final StreamCodec<ByteBuf, Vec3> STREAM_CODEC = new StreamCodec<ByteBuf, Vec3>() {
 -        public Vec3 decode(final ByteBuf input) {
-+      public Vec3 decode(ByteBuf input) {
++        public Vec3 decode(ByteBuf input) {
              return new Vec3(input.readDouble(), input.readDouble(), input.readDouble());
          }
  
 -        public void encode(final ByteBuf output, final Vec3 value) {
-+      public void encode(ByteBuf output, Vec3 value) {
++        public void encode(ByteBuf output, Vec3 value) {
              output.writeDouble(value.x());
              output.writeDouble(value.y());
              output.writeDouble(value.z());
@@ -21,54 +21,54 @@
 -    public final double x;
 -    public final double y;
 -    public final double z;
-+   public double x;
-+   public double y;
-+   public double z;
++    public double x;
++    public double y;
++    public double z;
  
 -    public static Vec3 atLowerCornerOf(final Vec3i pos) {
-+   public static Vec3 atLowerCornerOf(Vec3i pos) {
++    public static Vec3 atLowerCornerOf(Vec3i pos) {
          return new Vec3(pos.getX(), pos.getY(), pos.getZ());
      }
  
 -    public static Vec3 atLowerCornerWithOffset(final Vec3i pos, final double x, final double y, final double z) {
-+   public static Vec3 atLowerCornerWithOffset(Vec3i pos, double x, double y, double z) {
++    public static Vec3 atLowerCornerWithOffset(Vec3i pos, double x, double y, double z) {
          return new Vec3(pos.getX() + x, pos.getY() + y, pos.getZ() + z);
      }
  
 -    public static Vec3 atCenterOf(final Vec3i pos) {
-+   public static Vec3 atCenterOf(Vec3i pos) {
++    public static Vec3 atCenterOf(Vec3i pos) {
          return atLowerCornerWithOffset(pos, 0.5, 0.5, 0.5);
      }
  
 -    public static Vec3 atBottomCenterOf(final Vec3i pos) {
-+   public static Vec3 atBottomCenterOf(Vec3i pos) {
++    public static Vec3 atBottomCenterOf(Vec3i pos) {
          return atLowerCornerWithOffset(pos, 0.5, 0.0, 0.5);
      }
  
 -    public static Vec3 upFromBottomCenterOf(final Vec3i pos, final double yOffset) {
-+   public static Vec3 upFromBottomCenterOf(Vec3i pos, double yOffset) {
++    public static Vec3 upFromBottomCenterOf(Vec3i pos, double yOffset) {
          return atLowerCornerWithOffset(pos, 0.5, yOffset, 0.5);
      }
  
 -    public Vec3(final double x, final double y, final double z) {
-+   public Vec3(double x, double y, double z) {
++    public Vec3(double x, double y, double z) {
          this.x = x;
          this.y = y;
          this.z = z;
      }
  
 -    public Vec3(final Vector3fc vec) {
-+   public Vec3(Vector3fc vec) {
++    public Vec3(Vector3fc vec) {
          this(vec.x(), vec.y(), vec.z());
      }
  
 -    public Vec3(final Vec3i vec) {
-+   public Vec3(Vec3i vec) {
++    public Vec3(Vec3i vec) {
          this(vec.getX(), vec.getY(), vec.getZ());
      }
  
 -    public Vec3 vectorTo(final Vec3 vec) {
-+   public Vec3 vectorTo(Vec3 vec) {
++    public Vec3 vectorTo(Vec3 vec) {
          return new Vec3(vec.x - this.x, vec.y - this.y, vec.z - this.z);
      }
  
@@ -77,52 +77,52 @@
      }
  
 -    public double dot(final Vec3 vec) {
-+   public double dot(Vec3 vec) {
++    public double dot(Vec3 vec) {
          return this.x * vec.x + this.y * vec.y + this.z * vec.z;
      }
  
 -    public Vec3 cross(final Vec3 vec) {
-+   public Vec3 cross(Vec3 vec) {
++    public Vec3 cross(Vec3 vec) {
          return new Vec3(this.y * vec.z - this.z * vec.y, this.z * vec.x - this.x * vec.z, this.x * vec.y - this.y * vec.x);
      }
  
 -    public Vec3 subtract(final Vec3 vec) {
-+   public Vec3 subtract(Vec3 vec) {
++    public Vec3 subtract(Vec3 vec) {
          return this.subtract(vec.x, vec.y, vec.z);
      }
  
 -    public Vec3 subtract(final double value) {
-+   public Vec3 subtract(double value) {
++    public Vec3 subtract(double value) {
          return this.subtract(value, value, value);
      }
  
 -    public Vec3 subtract(final double x, final double y, final double z) {
-+   public Vec3 subtract(double x, double y, double z) {
++    public Vec3 subtract(double x, double y, double z) {
          return this.add(-x, -y, -z);
      }
  
 -    public Vec3 add(final double value) {
-+   public Vec3 add(double value) {
++    public Vec3 add(double value) {
          return this.add(value, value, value);
      }
  
 -    public Vec3 add(final Vec3 vec) {
-+   public Vec3 add(Vec3 vec) {
++    public Vec3 add(Vec3 vec) {
          return this.add(vec.x, vec.y, vec.z);
      }
  
 -    public Vec3 add(final double x, final double y, final double z) {
-+   public Vec3 add(double x, double y, double z) {
++    public Vec3 add(double x, double y, double z) {
          return new Vec3(this.x + x, this.y + y, this.z + z);
      }
  
 -    public boolean closerThan(final Position pos, final double distance) {
-+   public boolean closerThan(Position pos, double distance) {
++    public boolean closerThan(Position pos, double distance) {
          return this.distanceToSqr(pos.x(), pos.y(), pos.z()) < distance * distance;
      }
  
 -    public double distanceTo(final Vec3 vec) {
-+   public double distanceTo(Vec3 vec) {
++    public double distanceTo(Vec3 vec) {
          double xd = vec.x - this.x;
          double yd = vec.y - this.y;
          double zd = vec.z - this.z;
@@ -130,7 +130,7 @@
      }
  
 -    public double distanceToSqr(final Vec3 vec) {
-+   public double distanceToSqr(Vec3 vec) {
++    public double distanceToSqr(Vec3 vec) {
          double xd = vec.x - this.x;
          double yd = vec.y - this.y;
          double zd = vec.z - this.z;
@@ -138,7 +138,7 @@
      }
  
 -    public double distanceToSqr(final double x, final double y, final double z) {
-+   public double distanceToSqr(double x, double y, double z) {
++    public double distanceToSqr(double x, double y, double z) {
          double xd = x - this.x;
          double yd = y - this.y;
          double zd = z - this.z;
@@ -146,7 +146,7 @@
      }
  
 -    public boolean closerThan(final Vec3 vec, final double distanceXZ, final double distanceY) {
-+   public boolean closerThan(Vec3 vec, double distanceXZ, double distanceY) {
++    public boolean closerThan(Vec3 vec, double distanceXZ, double distanceY) {
          double dx = vec.x() - this.x;
          double dy = vec.y() - this.y;
          double dz = vec.z() - this.z;
@@ -154,7 +154,7 @@
      }
  
 -    public Vec3 scale(final double scale) {
-+   public Vec3 scale(double scale) {
++    public Vec3 scale(double scale) {
          return this.multiply(scale, scale, scale);
      }
  
@@ -163,12 +163,12 @@
      }
  
 -    public Vec3 multiply(final Vec3 scale) {
-+   public Vec3 multiply(Vec3 scale) {
++    public Vec3 multiply(Vec3 scale) {
          return this.multiply(scale.x, scale.y, scale.z);
      }
  
 -    public Vec3 multiply(final double xScale, final double yScale, final double zScale) {
-+   public Vec3 multiply(double xScale, double yScale, double zScale) {
++    public Vec3 multiply(double xScale, double yScale, double zScale) {
          return new Vec3(this.x * xScale, this.y * yScale, this.z * zScale);
      }
  
@@ -177,12 +177,12 @@
      }
  
 -    public Vec3 offsetRandom(final RandomSource random, final float offset) {
-+   public Vec3 offsetRandom(RandomSource random, float offset) {
++    public Vec3 offsetRandom(RandomSource random, float offset) {
          return this.add((random.nextFloat() - 0.5F) * offset, (random.nextFloat() - 0.5F) * offset, (random.nextFloat() - 0.5F) * offset);
      }
  
 -    public Vec3 offsetRandomXZ(final RandomSource random, final float offset) {
-+   public Vec3 offsetRandomXZ(RandomSource random, float offset) {
++    public Vec3 offsetRandomXZ(RandomSource random, float offset) {
          return this.add((random.nextFloat() - 0.5F) * offset, 0.0, (random.nextFloat() - 0.5F) * offset);
      }
  
@@ -191,7 +191,7 @@
  
      @Override
 -    public boolean equals(final Object o) {
-+   public boolean equals(Object o) {
++    public boolean equals(Object o) {
          if (this == o) {
              return true;
          }
@@ -200,12 +200,12 @@
      }
  
 -    public Vec3 lerp(final Vec3 vec, final double a) {
-+   public Vec3 lerp(Vec3 vec, double a) {
++    public Vec3 lerp(Vec3 vec, double a) {
          return new Vec3(Mth.lerp(a, this.x, vec.x), Mth.lerp(a, this.y, vec.y), Mth.lerp(a, this.z, vec.z));
      }
  
 -    public Vec3 xRot(final float radians) {
-+   public Vec3 xRot(float radians) {
++    public Vec3 xRot(float radians) {
          float cos = Mth.cos(radians);
          float sin = Mth.sin(radians);
          double xx = this.x;
@@ -214,7 +214,7 @@
      }
  
 -    public Vec3 yRot(final float radians) {
-+   public Vec3 yRot(float radians) {
++    public Vec3 yRot(float radians) {
          float cos = Mth.cos(radians);
          float sin = Mth.sin(radians);
          double xx = this.x * cos + this.z * sin;
@@ -223,7 +223,7 @@
      }
  
 -    public Vec3 zRot(final float radians) {
-+   public Vec3 zRot(float radians) {
++    public Vec3 zRot(float radians) {
          float cos = Mth.cos(radians);
          float sin = Mth.sin(radians);
          double xx = this.x * cos + this.y * sin;
@@ -232,12 +232,12 @@
      }
  
 -    public static Vec3 directionFromRotation(final Vec2 rotation) {
-+   public static Vec3 directionFromRotation(Vec2 rotation) {
++    public static Vec3 directionFromRotation(Vec2 rotation) {
          return directionFromRotation(rotation.x, rotation.y);
      }
  
 -    public static Vec3 directionFromRotation(final float rotX, final float rotY) {
-+   public static Vec3 directionFromRotation(float rotX, float rotY) {
++    public static Vec3 directionFromRotation(float rotX, float rotY) {
          float yCos = Mth.cos(-rotY * (float) (Math.PI / 180.0) - (float) Math.PI);
          float ySin = Mth.sin(-rotY * (float) (Math.PI / 180.0) - (float) Math.PI);
          float xCos = -Mth.cos(-rotX * (float) (Math.PI / 180.0));
@@ -246,7 +246,7 @@
      }
  
 -    public Vec3 align(final EnumSet<Direction.Axis> axes) {
-+   public Vec3 align(EnumSet<Direction.Axis> axes) {
++    public Vec3 align(EnumSet<Direction.Axis> axes) {
          double x = axes.contains(Direction.Axis.X) ? Mth.floor(this.x) : this.x;
          double y = axes.contains(Direction.Axis.Y) ? Mth.floor(this.y) : this.y;
          double z = axes.contains(Direction.Axis.Z) ? Mth.floor(this.z) : this.z;
@@ -254,12 +254,12 @@
      }
  
 -    public double get(final Direction.Axis axis) {
-+   public double get(Direction.Axis axis) {
++    public double get(Direction.Axis axis) {
          return axis.choose(this.x, this.y, this.z);
      }
  
 -    public Vec3 with(final Direction.Axis axis, final double value) {
-+   public Vec3 with(Direction.Axis axis, double value) {
++    public Vec3 with(Direction.Axis axis, double value) {
          double x = axis == Direction.Axis.X ? value : this.x;
          double y = axis == Direction.Axis.Y ? value : this.y;
          double z = axis == Direction.Axis.Z ? value : this.z;
@@ -267,7 +267,7 @@
      }
  
 -    public Vec3 relative(final Direction direction, final double distance) {
-+   public Vec3 relative(Direction direction, double distance) {
++    public Vec3 relative(Direction direction, double distance) {
          Vec3i normal = direction.getUnitVec3i();
          return new Vec3(this.x + distance * normal.getX(), this.y + distance * normal.getY(), this.z + distance * normal.getZ());
      }
@@ -276,12 +276,12 @@
      }
  
 -    public Vec3 projectedOn(final Vec3 onto) {
-+   public Vec3 projectedOn(Vec3 onto) {
++    public Vec3 projectedOn(Vec3 onto) {
          return onto.lengthSqr() == 0.0 ? onto : onto.scale(this.dot(onto)).scale(1.0 / onto.lengthSqr());
      }
  
 -    public static Vec3 applyLocalCoordinatesToRotation(final Vec2 rotation, final Vec3 direction) {
-+   public static Vec3 applyLocalCoordinatesToRotation(Vec2 rotation, Vec3 direction) {
++    public static Vec3 applyLocalCoordinatesToRotation(Vec2 rotation, Vec3 direction) {
          float yCos = Mth.cos((rotation.y + 90.0F) * (float) (Math.PI / 180.0));
          float ySin = Mth.sin((rotation.y + 90.0F) * (float) (Math.PI / 180.0));
          float xCos = Mth.cos(-rotation.x * (float) (Math.PI / 180.0));
@@ -290,7 +290,7 @@
      }
  
 -    public Vec3 addLocalCoordinates(final Vec3 direction) {
-+   public Vec3 addLocalCoordinates(Vec3 direction) {
++    public Vec3 addLocalCoordinates(Vec3 direction) {
          return applyLocalCoordinatesToRotation(this.rotation(), direction);
      }
  

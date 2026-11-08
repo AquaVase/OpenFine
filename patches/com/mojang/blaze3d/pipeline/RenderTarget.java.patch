@@ -29,21 +29,21 @@
 -    protected @Nullable GpuTextureView colorTextureView;
 -    protected @Nullable GpuTexture depthTexture;
 -    protected @Nullable GpuTextureView depthTextureView;
-+   protected GpuTexture colorTexture;
-+   protected GpuTextureView colorTextureView;
-+   protected GpuTexture depthTexture;
-+   protected GpuTextureView depthTextureView;
-+   private boolean stencilEnabled = false;
++    protected GpuTexture colorTexture;
++    protected GpuTextureView colorTextureView;
++    protected GpuTexture depthTexture;
++    protected GpuTextureView depthTextureView;
++    private boolean stencilEnabled = false;
  
 -    public RenderTarget(final @Nullable String label, final boolean useDepth, final GpuFormat format) {
-+   public RenderTarget(String label, boolean useDepth, GpuFormat format) {
++    public RenderTarget(String label, boolean useDepth, GpuFormat format) {
          this.label = label == null ? "FBO " + UNNAMED_RENDER_TARGETS++ : label;
          this.useDepth = useDepth;
          this.format = format;
      }
  
 -    public void resize(final int width, final int height) {
-+   public void resize(int width, int height) {
++    public void resize(int width, int height) {
          RenderSystem.assertOnRenderThread();
          this.destroyBuffers();
          this.createBuffers(width, height);
@@ -52,7 +52,7 @@
      }
  
 -    public void copyDepthFrom(final RenderTarget source) {
-+   public void copyDepthFrom(RenderTarget source) {
++    public void copyDepthFrom(RenderTarget source) {
          RenderSystem.assertOnRenderThread();
          if (this.depthTexture == null) {
              throw new IllegalStateException("Trying to copy depth texture to a RenderTarget without a depth texture");
@@ -61,7 +61,7 @@
      }
  
 -    public void createBuffers(final int width, final int height) {
-+   public void createBuffers(int width, int height) {
++    public void createBuffers(int width, int height) {
          RenderSystem.assertOnRenderThread();
          GpuDevice device = RenderSystem.getDevice();
          int maxTextureSize = device.getDeviceInfo().limits().maxTextureSize();
@@ -70,8 +70,8 @@
              this.height = height;
              if (this.useDepth) {
 -                this.depthTexture = device.createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1);
-+            this.depthTexture = device.getGlDevice()
-+               .createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1, this.stencilEnabled);
++                this.depthTexture = device.getGlDevice()
++                    .createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1, this.stencilEnabled);
                  this.depthTextureView = device.createTextureView(this.depthTexture);
              }
  
@@ -80,7 +80,7 @@
      }
  
 -    public void blitAndBlendToTexture(final GpuTextureView output, final GpuTextureView outputDepth) {
-+   public void blitAndBlendToTexture(GpuTextureView output, GpuTextureView outputDepth) {
++    public void blitAndBlendToTexture(GpuTextureView output, GpuTextureView outputDepth) {
          RenderSystem.assertOnRenderThread();
  
          try (RenderPass renderPass = RenderSystem.getDevice()
@@ -89,46 +89,46 @@
      }
  
 -    public @Nullable GpuTexture getColorTexture() {
-+   public GpuTexture getColorTexture() {
++    public GpuTexture getColorTexture() {
          return this.colorTexture;
      }
  
 -    public @Nullable GpuTextureView getColorTextureView() {
-+   public GpuTextureView getColorTextureView() {
++    public GpuTextureView getColorTextureView() {
          return this.colorTextureView;
      }
  
 -    public @Nullable GpuTexture getDepthTexture() {
-+   public GpuTexture getDepthTexture() {
++    public GpuTexture getDepthTexture() {
          return this.depthTexture;
      }
  
 -    public @Nullable GpuTextureView getDepthTextureView() {
-+   public GpuTextureView getDepthTextureView() {
++    public GpuTextureView getDepthTextureView() {
          return this.depthTextureView;
      }
 -}
 \ No newline at end of file
 +
-+   public boolean hasFramebuffer(int framebufferIn) {
-+      return this.colorTexture != null && ((GlTexture)this.colorTexture).hasFramebuffer(framebufferIn)
-+         ? true
-+         : this.colorTextureView != null && ((GlTextureView)this.colorTextureView).hasFramebuffer(framebufferIn);
-+   }
++    public boolean hasFramebuffer(int framebufferIn) {
++        return this.colorTexture != null && ((GlTexture)this.colorTexture).hasFramebuffer(framebufferIn)
++            ? true
++            : this.colorTextureView != null && ((GlTextureView)this.colorTextureView).hasFramebuffer(framebufferIn);
++    }
 +
-+   @Override
-+   public String toString() {
-+      return this.label + ", " + this.width + "x" + this.height + ", color: " + this.colorTexture + ", depth: " + this.depthTexture;
-+   }
++    @Override
++    public String toString() {
++        return this.label + ", " + this.width + "x" + this.height + ", color: " + this.colorTexture + ", depth: " + this.depthTexture;
++    }
 +
-+   public void enableStencil() {
-+      if (!this.stencilEnabled) {
-+         this.stencilEnabled = true;
-+         this.resize(this.width, this.height);
-+      }
-+   }
++    public void enableStencil() {
++        if (!this.stencilEnabled) {
++            this.stencilEnabled = true;
++            this.resize(this.width, this.height);
++        }
++    }
 +
-+   public boolean isStencilEnabled() {
-+      return this.stencilEnabled;
-+   }
++    public boolean isStencilEnabled() {
++        return this.stencilEnabled;
++    }
 +}

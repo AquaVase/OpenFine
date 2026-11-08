@@ -11,23 +11,23 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterMule extends ModelAdapterDonkey {
-   public ModelAdapterMule() {
-      super(EntityTypes.MULE, "mule", ModelLayers.MULE);
-   }
+    public ModelAdapterMule() {
+        super(EntityTypes.MULE, "mule", ModelLayers.MULE);
+    }
 
-   protected ModelAdapterMule(EntityType type, String name, ModelLayerLocation modelLayer) {
-      super(type, name, modelLayer);
-   }
+    protected ModelAdapterMule(EntityType type, String name, ModelLayerLocation modelLayer) {
+        super(type, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterMule ma = new ModelAdapterMule(this.getEntityType(), "mule_baby", ModelLayers.MULE_BABY);
-      ma.setBaby(true);
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterMule ma = new ModelAdapterMule(this.getEntityType(), "mule_baby", ModelLayers.MULE_BABY);
+        ma.setBaby(true);
+        return ma;
+    }
 
-   @Override
-   protected AgeableMobRenderer makeAgeableRenderer(Context context) {
-      return new DonkeyRenderer(context, LayerType.DONKEY_SADDLE, ModelLayers.DONKEY_SADDLE, Type.DONKEY, Type.DONKEY_BABY);
-   }
+    @Override
+    protected AgeableMobRenderer makeAgeableRenderer(Context context) {
+        return new DonkeyRenderer(context, LayerType.DONKEY_SADDLE, ModelLayers.DONKEY_SADDLE, Type.DONKEY, Type.DONKEY_BABY);
+    }
 }

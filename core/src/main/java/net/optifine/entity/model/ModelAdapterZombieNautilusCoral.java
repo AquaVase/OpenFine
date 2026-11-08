@@ -12,24 +12,24 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.nautilus.ZombieNautilusVariant.ModelType;
 
 public class ModelAdapterZombieNautilusCoral extends ModelAdapterZombieNautilus {
-   public ModelAdapterZombieNautilusCoral() {
-      super(EntityTypes.ZOMBIE_NAUTILUS, "zombie_nautilus_coral", ModelLayers.ZOMBIE_NAUTILUS_CORAL, ModelType.WARM);
-   }
+    public ModelAdapterZombieNautilusCoral() {
+        super(EntityTypes.ZOMBIE_NAUTILUS, "zombie_nautilus_coral", ModelLayers.ZOMBIE_NAUTILUS_CORAL, ModelType.WARM);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new ZombieNautilusCoralModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new ZombieNautilusCoralModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      map.put("corals", "corals");
-      return map;
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        map.put("corals", "corals");
+        return map;
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new ZombieNautilusRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new ZombieNautilusRenderer(context);
+    }
 }

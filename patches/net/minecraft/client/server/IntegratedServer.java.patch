@@ -57,20 +57,20 @@
 -    private @Nullable Boolean commandsAllowedForOtherPlayers;
 -    private @Nullable LanServerPinger lanPinger;
 -    private @Nullable UUID uuid;
-+   private GameType gameTypeForOtherPlayers;
-+   private Boolean commandsAllowedForOtherPlayers;
-+   private LanServerPinger lanPinger;
-+   private UUID uuid;
++    private GameType gameTypeForOtherPlayers;
++    private Boolean commandsAllowedForOtherPlayers;
++    private LanServerPinger lanPinger;
++    private UUID uuid;
      private int previousSimulationDistance = 0;
 -    private volatile List<SimpleGizmoCollector.GizmoInstance> latestTicksGizmos = new ArrayList<>();
-+   private volatile List<GizmoInstance> latestTicksGizmos = new ArrayList<>();
++    private volatile List<GizmoInstance> latestTicksGizmos = new ArrayList<>();
      private final SimpleGizmoCollector gizmoCollector = new SimpleGizmoCollector();
 -    private MinecraftServer.MultiplayerScope multiplayerScope = MinecraftServer.MultiplayerScope.OFF;
-+   private MultiplayerScope multiplayerScope = MultiplayerScope.OFF;
-+   private long ticksSaveLast = 0L;
-+   public Level difficultyUpdateWorld = null;
-+   public BlockPos difficultyUpdatePos = null;
-+   public DifficultyInstance difficultyLast = null;
++    private MultiplayerScope multiplayerScope = MultiplayerScope.OFF;
++    private long ticksSaveLast = 0L;
++    public Level difficultyUpdateWorld = null;
++    public BlockPos difficultyUpdatePos = null;
++    public DifficultyInstance difficultyLast = null;
  
      public IntegratedServer(
 -        final Thread serverThread,
@@ -81,14 +81,14 @@
 -        final Optional<GameRules> gameRules,
 -        final Services services,
 -        final LevelLoadListener levelLoadListener
-+      Thread serverThread,
-+      Minecraft minecraft,
-+      LevelStorageAccess levelStorageAccess,
-+      PackRepository packRepository,
-+      WorldStem worldStem,
-+      Optional<GameRules> gameRules,
-+      Services services,
-+      LevelLoadListener levelLoadListener
++        Thread serverThread,
++        Minecraft minecraft,
++        LevelStorageAccess levelStorageAccess,
++        PackRepository packRepository,
++        WorldStem worldStem,
++        Optional<GameRules> gameRules,
++        Services services,
++        LevelLoadListener levelLoadListener
      ) {
          super(
              serverThread,
@@ -96,10 +96,10 @@
          LOGGER.info("Starting integrated minecraft server version {}", SharedConstants.getCurrentVersion().name());
          this.setUsesAuthentication(true);
          this.initializeKeyPair();
-+      if (Reflector.ServerLifecycleHooks_handleServerAboutToStart.exists()
-+         && !Reflector.callBoolean(Reflector.ServerLifecycleHooks_handleServerAboutToStart, this)) {
-+         return false;
-+      }
++        if (Reflector.ServerLifecycleHooks_handleServerAboutToStart.exists()
++            && !Reflector.callBoolean(Reflector.ServerLifecycleHooks_handleServerAboutToStart, this)) {
++            return false;
++        }
 +
          this.loadLevel();
          GameProfile host = this.getSingleplayerProfile();
@@ -107,9 +107,9 @@
          this.setMotd(host != null ? host.name() + " - " + levelName : levelName);
          this.saveEverything(false, true, true);
 -        return true;
-+      return Reflector.ServerLifecycleHooks_handleServerStarting.exists()
-+         ? Reflector.callBoolean(Reflector.ServerLifecycleHooks_handleServerStarting, this)
-+         : true;
++        return Reflector.ServerLifecycleHooks_handleServerStarting.exists()
++            ? Reflector.callBoolean(Reflector.ServerLifecycleHooks_handleServerStarting, this)
++            : true;
      }
  
      @Override
@@ -119,8 +119,8 @@
      @Override
 -    protected void processPacketsAndTick(final boolean sprinting) {
 -        try (Gizmos.TemporaryCollection ignored = Gizmos.withCollector(this.gizmoCollector)) {
-+   protected void processPacketsAndTick(boolean sprinting) {
-+      try (TemporaryCollection ignored = Gizmos.withCollector(this.gizmoCollector)) {
++    protected void processPacketsAndTick(boolean sprinting) {
++        try (TemporaryCollection ignored = Gizmos.withCollector(this.gizmoCollector)) {
              super.processPacketsAndTick(sprinting);
          }
  
@@ -129,8 +129,8 @@
  
      @Override
 -    protected void tickServer(final BooleanSupplier haveTime) {
-+   protected void tickServer(BooleanSupplier haveTime) {
-+      this.onTick();
++    protected void tickServer(BooleanSupplier haveTime) {
++        this.onTick();
          boolean wasPaused = this.paused;
          this.paused = Minecraft.getInstance().isPaused() || this.getPlayerList().getPlayers().isEmpty();
          ProfilerFiller profiler = Profiler.get();
@@ -139,13 +139,13 @@
  
      @Override
 -    protected void onServerCrash(final CrashReport report) {
-+   protected void onServerCrash(CrashReport report) {
++    protected void onServerCrash(CrashReport report) {
          BlockableEventLoop.relayDelayCrash(report);
      }
  
      @Override
 -    public SystemReport fillServerSystemReport(final SystemReport systemReport) {
-+   public SystemReport fillServerSystemReport(SystemReport systemReport) {
++    public SystemReport fillServerSystemReport(SystemReport systemReport) {
          systemReport.setDetail("Type", "Integrated Server");
          systemReport.setDetail("Is Modded", () -> this.getModdedStatus().fullDescription());
          systemReport.setDetail("Launched Version", this.minecraft::getLaunchedVersion);
@@ -154,7 +154,7 @@
  
      @Override
 -    public boolean publishServer(final MinecraftServer.MultiplayerScope scope, final @Nullable GameType gameMode, final boolean allowCommands, final int port) {
-+   public boolean publishServer(MultiplayerScope scope, GameType gameMode, boolean allowCommands, int port) {
++    public boolean publishServer(MultiplayerScope scope, GameType gameMode, boolean allowCommands, int port) {
          if (gameMode != null) {
              this.setGameTypeForOtherPlayers(gameMode);
          }
@@ -164,8 +164,8 @@
  
 -    public boolean publishServer(final MinecraftServer.MultiplayerScope scope, final int port) {
 -        if (scope != MinecraftServer.MultiplayerScope.OFF && !this.isPublished()) {
-+   public boolean publishServer(MultiplayerScope scope, int port) {
-+      if (scope != MultiplayerScope.OFF && !this.isPublished()) {
++    public boolean publishServer(MultiplayerScope scope, int port) {
++        if (scope != MultiplayerScope.OFF && !this.isPublished()) {
              try {
                  this.minecraft.prepareForMultiplayer();
                  this.minecraft.getConnection().prepareKeyPair();
@@ -174,7 +174,7 @@
      }
  
 -    public void setWorldGameType(final GameType gameMode) {
-+   public void setWorldGameType(GameType gameMode) {
++    public void setWorldGameType(GameType gameMode) {
          this.setDefaultGameType(gameMode);
          this.applyGameTypeToPlayers(gameMode, true);
          if (this.gameTypeForOtherPlayers == null) {
@@ -183,13 +183,13 @@
      }
  
 -    public void setGameTypeForOtherPlayers(final GameType gameMode) {
-+   public void setGameTypeForOtherPlayers(GameType gameMode) {
++    public void setGameTypeForOtherPlayers(GameType gameMode) {
          this.gameTypeForOtherPlayers = gameMode;
          this.applyGameTypeToPlayers(gameMode, false);
      }
  
 -    private void applyGameTypeToPlayers(final GameType gameMode, final boolean singleplayerOwner) {
-+   private void applyGameTypeToPlayers(GameType gameMode, boolean singleplayerOwner) {
++    private void applyGameTypeToPlayers(GameType gameMode, boolean singleplayerOwner) {
          for (ServerPlayer player : this.getPlayerList().getPlayers()) {
              if (this.isSingleplayerOwner(player.nameAndId()) == singleplayerOwner) {
                  player.setGameMode(gameMode);
@@ -198,7 +198,7 @@
      }
  
 -    public void setWorldAllowCommands(final boolean allowCommands) {
-+   public void setWorldAllowCommands(boolean allowCommands) {
++    public void setWorldAllowCommands(boolean allowCommands) {
          this.getWorldData().setAllowCommands(allowCommands);
          this.updateCommandsAllowedForOtherPlayers();
      }
@@ -207,7 +207,7 @@
      }
  
 -    public void setCommandsAllowedForOtherPlayers(final boolean allowCommands) {
-+   public void setCommandsAllowedForOtherPlayers(boolean allowCommands) {
++    public void setCommandsAllowedForOtherPlayers(boolean allowCommands) {
          this.commandsAllowedForOtherPlayers = allowCommands;
          this.updateCommandsAllowedForOtherPlayers();
      }
@@ -216,7 +216,7 @@
      }
  
 -    private void updatePermissionAndChatAbilities(final LocalPlayer player) {
-+   private void updatePermissionAndChatAbilities(LocalPlayer player) {
++    private void updatePermissionAndChatAbilities(LocalPlayer player) {
          player.setPermissions(this.getProfilePermissions(player.nameAndId()));
          player.refreshChatAbilities();
      }
@@ -225,7 +225,7 @@
          this.stopLanPinger();
          this.publishedPort = -1;
 -        this.setMultiplayerScope(MinecraftServer.MultiplayerScope.OFF);
-+      this.setMultiplayerScope(MultiplayerScope.OFF);
++        this.setMultiplayerScope(MultiplayerScope.OFF);
          this.updateCommandsAllowedForOtherPlayers();
      }
  
@@ -234,25 +234,31 @@
          }
  
 -        if (this.multiplayerScope == MinecraftServer.MultiplayerScope.LAN) {
-+      if (this.multiplayerScope == MultiplayerScope.LAN) {
++        if (this.multiplayerScope == MultiplayerScope.LAN) {
              LOGGER.info("Unpublishing integrated server (was on port {})", this.publishedPort);
          }
  
-@@ -370,7 +387,8 @@
+@@ -370,21 +387,24 @@
      }
  
      @Override
 -    public void halt(final boolean wait) {
-+   public void halt(boolean wait) {
-+      if (!Reflector.MinecraftForge.exists() || this.isRunning()) {
-         this.executeBlocking(() -> {
-             for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
-                 if (!player.getUUID().equals(this.uuid)) {
-@@ -378,13 +396,15 @@
+-        this.executeBlocking(() -> {
+-            for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
+-                if (!player.getUUID().equals(this.uuid)) {
+-                    this.getPlayerList().remove(player);
++    public void halt(boolean wait) {
++        if (!Reflector.MinecraftForge.exists() || this.isRunning()) {
++            this.executeBlocking(() -> {
++                for (ServerPlayer player : Lists.newArrayList(this.getPlayerList().getPlayers())) {
++                    if (!player.getUUID().equals(this.uuid)) {
++                        this.getPlayerList().remove(player);
++                    }
                  }
-             }
-         });
-+      }
+-            }
+-        });
++            });
++        }
 +
          super.halt(wait);
          this.stopLanPinger();
@@ -261,7 +267,7 @@
      @Override
      public boolean isPublished() {
 -        return this.multiplayerScope != MinecraftServer.MultiplayerScope.OFF;
-+      return this.multiplayerScope != MultiplayerScope.OFF;
++        return this.multiplayerScope != MultiplayerScope.OFF;
      }
  
      @Override
@@ -270,19 +276,19 @@
      }
  
 -    public void setUUID(final UUID uuid) {
-+   public void setUUID(UUID uuid) {
++    public void setUUID(UUID uuid) {
          this.uuid = uuid;
      }
  
      @Override
 -    public boolean isSingleplayerOwner(final NameAndId nameAndId) {
-+   public boolean isSingleplayerOwner(NameAndId nameAndId) {
++    public boolean isSingleplayerOwner(NameAndId nameAndId) {
          return this.getSingleplayerProfile() != null && nameAndId.name().equalsIgnoreCase(this.getSingleplayerProfile().name());
      }
  
      @Override
 -    public int getScaledTrackingDistance(final int baseRange) {
-+   public int getScaledTrackingDistance(int baseRange) {
++    public int getScaledTrackingDistance(int baseRange) {
          return (int)(this.minecraft.options.entityDistanceScaling().get() * baseRange);
      }
  
@@ -291,7 +297,7 @@
  
      @Override
 -    public @Nullable GameType getForcedGameType() {
-+   public GameType getForcedGameType() {
++    public GameType getForcedGameType() {
          return this.isPublished() && !this.isHardcore() ? this.getGameTypeForOtherPlayers() : null;
      }
  
@@ -300,10 +306,10 @@
          }
  
 -        try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(LOGGER)) {
-+      try (ScopedCollector reporter = new ScopedCollector(LOGGER)) {
++        try (ScopedCollector reporter = new ScopedCollector(LOGGER)) {
              ValueInput input = TagValueInput.create(reporter, this.registryAccess(), playerData.get());
 -            ServerPlayer.SavedPosition loadedPosition = input.read(ServerPlayer.SavedPosition.MAP_CODEC).orElse(ServerPlayer.SavedPosition.EMPTY);
-+         SavedPosition loadedPosition = input.read(SavedPosition.MAP_CODEC).orElse(SavedPosition.EMPTY);
++            SavedPosition loadedPosition = input.read(SavedPosition.MAP_CODEC).orElse(SavedPosition.EMPTY);
              if (loadedPosition.dimension().isPresent() && loadedPosition.position().isPresent()) {
                  return new GlobalPos(loadedPosition.dimension().get(), BlockPos.containing(loadedPosition.position().get()));
              }
@@ -312,7 +318,7 @@
  
      @Override
 -    public void reportChunkLoadFailure(final Throwable throwable, final RegionStorageInfo storageInfo, final ChunkPos pos) {
-+   public void reportChunkLoadFailure(Throwable throwable, RegionStorageInfo storageInfo, ChunkPos pos) {
++    public void reportChunkLoadFailure(Throwable throwable, RegionStorageInfo storageInfo, ChunkPos pos) {
          super.reportChunkLoadFailure(throwable, storageInfo, pos);
          this.warnOnLowDiskSpace();
          this.minecraft.execute(() -> SystemToast.onChunkLoadFailure(this.minecraft, pos));
@@ -320,7 +326,7 @@
  
      @Override
 -    public void reportChunkSaveFailure(final Throwable throwable, final RegionStorageInfo storageInfo, final ChunkPos pos) {
-+   public void reportChunkSaveFailure(Throwable throwable, RegionStorageInfo storageInfo, ChunkPos pos) {
++    public void reportChunkSaveFailure(Throwable throwable, RegionStorageInfo storageInfo, ChunkPos pos) {
          super.reportChunkSaveFailure(throwable, storageInfo, pos);
          this.warnOnLowDiskSpace();
          this.minecraft.execute(() -> SystemToast.onChunkSaveFailure(this.minecraft, pos));
@@ -329,96 +335,96 @@
      }
  
 -    public Collection<SimpleGizmoCollector.GizmoInstance> getPerTickGizmos() {
-+   public Collection<GizmoInstance> getPerTickGizmos() {
++    public Collection<GizmoInstance> getPerTickGizmos() {
          return this.latestTicksGizmos;
      }
  
 -    private void setMultiplayerScope(final MinecraftServer.MultiplayerScope multiplayerScope) {
-+   private void setMultiplayerScope(MultiplayerScope multiplayerScope) {
++    private void setMultiplayerScope(MultiplayerScope multiplayerScope) {
          if (this.multiplayerScope != multiplayerScope) {
              this.multiplayerScope = multiplayerScope;
          }
      }
  
 -    public MinecraftServer.MultiplayerScope getMultiplayerScope() {
-+   public MultiplayerScope getMultiplayerScope() {
++    public MultiplayerScope getMultiplayerScope() {
          return this.multiplayerScope;
      }
 -}
 \ No newline at end of file
 +
-+   private void onTick() {
-+      for (ServerLevel ws : this.getAllLevels()) {
-+         this.onTick(ws);
-+      }
-+   }
++    private void onTick() {
++        for (ServerLevel ws : this.getAllLevels()) {
++            this.onTick(ws);
++        }
++    }
 +
-+   private void onTick(ServerLevel ws) {
-+      if (!Config.isTimeDefault()) {
-+         this.fixWorldTime(ws);
-+      }
++    private void onTick(ServerLevel ws) {
++        if (!Config.isTimeDefault()) {
++            this.fixWorldTime(ws);
++        }
 +
-+      if (!Config.isWeatherEnabled()) {
-+         this.fixWorldWeather(ws);
-+      }
++        if (!Config.isWeatherEnabled()) {
++            this.fixWorldWeather(ws);
++        }
 +
-+      if (this.difficultyUpdateWorld == ws && this.difficultyUpdatePos != null) {
-+         this.difficultyLast = ws.getCurrentDifficultyAt(this.difficultyUpdatePos);
-+         this.difficultyUpdateWorld = null;
-+         this.difficultyUpdatePos = null;
-+      }
-+   }
++        if (this.difficultyUpdateWorld == ws && this.difficultyUpdatePos != null) {
++            this.difficultyLast = ws.getCurrentDifficultyAt(this.difficultyUpdatePos);
++            this.difficultyUpdateWorld = null;
++            this.difficultyUpdatePos = null;
++        }
++    }
 +
-+   public DifficultyInstance getDifficultyAsync(Level world, BlockPos blockPos) {
-+      this.difficultyUpdateWorld = world;
-+      this.difficultyUpdatePos = blockPos;
-+      return this.difficultyLast;
-+   }
++    public DifficultyInstance getDifficultyAsync(Level world, BlockPos blockPos) {
++        this.difficultyUpdateWorld = world;
++        this.difficultyUpdatePos = blockPos;
++        return this.difficultyLast;
++    }
 +
-+   private void fixWorldWeather(ServerLevel ws) {
-+      if (ws.getRainLevel(1.0F) > 0.0F || ws.isThundering()) {
-+         this.setWeatherParameters(6000, 0, false, false);
-+      }
-+   }
++    private void fixWorldWeather(ServerLevel ws) {
++        if (ws.getRainLevel(1.0F) > 0.0F || ws.isThundering()) {
++            this.setWeatherParameters(6000, 0, false, false);
++        }
++    }
 +
-+   private void fixWorldTime(ServerLevel ws) {
-+      if (this.getDefaultGameType() == GameType.CREATIVE) {
-+         long time = Config.getDayTime(ws);
-+         long timeOfDay = time % 24000L;
-+         if (Config.isTimeDayOnly()) {
-+            if (timeOfDay <= 1000L) {
-+               Config.setDayTime(ws, time - timeOfDay + 1001L);
++    private void fixWorldTime(ServerLevel ws) {
++        if (this.getDefaultGameType() == GameType.CREATIVE) {
++            long time = Config.getDayTime(ws);
++            long timeOfDay = time % 24000L;
++            if (Config.isTimeDayOnly()) {
++                if (timeOfDay <= 1000L) {
++                    Config.setDayTime(ws, time - timeOfDay + 1001L);
++                }
++
++                if (timeOfDay >= 11000L) {
++                    Config.setDayTime(ws, time - timeOfDay + 24001L);
++                }
 +            }
 +
-+            if (timeOfDay >= 11000L) {
-+               Config.setDayTime(ws, time - timeOfDay + 24001L);
++            if (Config.isTimeNightOnly()) {
++                if (timeOfDay <= 14000L) {
++                    Config.setDayTime(ws, time - timeOfDay + 14001L);
++                }
++
++                if (timeOfDay >= 22000L) {
++                    Config.setDayTime(ws, time - timeOfDay + 24000L + 14001L);
++                }
 +            }
-+         }
++        }
++    }
 +
-+         if (Config.isTimeNightOnly()) {
-+            if (timeOfDay <= 14000L) {
-+               Config.setDayTime(ws, time - timeOfDay + 14001L);
++    @Override
++    public boolean saveAllChunks(boolean silentIn, boolean flushIn, boolean commandIn) {
++        if (silentIn) {
++            int ticks = this.getTickCount();
++            int ticksSaveInterval = this.minecraft.options.ofAutoSaveTicks;
++            if (ticks < this.ticksSaveLast + ticksSaveInterval) {
++                return false;
 +            }
 +
-+            if (timeOfDay >= 22000L) {
-+               Config.setDayTime(ws, time - timeOfDay + 24000L + 14001L);
-+            }
-+         }
-+      }
-+   }
++            this.ticksSaveLast = ticks;
++        }
 +
-+   @Override
-+   public boolean saveAllChunks(boolean silentIn, boolean flushIn, boolean commandIn) {
-+      if (silentIn) {
-+         int ticks = this.getTickCount();
-+         int ticksSaveInterval = this.minecraft.options.ofAutoSaveTicks;
-+         if (ticks < this.ticksSaveLast + ticksSaveInterval) {
-+            return false;
-+         }
-+
-+         this.ticksSaveLast = ticks;
-+      }
-+
-+      return super.saveAllChunks(silentIn, flushIn, commandIn);
-+   }
++        return super.saveAllChunks(silentIn, flushIn, commandIn);
++    }
 +}

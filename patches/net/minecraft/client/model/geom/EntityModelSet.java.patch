@@ -13,12 +13,12 @@
      private final Map<ModelLayerLocation, LayerDefinition> roots;
  
 -    public EntityModelSet(final Map<ModelLayerLocation, LayerDefinition> roots) {
-+   public EntityModelSet(Map<ModelLayerLocation, LayerDefinition> roots) {
++    public EntityModelSet(Map<ModelLayerLocation, LayerDefinition> roots) {
          this.roots = roots;
      }
  
 -    public ModelPart bakeLayer(final ModelLayerLocation id) {
-+   public ModelPart bakeLayer(ModelLayerLocation id) {
++    public ModelPart bakeLayer(ModelLayerLocation id) {
          LayerDefinition result = this.roots.get(id);
          if (result == null) {
              throw new IllegalArgumentException("No model for layer " + id);
@@ -26,9 +26,9 @@
 -            return result.bakeRoot();
          }
 +
-+      ModelPart part = result.bakeRoot();
-+      part.setModelLayerLocation(id);
-+      return part;
++        ModelPart part = result.bakeRoot();
++        part.setModelLayerLocation(id);
++        return part;
      }
  
      public static EntityModelSet vanilla() {

@@ -31,7 +31,7 @@
      private final float[] columnSizeX = new float[1024];
      private final float[] columnSizeZ = new float[1024];
 -    private @Nullable GpuBuffer vertexBuffer;
-+   private GpuBuffer vertexBuffer;
++    private GpuBuffer vertexBuffer;
  
      public WeatherEffectRenderer() {
          for (int z = 0; z < 32; z++) {
@@ -40,32 +40,32 @@
      }
  
 -    public void extractRenderState(final ClientLevel level, final float partialTicks, final Vec3 cameraPos, final WeatherRenderState renderState) {
-+   public void extractRenderState(ClientLevel level, float partialTicks, Vec3 cameraPos, WeatherRenderState renderState) {
++    public void extractRenderState(ClientLevel level, float partialTicks, Vec3 cameraPos, WeatherRenderState renderState) {
          renderState.intensity = level.getRainLevel(partialTicks);
          if (!(renderState.intensity <= 0.0F)) {
-+         if (Config.isRainOff()) {
-+            return;
-+         }
++            if (Config.isRainOff()) {
++                return;
++            }
 +
              renderState.radius = Minecraft.getInstance().options.weatherRadius().get();
              int cameraBlockX = Mth.floor(cameraPos.x);
              int cameraBlockY = Mth.floor(cameraPos.y);
              int cameraBlockZ = Mth.floor(cameraPos.z);
 -            BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-+         MutableBlockPos mutablePos = new MutableBlockPos();
++            MutableBlockPos mutablePos = new MutableBlockPos();
              RandomSource random = RandomSource.createThreadLocalInstance();
  
              for (int z = cameraBlockZ - renderState.radius; z <= cameraBlockZ + renderState.radius; z++) {
                  for (int x = cameraBlockX - renderState.radius; x <= cameraBlockX + renderState.radius; x++) {
 -                    int terrainHeight = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-+               int terrainHeight = level.getHeight(Types.MOTION_BLOCKING, x, z);
++                    int terrainHeight = level.getHeight(Types.MOTION_BLOCKING, x, z);
                      int y0 = Math.max(cameraBlockY - renderState.radius, terrainHeight);
                      int y1 = Math.max(cameraBlockY + renderState.radius, terrainHeight);
                      if (y1 - y0 != 0) {
 -                        Biome.Precipitation precipitation = level.getPrecipitationAt(mutablePos.set(x, cameraBlockY, z));
 -                        if (precipitation != Biome.Precipitation.NONE) {
-+                  Precipitation precipitation = level.getPrecipitationAt(mutablePos.set(x, cameraBlockY, z));
-+                  if (precipitation != Precipitation.NONE) {
++                        Precipitation precipitation = level.getPrecipitationAt(mutablePos.set(x, cameraBlockY, z));
++                        if (precipitation != Precipitation.NONE) {
                              int seed = x * x * 3121 + x * 45238971 ^ z * z * 418711 + z * 13761;
                              random.setSeed(seed);
                              int lightSampleY = Math.max(cameraBlockY, terrainHeight);
@@ -76,10 +76,10 @@
 -                            } else if (precipitation == Biome.Precipitation.SNOW) {
 -                                renderState.snowColumns
 -                                    .add(this.createSnowColumnInstance(random, level.getGameTime(), x, y0, y1, z, lightCoords, partialTicks));
-+                     if (precipitation == Precipitation.RAIN) {
-+                        renderState.rainColumns.add(this.createRainColumnInstance(random, level.getGameTime(), x, y0, y1, z, lightCoords, partialTicks));
-+                     } else if (precipitation == Precipitation.SNOW) {
-+                        renderState.snowColumns.add(this.createSnowColumnInstance(random, level.getGameTime(), x, y0, y1, z, lightCoords, partialTicks));
++                            if (precipitation == Precipitation.RAIN) {
++                                renderState.rainColumns.add(this.createRainColumnInstance(random, level.getGameTime(), x, y0, y1, z, lightCoords, partialTicks));
++                            } else if (precipitation == Precipitation.SNOW) {
++                                renderState.snowColumns.add(this.createSnowColumnInstance(random, level.getGameTime(), x, y0, y1, z, lightCoords, partialTicks));
                              }
                          }
                      }
@@ -88,13 +88,13 @@
      }
  
 -    private void renderWeather(final RenderPass renderPass, final AbstractTexture texture, final int startColumn, final int columnCount) {
-+   private void renderWeather(RenderPass renderPass, AbstractTexture texture, int startColumn, int columnCount) {
++    private void renderWeather(RenderPass renderPass, AbstractTexture texture, int startColumn, int columnCount) {
          renderPass.bindTexture("Sampler0", texture.getTextureView(), texture.getSampler());
          renderPass.drawIndexed(columnCount * 6, 1, startColumn * 6, 0, 0);
      }
  
 -    private GpuBuffer uploadVertexBuffer(final ByteBuffer buffer) {
-+   private GpuBuffer uploadVertexBuffer(ByteBuffer buffer) {
++    private GpuBuffer uploadVertexBuffer(ByteBuffer buffer) {
          GpuDevice device = RenderSystem.getDevice();
          if (this.vertexBuffer == null || this.vertexBuffer.size() < buffer.remaining()) {
              if (this.vertexBuffer != null) {
@@ -103,7 +103,7 @@
      }
  
 -    public void render(final Vec3 cameraPos, final WeatherRenderState renderState) {
-+   public void render(Vec3 cameraPos, WeatherRenderState renderState) {
++    public void render(Vec3 cameraPos, WeatherRenderState renderState) {
          int columnCount = renderState.rainColumns.size() + renderState.snowColumns.size();
          if (columnCount != 0) {
              TextureManager textureManager = Minecraft.getInstance().getTextureManager();
@@ -114,12 +114,12 @@
 -            RenderPipeline renderPipeline = Minecraft.getInstance().gameRenderer.gameRenderState().useShaderTransparency()
 -                ? RenderPipelines.WEATHER_DEPTH_WRITE
 -                : RenderPipelines.WEATHER_NO_DEPTH_WRITE;
-+         boolean useDepth = Minecraft.getInstance().gameRenderer.gameRenderState().useShaderTransparency();
-+         if (Config.isShaders()) {
-+            useDepth = Shaders.isRainDepth();
-+         }
++            boolean useDepth = Minecraft.getInstance().gameRenderer.gameRenderState().useShaderTransparency();
++            if (Config.isShaders()) {
++                useDepth = Shaders.isRainDepth();
++            }
  
-+         RenderPipeline renderPipeline = useDepth ? RenderPipelines.WEATHER_DEPTH_WRITE : RenderPipelines.WEATHER_NO_DEPTH_WRITE;
++            RenderPipeline renderPipeline = useDepth ? RenderPipelines.WEATHER_DEPTH_WRITE : RenderPipelines.WEATHER_NO_DEPTH_WRITE;
 +
              GpuBuffer vertexBuffer;
              GpuBuffer indexBuffer;
@@ -136,7 +136,7 @@
 -        final int z,
 -        final int lightCoords,
 -        final float partialTicks
-+      RandomSource random, long ticks, int x, int bottomY, int topY, int z, int lightCoords, float partialTicks
++        RandomSource random, long ticks, int x, int bottomY, int topY, int z, int lightCoords, float partialTicks
      ) {
          int wrappedTicks = (int)(ticks & 131071L);
          int tickOffset = x * x * 3121 + x * 45238971 + z * z * 418711 + z * 13761 & 0xFF;
@@ -152,7 +152,7 @@
 -        final int z,
 -        final int lightCoords,
 -        final float partialTicks
-+      RandomSource random, long ticks, int x, int bottomY, int topY, int z, int lightCoords, float partialTicks
++        RandomSource random, long ticks, int x, int bottomY, int topY, int z, int lightCoords, float partialTicks
      ) {
          int wrappedTicks = (int)(ticks & 131071L);
          float time = wrappedTicks + partialTicks;
@@ -166,7 +166,7 @@
 -        final float maxAlpha,
 -        final int radius,
 -        final float intensity
-+      VertexConsumer builder, List<WeatherEffectRenderer.ColumnInstance> columns, Vec3 cameraPos, float maxAlpha, int radius, float intensity
++        VertexConsumer builder, List<WeatherEffectRenderer.ColumnInstance> columns, Vec3 cameraPos, float maxAlpha, int radius, float intensity
      ) {
          if (!columns.isEmpty()) {
              float radiusSq = radius * radius;

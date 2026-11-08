@@ -23,21 +23,21 @@
      private static final RenderType RENDER_TYPE = RenderTypes.entityTranslucentCullItemTarget(EXPERIENCE_ORB_LOCATION);
  
 -    public ExperienceOrbRenderer(final EntityRendererProvider.Context context) {
-+   public ExperienceOrbRenderer(Context context) {
++    public ExperienceOrbRenderer(Context context) {
          super(context);
          this.shadowRadius = 0.15F;
          this.shadowStrength = 0.75F;
      }
  
 -    protected int getBlockLightLevel(final ExperienceOrb entity, final BlockPos blockPos) {
-+   protected int getBlockLightLevel(ExperienceOrb entity, BlockPos blockPos) {
++    protected int getBlockLightLevel(ExperienceOrb entity, BlockPos blockPos) {
          return Mth.clamp(super.getBlockLightLevel(entity, blockPos) + 7, 0, 15);
      }
  
 -    public void submit(
 -        final ExperienceOrbRenderState state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera
 -    ) {
-+   public void submit(ExperienceOrbRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    public void submit(ExperienceOrbRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          poseStack.pushPose();
          int icon = state.icon;
          float u0 = (icon % 4 * 16 + 0) / 64.0F;
@@ -45,11 +45,11 @@
          float yo = 0.25F;
          float br = 255.0F;
          float rr = state.ageInTicks / 2.0F;
-+      if (Config.isCustomColors()) {
-+         rr = CustomColors.getXpOrbTimer(rr);
-+      }
++        if (Config.isCustomColors()) {
++            rr = CustomColors.getXpOrbTimer(rr);
++        }
 +
-+      float rrF = rr;
++        float rrF = rr;
          int rc = (int)((Mth.sin(rr + 0.0F) + 1.0F) * 0.5F * 255.0F);
          int gc = 255;
          int bc = (int)((Mth.sin(rr + (float) (Math.PI * 4.0 / 3.0)) + 1.0F) * 0.1F * 255.0F);
@@ -61,22 +61,22 @@
 -            vertex(buffer, pose, 0.5F, -0.25F, rc, 255, bc, u1, v1, state.lightCoords);
 -            vertex(buffer, pose, 0.5F, 0.75F, rc, 255, bc, u1, v0, state.lightCoords);
 -            vertex(buffer, pose, -0.5F, 0.75F, rc, 255, bc, u0, v0, state.lightCoords);
-+         int red = rc;
-+         int green = gc;
-+         int blue = bc;
-+         if (Config.isCustomColors()) {
-+            int col = CustomColors.getXpOrbColor(rrF);
-+            if (col >= 0) {
-+               red = col >> 16 & 0xFF;
-+               green = col >> 8 & 0xFF;
-+               blue = col >> 0 & 0xFF;
++            int red = rc;
++            int green = gc;
++            int blue = bc;
++            if (Config.isCustomColors()) {
++                int col = CustomColors.getXpOrbColor(rrF);
++                if (col >= 0) {
++                    red = col >> 16 & 0xFF;
++                    green = col >> 8 & 0xFF;
++                    blue = col >> 0 & 0xFF;
++                }
 +            }
-+         }
 +
-+         vertex(buffer, pose, -0.5F, -0.25F, red, green, blue, u0, v1, state.lightCoords);
-+         vertex(buffer, pose, 0.5F, -0.25F, red, green, blue, u1, v1, state.lightCoords);
-+         vertex(buffer, pose, 0.5F, 0.75F, red, green, blue, u1, v0, state.lightCoords);
-+         vertex(buffer, pose, -0.5F, 0.75F, red, green, blue, u0, v0, state.lightCoords);
++            vertex(buffer, pose, -0.5F, -0.25F, red, green, blue, u0, v1, state.lightCoords);
++            vertex(buffer, pose, 0.5F, -0.25F, red, green, blue, u1, v1, state.lightCoords);
++            vertex(buffer, pose, 0.5F, 0.75F, red, green, blue, u1, v0, state.lightCoords);
++            vertex(buffer, pose, -0.5F, 0.75F, red, green, blue, u0, v0, state.lightCoords);
          });
          poseStack.popPose();
          super.submit(state, poseStack, submitNodeCollector, camera);
@@ -94,7 +94,7 @@
 -        final float v,
 -        final int lightCoords
 -    ) {
-+   private static void vertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, int r, int g, int b, float u, float v, int lightCoords) {
++    private static void vertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, int r, int g, int b, float u, float v, int lightCoords) {
          buffer.addVertex(pose, x, y, 0.0F)
              .setColor(r, g, b, 128)
              .setUv(u, v)
@@ -103,7 +103,7 @@
      }
  
 -    public void extractRenderState(final ExperienceOrb entity, final ExperienceOrbRenderState state, final float partialTicks) {
-+   public void extractRenderState(ExperienceOrb entity, ExperienceOrbRenderState state, float partialTicks) {
++    public void extractRenderState(ExperienceOrb entity, ExperienceOrbRenderState state, float partialTicks) {
          super.extractRenderState(entity, state, partialTicks);
          state.icon = entity.getIcon();
      }

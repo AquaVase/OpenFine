@@ -10,28 +10,28 @@
 -@OnlyIn(Dist.CLIENT)
 -public record VertexFormatElement(String name, int offset, GpuFormat format) {
 +public record VertexFormatElement(String name, int offset, GpuFormat format, int attributeIndex) {
-+   VertexFormatElement(String name, int offset, GpuFormat format) {
-+      int attrIndex = makeAttributeIndex(name);
-+      this(name, offset, format, attrIndex);
-+   }
++    VertexFormatElement(String name, int offset, GpuFormat format) {
++        int attrIndex = makeAttributeIndex(name);
++        this(name, offset, format, attrIndex);
++    }
 +
-+   public static int makeAttributeIndex(String name) {
-+      if (name.equals("Position")) {
-+         return 0;
-+      } else if (name.equals("Color")) {
-+         return 1;
-+      } else if (name.equals("UV0")) {
-+         return 2;
-+      } else if (name.equals("UV1")) {
-+         return 3;
-+      } else if (name.equals("UV2")) {
-+         return 4;
-+      } else if (name.equals("Normal")) {
-+         return 5;
-+      } else {
-+         return name.equals("LineWidth") ? 6 : -1;
-+      }
-+   }
++    public static int makeAttributeIndex(String name) {
++        if (name.equals("Position")) {
++            return 0;
++        } else if (name.equals("Color")) {
++            return 1;
++        } else if (name.equals("UV0")) {
++            return 2;
++        } else if (name.equals("UV1")) {
++            return 3;
++        } else if (name.equals("UV2")) {
++            return 4;
++        } else if (name.equals("Normal")) {
++            return 5;
++        } else {
++            return name.equals("LineWidth") ? 6 : -1;
++        }
++    }
 +
      @Override
      public String toString() {

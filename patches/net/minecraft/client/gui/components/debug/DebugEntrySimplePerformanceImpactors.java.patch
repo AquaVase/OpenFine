@@ -18,19 +18,19 @@
 -        final @Nullable LevelChunk clientChunk,
 -        final @Nullable LevelChunk serverChunk
 -    ) {
-+   public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
++    public void display(DebugScreenDisplayer displayer, Level serverOrClientLevel, LevelChunk clientChunk, LevelChunk serverChunk) {
          Minecraft minecraft = Minecraft.getInstance();
          Options options = minecraft.options;
          displayer.addLine(
              String.format(
                  Locale.ROOT,
 -                "%s%sB: %d",
-+            "%s%sB: %d U: %d",
++                "%s%sB: %d U: %d",
                  options.improvedTransparency().get() ? "improved-transparency " : "",
                  options.cloudStatus().get() == CloudStatus.OFF ? "" : (options.cloudStatus().get() == CloudStatus.FAST ? "fast-clouds " : "fancy-clouds "),
 -                options.biomeBlendRadius().get()
-+            options.biomeBlendRadius().get(),
-+            Config.getChunkUpdates()
++                options.biomeBlendRadius().get(),
++                Config.getChunkUpdates()
              )
          );
          TextureFilteringMethod filteringMethod = options.textureFiltering().get();
@@ -39,7 +39,7 @@
  
      @Override
 -    public boolean isAllowed(final boolean reducedDebugInfo) {
-+   public boolean isAllowed(boolean reducedDebugInfo) {
++    public boolean isAllowed(boolean reducedDebugInfo) {
          return true;
      }
 -}

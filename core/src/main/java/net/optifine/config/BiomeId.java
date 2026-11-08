@@ -8,45 +8,45 @@ import net.minecraft.world.level.biome.Biome;
 import net.optifine.util.BiomeUtils;
 
 public class BiomeId {
-   private final Identifier resourceLocation;
-   private ClientLevel world;
-   private Biome biome;
-   private static Minecraft minecraft = Minecraft.getInstance();
+    private final Identifier resourceLocation;
+    private ClientLevel world;
+    private Biome biome;
+    private static Minecraft minecraft = Minecraft.getInstance();
 
-   private BiomeId(Identifier resourceLocation) {
-      this.resourceLocation = resourceLocation;
-      this.world = minecraft.level;
-      this.updateBiome();
-   }
+    private BiomeId(Identifier resourceLocation) {
+        this.resourceLocation = resourceLocation;
+        this.world = minecraft.level;
+        this.updateBiome();
+    }
 
-   private void updateBiome() {
-      this.biome = null;
-      Registry<Biome> registry = BiomeUtils.getBiomeRegistry(this.world);
-      if (registry.containsKey(this.resourceLocation)) {
-         this.biome = registry.getValue(this.resourceLocation);
-      }
-   }
+    private void updateBiome() {
+        this.biome = null;
+        Registry<Biome> registry = BiomeUtils.getBiomeRegistry(this.world);
+        if (registry.containsKey(this.resourceLocation)) {
+            this.biome = registry.getValue(this.resourceLocation);
+        }
+    }
 
-   public Biome getBiome() {
-      if (this.world != minecraft.level) {
-         this.world = minecraft.level;
-         this.updateBiome();
-      }
+    public Biome getBiome() {
+        if (this.world != minecraft.level) {
+            this.world = minecraft.level;
+            this.updateBiome();
+        }
 
-      return this.biome;
-   }
+        return this.biome;
+    }
 
-   public Identifier getResourceLocation() {
-      return this.resourceLocation;
-   }
+    public Identifier getResourceLocation() {
+        return this.resourceLocation;
+    }
 
-   @Override
-   public String toString() {
-      return this.resourceLocation + "";
-   }
+    @Override
+    public String toString() {
+        return this.resourceLocation + "";
+    }
 
-   public static BiomeId make(Identifier resourceLocation) {
-      BiomeId bi = new BiomeId(resourceLocation);
-      return bi.biome == null ? null : bi;
-   }
+    public static BiomeId make(Identifier resourceLocation) {
+        BiomeId bi = new BiomeId(resourceLocation);
+        return bi.biome == null ? null : bi;
+    }
 }

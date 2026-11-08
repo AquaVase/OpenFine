@@ -21,22 +21,22 @@
 -@OnlyIn(Dist.CLIENT)
  public class SkullSpecialRenderer implements NoDataSpecialModelRenderer {
 -    private final SkullModelBase model;
-+   private SkullModelBase model;
++    private SkullModelBase model;
      private final float animation;
      private final RenderType renderType;
-+   private Type skullType;
-+   private boolean modelUpdated;
++    private Type skullType;
++    private boolean modelUpdated;
  
 -    public SkullSpecialRenderer(final SkullModelBase model, final float animation, final RenderType renderType) {
-+   public SkullSpecialRenderer(SkullModelBase model, float animation, RenderType renderType) {
-+      this(model, animation, renderType, null);
-+   }
++    public SkullSpecialRenderer(SkullModelBase model, float animation, RenderType renderType) {
++        this(model, animation, renderType, null);
++    }
 +
-+   public SkullSpecialRenderer(SkullModelBase model, float animation, RenderType renderType, Type skullTypeIn) {
++    public SkullSpecialRenderer(SkullModelBase model, float animation, RenderType renderType, Type skullTypeIn) {
          this.model = model;
          this.animation = animation;
          this.renderType = renderType;
-+      this.skullType = skullTypeIn;
++        this.skullType = skullTypeIn;
      }
  
      @Override
@@ -48,21 +48,21 @@
 -        final boolean hasFoil,
 -        final int outlineColor
 -    ) {
-+   public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
-+      if (CustomEntityModels.isActive() && !this.modelUpdated) {
-+         this.model = SkullBlockRenderer.getGlobalModels().getOrDefault(this.skullType, this.model);
-+         this.modelUpdated = true;
-+      }
++    public void submit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
++        if (CustomEntityModels.isActive() && !this.modelUpdated) {
++            this.model = SkullBlockRenderer.getGlobalModels().getOrDefault(this.skullType, this.model);
++            this.modelUpdated = true;
++        }
 +
          SkullBlockRenderer.submitSkull(this.animation, poseStack, submitNodeCollector, lightCoords, this.model, this.renderType, outlineColor, null);
      }
  
      @Override
 -    public void getExtents(final Consumer<Vector3fc> output) {
-+   public void getExtents(Consumer<Vector3fc> output) {
++    public void getExtents(Consumer<Vector3fc> output) {
          PoseStack poseStack = new PoseStack();
 -        SkullModelBase.State modelState = new SkullModelBase.State();
-+      State modelState = new State();
++        State modelState = new State();
          modelState.animationPos = this.animation;
          this.model.setupAnim(modelState);
          this.model.root().getExtentsForGui(poseStack, output);
@@ -70,11 +70,11 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record Unbaked(SkullBlock.Type kind, Optional<Identifier> textureOverride, float animation) implements NoDataSpecialModelRenderer.Unbaked {
-+   public record Unbaked(Type kind, Optional<Identifier> textureOverride, float animation) implements NoDataSpecialModelRenderer.Unbaked {
++    public record Unbaked(Type kind, Optional<Identifier> textureOverride, float animation) implements NoDataSpecialModelRenderer.Unbaked {
          public static final MapCodec<SkullSpecialRenderer.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
              i -> i.group(
 -                    SkullBlock.Type.CODEC.fieldOf("kind").forGetter(SkullSpecialRenderer.Unbaked::kind),
-+               Type.CODEC.fieldOf("kind").forGetter(SkullSpecialRenderer.Unbaked::kind),
++                    Type.CODEC.fieldOf("kind").forGetter(SkullSpecialRenderer.Unbaked::kind),
                      Identifier.CODEC.optionalFieldOf("texture").forGetter(SkullSpecialRenderer.Unbaked::textureOverride),
                      Codec.FLOAT.optionalFieldOf("animation", 0.0F).forGetter(SkullSpecialRenderer.Unbaked::animation)
                  )
@@ -82,7 +82,7 @@
          );
  
 -        public Unbaked(final SkullBlock.Type kind) {
-+      public Unbaked(Type kind) {
++        public Unbaked(Type kind) {
              this(kind, Optional.empty(), 0.0F);
          }
  
@@ -91,7 +91,7 @@
          }
  
 -        public @Nullable SkullSpecialRenderer bake(final SpecialModelRenderer.BakingContext context) {
-+      public SkullSpecialRenderer bake(BakingContext context) {
++        public SkullSpecialRenderer bake(BakingContext context) {
              SkullModelBase model = SkullBlockRenderer.createModel(context.entityModelSet(), this.kind);
              Identifier textureOverride = this.textureOverride.<Identifier>map(t -> t.withPath(p -> "textures/entity/" + p + ".png")).orElse(null);
              if (model == null) {
@@ -100,7 +100,7 @@
  
              RenderType renderType = SkullBlockRenderer.getSkullRenderType(this.kind, textureOverride);
 -            return new SkullSpecialRenderer(model, this.animation, renderType);
-+         return new SkullSpecialRenderer(model, this.animation, renderType, this.kind);
++            return new SkullSpecialRenderer(model, this.animation, renderType, this.kind);
          }
      }
 -}

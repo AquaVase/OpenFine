@@ -21,11 +21,11 @@
      private final Set<Object> itemModelIdentities = new HashSet<>();
 -    private @Nullable ScreenRectangle lastElementBounds;
 -    public @Nullable PanoramaRenderState panoramaRenderState;
-+   private ScreenRectangle lastElementBounds;
-+   public PanoramaRenderState panoramaRenderState;
++    private ScreenRectangle lastElementBounds;
++    public PanoramaRenderState panoramaRenderState;
      public Vector4f clearColorOverride = new Vector4f(0.0F);
      public boolean isHudHidden;
-+   public final List<GuiRenderListener> frameListeners = new ArrayList<>();
++    public final List<GuiRenderListener> frameListeners = new ArrayList<>();
  
      public GuiRenderState() {
          this.nextStratum();
@@ -34,7 +34,7 @@
      }
  
 -    public void addItem(final GuiItemRenderState itemState) {
-+   public void addItem(GuiItemRenderState itemState) {
++    public void addItem(GuiItemRenderState itemState) {
          if (this.findAppropriateNode(itemState)) {
              this.itemModelIdentities.add(itemState.itemStackRenderState().getModelIdentity());
              this.current.addItem(itemState);
@@ -43,7 +43,7 @@
      }
  
 -    public void addText(final GuiTextRenderState textState) {
-+   public void addText(GuiTextRenderState textState) {
++    public void addText(GuiTextRenderState textState) {
          if (this.findAppropriateNode(textState)) {
              this.current.addText(textState);
              this.addDebugRectangleIfEnabled(textState.bounds());
@@ -51,7 +51,7 @@
      }
  
 -    public void addPicturesInPictureState(final PictureInPictureRenderState picturesInPictureState) {
-+   public void addPicturesInPictureState(PictureInPictureRenderState picturesInPictureState) {
++    public void addPicturesInPictureState(PictureInPictureRenderState picturesInPictureState) {
          if (this.findAppropriateNode(picturesInPictureState)) {
              this.current.addPicturesInPictureState(picturesInPictureState);
              this.addDebugRectangleIfEnabled(picturesInPictureState.bounds());
@@ -59,7 +59,7 @@
      }
  
 -    public void addGuiElement(final GuiElementRenderState blitState) {
-+   public void addGuiElement(GuiElementRenderState blitState) {
++    public void addGuiElement(GuiElementRenderState blitState) {
          if (this.findAppropriateNode(blitState)) {
              this.current.addGuiElement(blitState);
              this.addDebugRectangleIfEnabled(blitState.bounds());
@@ -67,7 +67,7 @@
      }
  
 -    private void addDebugRectangleIfEnabled(final @Nullable ScreenRectangle bounds) {
-+   private void addDebugRectangleIfEnabled(ScreenRectangle bounds) {
++    private void addDebugRectangleIfEnabled(ScreenRectangle bounds) {
          if (SharedConstants.DEBUG_RENDER_UI_LAYERING_RECTANGLES && bounds != null) {
              this.up();
              this.current
@@ -76,7 +76,7 @@
      }
  
 -    private boolean findAppropriateNode(final ScreenArea screenArea) {
-+   private boolean findAppropriateNode(ScreenArea screenArea) {
++    private boolean findAppropriateNode(ScreenArea screenArea) {
          ScreenRectangle bounds = screenArea.bounds();
          if (bounds == null) {
              return false;
@@ -85,7 +85,7 @@
      }
  
 -    private void navigateToAboveHighestElementWithIntersectingBounds(final ScreenRectangle bounds) {
-+   private void navigateToAboveHighestElementWithIntersectingBounds(ScreenRectangle bounds) {
++    private void navigateToAboveHighestElementWithIntersectingBounds(ScreenRectangle bounds) {
          GuiRenderState.Node node = this.strata.getLast();
  
          while (node.up != null) {
@@ -94,7 +94,7 @@
      }
  
 -    private boolean hasIntersection(final ScreenRectangle bounds, final @Nullable List<? extends ScreenArea> states) {
-+   private boolean hasIntersection(ScreenRectangle bounds, List<? extends ScreenArea> states) {
++    private boolean hasIntersection(ScreenRectangle bounds, List<? extends ScreenArea> states) {
          if (states != null) {
              for (ScreenArea area : states) {
                  ScreenRectangle existingBounds = area.bounds();
@@ -103,36 +103,47 @@
      }
  
 -    public void addBlitToCurrentLayer(final BlitRenderState blitState) {
-+   public void addBlitToCurrentLayer(BlitRenderState blitState) {
++    public void addBlitToCurrentLayer(BlitRenderState blitState) {
          this.current.addGuiElement(blitState);
      }
  
 -    public void addGlyphToCurrentLayer(final GuiElementRenderState glyphState) {
-+   public void addGlyphToCurrentLayer(GuiElementRenderState glyphState) {
++    public void addGlyphToCurrentLayer(GuiElementRenderState glyphState) {
          this.current.addGlyph(glyphState);
      }
  
-@@ -166,9 +165,8 @@
+@@ -166,25 +165,23 @@
          return this.itemModelIdentities;
      }
  
 -    public void forEachElement(final Consumer<GuiElementRenderState> consumer, final GuiRenderState.TraverseRange range) {
-+   public void forEachElement(Consumer<GuiElementRenderState> consumer, GuiRenderState.TraverseRange range) {
++    public void forEachElement(Consumer<GuiElementRenderState> consumer, GuiRenderState.TraverseRange range) {
          this.traverse(node -> {
 -            if (node.elementStates != null || node.glyphStates != null) {
-                 if (node.elementStates != null) {
-                     for (GuiElementRenderState elementState : node.elementStates) {
-                         consumer.accept(elementState);
-@@ -180,11 +178,10 @@
-                         consumer.accept(glyphState);
-                     }
+-                if (node.elementStates != null) {
+-                    for (GuiElementRenderState elementState : node.elementStates) {
+-                        consumer.accept(elementState);
+-                    }
++            if (node.elementStates != null) {
++                for (GuiElementRenderState elementState : node.elementStates) {
++                    consumer.accept(elementState);
                  }
--            }
++            }
+ 
+-                if (node.glyphStates != null) {
+-                    for (GuiElementRenderState glyphState : node.glyphStates) {
+-                        consumer.accept(glyphState);
+-                    }
++            if (node.glyphStates != null) {
++                for (GuiElementRenderState glyphState : node.glyphStates) {
++                    consumer.accept(glyphState);
+                 }
+             }
          }, range);
      }
  
 -    public void forEachItem(final Consumer<GuiItemRenderState> consumer) {
-+   public void forEachItem(Consumer<GuiItemRenderState> consumer) {
++    public void forEachItem(Consumer<GuiItemRenderState> consumer) {
          GuiRenderState.Node currentBackup = this.current;
          this.traverse(node -> {
              if (node.itemStates != null) {
@@ -141,7 +152,7 @@
      }
  
 -    public void forEachText(final Consumer<GuiTextRenderState> consumer) {
-+   public void forEachText(Consumer<GuiTextRenderState> consumer) {
++    public void forEachText(Consumer<GuiTextRenderState> consumer) {
          GuiRenderState.Node currentBackup = this.current;
          this.traverse(node -> {
              if (node.textStates != null) {
@@ -150,7 +161,7 @@
      }
  
 -    public void forEachPictureInPicture(final Consumer<PictureInPictureRenderState> consumer) {
-+   public void forEachPictureInPicture(Consumer<PictureInPictureRenderState> consumer) {
++    public void forEachPictureInPicture(Consumer<PictureInPictureRenderState> consumer) {
          GuiRenderState.Node currentBackup = this.current;
          this.traverse(node -> {
              if (node.picturesInPictureStates != null) {
@@ -159,7 +170,7 @@
      }
  
 -    public void sortElements(final Comparator<GuiElementRenderState> comparator) {
-+   public void sortElements(Comparator<GuiElementRenderState> comparator) {
++    public void sortElements(Comparator<GuiElementRenderState> comparator) {
          this.traverse(node -> {
              if (node.elementStates != null) {
                  if (SharedConstants.DEBUG_SHUFFLE_UI_RENDERING_ORDER) {
@@ -168,7 +179,7 @@
      }
  
 -    private void traverse(final Consumer<GuiRenderState.Node> consumer, final GuiRenderState.TraverseRange range) {
-+   private void traverse(Consumer<GuiRenderState.Node> consumer, GuiRenderState.TraverseRange range) {
++    private void traverse(Consumer<GuiRenderState.Node> consumer, GuiRenderState.TraverseRange range) {
          int startIndex = 0;
          int endIndex = this.strata.size();
          if (range == GuiRenderState.TraverseRange.BEFORE_BLUR) {
@@ -176,21 +187,21 @@
          }
  
          for (int i = startIndex; i < endIndex; i++) {
-+         for (int ix = 0; ix < this.frameListeners.size(); ix++) {
-+            this.frameListeners.get(ix).traverseStratumBegin(i);
-+         }
++            for (int ix = 0; ix < this.frameListeners.size(); ix++) {
++                this.frameListeners.get(ix).traverseStratumBegin(i);
++            }
 +
              GuiRenderState.Node stratum = this.strata.get(i);
              this.traverse(stratum, consumer);
 +
-+         for (int ix = 0; ix < this.frameListeners.size(); ix++) {
-+            this.frameListeners.get(i).traverseStratumEnd(i);
++            for (int ix = 0; ix < this.frameListeners.size(); ix++) {
++                this.frameListeners.get(i).traverseStratumEnd(i);
++            }
          }
      }
-+   }
  
 -    private void traverse(final GuiRenderState.Node node, final Consumer<GuiRenderState.Node> consumer) {
-+   private void traverse(GuiRenderState.Node node, Consumer<GuiRenderState.Node> consumer) {
++    private void traverse(GuiRenderState.Node node, Consumer<GuiRenderState.Node> consumer) {
          consumer.accept(node);
          if (node.up != null) {
              this.traverse(node.up, consumer);
@@ -199,23 +210,23 @@
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+   public int getStratum() {
-+      return this.strata.size() - 1;
-+   }
++    public int getStratum() {
++        return this.strata.size() - 1;
++    }
 +
-+   public void addFrameListener(GuiRenderListener listener) {
-+      this.frameListeners.add(listener);
-+   }
++    public void addFrameListener(GuiRenderListener listener) {
++        this.frameListeners.add(listener);
++    }
 +
-+   public void removeFrameListener(GuiRenderListener listener) {
-+      this.frameListeners.remove(listener);
-+   }
++    public void removeFrameListener(GuiRenderListener listener) {
++        this.frameListeners.remove(listener);
++    }
 +
-+   @Override
-+   public String toString() {
-+      int preBlur = Math.min(this.firstStratumAfterBlur, this.strata.size());
-+      return "strata: " + this.strata.size() + ", preBlur: " + preBlur + ", postBlur: " + (this.strata.size() - preBlur);
-+   }
++    @Override
++    public String toString() {
++        int preBlur = Math.min(this.firstStratumAfterBlur, this.strata.size());
++        return "strata: " + this.strata.size() + ", preBlur: " + preBlur + ", postBlur: " + (this.strata.size() - preBlur);
++    }
 +
      private static class Node {
 -        public final GuiRenderState.@Nullable Node parent;
@@ -225,21 +236,21 @@
 -        public @Nullable List<GuiItemRenderState> itemStates;
 -        public @Nullable List<GuiTextRenderState> textStates;
 -        public @Nullable List<PictureInPictureRenderState> picturesInPictureStates;
-+      public final GuiRenderState.Node parent;
-+      public GuiRenderState.Node up;
-+      public List<GuiElementRenderState> elementStates;
-+      public List<GuiElementRenderState> glyphStates;
-+      public List<GuiItemRenderState> itemStates;
-+      public List<GuiTextRenderState> textStates;
-+      public List<PictureInPictureRenderState> picturesInPictureStates;
++        public final GuiRenderState.Node parent;
++        public GuiRenderState.Node up;
++        public List<GuiElementRenderState> elementStates;
++        public List<GuiElementRenderState> glyphStates;
++        public List<GuiItemRenderState> itemStates;
++        public List<GuiTextRenderState> textStates;
++        public List<PictureInPictureRenderState> picturesInPictureStates;
  
 -        private Node(final GuiRenderState.@Nullable Node parent) {
-+      private Node(GuiRenderState.Node parent) {
++        private Node(GuiRenderState.Node parent) {
              this.parent = parent;
          }
  
 -        public void addItem(final GuiItemRenderState itemState) {
-+      public void addItem(GuiItemRenderState itemState) {
++        public void addItem(GuiItemRenderState itemState) {
              if (this.itemStates == null) {
                  this.itemStates = new ArrayList<>();
              }
@@ -248,7 +259,7 @@
          }
  
 -        public void addText(final GuiTextRenderState textState) {
-+      public void addText(GuiTextRenderState textState) {
++        public void addText(GuiTextRenderState textState) {
              if (this.textStates == null) {
                  this.textStates = new ArrayList<>();
              }
@@ -257,7 +268,7 @@
          }
  
 -        public void addPicturesInPictureState(final PictureInPictureRenderState picturesInPictureState) {
-+      public void addPicturesInPictureState(PictureInPictureRenderState picturesInPictureState) {
++        public void addPicturesInPictureState(PictureInPictureRenderState picturesInPictureState) {
              if (this.picturesInPictureStates == null) {
                  this.picturesInPictureStates = new ArrayList<>();
              }
@@ -266,7 +277,7 @@
          }
  
 -        public void addGuiElement(final GuiElementRenderState blitState) {
-+      public void addGuiElement(GuiElementRenderState blitState) {
++        public void addGuiElement(GuiElementRenderState blitState) {
              if (this.elementStates == null) {
                  this.elementStates = new ArrayList<>();
              }
@@ -275,7 +286,7 @@
          }
  
 -        public void addGlyph(final GuiElementRenderState glyphState) {
-+      public void addGlyph(GuiElementRenderState glyphState) {
++        public void addGlyph(GuiElementRenderState glyphState) {
              if (this.glyphStates == null) {
                  this.glyphStates = new ArrayList<>();
              }
@@ -283,38 +294,38 @@
              this.glyphStates.add(glyphState);
          }
 +
-+      @Override
-+      public String toString() {
-+         StringBuilder sb = new StringBuilder();
-+         if (this.elementStates != null) {
-+            sb.append("elems: " + this.elementStates.size() + ", ");
++        @Override
++        public String toString() {
++            StringBuilder sb = new StringBuilder();
++            if (this.elementStates != null) {
++                sb.append("elems: " + this.elementStates.size() + ", ");
++            }
++
++            if (this.glyphStates != null) {
++                sb.append("glyphs: " + this.glyphStates.size() + ", ");
++            }
++
++            if (this.itemStates != null) {
++                sb.append("items: " + this.itemStates.size() + ", ");
++            }
++
++            if (this.textStates != null) {
++                sb.append("texts: " + this.textStates.size() + ", ");
++            }
++
++            if (this.picturesInPictureStates != null) {
++                sb.append("pips: " + this.picturesInPictureStates.size() + ", ");
++            }
++
++            if (this.up != null) {
++                sb.append("up: (" + this.up + "), ");
++            }
++
++            return StrUtils.removeSuffix(sb.toString(), ", ");
++        }
      }
  
 -    @OnlyIn(Dist.CLIENT)
-+         if (this.glyphStates != null) {
-+            sb.append("glyphs: " + this.glyphStates.size() + ", ");
-+         }
-+
-+         if (this.itemStates != null) {
-+            sb.append("items: " + this.itemStates.size() + ", ");
-+         }
-+
-+         if (this.textStates != null) {
-+            sb.append("texts: " + this.textStates.size() + ", ");
-+         }
-+
-+         if (this.picturesInPictureStates != null) {
-+            sb.append("pips: " + this.picturesInPictureStates.size() + ", ");
-+         }
-+
-+         if (this.up != null) {
-+            sb.append("up: (" + this.up + "), ");
-+         }
-+
-+         return StrUtils.removeSuffix(sb.toString(), ", ");
-+      }
-+   }
-+
      public enum TraverseRange {
          ALL,
          BEFORE_BLUR,

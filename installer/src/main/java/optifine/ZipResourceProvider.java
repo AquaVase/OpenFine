@@ -6,16 +6,16 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class ZipResourceProvider implements IResourceProvider {
-   private ZipFile zipFile = null;
+    private ZipFile zipFile = null;
 
-   public ZipResourceProvider(ZipFile zipFile) {
-      this.zipFile = zipFile;
-   }
+    public ZipResourceProvider(ZipFile zipFile) {
+        this.zipFile = zipFile;
+    }
 
-   @Override
-   public InputStream getResourceStream(String path) throws IOException {
-      path = Utils.removePrefix(path, "/");
-      ZipEntry zipEntry = this.zipFile.getEntry(path);
-      return zipEntry == null ? null : this.zipFile.getInputStream(zipEntry);
-   }
+    @Override
+    public InputStream getResourceStream(String path) throws IOException {
+        path = Utils.removePrefix(path, "/");
+        ZipEntry zipEntry = this.zipFile.getEntry(path);
+        return zipEntry == null ? null : this.zipFile.getInputStream(zipEntry);
+    }
 }

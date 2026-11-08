@@ -11,37 +11,37 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterSheepWool extends ModelAdapterSheep {
-   public ModelAdapterSheepWool() {
-      super(EntityTypes.SHEEP, "sheep_wool", ModelLayers.SHEEP_WOOL);
-   }
+    public ModelAdapterSheepWool() {
+        super(EntityTypes.SHEEP, "sheep_wool", ModelLayers.SHEEP_WOOL);
+    }
 
-   protected ModelAdapterSheepWool(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterSheepWool(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      ModelAdapterSheepWool ma = new ModelAdapterSheepWool(this.getEntityType(), "sheep_baby_wool", ModelLayers.SHEEP_BABY_WOOL);
-      ma.setBaby(true);
-      ma.setAlias(this.getName());
-      return ma;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        ModelAdapterSheepWool ma = new ModelAdapterSheepWool(this.getEntityType(), "sheep_baby_wool", ModelLayers.SHEEP_BABY_WOOL);
+        ma.setBaby(true);
+        ma.setAlias(this.getName());
+        return ma;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new SheepFurModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new SheepFurModel(root);
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      SheepFurModel model = (SheepFurModel)modelBase;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        SheepFurModel model = (SheepFurModel)modelBase;
 
-      for (SheepWoolLayer layer : (java.lang.Iterable<SheepWoolLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SheepWoolLayer.class))) {
-         if (this.isBaby()) {
-            layer.babyModel = model;
-         } else {
-            layer.adultModel = model;
-         }
-      }
-   }
+        for (SheepWoolLayer layer : (java.lang.Iterable<SheepWoolLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SheepWoolLayer.class))) {
+            if (this.isBaby()) {
+                layer.babyModel = model;
+            } else {
+                layer.adultModel = model;
+            }
+        }
+    }
 }

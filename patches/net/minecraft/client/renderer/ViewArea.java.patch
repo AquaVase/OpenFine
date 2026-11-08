@@ -28,13 +28,13 @@
 -        final int maxSectionY,
 -        final int renderDistance,
 -        final SectionOcclusionGraph sectionOcclusionGraph
-+      SectionRenderDispatcher sectionRenderDispatcher,
-+      int minY,
-+      int maxY,
-+      int minSectionY,
-+      int maxSectionY,
-+      int renderDistance,
-+      SectionOcclusionGraph sectionOcclusionGraph
++        SectionRenderDispatcher sectionRenderDispatcher,
++        int minY,
++        int maxY,
++        int minSectionY,
++        int maxSectionY,
++        int renderDistance,
++        SectionOcclusionGraph sectionOcclusionGraph
      ) {
          this.sectionOcclusionGraph = sectionOcclusionGraph;
          this.minY = minY;
@@ -43,7 +43,7 @@
              section.reset();
          }
 +
-+      this.sections.deleteVboRegions();
++        this.sections.deleteVboRegions();
      }
  
      public int size() {
@@ -52,7 +52,7 @@
      }
  
 -    public boolean repositionCamera(final SectionPos cameraSectionPos) {
-+   public boolean repositionCamera(SectionPos cameraSectionPos) {
++    public boolean repositionCamera(SectionPos cameraSectionPos) {
          boolean result = this.sections.repositionCenter(cameraSectionPos);
          if (result) {
              this.sectionOcclusionGraph.invalidate();
@@ -61,22 +61,22 @@
      }
  
 -    public SectionRenderDispatcher.@Nullable RenderSection getRenderSectionAt(final BlockPos pos) {
-+   public SectionRenderDispatcher.RenderSection getRenderSectionAt(BlockPos pos) {
++    public SectionRenderDispatcher.RenderSection getRenderSectionAt(BlockPos pos) {
          return this.sections.getValueAt(pos);
      }
  
 -    protected SectionRenderDispatcher.@Nullable RenderSection getRenderSection(final long sectionNode) {
-+   protected SectionRenderDispatcher.RenderSection getRenderSection(long sectionNode) {
++    protected SectionRenderDispatcher.RenderSection getRenderSection(long sectionNode) {
          return this.sections.getValue(sectionNode);
      }
 -}
 \ No newline at end of file
 +
-+   public int getHighestUsedChunkIndex(int chunkX, int minChunkIndex, int chunkZ) {
-+      return this.sections.getHighestUsedChunkIndex(chunkX, minChunkIndex, chunkZ);
-+   }
++    public int getHighestUsedChunkIndex(int chunkX, int minChunkIndex, int chunkZ) {
++        return this.sections.getHighestUsedChunkIndex(chunkX, minChunkIndex, chunkZ);
++    }
 +
-+   public Iterator<SectionRenderDispatcher.RenderSection> getRenderSectionIterator() {
-+      return this.sections.getRenderSectionIterator();
-+   }
++    public Iterator<SectionRenderDispatcher.RenderSection> getRenderSectionIterator() {
++        return this.sections.getRenderSectionIterator();
++    }
 +}

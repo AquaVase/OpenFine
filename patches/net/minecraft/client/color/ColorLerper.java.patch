@@ -18,7 +18,7 @@
      };
  
 -    public static int getLerpedColor(final ColorLerper.Type type, final float tick) {
-+   public static int getLerpedColor(ColorLerper.Type type, float tick) {
++    public static int getLerpedColor(ColorLerper.Type type, float tick) {
          int tickCount = Mth.floor(tick);
          int value = tickCount / type.colorDuration;
          int colorCount = type.colors.length;
@@ -26,16 +26,16 @@
          float subStep = (tickCount % type.colorDuration + Mth.frac(tick)) / type.colorDuration;
          int color1 = type.getColor(type.colors[c1]);
          int color2 = type.getColor(type.colors[c2]);
-+      if (Config.isCustomColors() && type == ColorLerper.Type.SHEEP) {
-+         color1 = CustomColors.getSheepColors(type.colors[c1], color1);
-+         color2 = CustomColors.getSheepColors(type.colors[c2], color2);
-+      }
++        if (Config.isCustomColors() && type == ColorLerper.Type.SHEEP) {
++            color1 = CustomColors.getSheepColors(type.colors[c1], color1);
++            color2 = CustomColors.getSheepColors(type.colors[c2], color2);
++        }
 +
          return ARGB.srgbLerp(subStep, color1, color2);
      }
  
 -    private static int getModifiedColor(final DyeColor color, final float brightness) {
-+   private static int getModifiedColor(DyeColor color, float brightness) {
++    private static int getModifiedColor(DyeColor color, float brightness) {
          if (color == DyeColor.WHITE) {
              return -1644826;
          }
@@ -52,7 +52,7 @@
          private final DyeColor[] colors;
  
 -        Type(final int colorDuration, final DyeColor[] colors, final float brightness) {
-+      Type(int colorDuration, DyeColor[] colors, float brightness) {
++        Type(int colorDuration, DyeColor[] colors, float brightness) {
              this.colorDuration = colorDuration;
              this.colorByDye = Maps.newHashMap(
                  Arrays.stream(colors).collect(Collectors.toMap(d -> (DyeColor)d, color -> ColorLerper.getModifiedColor(color, brightness)))
@@ -61,7 +61,7 @@
          }
  
 -        public final int getColor(final DyeColor dyeColor) {
-+      public final int getColor(DyeColor dyeColor) {
++        public final int getColor(DyeColor dyeColor) {
              return this.colorByDye.get(dyeColor);
          }
      }

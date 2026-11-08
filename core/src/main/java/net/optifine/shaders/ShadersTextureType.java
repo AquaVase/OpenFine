@@ -1,16 +1,16 @@
 package net.optifine.shaders;
 
 public enum ShadersTextureType {
-   NORMAL("_n"),
-   SPECULAR("_s");
+    NORMAL("_n"),
+    SPECULAR("_s");
 
-   private String suffix;
+    private String suffix;
 
-   ShadersTextureType(String suffixIn) {
-      this.suffix = suffixIn;
-   }
+    ShadersTextureType(String suffixIn) {
+        this.suffix = suffixIn;
+    }
 
-   public String getSuffix() {
-      return this.suffix;
-   }
+    public String getSuffix() {
+        return this.suffix;
+    }
 }

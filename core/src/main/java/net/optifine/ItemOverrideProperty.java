@@ -7,29 +7,29 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
 public class ItemOverrideProperty {
-   private Identifier location;
-   private float[] values;
+    private Identifier location;
+    private float[] values;
 
-   public ItemOverrideProperty(Identifier location, float[] values) {
-      this.location = location;
-      this.values = (float[])values.clone();
-      Arrays.sort(this.values);
-   }
+    public ItemOverrideProperty(Identifier location, float[] values) {
+        this.location = location;
+        this.values = (float[])values.clone();
+        Arrays.sort(this.values);
+    }
 
-   public Integer getValueIndex(ItemStack stack, ClientLevel world, LivingEntity entity) {
-      return null;
-   }
+    public Integer getValueIndex(ItemStack stack, ClientLevel world, LivingEntity entity) {
+        return null;
+    }
 
-   public Identifier getLocation() {
-      return this.location;
-   }
+    public Identifier getLocation() {
+        return this.location;
+    }
 
-   public float[] getValues() {
-      return this.values;
-   }
+    public float[] getValues() {
+        return this.values;
+    }
 
-   @Override
-   public String toString() {
-      return "location: " + this.location + ", values: [" + Config.arrayToString(this.values) + "]";
-   }
+    @Override
+    public String toString() {
+        return "location: " + this.location + ", values: [" + Config.arrayToString(this.values) + "]";
+    }
 }

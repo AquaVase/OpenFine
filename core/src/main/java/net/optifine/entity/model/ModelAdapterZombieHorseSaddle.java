@@ -13,42 +13,42 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterZombieHorseSaddle extends ModelAdapterZombieHorse {
-   public ModelAdapterZombieHorseSaddle() {
-      super(EntityTypes.ZOMBIE_HORSE, "zombie_horse_saddle", ModelLayers.ZOMBIE_HORSE_SADDLE);
-   }
+    public ModelAdapterZombieHorseSaddle() {
+        super(EntityTypes.ZOMBIE_HORSE, "zombie_horse_saddle", ModelLayers.ZOMBIE_HORSE_SADDLE);
+    }
 
-   protected ModelAdapterZombieHorseSaddle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
-      super(entityType, name, modelLayer);
-   }
+    protected ModelAdapterZombieHorseSaddle(EntityType entityType, String name, ModelLayerLocation modelLayer) {
+        super(entityType, name, modelLayer);
+    }
 
-   @Override
-   public ModelAdapter makeBaby() {
-      return null;
-   }
+    @Override
+    public ModelAdapter makeBaby() {
+        return null;
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new EquineSaddleModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new EquineSaddleModel(root);
+    }
 
-   @Override
-   public Map<String, String> makeMapParts() {
-      Map<String, String> map = super.makeMapParts();
-      return ModelAdapterHorseSaddle.appendSaddleParts(map);
-   }
+    @Override
+    public Map<String, String> makeMapParts() {
+        Map<String, String> map = super.makeMapParts();
+        return ModelAdapterHorseSaddle.appendSaddleParts(map);
+    }
 
-   @Override
-   protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
-      EquineSaddleModel saddleModel = (EquineSaddleModel)modelBase;
+    @Override
+    protected void modifyAgeableRenderer(AgeableMobRenderer renderer, Model modelBase) {
+        EquineSaddleModel saddleModel = (EquineSaddleModel)modelBase;
 
-      for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
-         if (layer.getLayerType() == LayerType.ZOMBIE_HORSE_SADDLE) {
-            if (this.isBaby()) {
-               layer.babyModel = saddleModel;
-            } else {
-               layer.adultModel = saddleModel;
+        for (SimpleEquipmentLayer layer : (java.lang.Iterable<SimpleEquipmentLayer>)(java.lang.Iterable<?>)(this.getRenderLayers(renderer, SimpleEquipmentLayer.class))) {
+            if (layer.getLayerType() == LayerType.ZOMBIE_HORSE_SADDLE) {
+                if (this.isBaby()) {
+                    layer.babyModel = saddleModel;
+                } else {
+                    layer.adultModel = saddleModel;
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

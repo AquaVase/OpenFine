@@ -34,12 +34,12 @@
      private final BlockModelResolver blockModelResolver;
      private final ItemModelResolver itemModelResolver;
      private final MapRenderer mapRenderer;
-+   private static double itemRenderDistanceSq = 4096.0;
-+   private static boolean renderItemFrame = false;
-+   private static Minecraft mc = Minecraft.getInstance();
++    private static double itemRenderDistanceSq = 4096.0;
++    private static boolean renderItemFrame = false;
++    private static Minecraft mc = Minecraft.getInstance();
  
 -    public ItemFrameRenderer(final EntityRendererProvider.Context context) {
-+   public ItemFrameRenderer(Context context) {
++    public ItemFrameRenderer(Context context) {
          super(context);
          this.blockModelResolver = context.getBlockModelResolver();
          this.itemModelResolver = context.getItemModelResolver();
@@ -47,64 +47,72 @@
      }
  
 -    protected int getBlockLightLevel(final T entity, final BlockPos blockPos) {
-+   protected int getBlockLightLevel(T entity, BlockPos blockPos) {
++    protected int getBlockLightLevel(T entity, BlockPos blockPos) {
          return entity.is(EntityTypes.GLOW_ITEM_FRAME) ? Math.max(5, super.getBlockLightLevel(entity, blockPos)) : super.getBlockLightLevel(entity, blockPos);
      }
  
 -    public void submit(
 -        final ItemFrameRenderState state, final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final CameraRenderState camera
 -    ) {
-+   public void submit(ItemFrameRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
++    public void submit(ItemFrameRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
          super.submit(state, poseStack, submitNodeCollector, camera);
          poseStack.pushPose();
          Direction direction = state.direction;
-@@ -82,6 +85,7 @@
+@@ -82,38 +85,45 @@
          if (state.mapId != null) {
              int rotation = state.rotation % 4 * 2;
              poseStack.mulPose(Axis.ZP.rotationDegrees(rotation * 360.0F / 8.0F));
-+         if (!Reflector.ForgeEventFactoryClient_onRenderItemInFrame.callBoolean(state, this, poseStack, submitNodeCollector, state.lightCoords)) {
-             poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
-             float s = 0.0078125F;
-             poseStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
-@@ -89,31 +93,37 @@
-             poseStack.translate(0.0F, 0.0F, -1.0F);
-             int lightCoords = this.getLightCoords(state.isGlowFrame, 15728850, state.lightCoords);
-             this.mapRenderer.render(state.mapRenderState, poseStack, submitNodeCollector, true, lightCoords);
-+         }
+-            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+-            float s = 0.0078125F;
+-            poseStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
+-            poseStack.translate(-64.0F, -64.0F, 0.0F);
+-            poseStack.translate(0.0F, 0.0F, -1.0F);
+-            int lightCoords = this.getLightCoords(state.isGlowFrame, 15728850, state.lightCoords);
+-            this.mapRenderer.render(state.mapRenderState, poseStack, submitNodeCollector, true, lightCoords);
++            if (!Reflector.ForgeEventFactoryClient_onRenderItemInFrame.callBoolean(state, this, poseStack, submitNodeCollector, state.lightCoords)) {
++                poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
++                float s = 0.0078125F;
++                poseStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
++                poseStack.translate(-64.0F, -64.0F, 0.0F);
++                poseStack.translate(0.0F, 0.0F, -1.0F);
++                int lightCoords = this.getLightCoords(state.isGlowFrame, 15728850, state.lightCoords);
++                this.mapRenderer.render(state.mapRenderState, poseStack, submitNodeCollector, true, lightCoords);
++            }
          } else if (!state.item.isEmpty()) {
              poseStack.mulPose(Axis.ZP.rotationDegrees(state.rotation * 360.0F / 8.0F));
              int lightVal = this.getLightCoords(state.isGlowFrame, 15728880, state.lightCoords);
              poseStack.scale(0.5F, 0.5F, 0.5F);
-+         renderItemFrame = true;
-+         if (this.isRenderItem(state.entity)) {
-             state.item.submit(poseStack, submitNodeCollector, lightVal, OverlayTexture.NO_OVERLAY, state.outlineColor);
+-            state.item.submit(poseStack, submitNodeCollector, lightVal, OverlayTexture.NO_OVERLAY, state.outlineColor);
++            renderItemFrame = true;
++            if (this.isRenderItem(state.entity)) {
++                state.item.submit(poseStack, submitNodeCollector, lightVal, OverlayTexture.NO_OVERLAY, state.outlineColor);
++            }
++
++            renderItemFrame = false;
          }
  
-+         renderItemFrame = false;
-+      }
-+
          poseStack.popPose();
      }
  
 -    private int getLightCoords(final boolean isGlowFrame, final int glowLightCoords, final int originalLightCoords) {
-+   private int getLightCoords(boolean isGlowFrame, int glowLightCoords, int originalLightCoords) {
++    private int getLightCoords(boolean isGlowFrame, int glowLightCoords, int originalLightCoords) {
          return isGlowFrame ? glowLightCoords : originalLightCoords;
      }
  
 -    public Vec3 getRenderOffset(final ItemFrameRenderState state) {
-+   public Vec3 getRenderOffset(ItemFrameRenderState state) {
++    public Vec3 getRenderOffset(ItemFrameRenderState state) {
          return new Vec3(state.direction.getStepX() * 0.3F, -0.25, state.direction.getStepZ() * 0.3F);
      }
  
 -    protected boolean shouldShowName(final T entity, final double distanceToCameraSq) {
-+   protected boolean shouldShowName(T entity, double distanceToCameraSq) {
++    protected boolean shouldShowName(T entity, double distanceToCameraSq) {
          return !Minecraft.getInstance().gui.hud.isHidden()
              && this.entityRenderDispatcher.crosshairPickEntity == entity
              && entity.getItem().getCustomName() != null;
      }
  
 -    protected Component getNameTag(final T entity) {
-+   protected Component getNameTag(T entity) {
++    protected Component getNameTag(T entity) {
          return entity.getItem().getHoverName();
      }
  
@@ -113,7 +121,7 @@
      }
  
 -    public void extractRenderState(final T entity, final ItemFrameRenderState state, final float partialTicks) {
-+   public void extractRenderState(T entity, ItemFrameRenderState state, float partialTicks) {
++    public void extractRenderState(T entity, ItemFrameRenderState state, float partialTicks) {
          super.extractRenderState(entity, state, partialTicks);
          state.direction = entity.getDirection();
          ItemStack itemStack = entity.getItem();
@@ -124,30 +132,30 @@
 -}
 \ No newline at end of file
 +
-+   private boolean isRenderItem(Entity itemFrame) {
-+      if (Shaders.isShadowPass) {
-+         return false;
-+      }
-+
-+      if (!Config.zoomMode) {
-+         Entity viewEntity = mc.getCameraEntity();
-+         double distSq = itemFrame.distanceToSqr(viewEntity.getX(), viewEntity.getY(), viewEntity.getZ());
-+         if (distSq > itemRenderDistanceSq) {
++    private boolean isRenderItem(Entity itemFrame) {
++        if (Shaders.isShadowPass) {
 +            return false;
-+         }
-+      }
++        }
 +
-+      return true;
-+   }
++        if (!Config.zoomMode) {
++            Entity viewEntity = mc.getCameraEntity();
++            double distSq = itemFrame.distanceToSqr(viewEntity.getX(), viewEntity.getY(), viewEntity.getZ());
++            if (distSq > itemRenderDistanceSq) {
++                return false;
++            }
++        }
 +
-+   public static void updateItemRenderDistance() {
-+      Minecraft mc = Minecraft.getInstance();
-+      double fov = Config.limit(mc.options.fov().get(), 1, 120);
-+      double itemRenderDistance = Math.max(6.0 * mc.getWindow().getHeight() / fov, 16.0);
-+      itemRenderDistanceSq = itemRenderDistance * itemRenderDistance;
-+   }
++        return true;
++    }
 +
-+   public static boolean isRenderItemFrame() {
-+      return renderItemFrame;
-+   }
++    public static void updateItemRenderDistance() {
++        Minecraft mc = Minecraft.getInstance();
++        double fov = Config.limit(mc.options.fov().get(), 1, 120);
++        double itemRenderDistance = Math.max(6.0 * mc.getWindow().getHeight() / fov, 16.0);
++        itemRenderDistanceSq = itemRenderDistance * itemRenderDistance;
++    }
++
++    public static boolean isRenderItemFrame() {
++        return renderItemFrame;
++    }
 +}

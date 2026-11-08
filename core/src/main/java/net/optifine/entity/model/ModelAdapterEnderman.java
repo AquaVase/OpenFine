@@ -10,17 +10,17 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.world.entity.EntityTypes;
 
 public class ModelAdapterEnderman extends ModelAdapterHumanoid {
-   public ModelAdapterEnderman() {
-      super(EntityTypes.ENDERMAN, "enderman", ModelLayers.ENDERMAN);
-   }
+    public ModelAdapterEnderman() {
+        super(EntityTypes.ENDERMAN, "enderman", ModelLayers.ENDERMAN);
+    }
 
-   @Override
-   protected Model makeModel(ModelPart root) {
-      return new EndermanModel(root);
-   }
+    @Override
+    protected Model makeModel(ModelPart root) {
+        return new EndermanModel(root);
+    }
 
-   @Override
-   protected LivingEntityRenderer makeLivingRenderer(Context context) {
-      return new EndermanRenderer(context);
-   }
+    @Override
+    protected LivingEntityRenderer makeLivingRenderer(Context context) {
+        return new EndermanRenderer(context);
+    }
 }

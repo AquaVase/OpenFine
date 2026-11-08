@@ -12,16 +12,16 @@
 -        double relativeX = position.x() - integralX;
 -        double relativeY = position.y() - integralY;
 -        double relativeZ = position.z() - integralZ;
-+   public static <V> void sample(Vec3 position, GaussianSampler.Sampler<V> sampler, GaussianSampler.Accumulator<V> accumulator) {
-+      double px = position.x - 0.5;
-+      double py = position.y - 0.5;
-+      double pz = position.z - 0.5;
-+      int integralX = Mth.floor(px);
-+      int integralY = Mth.floor(py);
-+      int integralZ = Mth.floor(pz);
-+      double relativeX = px - integralX;
-+      double relativeY = py - integralY;
-+      double relativeZ = pz - integralZ;
++    public static <V> void sample(Vec3 position, GaussianSampler.Sampler<V> sampler, GaussianSampler.Accumulator<V> accumulator) {
++        double px = position.x - 0.5;
++        double py = position.y - 0.5;
++        double pz = position.z - 0.5;
++        int integralX = Mth.floor(px);
++        int integralY = Mth.floor(py);
++        int integralZ = Mth.floor(pz);
++        double relativeX = px - integralX;
++        double relativeY = py - integralY;
++        double relativeZ = pz - integralZ;
  
          for (int z = 0; z < 6; z++) {
              double weightZ = Mth.lerp(relativeZ, GAUSSIAN_SAMPLE_KERNEL[z + 1], GAUSSIAN_SAMPLE_KERNEL[z]);
@@ -29,19 +29,19 @@
          }
      }
  
-+   public static <V> void sampleM(Vec3 vectorIn, GaussianSampler.Sampler<V> samplerIn, GaussianSampler.Accumulator<V> accumulatorIn) {
-+   }
++    public static <V> void sampleM(Vec3 vectorIn, GaussianSampler.Sampler<V> samplerIn, GaussianSampler.Accumulator<V> accumulatorIn) {
++    }
 +
      @FunctionalInterface
      public interface Accumulator<V> {
 -        void accumulate(double weight, V value);
-+      void accumulate(double var1, V var3);
++        void accumulate(double var1, V var3);
      }
  
      @FunctionalInterface
      public interface Sampler<V> {
 -        V get(int x, int y, int z);
-+      V get(int var1, int var2, int var3);
++        V get(int var1, int var2, int var3);
      }
 -}
 \ No newline at end of file

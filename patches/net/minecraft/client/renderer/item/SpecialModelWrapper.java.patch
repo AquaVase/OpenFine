@@ -30,7 +30,7 @@
      private final Matrix4fc transformation;
  
 -    public SpecialModelWrapper(final SpecialModelRenderer<T> specialRenderer, final ModelRenderProperties properties, final Matrix4fc transformation) {
-+   public SpecialModelWrapper(SpecialModelRenderer<T> specialRenderer, ModelRenderProperties properties, Matrix4fc transformation) {
++    public SpecialModelWrapper(SpecialModelRenderer<T> specialRenderer, ModelRenderProperties properties, Matrix4fc transformation) {
          this.specialRenderer = specialRenderer;
          this.properties = properties;
          this.extents = Suppliers.memoize(() -> {
@@ -45,11 +45,11 @@
 -        final @Nullable ClientLevel level,
 -        final @Nullable ItemOwner owner,
 -        final int seed
-+      ItemStackRenderState output, ItemStack item, ItemModelResolver resolver, ItemDisplayContext displayContext, ClientLevel level, ItemOwner owner, int seed
++        ItemStackRenderState output, ItemStack item, ItemModelResolver resolver, ItemDisplayContext displayContext, ClientLevel level, ItemOwner owner, int seed
      ) {
          output.appendModelIdentityElement(this);
          ItemStackRenderState.LayerRenderState layer = output.newLayer();
-+      layer.setItemStack(item);
++        layer.setItemStack(item);
          if (item.hasFoil()) {
              ItemStackRenderState.FoilType foilType = ItemStackRenderState.FoilType.STANDARD;
              layer.setFoilType(foilType);
@@ -59,8 +59,8 @@
  
 -    @OnlyIn(Dist.CLIENT)
 -    public record Unbaked(Identifier base, Optional<Transformation> transformation, SpecialModelRenderer.Unbaked<?> specialModel) implements ItemModel.Unbaked {
-+   public record Unbaked(Identifier base, Optional<Transformation> transformation, SpecialModelRenderer.Unbaked<?> specialModel)
-+      implements net.minecraft.client.renderer.item.ItemModel.Unbaked {
++    public record Unbaked(Identifier base, Optional<Transformation> transformation, SpecialModelRenderer.Unbaked<?> specialModel)
++        implements net.minecraft.client.renderer.item.ItemModel.Unbaked {
          public static final MapCodec<SpecialModelWrapper.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
              i -> i.group(
                      Identifier.CODEC.fieldOf("base").forGetter(SpecialModelWrapper.Unbaked::base),
@@ -69,13 +69,13 @@
  
          @Override
 -        public void resolveDependencies(final ResolvableModel.Resolver resolver) {
-+      public void resolveDependencies(Resolver resolver) {
++        public void resolveDependencies(Resolver resolver) {
              resolver.markDependency(this.base);
          }
  
          @Override
 -        public ItemModel bake(final ItemModel.BakingContext context, final Matrix4fc transformation) {
-+      public ItemModel bake(BakingContext context, Matrix4fc transformation) {
++        public ItemModel bake(BakingContext context, Matrix4fc transformation) {
              Matrix4fc modelTransform = Transformation.compose(transformation, this.transformation);
              SpecialModelRenderer<?> bakedSpecialModel = this.specialModel.bake(context);
              if (bakedSpecialModel == null) {
@@ -84,7 +84,7 @@
          }
  
 -        private ModelRenderProperties getProperties(final ItemModel.BakingContext context) {
-+      private ModelRenderProperties getProperties(BakingContext context) {
++        private ModelRenderProperties getProperties(BakingContext context) {
              ModelBaker baker = context.blockModelBaker();
              ResolvedModel model = baker.getModel(this.base);
              TextureSlots textureSlots = model.getTopTextureSlots();

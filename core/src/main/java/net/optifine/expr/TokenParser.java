@@ -8,49 +8,49 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TokenParser {
-   public static Token[] parse(String str) throws IOException, ParseException {
-      Reader r = new StringReader(str);
-      PushbackReader pr = new PushbackReader(r);
-      List<Token> list = new ArrayList<>();
+    public static Token[] parse(String str) throws IOException, ParseException {
+        Reader r = new StringReader(str);
+        PushbackReader pr = new PushbackReader(r);
+        List<Token> list = new ArrayList<>();
 
-      while (true) {
-         int i = pr.read();
-         if (i < 0) {
-            return list.toArray(new Token[list.size()]);
-         }
-
-         char ch = (char)i;
-         if (!Character.isWhitespace(ch)) {
-            TokenType type = TokenType.getTypeByFirstChar(ch);
-            if (type == null) {
-               throw new ParseException("Invalid character: '" + ch + "', in: " + str);
+        while (true) {
+            int i = pr.read();
+            if (i < 0) {
+                return list.toArray(new Token[list.size()]);
             }
 
-            Token token = readToken(ch, type, pr);
-            list.add(token);
-         }
-      }
-   }
+            char ch = (char)i;
+            if (!Character.isWhitespace(ch)) {
+                TokenType type = TokenType.getTypeByFirstChar(ch);
+                if (type == null) {
+                    throw new ParseException("Invalid character: '" + ch + "', in: " + str);
+                }
 
-   private static Token readToken(char chFirst, TokenType type, PushbackReader pr) throws IOException {
-      StringBuffer sb = new StringBuffer();
-      sb.append(chFirst);
+                Token token = readToken(ch, type, pr);
+                list.add(token);
+            }
+        }
+    }
 
-      while (true) {
-         int i = pr.read();
-         if (i < 0) {
-            break;
-         }
+    private static Token readToken(char chFirst, TokenType type, PushbackReader pr) throws IOException {
+        StringBuffer sb = new StringBuffer();
+        sb.append(chFirst);
 
-         char ch = (char)i;
-         if (!type.hasCharNext(ch)) {
-            pr.unread(ch);
-            break;
-         }
+        while (true) {
+            int i = pr.read();
+            if (i < 0) {
+                break;
+            }
 
-         sb.append(ch);
-      }
+            char ch = (char)i;
+            if (!type.hasCharNext(ch)) {
+                pr.unread(ch);
+                break;
+            }
 
-      return new Token(type, sb.toString());
-   }
+            sb.append(ch);
+        }
+
+        return new Token(type, sb.toString());
+    }
 }
