@@ -1,5 +1,6 @@
 package optifine;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -49,50 +50,53 @@ public class Patcher {
     }
 
     public static void process(File baseFile, File diffFile, File modFile) throws Exception {
-        ZipFile diffZip = new ZipFile(diffFile);
-        Map<String, String> cfgMap = getConfigurationMap(diffZip);
-        Pattern[] patterns = getConfigurationPatterns(cfgMap);
-        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(modFile));
-        ZipFile baseZip = new ZipFile(baseFile);
-        ZipResourceProvider zrp = new ZipResourceProvider(baseZip);
-        Enumeration diffZipEntries = diffZip.entries();
+        try (ZipFile diffZip = new ZipFile(diffFile);
+             ZipFile baseZip = new ZipFile(baseFile);
+             ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(modFile)))) {
+            PatchConfiguration configuration = new PatchConfiguration(getConfigurationMap(diffZip));
+            ZipResourceProvider zrp = new ZipResourceProvider(baseZip);
+            Enumeration<? extends ZipEntry> diffZipEntries = diffZip.entries();
+            byte[] copyBuffer = new byte[8192];
 
-        while (diffZipEntries.hasMoreElements()) {
-            ZipEntry diffZipEntry = (ZipEntry)diffZipEntries.nextElement();
-            InputStream in = diffZip.getInputStream(diffZipEntry);
-            byte[] bytes = Utils.readAll(in);
-            String name = diffZipEntry.getName();
-            if (name.startsWith("patch/") && name.endsWith(".xdelta")) {
-                name = name.substring("patch/".length());
-                name = name.substring(0, name.length() - ".xdelta".length());
-                byte[] bytesMod = applyPatch(name, bytes, patterns, cfgMap, zrp);
-                String nameMd5 = "patch/" + name + ".md5";
-                ZipEntry diffZipEntryMd5 = diffZip.getEntry(nameMd5);
-                if (diffZipEntryMd5 != null) {
-                    byte[] md5 = Utils.readAll(diffZip.getInputStream(diffZipEntryMd5));
-                    String md5Str = new String(md5, "ASCII");
-                    byte[] md5Mod = HashUtils.getHashMd5(bytesMod);
-                    String md5ModStr = HashUtils.toHexString(md5Mod);
-                    if (!md5Str.equals(md5ModStr)) {
-                        throw new Exception("MD5 not matching, name: " + name + ", saved: " + md5Str + ", patched: " + md5ModStr);
-                    }
+            while (diffZipEntries.hasMoreElements()) {
+                ZipEntry diffZipEntry = diffZipEntries.nextElement();
+                String name = diffZipEntry.getName();
+                if (name.startsWith(PREFIX_PATCH) && name.endsWith(SUFFIX_MD5)) {
+                    continue;
                 }
+                if (name.startsWith(PREFIX_PATCH) && name.endsWith(SUFFIX_DELTA)) {
+                    byte[] bytes = Utils.readAll(diffZip.getInputStream(diffZipEntry));
+                    name = name.substring(PREFIX_PATCH.length(), name.length() - SUFFIX_DELTA.length());
+                    byte[] bytesMod = applyPatch(name, bytes, configuration, zrp);
+                    String nameMd5 = PREFIX_PATCH + name + SUFFIX_MD5;
+                    ZipEntry diffZipEntryMd5 = diffZip.getEntry(nameMd5);
+                    if (diffZipEntryMd5 != null) {
+                        byte[] md5 = Utils.readAll(diffZip.getInputStream(diffZipEntryMd5));
+                        String md5Str = new String(md5, "ASCII");
+                        byte[] md5Mod = HashUtils.getHashMd5(bytesMod);
+                        String md5ModStr = HashUtils.toHexString(md5Mod);
+                        if (!md5Str.equals(md5ModStr)) {
+                            throw new Exception("MD5 not matching, name: " + name + ", saved: " + md5Str + ", patched: " + md5ModStr);
+                        }
+                    }
 
-                ZipEntry zipEntryMod = new ZipEntry(name);
-                zipOut.putNextEntry(zipEntryMod);
-                zipOut.write(bytesMod);
-                zipOut.closeEntry();
-                Utils.dbg("Mod: " + name);
-            } else if (!name.startsWith("patch/") || !name.endsWith(".md5")) {
-                ZipEntry zipEntrySame = new ZipEntry(name);
-                zipOut.putNextEntry(zipEntrySame);
-                zipOut.write(bytes);
-                zipOut.closeEntry();
-                Utils.dbg("Same: " + zipEntrySame.getName());
+                    zipOut.putNextEntry(new ZipEntry(name));
+                    zipOut.write(bytesMod);
+                    zipOut.closeEntry();
+                    Utils.dbg("Mod: " + name);
+                } else {
+                    zipOut.putNextEntry(new ZipEntry(name));
+                    try (InputStream in = diffZip.getInputStream(diffZipEntry)) {
+                        int length;
+                        while ((length = in.read(copyBuffer)) >= 0) {
+                            zipOut.write(copyBuffer, 0, length);
+                        }
+                    }
+                    zipOut.closeEntry();
+                    Utils.dbg("Same: " + name);
+                }
             }
         }
-
-        zipOut.close();
     }
 
     public static byte[] applyPatch(String name, byte[] bytesDiff, Pattern[] patterns, Map<String, String> cfgMap, IResourceProvider resourceProvider) throws IOException, PatchException {
@@ -102,6 +106,21 @@ public class Patcher {
             throw new IOException("No patch base, name: " + name + ", patterns: " + Utils.arrayToCommaSeparatedString(patterns));
         }
 
+        return applyPatch(bytesDiff, baseName, resourceProvider);
+    }
+
+    public static byte[] applyPatch(String name, byte[] bytesDiff, PatchConfiguration configuration, IResourceProvider resourceProvider)
+        throws IOException, PatchException {
+        name = Utils.removePrefix(name, "/");
+        String baseName = configuration.getPatchBase(name);
+        if (baseName == null) {
+            throw new IOException("No patch base, name: " + name);
+        }
+        return applyPatch(bytesDiff, baseName, resourceProvider);
+    }
+
+    private static byte[] applyPatch(byte[] bytesDiff, String baseName, IResourceProvider resourceProvider)
+        throws IOException, PatchException {
         InputStream baseIn = resourceProvider.getResourceStream(baseName);
         if (baseIn == null) {
             throw new IOException("Base resource not found: " + baseName);
@@ -175,19 +194,22 @@ public class Patcher {
             Pattern pattern = patterns[i];
             Matcher matcher = pattern.matcher(name);
             if (matcher.matches()) {
-                String base = cfgMap.get(pattern.pattern());
-                if (base != null && base.trim().equals("*")) {
-                    return name;
-                }
-
-                for (int g = 1; g <= matcher.groupCount(); g++) {
-                    base = base.replace("$" + g, matcher.group(g));
-                }
-
-                return base;
+                return resolvePatchBase(name, cfgMap.get(pattern.pattern()), matcher);
             }
         }
 
         return null;
+    }
+
+    static String resolvePatchBase(String name, String base, Matcher matcher) {
+        if (base != null && base.trim().equals("*")) {
+            return name;
+        }
+        if (matcher != null) {
+            for (int g = 1; g <= matcher.groupCount(); g++) {
+                base = base.replace("$" + g, matcher.group(g));
+            }
+        }
+        return base;
     }
 }

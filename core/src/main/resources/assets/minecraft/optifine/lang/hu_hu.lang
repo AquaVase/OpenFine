@@ -742,9 +742,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Nagyobb képernyőfotó készítéséhez t�
 of.options.SCREENSHOT_SIZE.tooltip.5=Nem kompatibilis a GYors Leképzéssel és az Élsimítással.
 of.options.SCREENSHOT_SIZE.tooltip.6=Szükséges GPU framebuffer támogatás.
 
-of.options.SHOW_GL_ERRORS=GL Hibák Mutatása
-of.options.SHOW_GL_ERRORS.tooltip.1=GL Hibák Mutatása
-of.options.SHOW_GL_ERRORS.tooltip.2=OpenGL hibák megjelennek a chatben amikor be van kapcsolva.
+of.options.SHOW_GL_ERRORS=Grafikus API hibáinak megjelenítése
+of.options.SHOW_GL_ERRORS.tooltip.1=Grafikus API hibáinak megjelenítése
+of.options.SHOW_GL_ERRORS.tooltip.2=Ha be van kapcsolva, a grafikus API hibái megjelennek a csevegésben.
 of.options.SHOW_GL_ERRORS.tooltip.3=CSak akkor kapcsold ki, ha ismert konfliktus van, és
 of.options.SHOW_GL_ERRORS.tooltip.4=a hiba javíthatatlan.
 of.options.SHOW_GL_ERRORS.tooltip.5=Amikor ki van kapcsolva, ugyanúgy rögziítve lesznek

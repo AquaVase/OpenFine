@@ -787,9 +787,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4= ขนาดของภาพยิ่ง
 of.options.SCREENSHOT_SIZE.tooltip.5= ไม่เข้ากับระบบ ลบรอยหยัก
 of.options.SCREENSHOT_SIZE.tooltip.6= ต้องการการรองรับของเฟรมบัฟเฟอร์การ์ดจอ
 
-of.options.SHOW_GL_ERRORS=แสดงข้อผิดพลาดของ GL
-of.options.SHOW_GL_ERRORS.tooltip.1=แสดงข้อผิดพลาดของ OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2= เมื่อเปิดแล้ว ข้อผิดพลาดของ OpenGL จะถูกแสดงในช่องแชท
+of.options.SHOW_GL_ERRORS=แสดงข้อผิดพลาดของ API กราฟิก
+of.options.SHOW_GL_ERRORS.tooltip.1=แสดงข้อผิดพลาดของ API กราฟิก
+of.options.SHOW_GL_ERRORS.tooltip.2=เมื่อเปิดใช้งาน ข้อผิดพลาดของ API กราฟิกจะแสดงในช่องแชท
 of.options.SHOW_GL_ERRORS.tooltip.3= ให้ปิดถ้ามีปัญหาที่ขัดแย้งกันและไม่มีวิธีการแก้ไข
 of.options.SHOW_GL_ERRORS.tooltip.4= เมื่อปิดแล้ว ข้อผิดพลาดจะยังคงถูกบันทึกใน บันทึกข้อผิดพลาด และอาจ
 of.options.SHOW_GL_ERRORS.tooltip.5=ทำให้อัตราเฟรมลดลงเหมือนเดิม

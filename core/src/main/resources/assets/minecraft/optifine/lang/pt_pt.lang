@@ -809,9 +809,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Capturas de ecrã maiores podem precisar de
 of.options.SCREENSHOT_SIZE.tooltip.5=memória. Não é compatível com antiserrilhamento.
 of.options.SCREENSHOT_SIZE.tooltip.6=Requer suporte de framebuffer da GPU.
 
-of.options.SHOW_GL_ERRORS=Exibir erros GL
-of.options.SHOW_GL_ERRORS.tooltip.1=Exibir os erros do OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Quando ativado, os erros do OpenGL são exibidos no
+of.options.SHOW_GL_ERRORS=Exibir erros da API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.1=Exibir erros da API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.2=Quando ativado, os erros da API gráfica são exibidos no
 of.options.SHOW_GL_ERRORS.tooltip.3=chat. Desativa apenas se existir um conflito
 of.options.SHOW_GL_ERRORS.tooltip.4=conhecido e esse erro não puder ser corrigido.
 of.options.SHOW_GL_ERRORS.tooltip.5=Quando desativado, os erros são registados no log 

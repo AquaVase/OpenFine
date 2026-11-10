@@ -159,6 +159,11 @@ public class ShaderMacros {
     public static String getFixedMacroLines() {
         StringBuilder sb = new StringBuilder();
         addMacroLine(sb, "MC_VERSION", Config.getMinecraftVersionInt());
+        if (Config.isVulkan() && com.mojang.blaze3d.systems.RenderSystem.getDevice().getBackend()
+            instanceof com.mojang.blaze3d.vulkan.VulkanDevice device
+            && net.optifine.shaders.vulkan.VulkanRayTracingFeatures.isEnabled(device.vkDevice())) {
+            addMacroLine(sb, "MC_OPENFINE_RAY_QUERY");
+        }
         addMacroLine(sb, "MC_GL_VERSION " + Config.getGlVersion().toInt());
         addMacroLine(sb, "MC_GLSL_VERSION " + Config.getGlslVersion().toInt());
         addMacroLine(sb, getOs());

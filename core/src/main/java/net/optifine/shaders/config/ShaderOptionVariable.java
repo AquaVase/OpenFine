@@ -31,7 +31,7 @@ public class ShaderOptionVariable extends ShaderOption {
     @Override
     public String getValueColor(String val) {
         String valLow = val.toLowerCase();
-        return !valLow.equals("false") && !valLow.equals("off") ? "Â§a" : "Â§c";
+        return !valLow.equals("false") && !valLow.equals("off") ? "\u00a7a" : "\u00a7c";
     }
 
     @Override

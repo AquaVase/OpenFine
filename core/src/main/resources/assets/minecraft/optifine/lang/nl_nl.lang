@@ -787,9 +787,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Grotere schermafbeeldingen maken neemt meer
 of.options.SCREENSHOT_SIZE.tooltip.5=in beslag. Niet compatibel met Snelle Weergave en Anti-
 of.options.SCREENSHOT_SIZE.tooltip.6=aliasing. Vereist videokaart met framebufferondersteuning.
 
-of.options.SHOW_GL_ERRORS=OpenGL Errors Tonen
-of.options.SHOW_GL_ERRORS.tooltip.1=OpenGL Errors Tonen
-of.options.SHOW_GL_ERRORS.tooltip.2=OpenGL errors worden in chat weergegeven indien ingeschakeld.
+of.options.SHOW_GL_ERRORS=Grafische API-fouten tonen
+of.options.SHOW_GL_ERRORS.tooltip.1=Grafische API-fouten tonen
+of.options.SHOW_GL_ERRORS.tooltip.2=Indien ingeschakeld worden fouten van de grafische API in de chat weergegeven.
 of.options.SHOW_GL_ERRORS.tooltip.3=Schakel alleen uit als er een bekend conflict is en de
 of.options.SHOW_GL_ERRORS.tooltip.4=errors niet opgelost kunnen worden. Indien uitgeschakeld
 of.options.SHOW_GL_ERRORS.tooltip.5=worden de errors alsnog in de errorlog gelogd en kan

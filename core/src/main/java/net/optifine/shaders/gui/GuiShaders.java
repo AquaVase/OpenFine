@@ -31,16 +31,14 @@ public class GuiShaders extends GuiScreenOF {
     private GuiSlotShaders shaderList;
     private EditBox filterField;
     private boolean saved = false;
-    private static float[] QUALITY_MULTIPLIERS = new float[]{
+    static final float[] QUALITY_MULTIPLIERS = new float[]{
         0.5F, 0.6F, 0.6666667F, 0.75F, 0.8333333F, 0.9F, 1.0F, 1.1666666F, 1.3333334F, 1.5F, 1.6666666F, 1.8F, 2.0F
     };
     private static String[] QUALITY_MULTIPLIER_NAMES = new String[]{
         "0.5x", "0.6x", "0.66x", "0.75x", "0.83x", "0.9x", "1x", "1.16x", "1.33x", "1.5x", "1.66x", "1.8x", "2x"
     };
-    private static float QUALITY_MULTIPLIER_DEFAULT = 1.0F;
-    private static float[] HAND_DEPTH_VALUES = new float[]{0.0625F, 0.125F, 0.25F};
+    static final float[] HAND_DEPTH_VALUES = new float[]{0.0625F, 0.125F, 0.25F};
     private static String[] HAND_DEPTH_NAMES = new String[]{"0.5x", "1x", "2x"};
-    private static float HAND_DEPTH_DEFAULT = 0.125F;
     public static final int EnumOS_UNKNOWN = 0;
     public static final int EnumOS_WINDOWS = 1;
     public static final int EnumOS_OSX = 2;
@@ -75,9 +73,12 @@ public class GuiShaders extends GuiScreenOF {
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.ANTIALIASING, btnX, 0 * stepY + baseY, btnWidth, btnHeight));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.NORMAL_MAP, btnX, 1 * stepY + baseY, btnWidth, btnHeight));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.SPECULAR_MAP, btnX, 2 * stepY + baseY, btnWidth, btnHeight));
-        this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.RENDER_RES_MUL, btnX, 3 * stepY + baseY, btnWidth, btnHeight));
-        this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.SHADOW_RES_MUL, btnX, 4 * stepY + baseY, btnWidth, btnHeight));
-        this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.HAND_DEPTH_MUL, btnX, 5 * stepY + baseY, btnWidth, btnHeight));
+        this.addButton(new GuiSliderEnumShaderOption(EnumShaderOption.RENDER_RES_MUL, btnX, 3 * stepY + baseY, btnWidth, btnHeight,
+            QUALITY_MULTIPLIERS, Shaders.configRenderResMul, value -> this.applySliderValue(EnumShaderOption.RENDER_RES_MUL, value)));
+        this.addButton(new GuiSliderEnumShaderOption(EnumShaderOption.SHADOW_RES_MUL, btnX, 4 * stepY + baseY, btnWidth, btnHeight,
+            QUALITY_MULTIPLIERS, Shaders.configShadowResMul, value -> this.applySliderValue(EnumShaderOption.SHADOW_RES_MUL, value)));
+        this.addButton(new GuiSliderEnumShaderOption(EnumShaderOption.HAND_DEPTH_MUL, btnX, 5 * stepY + baseY, btnWidth, btnHeight,
+            HAND_DEPTH_VALUES, Shaders.configHandDepthMul, value -> this.applySliderValue(EnumShaderOption.HAND_DEPTH_MUL, value)));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.OLD_HAND_LIGHT, btnX, 6 * stepY + baseY, btnWidth, btnHeight));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.OLD_LIGHTING, btnX, 7 * stepY + baseY, btnWidth, btnHeight));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.LAYERED_TRANSPARENCY, btnX, 8 * stepY + baseY, btnWidth, btnHeight));
@@ -91,6 +92,27 @@ public class GuiShaders extends GuiScreenOF {
         this.addButton(new GuiButtonOF(203, btnX, this.height - 25, btnWidth, btnHeight, Lang.get("of.options.shaders.shaderOptions")));
         this.setFocused(this.shaderList);
         this.updateButtons();
+    }
+
+    private void applySliderValue(EnumShaderOption option, float value) {
+        switch (option) {
+            case RENDER_RES_MUL:
+                Shaders.configRenderResMul = value;
+                Shaders.uninit();
+                Shaders.scheduleResize();
+                break;
+            case SHADOW_RES_MUL:
+                Shaders.configShadowResMul = value;
+                Shaders.uninit();
+                Shaders.scheduleResizeShadow();
+                break;
+            case HAND_DEPTH_MUL:
+                Shaders.configHandDepthMul = value;
+                Shaders.uninit();
+                break;
+            default:
+                throw new IllegalArgumentException("Not a slider option: " + option);
+        }
     }
 
     public void updateButtons() {
@@ -118,7 +140,7 @@ public class GuiShaders extends GuiScreenOF {
     }
 
     private void actionPerformed(AbstractWidget guiElement, boolean rightClick) {
-        if (guiElement.active) {
+        if (guiElement.active && !(guiElement instanceof GuiSliderEnumShaderOption)) {
             if (guiElement instanceof GuiButtonEnumShaderOption gbeso) {
                 EnumShaderOption eso = gbeso.getEnumShaderOption();
                 switch (eso) {
@@ -155,24 +177,6 @@ public class GuiShaders extends GuiScreenOF {
 
                         Shaders.uninit();
                         this.minecraft.delayTextureReload();
-                        break;
-                    case RENDER_RES_MUL:
-                        Shaders.configRenderResMul = this.getNextValue(
-                            Shaders.configRenderResMul, QUALITY_MULTIPLIERS, QUALITY_MULTIPLIER_DEFAULT, !rightClick, hasShiftDown()
-                        );
-                        Shaders.uninit();
-                        Shaders.scheduleResize();
-                        break;
-                    case SHADOW_RES_MUL:
-                        Shaders.configShadowResMul = this.getNextValue(
-                            Shaders.configShadowResMul, QUALITY_MULTIPLIERS, QUALITY_MULTIPLIER_DEFAULT, !rightClick, hasShiftDown()
-                        );
-                        Shaders.uninit();
-                        Shaders.scheduleResizeShadow();
-                        break;
-                    case HAND_DEPTH_MUL:
-                        Shaders.configHandDepthMul = this.getNextValue(Shaders.configHandDepthMul, HAND_DEPTH_VALUES, HAND_DEPTH_DEFAULT, !rightClick, hasShiftDown());
-                        Shaders.uninit();
                         break;
                     case OLD_HAND_LIGHT:
                         Shaders.configOldHandLight.nextValue(!rightClick);
@@ -351,7 +355,7 @@ public class GuiShaders extends GuiScreenOF {
         String str = value ? Lang.getOn() : Lang.getOff();
         String color = "";
         if (value != defValue) {
-            color = value ? "Â§a" : "Â§c";
+            color = value ? "\u00a7a" : "\u00a7c";
         }
 
         return color + str;
@@ -367,30 +371,13 @@ public class GuiShaders extends GuiScreenOF {
             text = "FXAA 4x";
         }
 
-        String color = value != valueDef ? "Â§a" : "";
+        String color = value != valueDef ? "\u00a7a" : "";
         return color + text;
     }
 
     public static String toStringValue(float val, float[] values, String[] names) {
         int index = getValueIndex(val, values);
         return names[index];
-    }
-
-    private float getNextValue(float val, float[] values, float valDef, boolean forward, boolean reset) {
-        if (reset) {
-            return valDef;
-        }
-
-        int index = getValueIndex(val, values);
-        if (forward) {
-            if (++index >= values.length) {
-                index = 0;
-            }
-        } else if (--index < 0) {
-            index = values.length - 1;
-        }
-
-        return values[index];
     }
 
     public static int getValueIndex(float val, float[] values) {
@@ -405,12 +392,12 @@ public class GuiShaders extends GuiScreenOF {
     }
 
     public static String toStringQuality(float val, float valDef) {
-        String color = val != valDef ? "Â§a" : "";
+        String color = val != valDef ? "\u00a7a" : "";
         return color + toStringValue(val, QUALITY_MULTIPLIERS, QUALITY_MULTIPLIER_NAMES);
     }
 
     public static String toStringHandDepth(float val, float valDef) {
-        String color = val != valDef ? "Â§a" : "";
+        String color = val != valDef ? "\u00a7a" : "";
         return color + toStringValue(val, HAND_DEPTH_VALUES, HAND_DEPTH_NAMES);
     }
 

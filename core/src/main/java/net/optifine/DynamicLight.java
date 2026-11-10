@@ -1,11 +1,11 @@
 package net.optifine;
 
-import java.util.HashSet;
-import java.util.Set;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.chunk.SectionMesh;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
@@ -19,7 +19,8 @@ public class DynamicLight {
     private double lastPosZ = -2.1474836E9F;
     private int lastLightLevel = 0;
     private long timeCheckMs = 0L;
-    private Set<BlockPos> setLitChunkPos = new HashSet<>();
+    private LongSet setLitChunkPos = new LongOpenHashSet(8);
+    private LongSet setNewChunkPos = new LongOpenHashSet(8);
 
     public DynamicLight(Entity entity) {
         this.entity = entity;
@@ -49,26 +50,27 @@ public class DynamicLight {
             this.lastPosY = posY;
             this.lastPosZ = posZ;
             this.lastLightLevel = lightLevel;
-            Set<BlockPos> setNewPos = new HashSet<>();
+            LongSet setNewPos = this.setNewChunkPos;
+            setNewPos.clear();
             if (lightLevel > 0) {
                 Direction dirX = (Mth.floor(posX) & 15) >= 8 ? Direction.EAST : Direction.WEST;
                 Direction dirY = (Mth.floor(posY) & 15) >= 8 ? Direction.UP : Direction.DOWN;
                 Direction dirZ = (Mth.floor(posZ) & 15) >= 8 ? Direction.SOUTH : Direction.NORTH;
                 long chunkPos = this.getChunkPos(posX, posY, posZ);
                 SectionRenderDispatcher.RenderSection chunk = renderGlobal.getRenderChunk(chunkPos);
-                long chunkPosX = this.getChunkPos(chunk, chunkPos, dirX);
+                long chunkPosX = getChunkPos(chunkPos, dirX);
                 SectionRenderDispatcher.RenderSection chunkX = renderGlobal.getRenderChunk(chunkPosX);
-                long chunkPosZ = this.getChunkPos(chunk, chunkPos, dirZ);
+                long chunkPosZ = getChunkPos(chunkPos, dirZ);
                 SectionRenderDispatcher.RenderSection chunkZ = renderGlobal.getRenderChunk(chunkPosZ);
-                long chunkPosXZ = this.getChunkPos(chunkX, chunkPosX, dirZ);
+                long chunkPosXZ = getChunkPos(chunkPosX, dirZ);
                 SectionRenderDispatcher.RenderSection chunkXZ = renderGlobal.getRenderChunk(chunkPosXZ);
-                long chunkPosY = this.getChunkPos(chunk, chunkPos, dirY);
+                long chunkPosY = getChunkPos(chunkPos, dirY);
                 SectionRenderDispatcher.RenderSection chunkY = renderGlobal.getRenderChunk(chunkPosY);
-                long chunkPosYX = this.getChunkPos(chunkY, chunkPosY, dirX);
+                long chunkPosYX = getChunkPos(chunkPosY, dirX);
                 SectionRenderDispatcher.RenderSection chunkYX = renderGlobal.getRenderChunk(chunkPosYX);
-                long chunkPosYZ = this.getChunkPos(chunkY, chunkPosY, dirZ);
+                long chunkPosYZ = getChunkPos(chunkPosY, dirZ);
                 SectionRenderDispatcher.RenderSection chunkYZ = renderGlobal.getRenderChunk(chunkPosYZ);
-                long chunkPosYXZ = this.getChunkPos(chunkYX, chunkPosYX, dirZ);
+                long chunkPosYXZ = getChunkPos(chunkPosYX, dirZ);
                 SectionRenderDispatcher.RenderSection chunkYXZ = renderGlobal.getRenderChunk(chunkPosYXZ);
                 this.updateChunkLight(chunk, this.setLitChunkPos, setNewPos);
                 this.updateChunkLight(chunkX, this.setLitChunkPos, setNewPos);
@@ -81,6 +83,7 @@ public class DynamicLight {
             }
 
             this.updateLitChunks(renderGlobal);
+            this.setNewChunkPos = this.setLitChunkPos;
             this.setLitChunkPos = setNewPos;
         }
     }
@@ -92,7 +95,7 @@ public class DynamicLight {
         return SectionPos.asLong(cx, cy, cz);
     }
 
-    private long getChunkPos(SectionRenderDispatcher.RenderSection renderChunk, long pos, Direction facing) {
+    private static long getChunkPos(long pos, Direction facing) {
         int x = SectionPos.x(pos);
         int y = SectionPos.y(pos);
         int z = SectionPos.z(pos);
@@ -102,7 +105,7 @@ public class DynamicLight {
         return SectionPos.asLong(x, y, z);
     }
 
-    private void updateChunkLight(SectionRenderDispatcher.RenderSection renderChunk, Set<BlockPos> setPrevPos, Set<BlockPos> setNewPos) {
+    private void updateChunkLight(SectionRenderDispatcher.RenderSection renderChunk, LongSet setPrevPos, LongSet setNewPos) {
         if (renderChunk != null) {
             SectionMesh compiledChunk = renderChunk.getSectionMesh();
             if (compiledChunk != null && !compiledChunk.isEmpty()) {
@@ -111,7 +114,7 @@ public class DynamicLight {
                 renderChunk.setNeedsBackgroundPriorityUpdate(true);
             }
 
-            BlockPos pos = renderChunk.getPosition().immutable();
+            long pos = renderChunk.getSectionPosition().asLong();
             if (setPrevPos != null) {
                 setPrevPos.remove(pos);
             }
@@ -123,8 +126,8 @@ public class DynamicLight {
     }
 
     public void updateLitChunks(LevelRenderer renderGlobal) {
-        for (BlockPos posOld : this.setLitChunkPos) {
-            SectionRenderDispatcher.RenderSection chunkOld = renderGlobal.getRenderChunk(posOld);
+        for (LongIterator positions = this.setLitChunkPos.iterator(); positions.hasNext();) {
+            SectionRenderDispatcher.RenderSection chunkOld = renderGlobal.getRenderChunk(positions.nextLong());
             this.updateChunkLight(chunkOld, null, null);
         }
     }

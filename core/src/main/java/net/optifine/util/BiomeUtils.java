@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.core.BlockPos;
@@ -67,15 +66,6 @@ public class BiomeUtils {
         DRIPSTONE_CAVES = biomeRegistry.get(Biomes.DRIPSTONE_CAVES).get().value();
         LUSH_CAVES = biomeRegistry.get(Biomes.LUSH_CAVES).get().value();
         DEEP_DARK = biomeRegistry.get(Biomes.DEEP_DARK).get().value();
-    }
-
-    private static Biome getBiomeSafe(Registry<Biome> registry, ResourceKey<Biome> biomeKey, Supplier<Biome> biomeDefault) {
-        Biome biome = registry.get(biomeKey).get().value();
-        if (biome == null) {
-            biome = biomeDefault.get();
-        }
-
-        return biome;
     }
 
     public static Registry<Biome> getBiomeRegistry(Level worldIn) {

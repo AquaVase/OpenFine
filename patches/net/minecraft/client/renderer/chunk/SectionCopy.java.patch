@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/chunk/SectionCopy.java
 +++ b/net/minecraft/client/renderer/chunk/SectionCopy.java
-@@ -15,21 +15,19 @@
+@@ -15,21 +15,23 @@
  import net.minecraft.world.level.chunk.LevelChunkSection;
  import net.minecraft.world.level.chunk.PalettedContainer;
  import net.minecraft.world.level.levelgen.DebugLevelSource;
@@ -19,14 +19,19 @@
  
 -    public SectionCopy(final LevelChunk levelChunk, final int sectionIndex) {
 +    public SectionCopy(LevelChunk levelChunk, int sectionIndex) {
++        this(levelChunk, sectionIndex, ImmutableMap.copyOf(levelChunk.getBlockEntities()));
++    }
++
++    SectionCopy(LevelChunk levelChunk, int sectionIndex, Map<BlockPos, BlockEntity> blockEntities) {
          this.levelHeightAccessor = levelChunk;
          this.debug = levelChunk.getLevel().isDebug();
-         this.blockEntities = ImmutableMap.copyOf(levelChunk.getBlockEntities());
+-        this.blockEntities = ImmutableMap.copyOf(levelChunk.getBlockEntities());
++        this.blockEntities = blockEntities;
 +        this.chunk = levelChunk;
          if (levelChunk instanceof EmptyLevelChunk) {
              this.section = null;
          } else {
-@@ -43,11 +41,11 @@
+@@ -43,11 +45,11 @@
          }
      }
  
@@ -40,7 +45,7 @@
          int x = pos.getX();
          int y = pos.getY();
          int z = pos.getZ();
-@@ -77,4 +75,14 @@
+@@ -77,4 +79,14 @@
              }
          }
      }

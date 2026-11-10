@@ -7,6 +7,20 @@ java {
     toolchain { languageVersion = JavaLanguageVersion.of(25) }
 }
 
+def buildInfoDirectory = layout.buildDirectory.dir('generated/resources/buildInfo')
+def buildInfoFile = buildInfoDirectory.map { it.file('buildof.txt') }
+def generateBuildInfo = tasks.register('generateBuildInfo') {
+    outputs.file(buildInfoFile)
+    outputs.upToDateWhen { false }
+    doLast {
+        def output = buildInfoFile.get().asFile
+        output.parentFile.mkdirs()
+        output.setText(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss')) + '\n', 'UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir(buildInfoDirectory)
+tasks.named('processResources') { dependsOn generateBuildInfo }
+
 // OptiFine and patched Minecraft reference each other's added members.
 // Compile them together in the root task, then give each module its own output.
 def jointCompile = rootProject.tasks.named('compileJava', JavaCompile)

@@ -786,9 +786,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Tamanhos maiores requerem mais memória.
 of.options.SCREENSHOT_SIZE.tooltip.5=Incompatível com a suavização.
 of.options.SCREENSHOT_SIZE.tooltip.6=Requer o suporte de framebuffer da GPU.
 
-of.options.SHOW_GL_ERRORS=Erros da OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar erros da OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Os erros da OpenGL são exibidos no chat.
+of.options.SHOW_GL_ERRORS=Mostrar erros da API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar erros da API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.2=Quando ativado, os erros da API gráfica são exibidos no chat.
 of.options.SHOW_GL_ERRORS.tooltip.3=Desativar apenas se houver conflitos e os erros
 of.options.SHOW_GL_ERRORS.tooltip.4=não puderem ser corrigidos.
 of.options.SHOW_GL_ERRORS.tooltip.5=Ao desativar, os erros ainda são registrados e

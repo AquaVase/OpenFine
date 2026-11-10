@@ -818,9 +818,9 @@ of.options.SCREENSHOT_SIZE.tooltip.5=より多くのメモリが必要になり�
 of.options.SCREENSHOT_SIZE.tooltip.6=アンチエイリアスとは互換性がありません。
 of.options.SCREENSHOT_SIZE.tooltip.7=GPUがフレームバッファをサポートしている必要があります。
 
-of.options.SHOW_GL_ERRORS=OpenGLエラーの表示
-of.options.SHOW_GL_ERRORS.tooltip.1=OpenGLエラーの表示
-of.options.SHOW_GL_ERRORS.tooltip.2=有効にすると、チャットにOpenGLのエラーが表示されます。
+of.options.SHOW_GL_ERRORS=グラフィックスAPIエラーの表示
+of.options.SHOW_GL_ERRORS.tooltip.1=グラフィックスAPIエラーの表示
+of.options.SHOW_GL_ERRORS.tooltip.2=有効にすると、チャットにグラフィックスAPIのエラーが表示されます。
 of.options.SHOW_GL_ERRORS.tooltip.3=既知の競合があり、エラーを修正できない場合は無効にします。
 of.options.SHOW_GL_ERRORS.tooltip.4=無効にしてもエラーはログに記録され、
 of.options.SHOW_GL_ERRORS.tooltip.5=FPSが大幅に低下する可能性があります。

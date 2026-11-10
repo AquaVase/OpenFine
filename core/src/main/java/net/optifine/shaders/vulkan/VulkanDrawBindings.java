@@ -23,12 +23,12 @@ public class VulkanDrawBindings implements AutoCloseable {
     private boolean closed;
     private final VulkanShaderRuntime.DeviceProgram program;
     private final VulkanShaderRuntime runtime;
-    private final Map<Integer, GpuBufferSlice> explicitBuffers;
+    private final Map<String, GpuBufferSlice> explicitBuffers;
     private final boolean pushDescriptors;
 
     public VulkanDrawBindings(
         VulkanDevice device, VulkanShaderRuntime.DeviceProgram program, VulkanShaderRuntime runtime,
-        Map<Integer, GpuBufferSlice> explicitBuffers
+        Map<String, GpuBufferSlice> explicitBuffers
     ) {
         this.device = device;
         this.pipelineLayout = program.deviceProgram().getPipelineLayout();
@@ -53,6 +53,9 @@ public class VulkanDrawBindings implements AutoCloseable {
                 }
                 this.set = this.descriptors.acquire();
             }
+            if (program.uniforms().contains("ofRtSceneRelativeOrigin")) {
+                runtime.getRayTracingScene().updateUniforms(program.uniforms());
+            }
             GpuBufferSlice upload = null;
             if (program.uniforms().getUniformSize() > 0) {
                 try (var mapping = this.device.createCommandEncoder().transientMemory().allocateGpuMapped(program.uniforms().getUniformSize(),
@@ -74,9 +77,22 @@ public class VulkanDrawBindings implements AutoCloseable {
                 if (uniform != null) {
                     write.pBufferInfo(VkDescriptorBufferInfo.calloc(1, stack)
                         .buffer(((VulkanGpuBuffer)upload.buffer()).vkBuffer()).offset(upload.offset() + resolved.uniformOffset()).range(uniform.getSize()));
+                } else if (binding.descriptorType() == org.lwjgl.vulkan.KHRAccelerationStructure.VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR) {
+                    if (binding.count() != 1 || !binding.name().equals("ofRtScene")) {
+                        throw new IllegalArgumentException("Unknown hardware RT scene descriptor: " + binding.name());
+                    }
+                    var acceleration = org.lwjgl.vulkan.VkWriteDescriptorSetAccelerationStructureKHR.calloc(stack).sType$Default()
+                        .pAccelerationStructures(stack.longs(runtime.getRayTracingScene().accelerationStructure()));
+                    write.pNext(acceleration.address());
+                } else if (binding.descriptorType() == VK12.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER && binding.name().equals("OpenFineRtScene")) {
+                    if (binding.count() != 1) {
+                        throw new IllegalArgumentException("Hardware RT scene metadata must not be an array");
+                    }
+                    var scene = runtime.getRayTracingScene();
+                    write.pBufferInfo(VkDescriptorBufferInfo.calloc(1, stack).buffer(scene.metadataBuffer()).offset(0).range(scene.metadataSize()));
                 } else if (binding.descriptorType() == VK12.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
                     || binding.descriptorType() == VK12.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-                    GpuBufferSlice buffer = explicitBuffers.get(binding.binding());
+                    GpuBufferSlice buffer = explicitBuffers.get(binding.name());
                     if (buffer != null) {
                         runtime.getBuffers().validate(binding.descriptorType(), buffer, binding.resources().getFirst().resource().size());
                         write.pBufferInfo(this.bufferInfo(stack, buffer, binding.count()));
@@ -159,7 +175,8 @@ public class VulkanDrawBindings implements AutoCloseable {
             this.closed = true;
             if (this.set != 0L) {
                 long set = this.set;
-                this.device.createCommandEncoder().queueForDestroy(() -> this.descriptors.release(set));
+                VulkanDescriptorAllocator descriptors = this.descriptors;
+                this.device.createCommandEncoder().queueForDestroy(() -> descriptors.release(set));
             }
         }
     }

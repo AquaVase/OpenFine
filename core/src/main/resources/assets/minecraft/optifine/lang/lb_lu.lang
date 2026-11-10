@@ -773,9 +773,9 @@ of.options.SCREENSHOT_SIZE.tooltip.5=Späicher brauchen.
 of.options.SCREENSHOT_SIZE.tooltip.6=Net kompatibel mat Antialiasing.
 of.options.SCREENSHOT_SIZE.tooltip.7=Erfuerdert GPU Billerpuffer Ënnerstëtzung.
 
-of.options.SHOW_GL_ERRORS=Wéis GL Feeler
-of.options.SHOW_GL_ERRORS.tooltip.1=Wéis OpenGL Feeler
-of.options.SHOW_GL_ERRORS.tooltip.2=Falls aktivéiert ginn OpenGL Feeler am Chat ugewisen.
+of.options.SHOW_GL_ERRORS=Wéis Grafik-API-Feeler
+of.options.SHOW_GL_ERRORS.tooltip.1=Wéis Grafik-API-Feeler
+of.options.SHOW_GL_ERRORS.tooltip.2=Falls aktivéiert, ginn Grafik-API-Feeler am Chat ugewisen.
 of.options.SHOW_GL_ERRORS.tooltip.3=Desaktivéier et nëmme wann ee bekannte Konflikt
 of.options.SHOW_GL_ERRORS.tooltip.4=existéiert an d'Feeler net behuewe kenne ginn.
 of.options.SHOW_GL_ERRORS.tooltip.5=Falls desaktivéiert ginn d'Feeler weiderhin an de

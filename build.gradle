@@ -36,6 +36,7 @@ configurations {
 dependencies {
     implementation 'net.minecraftforge:forgespi:8.0.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:6.0.0'
+    testImplementation 'org.ow2.asm:asm-tree:9.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.0'
     implementation project(':core')
     coreArchive project(':core')
@@ -65,6 +66,7 @@ apply from: 'gradle/joint-class-outputs.gradle'
 registerJointClassOutput(project)
 apply from: 'gradle/patch-config.gradle'
 apply from: 'gradle/client-runtime.gradle'
+apply from: 'gradle/nsight.gradle'
 tasks.named('compileGame') { dependsOn ':core:classes' }
 
 def modArchive = tasks.register('modArchive', Jar) {
@@ -73,11 +75,7 @@ def modArchive = tasks.register('modArchive', Jar) {
     from(sourceSets.main.output.classesDirs)
     from(sourceSets.main.output.resourcesDir) { exclude 'META-INF/MANIFEST.MF' }
     from({ zipTree(configurations.coreArchive.singleFile) }) {
-        include '**/*.class'
-    }
-
-    from({ zipTree(configurations.coreArchive.singleFile) }) {
-        exclude '**/*.class', 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/MANIFEST.MF'
     }
     from({ zipTree(configurations.installerArchive.singleFile) }) {
         exclude 'META-INF/MANIFEST.MF'
@@ -89,9 +87,11 @@ def modArchive = tasks.register('modArchive', Jar) {
 }
 patchgen.modifiedJar = modArchive.flatMap { it.archiveFile }
 
-def srgTargetJar = tasks.register('srgTargetJar', Jar) {
+def srgTargetJar = tasks.register('srgTargetJar', Zip) {
     dependsOn modArchive
+    archiveExtension = 'jar'
     archiveClassifier = 'srg-target'
+    destinationDirectory = layout.buildDirectory.dir('tmp/srgTargetJar')
 
     from({
         zipTree(modArchive.get().archiveFile.get().asFile)
@@ -101,24 +101,3 @@ def srgTargetJar = tasks.register('srgTargetJar', Jar) {
 }
 patchgen.srgModifiedJar = srgTargetJar.flatMap { it.archiveFile }
 
-// Archive restoration is optional and unused by this workspace.
-tasks.named('restoreArchive') { enabled = false }
-
-// Maintain recovered sources directly instead of extracting vanilla sources over them.
-tasks.named('extractMapped') { enabled = false }
-
-// Keep backend tests in the root project's standard test source set.
-tasks.named('test', Test) {
-    useJUnitPlatform()
-    jvmArgs '--enable-native-access=ALL-UNNAMED'
-    workingDir = layout.buildDirectory.get().asFile
-    def shaderSources = providers.gradleProperty('shaderTestSources').getOrElse('')
-    systemProperty 'optifine.test.shaderSources', shaderSources.isBlank() ? '' : file(shaderSources).absolutePath
-    systemProperty 'optifine.test.vulkanDevice', providers.gradleProperty('vulkanDeviceTests').getOrElse('false')
-    if (!shaderSources.isBlank()) {
-        inputs.dir(file(shaderSources)).withPropertyName('shaderTestSources').withPathSensitivity(PathSensitivity.RELATIVE)
-    }
-    if (providers.gradleProperty('vulkanDeviceTests').getOrElse('false').toBoolean()) {
-        outputs.upToDateWhen { false }
-    }
-}

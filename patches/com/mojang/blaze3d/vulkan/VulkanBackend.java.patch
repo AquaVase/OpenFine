@@ -18,15 +18,16 @@
  public class VulkanBackend implements GpuBackend {
      private static final Logger LOGGER = LogUtils.getLogger();
      public static final Set<String> REQUIRED_DEVICE_EXTENSIONS = Set.of(
-@@ -165,6 +163,7 @@
+@@ -165,6 +163,8 @@
                  enabledFeatures.add(MULTI_DRAW_FEATURE);
              }
  
 +            VulkanShaderFeatures.enableSupported(physicalDevice.vkPhysicalDevice(), enabledFeatures);
++            net.optifine.shaders.vulkan.VulkanRayTracingFeatures.enable(physicalDevice, deviceExtensions, enabledFeatures);
              device = createDevice(deviceExtensions, physicalDevice, enabledFeatures);
              vma = createVma(device);
          } catch (BackendCreationException e) {
-@@ -443,4 +442,4 @@
+@@ -443,4 +443,4 @@
              return new VkDevice(pointer.get(0), physicalDevice.vkPhysicalDevice(), deviceCreateInfo);
          }
      }

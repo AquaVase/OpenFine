@@ -752,9 +752,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Suurempien kuvankaappausten ottaminen voi v
 of.options.SCREENSHOT_SIZE.tooltip.5=Ei ole yhteensopiva reunanpehmennyksen kanssa.
 of.options.SCREENSHOT_SIZE.tooltip.6=Vaatii näytönohjaimen ruutupuskuri tuen.
 
-of.options.SHOW_GL_ERRORS=Näytä GL-virheet
-of.options.SHOW_GL_ERRORS.tooltip.1=Näytä OpenGL-virheet
-of.options.SHOW_GL_ERRORS.tooltip.2=Kun päällä, OpenGL-virheen näytetään keskustelussa.
+of.options.SHOW_GL_ERRORS=Näytä grafiikkarajapinnan virheet
+of.options.SHOW_GL_ERRORS.tooltip.1=Näytä grafiikkarajapinnan virheet
+of.options.SHOW_GL_ERRORS.tooltip.2=Kun käytössä, grafiikkarajapinnan virheet näytetään keskustelussa.
 of.options.SHOW_GL_ERRORS.tooltip.3=Ota tämä pois käytöstä vain, jos tiedät mikä aiheuttaa virheen,
 of.options.SHOW_GL_ERRORS.tooltip.4=eikä sitä voi korjata.
 of.options.SHOW_GL_ERRORS.tooltip.5=Jos otettuna pois, virheet kirjataan kuitenkin virhelokiin,

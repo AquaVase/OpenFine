@@ -760,9 +760,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Zapisywanie większych zrzutów może wymag
 of.options.SCREENSHOT_SIZE.tooltip.5=opcja nie jest kompatybilna z szybkim renderowaniem ani
 of.options.SCREENSHOT_SIZE.tooltip.6=antyaliasingiem. Wymaga wsparcia bufora ramki GPU.
 
-of.options.SHOW_GL_ERRORS=Pokazuj błędy GL
-of.options.SHOW_GL_ERRORS.tooltip.1=Pokazuj błędy OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Kiedy aktywne, błędy OpenGL są pokazywane na czacie.
+of.options.SHOW_GL_ERRORS=Pokazuj błędy API graficznego
+of.options.SHOW_GL_ERRORS.tooltip.1=Pokazuj błędy API graficznego
+of.options.SHOW_GL_ERRORS.tooltip.2=Gdy opcja jest włączona, błędy API graficznego są pokazywane na czacie.
 of.options.SHOW_GL_ERRORS.tooltip.3=Wyłącz tą opcję tylko jeżeli jest znany konflikt
 of.options.SHOW_GL_ERRORS.tooltip.4=i błędy nie mogą zostać naprawione.
 of.options.SHOW_GL_ERRORS.tooltip.5=Kiedy nieaktywne, błędy są nadal zapisywane w rejestrze

@@ -87,9 +87,7 @@ public class VulkanScenePipeline {
                  MemoryStack stack = MemoryStack.stackPush()) {
                 var bytes = mapping.data().order(ByteOrder.nativeOrder());
                 for (var attribute : defaults) {
-                    for (float value : runtime.getDefaultAttribute(attribute.semantic())) {
-                        bytes.putInt(attribute.floating() ? Float.floatToRawIntBits(value) : (int)value);
-                    }
+                    runtime.writeDefaultAttribute(attribute.semantic(), attribute.floating(), bytes);
                 }
                 VK12.vkCmdBindVertexBuffers(commands, this.vertexInputs.getDefaultBinding(),
                     stack.longs(((VulkanGpuBuffer)mapping.slice().buffer()).vkBuffer()), stack.longs(mapping.slice().offset()));

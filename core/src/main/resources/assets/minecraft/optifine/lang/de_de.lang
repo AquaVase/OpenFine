@@ -818,9 +818,9 @@ of.options.SCREENSHOT_SIZE.tooltip.5=Speicher benötigen.
 of.options.SCREENSHOT_SIZE.tooltip.6=Nicht kompatibel mit Antialiasing.
 of.options.SCREENSHOT_SIZE.tooltip.7=Erfordert Grafiktreiberpuffer-Unterstützung.
 
-of.options.SHOW_GL_ERRORS=Zeige OpenGL Fehler
-of.options.SHOW_GL_ERRORS.tooltip.1=Zeige OpenGL Fehler
-of.options.SHOW_GL_ERRORS.tooltip.2=OpenGL Fehler werden im Chat angezeigt.
+of.options.SHOW_GL_ERRORS=Grafik-API-Fehler anzeigen
+of.options.SHOW_GL_ERRORS.tooltip.1=Grafik-API-Fehler anzeigen
+of.options.SHOW_GL_ERRORS.tooltip.2=Wenn aktiviert, werden Grafik-API-Fehler im Chat angezeigt.
 of.options.SHOW_GL_ERRORS.tooltip.3=Deaktiviere dies nur, wenn ein bekannter Fehler
 of.options.SHOW_GL_ERRORS.tooltip.4=vorliegt und dieser nicht behoben werden kann.
 of.options.SHOW_GL_ERRORS.tooltip.5=Auch nach Deaktivierung werden Fehler in der Log Datei

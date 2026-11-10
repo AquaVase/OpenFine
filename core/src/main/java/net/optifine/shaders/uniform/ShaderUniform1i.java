@@ -12,7 +12,7 @@ public class ShaderUniform1i extends ShaderUniformBase {
     }
 
     public void setValue(int valueNew) {
-        int program = this.getProgram();
+        int program = this.getProgramIndex();
         int valueOld = this.programValues[program];
         if (valueNew != valueOld) {
             this.programValues[program] = valueNew;
@@ -28,15 +28,16 @@ public class ShaderUniform1i extends ShaderUniformBase {
     }
 
     public int getValue() {
-        int program = this.getProgram();
+        int program = this.getProgramIndex();
         return this.programValues[program];
     }
 
     @Override
     protected void onProgramSet(int program) {
-        if (program >= this.programValues.length) {
+        int programIndex = this.getProgramIndex();
+        if (programIndex >= this.programValues.length) {
             int[] valuesOld = this.programValues;
-            int[] valuesNew = new int[program + 10];
+            int[] valuesNew = new int[programIndex + 10];
             System.arraycopy(valuesOld, 0, valuesNew, 0, valuesOld.length);
 
             for (int i = valuesOld.length; i < valuesNew.length; i++) {

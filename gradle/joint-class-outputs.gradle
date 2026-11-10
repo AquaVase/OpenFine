@@ -17,7 +17,7 @@ def distribute = tasks.register('distributeJointClasses') {
     inputs.dir(compiler.flatMap { it.destinationDirectory }).withPathSensitivity(PathSensitivity.RELATIVE)
     doLast {
         def owners = [:]
-        def assigned = modules.collectEntries { [(it.path): []] }
+        def assigned = modules.collectEntries { [(it.path): new LinkedHashSet<String>()] }
         modules.each { module ->
             module.sourceSets.main.allJava.visit { source ->
                 if (!source.directory) {

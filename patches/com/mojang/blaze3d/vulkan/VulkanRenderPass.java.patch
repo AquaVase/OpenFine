@@ -119,8 +119,8 @@
 +    private void updateAttachmentFormats(RenderPassDescriptor descriptor) {
 +        this.colorViews = descriptor.colorAttachments().stream().map(attachment -> attachment == null ? null : attachment.textureView()).toList();
 +        this.depthView = descriptor.depthAttachment() == null ? null : descriptor.depthAttachment().textureView();
-+        this.colorFormats = descriptor.colorAttachments().stream()
-+            .map(attachment -> attachment == null ? VK12.VK_FORMAT_UNDEFINED : VulkanConst.toVk(attachment.textureView().texture().getFormat())).toList();
++        this.colorFormats = List.copyOf(descriptor.colorAttachments().stream()
++            .map(attachment -> attachment == null ? VK12.VK_FORMAT_UNDEFINED : VulkanConst.toVk(attachment.textureView().texture().getFormat())).toList());
 +        this.depthFormat = descriptor.depthAttachment() == null ? VK12.VK_FORMAT_UNDEFINED
 +            : VulkanConst.toVk(descriptor.depthAttachment().textureView().texture().getFormat());
 +
@@ -382,12 +382,14 @@
              this.pushDescriptors();
              VK12.vkCmdDrawIndirect(
                  this.commandBuffer(), ((VulkanGpuBuffer)commands.buffer()).vkBuffer(), commands.offset(), drawCount, VkDrawIndirectCommand.SIZEOF
-@@ -291,6 +448,42 @@
+@@ -291,6 +448,34 @@
      }
  
      private void pushDescriptors() {
-+        if (VulkanShaderRuntime.isSceneActive(this.requestedDescriptor)) {
++        if (Shaders.isRenderingWorld || this.usingShaderPipeline) {
 +            this.refreshShaderAttachments();
++        }
++        if (VulkanShaderRuntime.isSceneActive(this.requestedDescriptor)) {
 +            this.usingShaderPipeline = true;
 +            VulkanShaderRuntime runtime = VulkanShaderRuntime.getInstance();
 +            var program = runtime.getProgram(Shaders.activeProgramID);
@@ -398,20 +400,10 @@
 +                Shaders.setChunkSectionInfo(uniform);
 +            }
 +            runtime.getScenePipeline(Shaders.activeProgramID, this.shaderPipeline, this.colorFormats, this.depthFormat).bind(this.commandBuffer(), runtime);
-+            HashMap<Integer, GpuBufferSlice> buffers = new HashMap<>();
-+            for (var binding : program.source().getBindings()) {
-+                GpuBufferSlice buffer = this.uniforms.get(binding.name());
-+                if (buffer != null) {
-+                    buffers.put(binding.binding(), buffer);
-+                }
-+            }
-+            try (VulkanDrawBindings bindings = new VulkanDrawBindings(this.device, program, runtime, buffers)) {
++            try (VulkanDrawBindings bindings = new VulkanDrawBindings(this.device, program, runtime, this.uniforms)) {
 +                bindings.bind(this.commandBuffer(), VK12.VK_PIPELINE_BIND_POINT_GRAPHICS);
 +            }
 +            return;
-+        }
-+        if (this.usingShaderPipeline) {
-+            this.refreshShaderAttachments();
 +        }
 +        if (this.pipeline == null || this.usingShaderPipeline) {
 +            this.pipeline = this.device.getOrCompilePipeline(this.shaderPipeline);
@@ -425,7 +417,7 @@
          if (this.anyDescriptorDirty) {
              if (VALIDATION) {
                  for (BindGroupLayout.UniformDescription uniform : BindGroupLayout.flattenUniforms(this.pipeline.info().getBindGroupLayouts())) {
-@@ -397,6 +590,44 @@
+@@ -397,6 +582,44 @@
          }
      }
  
@@ -443,7 +435,7 @@
 +            var multiTex = base.view().texture().multiTex;
 +            var atlas = base.view().texture().getParentTexture() instanceof net.minecraft.client.renderer.texture.TextureAtlas value ? value : null;
 +            if (Shaders.configNormalMap) {
-+                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), atlas == null || atlas.isNormalBlend(), true);
++                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), false, true);
 +                runtime.bindTexture(1, runtime.getTextureView(multiTex.normTex), ((VulkanGpuSampler)sampler).vkSampler());
 +            }
 +            if (Shaders.configSpecularMap) {
@@ -456,7 +448,7 @@
 +            var atlas = sprite.getTextureAtlas();
 +            if (Shaders.configNormalMap) {
 +                var texture = sprite.spriteNormal != null ? sprite.spriteNormal.getSpriteTexture() : Shaders.defaultTexture.getMultiTexID().normTex;
-+                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), atlas.isNormalBlend(), true);
++                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), false, true);
 +                runtime.bindTexture(1, runtime.getTextureView(texture), ((VulkanGpuSampler)sampler).vkSampler());
 +            }
 +            if (Shaders.configSpecularMap) {
@@ -470,7 +462,7 @@
      @Override
      public void writeTimestamp(final GpuQueryPool pool, final int index) {
          long queryPool = ((VulkanQueryPool)pool).vkQueryPool();
-@@ -407,8 +638,6 @@
+@@ -407,8 +630,6 @@
      public Supplier<String> getLabel() {
          return this.label;
      }

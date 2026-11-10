@@ -31,7 +31,7 @@ public class ShaderOptionSwitch extends ShaderOption {
 
     @Override
     public String getValueColor(String val) {
-        return isTrue(val) ? "Â§a" : "Â§c";
+        return isTrue(val) ? "\u00a7a" : "\u00a7c";
     }
 
     public static ShaderOption parseOption(String line, String path) {

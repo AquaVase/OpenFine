@@ -1,8 +1,7 @@
 package net.optifine;
 
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
+import com.mojang.blaze3d.platform.NativeImage;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import javax.imageio.ImageIO;
-import net.minecraft.client.Options;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
@@ -25,12 +22,17 @@ public class TextureAnimations {
     private static int frameCountAnimations = 0;
 
     public static void reset() {
+        if (textureAnimations != null) {
+            for (TextureAnimation animation : textureAnimations) {
+                animation.close();
+            }
+        }
         textureAnimations = null;
+        countAnimationsActive = 0;
     }
 
     public static void update() {
-        textureAnimations = null;
-        countAnimationsActive = 0;
+        reset();
         PackResources[] rps = Config.getResourcePacks();
         textureAnimations = getTextureAnimations(rps);
         updateAnimations();
@@ -90,10 +92,10 @@ public class TextureAnimations {
 
             try {
                 Identifier propLoc = new Identifier(propName);
-                InputStream in = Config.getResourceStream(rp, PackType.CLIENT_RESOURCES, propLoc);
                 Properties props = new PropertiesOrdered();
-                props.load(in);
-                in.close();
+                try (InputStream in = Config.getResourceStream(rp, PackType.CLIENT_RESOURCES, propLoc)) {
+                    props.load(in);
+                }
                 TextureAnimation anim = makeTextureAnimation(props, propLoc);
                 if (anim != null) {
                     Identifier locDstTex = new Identifier(anim.getDstTex());
@@ -154,9 +156,10 @@ public class TextureAnimations {
                     return null;
                 }
 
-                BufferedImage imgTexTo = readTextureImage(inTexTo);
-                if (x + width <= imgTexTo.getWidth() && y + height <= imgTexTo.getHeight()) {
-                    return new TextureAnimation(texFrom, imageBytes, texTo, locTexTo, x, y, width, height, props);
+                try (NativeImage imgTexTo = readTextureImage(inTexTo)) {
+                    if (x + width <= imgTexTo.getWidth() && y + height <= imgTexTo.getHeight()) {
+                        return new TextureAnimation(texFrom, imageBytes, texTo, locTexTo, x, y, width, height, props);
+                    }
                 }
 
                 Config.warn("TextureAnimation: Animation coordinates are outside the target texture: " + texTo);
@@ -181,8 +184,6 @@ public class TextureAnimations {
     }
 
     private static byte[] loadImage(String name, int targetWidth) {
-        Options options = Config.getGameSettings();
-
         try {
             Identifier locRes = new Identifier(name);
             InputStream in = Config.getResourceStream(locRes);
@@ -190,36 +191,15 @@ public class TextureAnimations {
                 return null;
             }
 
-            BufferedImage image = readTextureImage(in);
-            in.close();
-            if (image == null) {
-                return null;
+            try (NativeImage image = readTextureImage(in)) {
+                if (targetWidth > 0 && image.getWidth() != targetWidth) {
+                    int targetHeight = Math.toIntExact((long)image.getHeight() * targetWidth / image.getWidth());
+                    try (NativeImage scaled = TextureUtils.scaleImage(image, targetWidth, targetHeight)) {
+                        return getImageBytes(scaled);
+                    }
+                }
+                return getImageBytes(image);
             }
-
-            if (targetWidth > 0 && image.getWidth() != targetWidth) {
-                double aspectHW = image.getHeight() / image.getWidth();
-                int targetHeight = (int)(targetWidth * aspectHW);
-                image = scaleBufferedImage(image, targetWidth, targetHeight);
-            }
-
-            int width = image.getWidth();
-            int height = image.getHeight();
-            int[] ai = new int[width * height];
-            byte[] byteBuf = new byte[width * height * 4];
-            image.getRGB(0, 0, width, height, ai, 0, width);
-
-            for (int l = 0; l < ai.length; l++) {
-                int alpha = ai[l] >> 24 & 0xFF;
-                int red = ai[l] >> 16 & 0xFF;
-                int green = ai[l] >> 8 & 0xFF;
-                int blue = ai[l] & 0xFF;
-                byteBuf[l * 4 + 0] = (byte)red;
-                byteBuf[l * 4 + 1] = (byte)green;
-                byteBuf[l * 4 + 2] = (byte)blue;
-                byteBuf[l * 4 + 3] = (byte)alpha;
-            }
-
-            return byteBuf;
         } catch (FileNotFoundException e) {
             return null;
         } catch (Exception e) {
@@ -228,18 +208,14 @@ public class TextureAnimations {
         }
     }
 
-    private static BufferedImage readTextureImage(InputStream par1InputStream) throws IOException {
-        BufferedImage var2 = ImageIO.read(par1InputStream);
-        par1InputStream.close();
-        return var2;
+    private static NativeImage readTextureImage(InputStream input) throws IOException {
+        return NativeImage.read(input);
     }
 
-    private static BufferedImage scaleBufferedImage(BufferedImage image, int width, int height) {
-        BufferedImage scaledImage = new BufferedImage(width, height, 2);
-        Graphics2D gr = scaledImage.createGraphics();
-        gr.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        gr.drawImage(image, 0, 0, width, height, null);
-        return scaledImage;
+    private static byte[] getImageBytes(NativeImage image) {
+        byte[] pixels = new byte[Math.multiplyExact(Math.multiplyExact(image.getWidth(), image.getHeight()), 4)];
+        image.getPixelBytes().get(pixels);
+        return pixels;
     }
 
     public static int getCountAnimations() {

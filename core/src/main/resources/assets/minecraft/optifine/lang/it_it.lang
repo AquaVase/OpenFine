@@ -724,9 +724,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Fare screenshot più grandi richiede più m
 of.options.SCREENSHOT_SIZE.tooltip.5=Non compatibile con Render Veloce e Antialiasing.
 of.options.SCREENSHOT_SIZE.tooltip.6=Richiede supporto framebuffer della GPU.
 
-of.options.SHOW_GL_ERRORS=Errori Open GL
-of.options.SHOW_GL_ERRORS.tooltip.1=Mostra Errori Open GL
-of.options.SHOW_GL_ERRORS.tooltip.2=Quando abilitata mostra errori in chat.
+of.options.SHOW_GL_ERRORS=Mostra errori dell’API grafica
+of.options.SHOW_GL_ERRORS.tooltip.1=Mostra errori dell’API grafica
+of.options.SHOW_GL_ERRORS.tooltip.2=Quando abilitata, mostra gli errori dell’API grafica in chat.
 of.options.SHOW_GL_ERRORS.tooltip.3=Disabilita solo se ci sono conflitti o per
 of.options.SHOW_GL_ERRORS.tooltip.4=errori che non possono essere risolti.
 of.options.SHOW_GL_ERRORS.tooltip.5=Quando disabilitato gli errori sono sempre salvati

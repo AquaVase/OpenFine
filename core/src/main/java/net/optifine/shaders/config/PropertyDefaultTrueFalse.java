@@ -15,9 +15,9 @@ public class PropertyDefaultTrueFalse extends Property {
         if (this.isDefault()) {
             return Lang.getDefault();
         } else if (this.isTrue()) {
-            return "Â§a" + Lang.getOn();
+            return "\u00a7a" + Lang.getOn();
         } else {
-            return this.isFalse() ? "Â§c" + Lang.getOff() : super.getUserValue();
+            return this.isFalse() ? "\u00a7c" + Lang.getOff() : super.getUserValue();
         }
     }
 

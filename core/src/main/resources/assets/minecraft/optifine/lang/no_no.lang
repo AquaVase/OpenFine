@@ -734,9 +734,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Større skjermbilder kan kreve mer minne.
 of.options.SCREENSHOT_SIZE.tooltip.5=Ikke kompatibel med Rask gjengivelse og Kantutjevning.
 of.options.SCREENSHOT_SIZE.tooltip.6=Krever grafikkprosessoren for å støtte framebuffer.
 
-of.options.SHOW_GL_ERRORS=Vis OpenGL-feil
-of.options.SHOW_GL_ERRORS.tooltip.1=Vis OpenGL-feil
-of.options.SHOW_GL_ERRORS.tooltip.2=OpenGL-feil vises i nettpraten når dette er aktivert.
+of.options.SHOW_GL_ERRORS=Vis grafikk-API-feil
+of.options.SHOW_GL_ERRORS.tooltip.1=Vis grafikk-API-feil
+of.options.SHOW_GL_ERRORS.tooltip.2=Når dette er aktivert, vises grafikk-API-feil i nettpraten.
 of.options.SHOW_GL_ERRORS.tooltip.3=Deaktiver bare dette hvis det er en kjent konflikt og
 of.options.SHOW_GL_ERRORS.tooltip.4=feilene kan ikke løses.
 of.options.SHOW_GL_ERRORS.tooltip.5=Når dette er deaktivert vil feilene fortsatt bli registrert

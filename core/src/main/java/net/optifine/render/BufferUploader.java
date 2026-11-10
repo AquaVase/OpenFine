@@ -9,7 +9,6 @@ import com.mojang.blaze3d.opengl.GlConst;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -40,93 +39,87 @@ public class BufferUploader {
     }
 
     public static void draw(RenderPipeline pipelineIn, MeshData dataIn, Supplier<String> labelIn, Identifier locationTextureIn, FilterMode filterIn) {
-        AbstractTexture tex = Minecraft.getInstance().getTextureManager().getTexture(locationTextureIn);
-        GpuTextureView texView = tex.getTextureView();
-        draw(pipelineIn, dataIn, labelIn, texView, filterIn);
+        try (MeshData meshdata = dataIn) {
+            AbstractTexture tex = Minecraft.getInstance().getTextureManager().getTexture(locationTextureIn);
+            GpuTextureView texView = tex.getTextureView();
+            GpuSampler sampler = RenderSystem.getSamplerCache().getRepeat(filterIn);
+            drawInternal(pipelineIn, dataIn, labelIn, texView, sampler);
+        }
     }
 
     public static void draw(RenderPipeline pipelineIn, MeshData dataIn, Supplier<String> labelIn, GpuTextureView textureIn, FilterMode filterIn) {
-        GpuSampler sampler = RenderSystem.getSamplerCache().getRepeat(filterIn);
-        draw(pipelineIn, dataIn, labelIn, textureIn, sampler);
+        try (MeshData meshdata = dataIn) {
+            GpuSampler sampler = RenderSystem.getSamplerCache().getRepeat(filterIn);
+            drawInternal(pipelineIn, dataIn, labelIn, textureIn, sampler);
+        }
     }
 
     public static void draw(RenderPipeline pipelineIn, MeshData dataIn, Supplier<String> labelIn, GpuTextureView textureIn, GpuSampler samplerIn) {
+        try (MeshData meshdata = dataIn) {
+            drawInternal(pipelineIn, dataIn, labelIn, textureIn, samplerIn);
+        }
+    }
+
+    private static void drawInternal(RenderPipeline pipelineIn, MeshData dataIn, Supplier<String> labelIn, GpuTextureView textureIn, GpuSampler samplerIn) {
         GpuBufferSlice gpubufferslice = RenderSystem.getDynamicUniforms()
             .writeTransform(RenderSystem.getModelViewMatrixCopy(), RenderSystem.getShaderColor(), VEC3_ZERO, MAT4_ZERO);
-        MeshData meshdata = dataIn;
-
-        try {
-            GpuBuffer vertexGpuBuffer = uploadImmediateVertexBuffer(dataIn.vertexBuffer());
-            GpuBuffer indexGpuBuffer;
-            IndexType vertexformat$indextype;
-            if (dataIn.indexBuffer() == null) {
-                RenderSystem.AutoStorageIndexBuffer rendersystem$autostorageindexbuffer = RenderSystem.getSequentialBuffer(dataIn.drawState().primitiveTopology());
-                indexGpuBuffer = rendersystem$autostorageindexbuffer.getBuffer(dataIn.drawState().indexCount());
-                vertexformat$indextype = rendersystem$autostorageindexbuffer.type();
-            } else {
-                indexGpuBuffer = uploadImmediateIndexBuffer(dataIn.indexBuffer());
-                vertexformat$indextype = dataIn.drawState().indexType();
-            }
-
-            RenderTarget rendertarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
-            GpuTextureView gputextureview = RenderSystem.outputColorTextureOverride != null
-                ? RenderSystem.outputColorTextureOverride
-                : rendertarget.getColorTextureView();
-            GpuTextureView gputextureview1 = rendertarget.useDepth
-                ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : rendertarget.getDepthTextureView())
-                : null;
-
-            try (RenderPass renderpass = RenderSystem.getDevice()
-                    .createCommandEncoder()
-                    .createRenderPass(labelIn, gputextureview, Optional.empty(), gputextureview1, OptionalDouble.empty())) {
-                renderpass.setPipeline(pipelineIn);
-                ScissorState scissorstate = RenderSystem.getScissorStateForRenderTypeDraws();
-                if (scissorstate.enabled()) {
-                    renderpass.enableScissor(scissorstate.x(), scissorstate.y(), scissorstate.width(), scissorstate.height());
-                }
-
-                RenderSystem.bindDefaultUniforms(renderpass);
-                renderpass.setUniform("DynamicTransforms", gpubufferslice);
-                renderpass.setVertexBuffer(0, vertexGpuBuffer.slice());
-                if (textureIn != null && samplerIn != null) {
-                    renderpass.bindTexture("Sampler0", textureIn, samplerIn);
-                }
-
-                renderpass.setIndexBuffer(indexGpuBuffer, vertexformat$indextype);
-                renderpass.drawIndexed(dataIn.drawState().indexCount(), 1, 0, 0, 0);
-            }
-        } catch (Throwable throwable2) {
-            if (dataIn != null) {
-                try {
-                    meshdata.close();
-                } catch (Throwable throwable) {
-                    throwable2.addSuppressed(throwable);
-                }
-            }
-
-            throw throwable2;
+        GpuBuffer vertexGpuBuffer = uploadImmediateVertexBuffer(dataIn.vertexBuffer());
+        GpuBuffer indexGpuBuffer;
+        IndexType vertexformat$indextype;
+        if (dataIn.indexBuffer() == null) {
+            RenderSystem.AutoStorageIndexBuffer rendersystem$autostorageindexbuffer = RenderSystem.getSequentialBuffer(dataIn.drawState().primitiveTopology());
+            indexGpuBuffer = rendersystem$autostorageindexbuffer.getBuffer(dataIn.drawState().indexCount());
+            vertexformat$indextype = rendersystem$autostorageindexbuffer.type();
+        } else {
+            indexGpuBuffer = uploadImmediateIndexBuffer(dataIn.indexBuffer());
+            vertexformat$indextype = dataIn.drawState().indexType();
         }
 
-        if (dataIn != null) {
-            dataIn.close();
+        RenderTarget rendertarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
+        GpuTextureView gputextureview = RenderSystem.outputColorTextureOverride != null
+            ? RenderSystem.outputColorTextureOverride
+            : rendertarget.getColorTextureView();
+        GpuTextureView gputextureview1 = rendertarget.useDepth
+            ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : rendertarget.getDepthTextureView())
+            : null;
+
+        try (RenderPass renderpass = RenderSystem.getDevice()
+                .createCommandEncoder()
+                .createRenderPass(labelIn, gputextureview, Optional.empty(), gputextureview1, OptionalDouble.empty())) {
+            renderpass.setPipeline(pipelineIn);
+            ScissorState scissorstate = RenderSystem.getScissorStateForRenderTypeDraws();
+            if (scissorstate.enabled()) {
+                renderpass.enableScissor(scissorstate.x(), scissorstate.y(), scissorstate.width(), scissorstate.height());
+            }
+
+            RenderSystem.bindDefaultUniforms(renderpass);
+            renderpass.setUniform("DynamicTransforms", gpubufferslice);
+            renderpass.setVertexBuffer(0, vertexGpuBuffer.slice());
+            if (textureIn != null && samplerIn != null) {
+                renderpass.bindTexture("Sampler0", textureIn, samplerIn);
+            }
+
+            renderpass.setIndexBuffer(indexGpuBuffer, vertexformat$indextype);
+            renderpass.drawIndexed(dataIn.drawState().indexCount(), 1, 0, 0, 0);
         }
     }
 
     public static void draw(MeshData dataIn) {
-        MeshData.DrawState drawState = dataIn.drawState();
-        VertexFormat vertexFormat = drawState.format();
-        int indexCount = drawState.indexCount();
-        PrimitiveTopology drawMode = drawState.primitiveTopology();
-        GlBuffer vertexBuffer = (GlBuffer)uploadImmediateVertexBuffer(dataIn.vertexBuffer());
-        VertexFormat[] vertexFormats = new VertexFormat[]{vertexFormat};
-        GpuBufferSlice[] vertexBuffers = new GpuBufferSlice[]{vertexBuffer.slice()};
-        RenderSystem.getGlDevice().vertexArrayCache().bindVertexArray(vertexFormats, vertexBuffers, null);
-        RenderSystem.AutoStorageIndexBuffer autoIndexBuffer = RenderSystem.getSequentialBuffer(drawMode);
-        GlBuffer indexBuffer = (GlBuffer)autoIndexBuffer.getBuffer(indexCount);
-        IndexType indexType = autoIndexBuffer.type();
-        GlStateManager._glBindBuffer(34963, indexBuffer.getHandle());
-        GlStateManager._drawElements(GlConst.toGl(drawMode), indexCount, GlConst.toGl(indexType), 0L);
-        dataIn.close();
+        try (MeshData meshdata = dataIn) {
+            MeshData.DrawState drawState = dataIn.drawState();
+            VertexFormat vertexFormat = drawState.format();
+            int indexCount = drawState.indexCount();
+            PrimitiveTopology drawMode = drawState.primitiveTopology();
+            GlBuffer vertexBuffer = (GlBuffer)uploadImmediateVertexBuffer(dataIn.vertexBuffer());
+            VertexFormat[] vertexFormats = new VertexFormat[]{vertexFormat};
+            GpuBufferSlice[] vertexBuffers = new GpuBufferSlice[]{vertexBuffer.slice()};
+            RenderSystem.getGlDevice().vertexArrayCache().bindVertexArray(vertexFormats, vertexBuffers, null);
+            RenderSystem.AutoStorageIndexBuffer autoIndexBuffer = RenderSystem.getSequentialBuffer(drawMode);
+            GlBuffer indexBuffer = (GlBuffer)autoIndexBuffer.getBuffer(indexCount);
+            IndexType indexType = autoIndexBuffer.type();
+            GlStateManager._glBindBuffer(34963, indexBuffer.getHandle());
+            GlStateManager._drawElements(GlConst.toGl(drawMode), indexCount, GlConst.toGl(indexType), 0L);
+        }
     }
 
     private static GpuBuffer uploadToBuffer(GpuBuffer target, ByteBuffer buffer, @GpuBuffer.Usage int usage, Supplier<String> label) {
@@ -134,12 +127,11 @@ public class BufferUploader {
         if (target == null) {
             target = device.createBuffer(label, usage, buffer);
         } else {
-            CommandEncoder encoder = device.createCommandEncoder();
             if (target.size() < buffer.remaining()) {
                 target.close();
                 target = device.createBuffer(label, usage, buffer);
             } else {
-                encoder.writeToBuffer(target.slice(), buffer);
+                device.createCommandEncoder().writeToBuffer(target.slice(), buffer);
             }
         }
 

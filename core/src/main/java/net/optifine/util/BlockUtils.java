@@ -1,7 +1,6 @@
 package net.optifine.util;
 
 import it.unimi.dsi.fastutil.longs.Long2ByteLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,23 +22,6 @@ import net.optifine.Config;
 import net.optifine.render.RenderEnv;
 
 public class BlockUtils {
-    private static final ThreadLocal<BlockUtils.RenderSideCacheKey> threadLocalKey = ThreadLocal.withInitial(
-        () -> new BlockUtils.RenderSideCacheKey(null, null, null)
-    );
-    private static final ThreadLocal<Object2ByteLinkedOpenHashMap<BlockUtils.RenderSideCacheKey>> threadLocalMap = ThreadLocal.withInitial(
-        () -> {
-            Object2ByteLinkedOpenHashMap<BlockUtils.RenderSideCacheKey> object2bytelinkedopenhashmap = new Object2ByteLinkedOpenHashMap<BlockUtils.RenderSideCacheKey>(
-                200
-            ) {
-                @Override
-                protected void rehash(int p_rehash_1_) {
-                }
-            };
-            object2bytelinkedopenhashmap.defaultReturnValue((byte)127);
-            return object2bytelinkedopenhashmap;
-        }
-    );
-
     public static boolean shouldSideBeRendered(BlockState blockStateIn, BlockGetter blockReaderIn, BlockPos blockPosIn, Direction facingIn, RenderEnv renderEnv) {
         BlockPos posNeighbour = blockPosIn.relative(facingIn);
         BlockState stateNeighbour = blockReaderIn.getBlockState(posNeighbour);
@@ -137,51 +119,4 @@ public class BlockUtils {
         return Config.isFalse(value);
     }
 
-    public static final class RenderSideCacheKey {
-        private BlockState blockState1;
-        private BlockState blockState2;
-        private Direction facing;
-        private int hashCode;
-
-        private RenderSideCacheKey(BlockState blockState1In, BlockState blockState2In, Direction facingIn) {
-            this.blockState1 = blockState1In;
-            this.blockState2 = blockState2In;
-            this.facing = facingIn;
-        }
-
-        private void init(BlockState blockState1In, BlockState blockState2In, Direction facingIn) {
-            this.blockState1 = blockState1In;
-            this.blockState2 = blockState2In;
-            this.facing = facingIn;
-            this.hashCode = 0;
-        }
-
-        public BlockUtils.RenderSideCacheKey duplicate() {
-            return new BlockUtils.RenderSideCacheKey(this.blockState1, this.blockState2, this.facing);
-        }
-
-        @Override
-        public boolean equals(Object p_equals_1_) {
-            if (this == p_equals_1_) {
-                return true;
-            } else {
-                return !(p_equals_1_ instanceof BlockUtils.RenderSideCacheKey block$rendersidecachekey)
-                    ? false
-                    : this.blockState1 == block$rendersidecachekey.blockState1
-                        && this.blockState2 == block$rendersidecachekey.blockState2
-                        && this.facing == block$rendersidecachekey.facing;
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            if (this.hashCode == 0) {
-                this.hashCode = 31 * this.hashCode + this.blockState1.hashCode();
-                this.hashCode = 31 * this.hashCode + this.blockState2.hashCode();
-                this.hashCode = 31 * this.hashCode + this.facing.hashCode();
-            }
-
-            return this.hashCode;
-        }
-    }
 }

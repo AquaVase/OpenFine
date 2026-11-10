@@ -32,7 +32,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -427,22 +426,6 @@ public class CustomItems {
 
     private static int[] getPotionId(int baseId, int subId) {
         return new int[]{baseId + subId * 16};
-    }
-
-    private static int getPotionNameDamage(String name) {
-        String fullName = "effect." + name;
-
-        for (Identifier rl : BuiltInRegistries.MOB_EFFECT.keySet()) {
-            if (BuiltInRegistries.MOB_EFFECT.containsKey(rl)) {
-                MobEffect potion = BuiltInRegistries.MOB_EFFECT.getValue(rl);
-                String potionName = potion.getDescriptionId();
-                if (fullName.equals(potionName)) {
-                    return PotionUtils.getId(potion);
-                }
-            }
-        }
-
-        return -1;
     }
 
     private static List<List<CustomItemProperties>> makePropertyList(CustomItemProperties[][] propsArr) {

@@ -798,9 +798,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Capturas más grandes requieren más memori
 of.options.SCREENSHOT_SIZE.tooltip.5=No es compatible con Anti-aliasing.
 of.options.SCREENSHOT_SIZE.tooltip.6=Requiere soporte de framebuffer por parte de la GPU.
 
-of.options.SHOW_GL_ERRORS=Mostrar errores OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar errores de la biblioteca OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Al activarse, los errores OpenGL se muestran en el chat.
+of.options.SHOW_GL_ERRORS=Mostrar errores de la API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar errores de la API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.2=Al activarse, los errores de la API gráfica se muestran en el chat.
 of.options.SHOW_GL_ERRORS.tooltip.3=Desactívalo solo si los errores son conocidos y pueden
 of.options.SHOW_GL_ERRORS.tooltip.4=ser ignorados con seguridad.
 of.options.SHOW_GL_ERRORS.tooltip.5=Si se desactiva los errores aún serán enviados al

@@ -17,7 +17,6 @@ public class VulkanProgramUniforms {
     private final Map<String, int[]> textureUnits = new LinkedHashMap<>();
     private final Map<String, List<int[]>> textureArrays = new LinkedHashMap<>();
     private final Runnable beforeUpdate;
-    private long descriptorVersion;
     private final List<DrawBinding> drawBindings;
     private final int uniformSize;
 
@@ -114,10 +113,6 @@ public class VulkanProgramUniforms {
         return units[element];
     }
 
-    public long getDescriptorVersion() {
-        return this.descriptorVersion;
-    }
-
     public void flush() {
         this.beforeUpdate.run();
     }
@@ -134,10 +129,7 @@ public class VulkanProgramUniforms {
             if (values.length != 1 || values[0] < 0) {
                 throw new IllegalArgumentException("Expected one nonnegative texture unit: " + name);
             }
-            if (element.units()[element.index()] != values[0]) {
-                element.units()[element.index()] = values[0];
-                this.descriptorVersion++;
-            }
+            element.units()[element.index()] = values[0];
             return;
         }
         List<int[]> array = this.textureArrays.get(name);
@@ -151,10 +143,7 @@ public class VulkanProgramUniforms {
                 }
             }
             for (int i = 0; i < values.length; i++) {
-                if (array.get(i)[0] != values[i]) {
-                    array.get(i)[0] = values[i];
-                    this.descriptorVersion++;
-                }
+                array.get(i)[0] = values[i];
             }
             return;
         }
@@ -170,12 +159,7 @@ public class VulkanProgramUniforms {
                 }
             }
 
-            for (int i = 0; i < units.length; i++) {
-                if (units[i] != values[i]) {
-                    units[i] = values[i];
-                    this.descriptorVersion++;
-                }
-            }
+            System.arraycopy(values, 0, units, 0, units.length);
         } else {
             for (VulkanUniformBuffer.Member member : this.getMembers(name)) {
                 member.setInt(values);
@@ -220,7 +204,7 @@ public class VulkanProgramUniforms {
     }
 
     private TextureElement textureElement(String name) {
-        if (this.textureUnits.containsKey(name)) {
+        if (name.indexOf('[') < 0 || this.textureUnits.containsKey(name)) {
             return null;
         }
         var matcher = TEXTURE_ELEMENT.matcher(name);

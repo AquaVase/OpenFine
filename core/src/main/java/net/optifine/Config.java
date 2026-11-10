@@ -3,7 +3,6 @@ package net.optifine;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,7 +14,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +24,6 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.imageio.ImageIO;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -1467,22 +1464,6 @@ public class Config {
 
     public static String normalize(String s) {
         return s == null ? "" : s;
-    }
-
-    private static ByteBuffer readIconImage(InputStream is) throws IOException {
-        BufferedImage var2 = ImageIO.read(is);
-        int[] var3 = var2.getRGB(0, 0, var2.getWidth(), var2.getHeight(), (int[])null, 0, var2.getWidth());
-        ByteBuffer var4 = ByteBuffer.allocate(4 * var3.length);
-        int[] var5 = var3;
-        int var6 = var3.length;
-
-        for (int var7 = 0; var7 < var6; var7++) {
-            int var8 = var5[var7];
-            var4.putInt(var8 << 8 | var8 >> 24 & 0xFF);
-        }
-
-        var4.flip();
-        return var4;
     }
 
     public static Object[] addObjectToArray(Object[] arr, Object obj) {

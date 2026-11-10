@@ -1171,12 +1171,6 @@ public class ConnectedTextures {
         return index;
     }
 
-    private static void switchValues(int ix1, int ix2, boolean[] arr) {
-        boolean prev1 = arr[ix1];
-        arr[ix1] = arr[ix2];
-        arr[ix2] = prev1;
-    }
-
     private static boolean isNeighbourOverlay(
         ConnectedProperties cp, BlockGetter worldReader, BlockState blockState, BlockPos blockPos, int side, TextureAtlasSprite icon, int metadata
     ) {

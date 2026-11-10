@@ -742,13 +742,6 @@ public class Shaders {
     private Shaders() {
     }
 
-    private static ByteBuffer nextByteBuffer(int size) {
-        ByteBuffer buffer = bigBuffer;
-        int pos = buffer.limit();
-        buffer.position(pos).limit(pos + size);
-        return buffer.slice();
-    }
-
     public static IntBuffer nextIntBuffer(int size) {
         ByteBuffer buffer = bigBuffer;
         int pos = buffer.limit();
@@ -761,16 +754,6 @@ public class Shaders {
         int pos = buffer.limit();
         buffer.position(pos).limit(pos + size * 4);
         return buffer.asFloatBuffer();
-    }
-
-    private static IntBuffer[] nextIntBufferArray(int count, int size) {
-        IntBuffer[] aib = new IntBuffer[count];
-
-        for (int i = 0; i < count; i++) {
-            aib[i] = nextIntBuffer(size);
-        }
-
-        return aib;
     }
 
     private static DrawBuffers[] makeDrawBuffersColorSingle(int count) {
@@ -1365,22 +1348,24 @@ public class Shaders {
         PixelFormat pixelFormat,
         PixelType pixelType
     ) {
-        try {
-            String pathFull = "shaders/" + StrUtils.removePrefix(path, "/");
-            InputStream in = shaderPack.getResourceAsStream(pathFull);
+        String pathFull = "shaders/" + StrUtils.removePrefix(path, "/");
+        try (InputStream in = shaderPack.getResourceAsStream(pathFull)) {
             if (in == null) {
                 SMCLog.warning("Raw texture not found: " + path);
                 return null;
             } else {
                 byte[] bytes = Config.readAll(in);
-                IOUtils.closeQuietly(in);
                 ByteBuffer bb = GlUtil.allocateMemory(bytes.length);
-                bb.put(bytes);
-                bb.flip();
-                TextureMetadataSection tms = SimpleShaderTexture.loadTextureMetadataSection(
-                    pathFull, new TextureMetadataSection(true, true, MipmapStrategy.AUTO, 0.0F)
-                );
-                return new CustomTextureRaw(type, internalFormat, width, height, depth, pixelFormat, pixelType, bb, textureUnit, tms.blur(), tms.clamp());
+                try {
+                    bb.put(bytes);
+                    bb.flip();
+                    TextureMetadataSection tms = SimpleShaderTexture.loadTextureMetadataSection(
+                        pathFull, new TextureMetadataSection(true, true, MipmapStrategy.AUTO, 0.0F)
+                    );
+                    return new CustomTextureRaw(type, internalFormat, width, height, depth, pixelFormat, pixelType, bb, textureUnit, tms.blur(), tms.clamp());
+                } finally {
+                    GlUtil.freeMemory(bb);
+                }
             }
         } catch (IOException e) {
             SMCLog.warning("Error loading raw texture: " + path);
@@ -2625,16 +2610,6 @@ public class Shaders {
             shaderCompilation.defer(completion);
         } else {
             completion.run();
-        }
-    }
-
-    private static VertexFormat getVertexFormat(Program program) {
-        if (isTerrain(program)) {
-            return DefaultVertexFormat.BLOCK;
-        } else if (program == ProgramSkyTextured) {
-            return DefaultVertexFormat.POSITION_TEX;
-        } else {
-            return program == ProgramClouds ? DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL : DefaultVertexFormat.ENTITY;
         }
     }
 
@@ -4113,6 +4088,9 @@ public class Shaders {
 
     public static void beginRender(Camera activeRenderInfo, Matrix4fc modelViewIn, Matrix4f projectionIn, DeltaTracker deltaTrackerIn, float partialTicks) {
         Profiler.get().push("begin render");
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().prepareRayTracingScene();
+        }
         frameCounter++;
         if (frameCounter >= 720720) {
             frameCounter = 0;

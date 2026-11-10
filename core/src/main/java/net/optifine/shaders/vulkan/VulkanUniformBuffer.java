@@ -11,7 +11,6 @@ import org.lwjgl.vulkan.VK12;
 public class VulkanUniformBuffer {
     private final ByteBuffer data;
     private final Map<String, Member> uniforms = new LinkedHashMap<>();
-    private boolean dirty = true;
 
     public VulkanUniformBuffer(VulkanShaderModule.Resource resource) {
         if (resource.descriptorType() != VK12.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
@@ -26,14 +25,6 @@ public class VulkanUniformBuffer {
 
     public boolean contains(String name) {
         return this.uniforms.containsKey(name);
-    }
-
-    public boolean isDirty() {
-        return this.dirty;
-    }
-
-    public void markUploaded() {
-        this.dirty = false;
     }
 
     public int getSize() {
@@ -179,16 +170,10 @@ public class VulkanUniformBuffer {
     }
 
     private void put(int offset, int value) {
-        if (this.data.getInt(offset) != value) {
-            this.data.putInt(offset, value);
-            this.dirty = true;
-        }
+        this.data.putInt(offset, value);
     }
 
     private void putLong(int offset, long value) {
-        if (this.data.getLong(offset) != value) {
-            this.data.putLong(offset, value);
-            this.dirty = true;
-        }
+        this.data.putLong(offset, value);
     }
 }

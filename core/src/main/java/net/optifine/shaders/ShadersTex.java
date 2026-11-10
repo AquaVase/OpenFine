@@ -10,7 +10,6 @@ import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.vulkan.VulkanGpuSampler;
 import net.optifine.shaders.vulkan.VulkanShaderRuntime;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -18,7 +17,6 @@ import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import javax.imageio.ImageIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -309,9 +307,8 @@ public class ShadersTex {
         }
         if (Shaders.isRenderingWorld) {
             if (Shaders.configNormalMap) {
-                FilterMode filter = normalBlend ? FilterMode.LINEAR : FilterMode.NEAREST;
-                var sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.REPEAT, filter, filter, mipmaps);
-                sampler = runtime.getMaterialSampler(textures.baseTex, sampler, normalBlend, true);
+                var sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.NEAREST, mipmaps);
+                sampler = runtime.getMaterialSampler(textures.baseTex, sampler, false, true);
                 runtime.bindTexture(1, runtime.getTextureView(textures.normTex), ((VulkanGpuSampler)sampler).vkSampler());
             }
             if (Shaders.configSpecularMap) {
@@ -431,7 +428,7 @@ public class ShadersTex {
         return mipmapImages;
     }
 
-    public static BufferedImage readImage(Identifier resLoc) {
+    public static NativeImage readImage(Identifier resLoc) {
         try {
             if (!Config.hasResource(resLoc)) {
                 return null;
@@ -442,9 +439,7 @@ public class ShadersTex {
                 return null;
             }
 
-            BufferedImage image = ImageIO.read(istr);
-            istr.close();
-            return image;
+            return NativeImage.read(istr);
         } catch (IOException e) {
             return null;
         }

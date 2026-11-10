@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.resources.Identifier;
 import net.optifine.Config;
 import net.optifine.entity.model.CustomEntityModelParser;
 import net.optifine.model.Attachment;
@@ -121,17 +120,6 @@ public class PlayerItemParser {
         if (obj == null) {
             throw new JsonParseException(msg);
         }
-    }
-
-    private static Identifier makeResourceLocation(String texture) {
-        int pos = texture.indexOf(58);
-        if (pos < 0) {
-            return new Identifier(texture);
-        }
-
-        String domain = texture.substring(0, pos);
-        String path = texture.substring(pos + 1);
-        return new Identifier(domain, path);
     }
 
     private static int parseAttachModel(String attachModelStr) {

@@ -807,9 +807,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Större skärmdumpar kan kräva mer minne.
 of.options.SCREENSHOT_SIZE.tooltip.5=Inte kompatibel med Kantutjämning.
 of.options.SCREENSHOT_SIZE.tooltip.6=Kräver att grafikprocessorn har stöd för framebuffer.
 
-of.options.SHOW_GL_ERRORS=Visa OpenGL-fel
-of.options.SHOW_GL_ERRORS.tooltip.1=Visa OpenGL-fel
-of.options.SHOW_GL_ERRORS.tooltip.2=OpenGL-fel visas i chatten när detta aktiveras.
+of.options.SHOW_GL_ERRORS=Visa grafik-API-fel
+of.options.SHOW_GL_ERRORS.tooltip.1=Visa grafik-API-fel
+of.options.SHOW_GL_ERRORS.tooltip.2=När detta aktiveras visas grafik-API-fel i chatten.
 of.options.SHOW_GL_ERRORS.tooltip.3=Inaktivera endast detta om det finns en känd konflikt och
 of.options.SHOW_GL_ERRORS.tooltip.4=felen inte kan åtgärdas.
 of.options.SHOW_GL_ERRORS.tooltip.5=När detta inaktiveras kommer felen fortfarande

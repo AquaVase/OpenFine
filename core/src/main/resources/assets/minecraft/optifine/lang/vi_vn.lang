@@ -814,9 +814,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Chụp ảnh màn hình lớn hơn có th�
 of.options.SCREENSHOT_SIZE.tooltip.5=Không tương thích với Khử răng cưa.
 of.options.SCREENSHOT_SIZE.tooltip.6=GPU phải hỗ trợ bộ đệm khung.
 
-of.options.SHOW_GL_ERRORS=Hiển thị lỗi GL
-of.options.SHOW_GL_ERRORS.tooltip.1=Hiển thị lỗi OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Khi được bật, lỗi OpenGL sẽ hiển thị trong mục trò chuyện.
+of.options.SHOW_GL_ERRORS=Hiển thị lỗi API đồ họa
+of.options.SHOW_GL_ERRORS.tooltip.1=Hiển thị lỗi API đồ họa
+of.options.SHOW_GL_ERRORS.tooltip.2=Khi được bật, lỗi API đồ họa sẽ hiển thị trong mục trò chuyện.
 of.options.SHOW_GL_ERRORS.tooltip.3=Chỉ vô hiệu hóa nó nếu có xung đột đã biết và không thể sửa được lỗi.
 of.options.SHOW_GL_ERRORS.tooltip.4=Khi bị vô hiệu hóa, các lỗi vẫn được ghi trong nhật ký lỗi và chúng vẫn có 
 of.options.SHOW_GL_ERRORS.tooltip.5=thể làm giảm đáng kể FPS.

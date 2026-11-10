@@ -966,18 +966,4 @@ public class ConnectedProperties {
         return Matches.biome(biome, this.biomes);
     }
 
-    private static int getMax(int[] mds, int max) {
-        if (mds == null) {
-            return max;
-        }
-
-        for (int i = 0; i < mds.length; i++) {
-            int md = mds[i];
-            if (md > max) {
-                max = md;
-            }
-        }
-
-        return max;
-    }
 }

@@ -755,9 +755,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Daha büyük ekran alıntıları daha çok 
 of.options.SCREENSHOT_SIZE.tooltip.5=duyabilir. Kenar Yumuşatma ile uyumlu değildir.
 of.options.SCREENSHOT_SIZE.tooltip.6=Framebuffer destekli GPU gerektirir.
 
-of.options.SHOW_GL_ERRORS=GL Hatalarını Göster
-of.options.SHOW_GL_ERRORS.tooltip.1=OpenGL Hatalarını Göster
-of.options.SHOW_GL_ERRORS.tooltip.2=Aktifken sohbet bölümünde OpenGL hataları gösterilir.
+of.options.SHOW_GL_ERRORS=Grafik API Hatalarını Göster
+of.options.SHOW_GL_ERRORS.tooltip.1=Grafik API Hatalarını Göster
+of.options.SHOW_GL_ERRORS.tooltip.2=Etkinleştirildiğinde grafik API hataları sohbette gösterilir.
 of.options.SHOW_GL_ERRORS.tooltip.3=Bu ayarı sadece bilinen bir hata var ve
 of.options.SHOW_GL_ERRORS.tooltip.4=çözülemiyorsa devre dışı bırakın.
 of.options.SHOW_GL_ERRORS.tooltip.5=Devre dışı bırakıldığında bile hatalar yine de kayıt

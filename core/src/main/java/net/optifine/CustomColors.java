@@ -1,7 +1,6 @@
 package net.optifine;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +12,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import javax.imageio.ImageIO;
 import net.minecraft.IdentifierException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
@@ -355,21 +353,6 @@ public class CustomColors {
         }
 
         return new ImmutablePair<>(lmps, minDimId);
-    }
-
-    private static int getTextureHeight(String path, int defHeight) {
-        try {
-            InputStream in = Config.getResourceStream(new Identifier(path));
-            if (in == null) {
-                return defHeight;
-            }
-
-            BufferedImage bi = ImageIO.read(in);
-            in.close();
-            return bi == null ? defHeight : bi.getHeight();
-        } catch (IOException e) {
-            return defHeight;
-        }
     }
 
     private static void readColorProperties(String fileName) {

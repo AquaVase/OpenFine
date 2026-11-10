@@ -811,9 +811,9 @@ of.options.SCREENSHOT_SIZE.tooltip.5=nécessiter plus de mémoire.
 of.options.SCREENSHOT_SIZE.tooltip.6=Incompatible avec l'anticrénelage.
 of.options.SCREENSHOT_SIZE.tooltip.7=Requiert un processeur graphique avec un tampon de trame.
 
-of.options.SHOW_GL_ERRORS=Afficher les erreurs GL 
-of.options.SHOW_GL_ERRORS.tooltip.1=Afficher les erreurs OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Les erreurs OpenGL sont affichées dans le tchat lorsque
+of.options.SHOW_GL_ERRORS=Afficher les erreurs de l’API graphique
+of.options.SHOW_GL_ERRORS.tooltip.1=Afficher les erreurs de l’API graphique
+of.options.SHOW_GL_ERRORS.tooltip.2=Les erreurs de l’API graphique sont affichées dans le tchat lorsque
 of.options.SHOW_GL_ERRORS.tooltip.3=cette option est activée. Ne la désactiver que s'il y a un
 of.options.SHOW_GL_ERRORS.tooltip.4=conflit inconnu et que les erreurs ne peuvent être
 of.options.SHOW_GL_ERRORS.tooltip.5=corrigées. Les erreurs sont toujours journalisées lorsque

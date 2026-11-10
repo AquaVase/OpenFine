@@ -7,8 +7,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.logging.log4j.LogManager;
@@ -20,8 +18,7 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
     private static final Logger LOGGER = LogManager.getLogger();
     private ZipFile ofZipFile;
     private String forgeJarUrlStr;
-    private Map<String, String> patchMap = null;
-    private Pattern[] patterns = null;
+    private PatchConfiguration configuration;
     public static final String PREFIX_SRG = "srg/";
     public static final String SUFFIX_CLASS = ".class";
     public static final String PREFIX_PATCH_SRG = "patch/srg/";
@@ -32,14 +29,13 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
         this.ofZipFile = ofZipFile;
 
         try {
-            this.patchMap = Patcher.getConfigurationMap(ofZipFile);
-            this.patterns = Patcher.getConfigurationPatterns(this.patchMap);
+            this.configuration = new PatchConfiguration(Patcher.getConfigurationMap(ofZipFile));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         try {
-            Class cls = Class.forName("net.minecraft.client.Minecraft");
+            Class cls = Class.forName("net.minecraft.client.Minecraft", false, OptiFineBaseTransformer.class.getClassLoader());
             URL forgeJarUrl = cls.getProtectionDomain().getCodeSource().getLocation();
             this.forgeJarUrlStr = forgeJarUrl.toString();
             LOGGER.info("Forge JAR URL: " + this.forgeJarUrlStr);
@@ -53,31 +49,13 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
         String classPath = this.getSrgClassPath(className);
         byte[] bytes = this.getOptiFineResource(classPath);
         if (bytes != null) {
-            InputStream in = new ByteArrayInputStream(bytes);
-            ClassNode classNodeNew = this.loadClass(in);
-            if (classNodeNew != null) {
-                this.debugClass(classNodeNew);
-                AccessFixer.fixMemberAccess(classNode, classNodeNew);
-                classNode = classNodeNew;
-            }
+            ClassNode classNodeNew = new ClassNode(393216);
+            new ClassReader(bytes).accept(classNodeNew, 0);
+            AccessFixer.fixMemberAccess(classNode, classNodeNew);
+            classNode = classNodeNew;
         }
 
         return classNode;
-    }
-
-    private void debugClass(ClassNode classNode) {
-    }
-
-    private ClassNode loadClass(InputStream in) {
-        try {
-            ClassReader cr = new ClassReader(in);
-            ClassNode cn = new ClassNode(393216);
-            cr.accept(cn, 0);
-            return cn;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     protected String[] getResourceNames(String prefix, String suffix) {
@@ -102,9 +80,7 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
                 return null;
             }
 
-            byte[] bytes = Utils.readAll(in);
-            in.close();
-            return bytes;
+            return Utils.readAll(in);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -120,7 +96,7 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
         }
 
         in = this.getOptiFineResourceStreamPatched(name);
-        return in != null ? in : null;
+        return in;
     }
 
     @Override
@@ -181,7 +157,7 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
     }
 
     public synchronized byte[] getOptiFineResourcePatched(String name) {
-        if (this.patterns != null && this.patchMap != null) {
+        if (this.configuration != null) {
             name = Utils.removePrefix(name, "/");
             String patchName = "patch/" + name + ".xdelta";
             byte[] bytes = this.getOptiFineResourceZip(patchName);
@@ -190,7 +166,7 @@ public class OptiFineBaseTransformer implements IResourceProvider, IOptiFineReso
             }
 
             try {
-                byte[] bytesPatched = Patcher.applyPatch(name, bytes, this.patterns, this.patchMap, this);
+                byte[] bytesPatched = Patcher.applyPatch(name, bytes, this.configuration, this);
                 String fullMd5Name = "patch/" + name + ".md5";
                 byte[] bytesMd5 = this.getOptiFineResourceZip(fullMd5Name);
                 if (bytesMd5 != null) {

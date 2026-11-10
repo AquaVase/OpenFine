@@ -792,9 +792,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Заснемането на по-голем
 of.options.SCREENSHOT_SIZE.tooltip.5=Не е съвместим с Антиалиасинг.
 of.options.SCREENSHOT_SIZE.tooltip.6=Изисква поддръжка на GPU framebuffer.
 
-of.options.SHOW_GL_ERRORS=Показване на GL грешки
-of.options.SHOW_GL_ERRORS.tooltip.1=Показване на GL грешки
-of.options.SHOW_GL_ERRORS.tooltip.2=Когато е активиран OpenGL, грешките се показват в чата.
+of.options.SHOW_GL_ERRORS=Показване на грешки на графичния API
+of.options.SHOW_GL_ERRORS.tooltip.1=Показване на грешки на графичния API
+of.options.SHOW_GL_ERRORS.tooltip.2=Когато е включено, грешките на графичния API се показват в чата.
 of.options.SHOW_GL_ERRORS.tooltip.3=Деактивирайте го само ако има известен конфликт и
 of.options.SHOW_GL_ERRORS.tooltip.4=грешките не могат да се поправят.
 of.options.SHOW_GL_ERRORS.tooltip.5=Когато е деактивиран, грешките все още се регистрират в

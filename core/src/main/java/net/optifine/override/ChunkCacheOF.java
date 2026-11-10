@@ -92,21 +92,17 @@ public class ChunkCacheOF implements BlockAndTintGetter {
     }
 
     public void renderStart() {
-        if (this.combinedLights == null) {
-            this.combinedLights = (int[])cacheCombinedLights.allocate(this.arraySize);
-        }
-
         if (this.blockStates == null) {
             this.blockStates = (BlockState[])cacheBlockStates.allocate(this.arraySize);
+        } else {
+            Arrays.fill(this.blockStates, null);
         }
-
-        if (this.biomes == null) {
-            this.biomes = (Biome[])cacheBiomes.allocate(this.arraySize);
+        if (this.combinedLights != null) {
+            Arrays.fill(this.combinedLights, -1);
         }
-
-        Arrays.fill(this.combinedLights, -1);
-        Arrays.fill(this.blockStates, null);
-        Arrays.fill(this.biomes, null);
+        if (this.biomes != null) {
+            Arrays.fill(this.biomes, null);
+        }
         this.loadBlockStates();
     }
 
@@ -138,10 +134,17 @@ public class ChunkCacheOF implements BlockAndTintGetter {
     public void renderFinish() {
         cacheCombinedLights.free(this.combinedLights);
         this.combinedLights = null;
-        cacheBlockStates.free(this.blockStates);
-        this.blockStates = null;
-        cacheBiomes.free(this.biomes);
-        this.biomes = null;
+        if (this.blockStates != null) {
+            Arrays.fill(this.blockStates, null);
+            cacheBlockStates.free(this.blockStates);
+            this.blockStates = null;
+        }
+        if (this.biomes != null) {
+            Arrays.fill(this.biomes, null);
+            cacheBiomes.free(this.biomes);
+            this.biomes = null;
+        }
+        this.renderEnv = null;
     }
 
     public int getCombinedLight(BlockState blockStateIn, BlockAndTintGetter worldIn, BlockPos blockPosIn) {
@@ -150,7 +153,11 @@ public class ChunkCacheOF implements BlockAndTintGetter {
         }
 
         int index = this.getPositionIndex(blockPosIn);
-        if (index >= 0 && index < this.combinedLights.length && this.combinedLights != null) {
+        if (this.blockStates != null && index >= 0 && index < this.arraySize) {
+            if (this.combinedLights == null) {
+                this.combinedLights = (int[])cacheCombinedLights.allocate(this.arraySize);
+                Arrays.fill(this.combinedLights, -1);
+            }
             int light = this.combinedLights[index];
             if (light == -1) {
                 light = LightCacheOF.getPackedLightRaw(worldIn, blockStateIn, blockPosIn);
@@ -165,7 +172,10 @@ public class ChunkCacheOF implements BlockAndTintGetter {
 
     public Biome getBiome(BlockPos pos) {
         int index = this.getPositionIndex(pos);
-        if (index >= 0 && index < this.arraySize && this.biomes != null) {
+        if (index >= 0 && index < this.arraySize && this.blockStates != null) {
+            if (this.biomes == null) {
+                this.biomes = (Biome[])cacheBiomes.allocate(this.arraySize);
+            }
             Biome biome = this.biomes[index];
             if (biome == null) {
                 biome = this.chunkCache.getBiome(pos);

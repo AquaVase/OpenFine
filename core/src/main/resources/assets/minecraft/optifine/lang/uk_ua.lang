@@ -797,9 +797,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Знімання більшого скрі�
 of.options.SCREENSHOT_SIZE.tooltip.5=Не сумісне зі згладжуванням
 of.options.SCREENSHOT_SIZE.tooltip.6=Потребує підтримку фреймбуфера GPU.
 
-of.options.SHOW_GL_ERRORS=Показувати помилки OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.1=Показувати помилки OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Коли увімкнено, помилки OpenGL будуть надсилатись у чат.
+of.options.SHOW_GL_ERRORS=Показувати помилки графічного API
+of.options.SHOW_GL_ERRORS.tooltip.1=Показувати помилки графічного API
+of.options.SHOW_GL_ERRORS.tooltip.2=Коли увімкнено, помилки графічного API відображаються в чаті.
 of.options.SHOW_GL_ERRORS.tooltip.3=Вимикайте це лише, якщо ви ТОЧНО впевнені що цю
 of.options.SHOW_GL_ERRORS.tooltip.4=помилку неможливо виправити.
 of.options.SHOW_GL_ERRORS.tooltip.5=Коли вимкнено, помилки продовжать зберігатись у журналах

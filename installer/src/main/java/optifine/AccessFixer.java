@@ -1,15 +1,11 @@
 package optifine;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterators;
-import java.util.stream.StreamSupport;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
@@ -17,8 +13,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 public class AccessFixer {
-    private static final Logger LOGGER = LogManager.getLogger();
-
     public static void fixMemberAccess(ClassNode classOld, ClassNode classNew) {
         List<FieldNode> fieldsOld = classOld.fields;
         List<FieldNode> fieldsNew = classNew.fields;
@@ -50,18 +44,16 @@ public class AccessFixer {
         }
 
         if (!privateChanged.isEmpty()) {
-            List<MethodInsnNode> changed = new ArrayList<>();
-            classNew.methods
-                .forEach(
-                    mn -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(mn.instructions.iterator(), 16), false)
-                        .filter(i -> i.getOpcode() == 183)
-                        .map(MethodInsnNode.class::cast)
-                        .filter(m -> privateChanged.contains(m.name + m.desc))
-                        .forEach(m -> {
-                            m.setOpcode(182);
-                            changed.add(m);
-                        })
-                );
+            for (MethodNode method : classNew.methods) {
+                for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
+                    if (instruction.getOpcode() == 183) {
+                        MethodInsnNode invocation = (MethodInsnNode)instruction;
+                        if (privateChanged.contains(invocation.name + invocation.desc)) {
+                            invocation.setOpcode(182);
+                        }
+                    }
+                }
+            }
         }
 
         List<InnerClassNode> innerClassesOld = classOld.innerClasses;
@@ -142,32 +134,4 @@ public class AccessFixer {
         return map;
     }
 
-    private static String toString(int access) {
-        StringBuffer sb = new StringBuffer();
-        if (isSet(access, 1)) {
-            addToBuffer(sb, "public", " ");
-        }
-
-        if (isSet(access, 4)) {
-            addToBuffer(sb, "protected", " ");
-        }
-
-        if (isSet(access, 2)) {
-            addToBuffer(sb, "private", " ");
-        }
-
-        if (isSet(access, 16)) {
-            addToBuffer(sb, "final", " ");
-        }
-
-        return sb.toString();
-    }
-
-    private static void addToBuffer(StringBuffer sb, String val, String separator) {
-        if (sb.length() > 0) {
-            sb.append(separator);
-        }
-
-        sb.append(val);
-    }
 }

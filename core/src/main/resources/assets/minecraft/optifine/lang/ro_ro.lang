@@ -807,13 +807,14 @@ of.options.SCREENSHOT_SIZE.tooltip.6=
 of.options.SCREENSHOT_SIZE.tooltip.7=
 
 
-of.options.SHOW_GL_ERRORS=Afișare erori OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.1=Opțiunea controlează afișarea erorilor OpenGL în chat.
-of.options.SHOW_GL_ERRORS.tooltip.2=Sfătuim a se dezactiva doar dacă există o problemă cunoscută, fără remediere
-of.options.SHOW_GL_ERRORS.tooltip.3=disponibilă.
-of.options.SHOW_GL_ERRORS.tooltip.4=Chiar dacă opțiunea este dezactivată, erorile vor apărea în jurnal și pot
-of.options.SHOW_GL_ERRORS.tooltip.5=provoca scăderea semnificativă a ratei de cadre.
-of.options.SHOW_GL_ERRORS.tooltip.6=
+of.options.SHOW_GL_ERRORS=Afișare erori ale API-ului grafic
+of.options.SHOW_GL_ERRORS.tooltip.1=Afișare erori ale API-ului grafic
+of.options.SHOW_GL_ERRORS.tooltip.2=Când opțiunea este activată, erorile API-ului grafic sunt afișate în chat.
+of.options.SHOW_GL_ERRORS.tooltip.3=Sfătuim a se dezactiva doar dacă există o problemă cunoscută, fără remediere
+of.options.SHOW_GL_ERRORS.tooltip.4=disponibilă.
+of.options.SHOW_GL_ERRORS.tooltip.5=Chiar dacă opțiunea este dezactivată, erorile vor apărea în jurnal și pot
+of.options.SHOW_GL_ERRORS.tooltip.6=provoca scăderea semnificativă a ratei de cadre.
+of.options.SHOW_GL_ERRORS.tooltip.7=
 
 of.options.TELEMETRY=Telemetrie
 of.options.TELEMETRY.tooltip.1=  Da - telemetrie completă (implicit)

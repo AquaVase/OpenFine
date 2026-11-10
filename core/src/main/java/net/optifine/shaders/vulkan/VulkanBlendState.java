@@ -15,6 +15,7 @@ import org.lwjgl.vulkan.VkPipelineColorBlendAttachmentState;
 // Copy mutable pack properties before using them in a pipeline cache key.
 public record VulkanBlendState(boolean defined, boolean enabled, int source, int destination, int sourceAlpha, int destinationAlpha) {
     private static final VulkanBlendState INHERIT = new VulkanBlendState(false, false, 1, 0, 1, 0);
+    private static final ThreadLocal<List<VulkanBlendState>> capturedStates = ThreadLocal.withInitial(List::of);
     private static final Set<Integer> INTEGER_FORMATS = Arrays.stream(GpuFormat.values()).filter(format -> switch (format.componentType()) {
         case UINT_8, SINT_8, UINT_16, SINT_16, UINT_32, SINT_32 -> true;
         default -> false;
@@ -28,17 +29,40 @@ public record VulkanBlendState(boolean defined, boolean enabled, int source, int
     }
 
     public static List<VulkanBlendState> capture(Program program, int count) {
+        GlBlendState global = program == null ? null : program.getBlendState();
+        GlBlendState[] indexed = program == null ? null : program.getBlendStatesIndexed();
+        List<VulkanBlendState> previous = capturedStates.get();
+        if (previous.size() == count) {
+            boolean unchanged = true;
+            for (int i = 0; i < count; i++) {
+                GlBlendState state = indexed != null && i < indexed.length && indexed[i] != null ? indexed[i] : global;
+                if (!previous.get(i).matches(state)) {
+                    unchanged = false;
+                    break;
+                }
+            }
+            if (unchanged) {
+                return previous;
+            }
+        }
         List<VulkanBlendState> states = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            GlBlendState state = program == null ? null : program.getBlendState();
-            GlBlendState[] indexed = program == null ? null : program.getBlendStatesIndexed();
+            GlBlendState state = global;
             if (indexed != null && i < indexed.length && indexed[i] != null) {
                 state = indexed[i];
             }
             states.add(state == null ? INHERIT : new VulkanBlendState(true, state.isEnabled(), state.getSrcFactor(), state.getDstFactor(),
                 state.getSrcFactorAlpha(), state.getDstFactorAlpha()));
         }
-        return List.copyOf(states);
+        List<VulkanBlendState> captured = List.copyOf(states);
+        capturedStates.set(captured);
+        return captured;
+    }
+
+    private boolean matches(GlBlendState state) {
+        return state == null ? !this.defined : this.defined && this.enabled == state.isEnabled()
+            && this.source == state.getSrcFactor() && this.destination == state.getDstFactor()
+            && this.sourceAlpha == state.getSrcFactorAlpha() && this.destinationAlpha == state.getDstFactorAlpha();
     }
 
     public void apply(VkPipelineColorBlendAttachmentState attachment) {

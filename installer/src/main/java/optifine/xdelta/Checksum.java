@@ -361,35 +361,5 @@ public class Checksum {
         return prime < 2 ? 1 : prime;
     }
 
-    private String printIntArray(int[] a) {
-        String result = "";
-        result = result + "[";
 
-        for (int i = 0; i < a.length; i++) {
-            result = result + a[i];
-            if (i != a.length - 1) {
-                result = result + ",";
-            } else {
-                result = result + "]";
-            }
-        }
-
-        return result;
-    }
-
-    private String printLongArray(long[] a) {
-        String result = "";
-        result = result + "[";
-
-        for (int i = 0; i < a.length; i++) {
-            result = result + a[i];
-            if (i != a.length - 1) {
-                result = result + ",";
-            } else {
-                result = result + "]";
-            }
-        }
-
-        return result;
-    }
 }

@@ -787,9 +787,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Focení větších screenshotů může vyž
 of.options.SCREENSHOT_SIZE.tooltip.5=Není kompatibilní s antialiasingem.
 of.options.SCREENSHOT_SIZE.tooltip.6=Vyžaduje podporu GPU framebufferu.
 
-of.options.SHOW_GL_ERRORS=Zobrazit GL chyby
-of.options.SHOW_GL_ERRORS.tooltip.1=Zobrazit OpenGL chyby
-of.options.SHOW_GL_ERRORS.tooltip.2=Pokud nastaveno na ANO, OpenGL chyby se
+of.options.SHOW_GL_ERRORS=Zobrazit chyby grafického API
+of.options.SHOW_GL_ERRORS.tooltip.1=Zobrazit chyby grafického API
+of.options.SHOW_GL_ERRORS.tooltip.2=Pokud nastaveno na ANO, chyby grafického API se
 of.options.SHOW_GL_ERRORS.tooltip.3=budou objevovat v chatu. Vypni jen když je
 of.options.SHOW_GL_ERRORS.tooltip.4=chyba známa a víš, že se nedá opravit.
 of.options.SHOW_GL_ERRORS.tooltip.5=Pokud NE, chyby jsou stále logovány v

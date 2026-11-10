@@ -841,39 +841,6 @@ public class Reflector {
         return true;
     }
 
-    private static void dbgCall(boolean isStatic, String callType, ReflectorMethod refMethod, Object[] params, Object retVal) {
-        String className = refMethod.getTargetMethod().getDeclaringClass().getName();
-        String methodName = refMethod.getTargetMethod().getName();
-        String staticStr = "";
-        if (isStatic) {
-            staticStr = " static";
-        }
-
-        Log.dbg(callType + staticStr + " " + className + "." + methodName + "(" + ArrayUtils.arrayToString(params) + ") => " + retVal);
-    }
-
-    private static void dbgCallVoid(boolean isStatic, String callType, ReflectorMethod refMethod, Object[] params) {
-        String className = refMethod.getTargetMethod().getDeclaringClass().getName();
-        String methodName = refMethod.getTargetMethod().getName();
-        String staticStr = "";
-        if (isStatic) {
-            staticStr = " static";
-        }
-
-        Log.dbg(callType + staticStr + " " + className + "." + methodName + "(" + ArrayUtils.arrayToString(params) + ")");
-    }
-
-    private static void dbgFieldValue(boolean isStatic, String accessType, ReflectorField refField, Object val) {
-        String className = refField.getTargetField().getDeclaringClass().getName();
-        String fieldName = refField.getTargetField().getName();
-        String staticStr = "";
-        if (isStatic) {
-            staticStr = " static";
-        }
-
-        Log.dbg(accessType + staticStr + " " + className + "." + fieldName + " => " + val);
-    }
-
     private static void handleException(Throwable e, Object obj, ReflectorField refField, Object value) {
         Log.warn("*** Exception setting field value ***");
         Log.warn("Field deactivated: " + refField.getTargetField());

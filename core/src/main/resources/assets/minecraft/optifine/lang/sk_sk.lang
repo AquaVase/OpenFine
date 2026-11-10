@@ -787,9 +787,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Fotenie väčších snímok môže vyžadov
 of.options.SCREENSHOT_SIZE.tooltip.5=Nekompatibilné s vyhladzovaním (MSAA).
 of.options.SCREENSHOT_SIZE.tooltip.6=Vyžaduje podporu medzipamäte snímok.
 
-of.options.SHOW_GL_ERRORS=Zobrazenie GL chýb
-of.options.SHOW_GL_ERRORS.tooltip.1=Zobrazenie OpenGL chýb
-of.options.SHOW_GL_ERRORS.tooltip.2=Ak je zapnuté, OpenGL chyby sa zobrazujú v čete.
+of.options.SHOW_GL_ERRORS=Zobraziť chyby grafického API
+of.options.SHOW_GL_ERRORS.tooltip.1=Zobraziť chyby grafického API
+of.options.SHOW_GL_ERRORS.tooltip.2=Ak je zapnuté, chyby grafického API sa zobrazujú v čete.
 of.options.SHOW_GL_ERRORS.tooltip.3=Vypni len v prípade známeho problému, kde
 of.options.SHOW_GL_ERRORS.tooltip.4=chyby nie je možné opraviť.
 of.options.SHOW_GL_ERRORS.tooltip.5=Ak je vypnuté, chyby sa stále zapisujú do denníka chýb

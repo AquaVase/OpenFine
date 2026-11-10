@@ -58,3 +58,7 @@ of.options.FAST_MATH.tooltip.5=better utilise the CPU cache and increase the FPS
 of.options.CHUNK_UPDATES.tooltip.6=higher values may destabilise the framerate.
 
 of.options.RENDER_REGIONS.tooltip.4=Allows faster terrain rendering by optimising
+
+of.options.SHOW_GL_ERRORS=Show Graphics API Errors
+of.options.SHOW_GL_ERRORS.tooltip.1=Show Graphics API Errors
+of.options.SHOW_GL_ERRORS.tooltip.2=When enabled graphics API errors are shown in the chat.

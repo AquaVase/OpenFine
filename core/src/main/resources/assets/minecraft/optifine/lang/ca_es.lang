@@ -792,9 +792,9 @@ of.options.ADVANCED_TOOLTIPS.tooltip.5=Aquesta opció permet veure informació m
 of.options.ADVANCED_TOOLTIPS.tooltip.6=objectes (ID, durabilitat) i shaders (ID, font,
 of.options.ADVANCED_TOOLTIPS.tooltip.7=valor predeterminat).
 
-of.options.SHOW_GL_ERRORS=Mostrar errors de GL
-of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar errors d'OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Al activar-se, els errors es mostren en el chat.
+of.options.SHOW_GL_ERRORS=Mostrar errors de l’API gràfica
+of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar errors de l’API gràfica
+of.options.SHOW_GL_ERRORS.tooltip.2=Quan està activat, els errors de l’API gràfica es mostren al xat.
 of.options.SHOW_GL_ERRORS.tooltip.3=Desactíva-ho si hi ha un problema irresoluble per a
 of.options.SHOW_GL_ERRORS.tooltip.4=que els errors no et molestin.
 of.options.SHOW_GL_ERRORS.tooltip.5=    

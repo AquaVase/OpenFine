@@ -11,6 +11,16 @@ import org.lwjgl.util.shaderc.Shaderc;
 public class VulkanShaderCompiler implements AutoCloseable {
     private static final Pattern TRINARY_HELPER = Pattern.compile(
         "\\b(?:float|double|int|uint|[diu]?vec[234])\\s+(min3|max3|mid3)\\s*\\(");
+    private static final Map<String, Pattern> LEGACY_IDENTIFIERS = Map.of(
+        "input", Pattern.compile("\\binput\\b"),
+        "output", Pattern.compile("\\boutput\\b"),
+        "sampler", Pattern.compile("\\bsampler\\b")
+    );
+    private static final Map<String, Pattern> LEGACY_HELPERS = Map.of(
+        "min3", Pattern.compile("\\bmin3\\b(?=\\s*\\()"),
+        "max3", Pattern.compile("\\bmax3\\b(?=\\s*\\()"),
+        "mid3", Pattern.compile("\\bmid3\\b(?=\\s*\\()")
+    );
     private long compiler;
     private long options;
     private long initializerOptions;
@@ -74,14 +84,21 @@ public class VulkanShaderCompiler implements AutoCloseable {
         ByteBuffer nameBuffer = null;
         ByteBuffer entryBuffer = null;
         long result = 0L;
+        String adapted;
+        long moduleOptions = this.options;
+        // glslang recognizes the rayQueryEXT type only with GLSL 4.60.
+        if (source.contains("GL_EXT_ray_query")) {
+            moduleOptions = Shaderc.shaderc_compile_options_clone(this.options);
+            Shaderc.shaderc_compile_options_set_forced_version_profile(moduleOptions, 460, Shaderc.shaderc_profile_core);
+        }
         try {
             nameBuffer = MemoryUtil.memUTF8(filename);
             entryBuffer = MemoryUtil.memUTF8("main");
-            long expanded = Shaderc.shaderc_compile_into_preprocessed_text(this.compiler, sourceBuffer, getShaderKind(type), nameBuffer, entryBuffer, this.options);
+            long expanded = Shaderc.shaderc_compile_into_preprocessed_text(this.compiler, sourceBuffer, getShaderKind(type), nameBuffer, entryBuffer, moduleOptions);
             try {
                 checkInitializerResult(expanded);
                 String original = MemoryUtil.memUTF8(Shaderc.shaderc_result_get_bytes(expanded));
-                String adapted = VulkanRectangleShaders.adapt(renameLegacyIdentifiers(original));
+                adapted = VulkanRectangleShaders.adapt(renameLegacyIdentifiers(original));
                 MemoryUtil.memFree(sourceBuffer);
                 sourceBuffer = null;
                 sourceBuffer = MemoryUtil.memUTF8(adapted, false);
@@ -90,7 +107,7 @@ public class VulkanShaderCompiler implements AutoCloseable {
                     Shaderc.shaderc_result_release(expanded);
                 }
             }
-            result = Shaderc.shaderc_compile_into_spv(this.compiler, sourceBuffer, getShaderKind(type), nameBuffer, entryBuffer, this.options);
+            result = Shaderc.shaderc_compile_into_spv(this.compiler, sourceBuffer, getShaderKind(type), nameBuffer, entryBuffer, moduleOptions);
             if (result == 0L) {
                 throw new IllegalStateException("Failed to compile Vulkan shader: " + filename);
             }
@@ -105,20 +122,46 @@ public class VulkanShaderCompiler implements AutoCloseable {
                 throw new IllegalStateException("Vulkan shader compiler returned no SPIR-V: " + filename);
             }
 
-            return new VulkanShaderModule(filename, type, bytes, log, this.readInitializers(type, sourceBuffer, nameBuffer, entryBuffer));
+            return new VulkanShaderModule(filename, type, bytes, log, this.readInitializers(type, this.initializerSource(type, source, adapted, nameBuffer, entryBuffer), nameBuffer, entryBuffer));
         } finally {
             if (result != 0L) {
                 Shaderc.shaderc_result_release(result);
             }
 
+            if (moduleOptions != this.options) {
+                Shaderc.shaderc_compile_options_release(moduleOptions);
+            }
             MemoryUtil.memFree(entryBuffer);
             MemoryUtil.memFree(nameBuffer);
             MemoryUtil.memFree(sourceBuffer);
         }
     }
 
-    private Map<String, VulkanUniformInitializers.Value> readInitializers(ShaderType type, ByteBuffer source, ByteBuffer filename, ByteBuffer entry) {
-        String expandedSource = MemoryUtil.memUTF8(source);
+    private String initializerSource(ShaderType type, String source, String expanded, ByteBuffer filename, ByteBuffer entry) {
+        if (!source.contains("GL_EXT_ray_query")) {
+            return expanded;
+        }
+        // The metadata compiler targets OpenGL SPIR-V to preserve standalone uniform defaults.
+        // Ray-query packs provide a no-op helper for that pass; the actual GPU module keeps RayQueryKHR.
+        long options = Shaderc.shaderc_compile_options_clone(this.options);
+        long result = 0L;
+        ByteBuffer bytes = MemoryUtil.memUTF8(source, false);
+        try {
+            Shaderc.shaderc_compile_options_set_forced_version_profile(options, 460, Shaderc.shaderc_profile_core);
+            Shaderc.shaderc_compile_options_add_macro_definition(options, "OF_RT_METADATA", "1");
+            result = Shaderc.shaderc_compile_into_preprocessed_text(this.compiler, bytes, getShaderKind(type), filename, entry, options);
+            checkInitializerResult(result);
+            return VulkanRectangleShaders.adapt(renameLegacyIdentifiers(MemoryUtil.memUTF8(Shaderc.shaderc_result_get_bytes(result))));
+        } finally {
+            if (result != 0L) {
+                Shaderc.shaderc_result_release(result);
+            }
+            Shaderc.shaderc_compile_options_release(options);
+            MemoryUtil.memFree(bytes);
+        }
+    }
+
+    private Map<String, VulkanUniformInitializers.Value> readInitializers(ShaderType type, String expandedSource, ByteBuffer filename, ByteBuffer entry) {
         if (!VulkanUniformInitializers.hasInitializers(expandedSource)) {
             return Map.of();
         }
@@ -145,21 +188,25 @@ public class VulkanShaderCompiler implements AutoCloseable {
             names.add(declarations.group(1));
         }
         // Some desktop GL drivers accept these reserved words as identifiers.
-        for (String name : new String[]{"input", "output", "sampler"}) {
-            String replacement = "_ofLegacy_" + name;
-            while (Pattern.compile("\\b" + replacement + "\\b").matcher(source).find()) {
-                replacement += "_";
-            }
-            source = source.replaceAll("\\b" + name + "\\b", replacement);
+        for (var entry : LEGACY_IDENTIFIERS.entrySet()) {
+            source = renameLegacyIdentifier(source, entry.getKey(), entry.getValue());
         }
         for (String name : names) {
-            String replacement = "_ofLegacy_" + name;
-            while (Pattern.compile("\\b" + replacement + "\\b").matcher(source).find()) {
-                replacement += "_";
-            }
-            source = source.replaceAll("\\b" + name + "\\b(?=\\s*\\()", replacement);
+            source = renameLegacyIdentifier(source, name, LEGACY_HELPERS.get(name));
         }
         return source;
+    }
+
+    private static String renameLegacyIdentifier(String source, String name, Pattern pattern) {
+        var matcher = pattern.matcher(source);
+        if (!matcher.find()) {
+            return source;
+        }
+        String replacement = "_ofLegacy_" + name;
+        while (source.contains(replacement) && Pattern.compile("\\b" + replacement + "\\b").matcher(source).find()) {
+            replacement += "_";
+        }
+        return matcher.replaceAll(replacement);
     }
 
     private static void checkInitializerResult(long result) {

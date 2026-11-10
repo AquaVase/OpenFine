@@ -125,6 +125,8 @@ public class VulkanShaderModule implements AutoCloseable {
                 this.readResources(compiler, activeResources, Spvc.SPVC_RESOURCE_TYPE_STORAGE_IMAGE, VK12.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, stack);
                 this.readResources(compiler, activeResources, Spvc.SPVC_RESOURCE_TYPE_SEPARATE_IMAGE, VK12.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stack);
                 this.readResources(compiler, activeResources, Spvc.SPVC_RESOURCE_TYPE_SEPARATE_SAMPLERS, VK12.VK_DESCRIPTOR_TYPE_SAMPLER, stack);
+                this.readResources(compiler, activeResources, Spvc.SPVC_RESOURCE_TYPE_ACCELERATION_STRUCTURE,
+                    org.lwjgl.vulkan.KHRAccelerationStructure.VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stack);
                 this.readVariables(compiler, reflected, Spvc.SPVC_RESOURCE_TYPE_STAGE_INPUT, this.inputs, stack);
                 this.readVariables(compiler, reflected, Spvc.SPVC_RESOURCE_TYPE_STAGE_OUTPUT, this.outputs, stack);
             } finally {

@@ -1,6 +1,6 @@
 package net.optifine;
 
-import java.awt.image.BufferedImage;
+import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -169,28 +169,28 @@ public class CustomColormap implements CustomColors.IColorizer {
                 return;
             }
 
-            BufferedImage img = TextureUtils.readBufferedImage(is);
-            if (img == null) {
-                return;
-            }
+            try (NativeImage img = TextureUtils.readNativeImage(is)) {
+                if (img == null) {
+                    return;
+                }
 
-            int imgWidth = img.getWidth();
-            int imgHeight = img.getHeight();
-            boolean widthOk = this.width < 0 || this.width == imgWidth;
-            boolean heightOk = this.height < 0 || this.height == imgHeight;
-            if (!widthOk || !heightOk) {
-                dbg("Non-standard palette size: " + imgWidth + "x" + imgHeight + ", should be: " + this.width + "x" + this.height + ", path: " + imagePath);
-            }
+                int imgWidth = img.getWidth();
+                int imgHeight = img.getHeight();
+                boolean widthOk = this.width < 0 || this.width == imgWidth;
+                boolean heightOk = this.height < 0 || this.height == imgHeight;
+                if (!widthOk || !heightOk) {
+                    dbg("Non-standard palette size: " + imgWidth + "x" + imgHeight + ", should be: " + this.width + "x" + this.height + ", path: " + imagePath);
+                }
 
-            this.width = imgWidth;
-            this.height = imgHeight;
-            if (this.width <= 0 || this.height <= 0) {
-                warn("Invalid palette size: " + imgWidth + "x" + imgHeight + ", path: " + imagePath);
-                return;
-            }
+                this.width = imgWidth;
+                this.height = imgHeight;
+                if (this.width <= 0 || this.height <= 0) {
+                    warn("Invalid palette size: " + imgWidth + "x" + imgHeight + ", path: " + imagePath);
+                    return;
+                }
 
-            this.colors = new int[imgWidth * imgHeight];
-            img.getRGB(0, 0, imgWidth, imgHeight, this.colors, 0, imgWidth);
+                this.colors = img.getPixels();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

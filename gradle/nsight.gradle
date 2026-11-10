@@ -1,0 +1,57 @@
+// Export the actual development runtime without starting Gradle under Nsight.
+tasks.register('prepareNsight') {
+    group = 'application'
+    description = 'Build the client and export a Java argument file for Nsight Graphics (Vulkan ray query).'
+    def client = tasks.named('runClient', JavaExec)
+    dependsOn { client.get().taskDependencies.getDependencies(client.get()) }
+
+    doLast {
+        def launch = client.get()
+        def output = layout.buildDirectory.dir('nsight').get().asFile
+        output.mkdirs()
+        def arguments = new ArrayList<String>(launch.allJvmArgs)
+        if (!launch.maxHeapSize) arguments.add('-Xmx4G')
+        def natives = tasks.named('extractNatives').get().output.get().asFile
+        arguments.addAll([
+            '--enable-native-access=ALL-UNNAMED',
+            "-Djava.library.path=${natives.absolutePath}".toString(),
+            '-Doptifine.vulkan.disableRayQuery=false',
+            '-Dshaders.debug.save=true',
+            '-cp', launch.classpath.asPath, launch.mainClass.get()
+        ])
+        def gameArgs = new ArrayList<String>(launch.args ?: [])
+        launch.argumentProviders.each { gameArgs.addAll(it.asArguments()) }
+        def setArg = { String key, String value ->
+            int index = gameArgs.indexOf(key)
+            if (index >= 0) gameArgs[index + 1] = value
+            else gameArgs.addAll([key, value])
+        }
+        // Patchgen fills these in runClient.doFirst, which is intentionally not executed here.
+        def metadata = new groovy.json.JsonSlurper().parse(file('build/downloadMCMeta/version.json'))
+        setArg('--gameDir', file('run').absolutePath)
+        setArg('--assetsDir', tasks.named('copyAssets').get().destinationDir.absolutePath)
+        setArg('--assetIndex', metadata.assetIndex.id.toString())
+        setArg('--version', metadata.id.toString())
+        setArg('--accessToken', '0')
+        setArg('--username', 'NsightDev')
+        if (!gameArgs.contains('--offlineDeveloperMode')) gameArgs.add('--offlineDeveloperMode')
+        setArg('--graphicsBackend', 'vulkan')
+        if (project.hasProperty('nsightWorld')) {
+            setArg('--quickPlaySingleplayer', project.property('nsightWorld').toString())
+        }
+        arguments.addAll(gameArgs)
+        // Java @argfile syntax: quote every token, including Windows paths with spaces.
+        def quote = { String value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
+        def argsFile = new File(output, 'client.args')
+        argsFile.setText(arguments.collect { quote(it) }.join('\n') + '\n', 'UTF-8')
+        def executable = launch.javaLauncher.get().executablePath.asFile.absolutePath
+        def commandLine = '@"' + argsFile.absolutePath + '"'
+        def settings = """Application executable: ${executable}
+Working directory: ${file('run').absolutePath}
+Command line arguments: ${commandLine}
+Environment: inherit (no extra variables required)
+"""
+        new File(output, 'launch-settings.txt').setText(settings, 'UTF-8')
+        logger.lifecycle(settings)
+    }
+}

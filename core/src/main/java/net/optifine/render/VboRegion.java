@@ -19,6 +19,7 @@ import net.optifine.Config;
 import net.optifine.util.GpuMemory;
 import net.optifine.util.LinkedList;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 public class VboRegion {
     private ChunkPos chunkPos;
@@ -33,8 +34,8 @@ public class VboRegion {
     private LinkedList<VboRange> rangeList = new LinkedList<>();
     private VboRange compactRangeLast;
     private final ConcurrentLinkedQueue<VboRange> pendingReleases = new ConcurrentLinkedQueue<>();
-    private PointerBuffer bufferIndexVertex = Config.createDirectPointerBuffer(this.capacity);
-    private IntBuffer bufferCountVertex = Config.createDirectIntBuffer(this.capacity);
+    private PointerBuffer bufferIndexVertex;
+    private IntBuffer bufferCountVertex;
     private IntBuffer bufferDrawParameters;
     private final int vertexBytes = DefaultVertexFormat.BLOCK.getVertexSize();
     private PrimitiveTopology drawMode = PrimitiveTopology.QUADS;
@@ -232,8 +233,6 @@ public class VboRegion {
             this.gpuBuffer = bufferNew;
             GpuMemory.bufferAllocated(capacityNewBytes);
             GpuMemory.bufferFreed(capacityBytes);
-            this.bufferIndexVertex = Config.createDirectPointerBuffer(capacityNew);
-            this.bufferCountVertex = Config.createDirectIntBuffer(capacityNew);
             this.capacity = capacityNew;
             RenderSystem.getSequentialBuffer(this.drawMode).ensureStorage(this.drawMode.indexCount(this.capacity));
             return;
@@ -254,8 +253,6 @@ public class VboRegion {
         GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, 0);
         GlStateManager._glDeleteBuffers(this.glBufferId);
         GpuMemory.bufferFreed(capacityBytes);
-        this.bufferIndexVertex = Config.createDirectPointerBuffer(capacityNew);
-        this.bufferCountVertex = Config.createDirectIntBuffer(capacityNew);
         this.glBufferId = glBufferIdNew;
         this.capacity = capacityNew;
     }
@@ -274,14 +271,18 @@ public class VboRegion {
     }
 
     public void drawArrays(PrimitiveTopology drawMode, VboRange range) {
+        if (this.isClosed()) {
+            return;
+        }
         if (this.drawMode != drawMode) {
-            if (this.bufferIndexVertex.position() > 0) {
+            if (this.bufferIndexVertex != null && this.bufferIndexVertex.position() > 0) {
                 throw new IllegalArgumentException("Mixed region draw modes: " + this.drawMode + " != " + drawMode);
             }
 
             this.drawMode = drawMode;
         }
 
+        this.ensureDrawCapacity();
         int indexSize = 4;
         int pos = drawMode.indexCount(range.getPosition()) * indexSize;
         this.bufferIndexVertex.put(pos);
@@ -289,7 +290,33 @@ public class VboRegion {
         this.bufferCountVertex.put(count);
     }
 
+    private void ensureDrawCapacity() {
+        if (this.bufferIndexVertex != null && this.bufferIndexVertex.hasRemaining()) {
+            return;
+        }
+        int capacity = this.bufferIndexVertex == null ? 64 : Math.multiplyExact(this.bufferIndexVertex.capacity(), 2);
+        PointerBuffer indices = MemoryUtil.memAllocPointer(capacity);
+        IntBuffer counts;
+        try {
+            counts = MemoryUtil.memAllocInt(capacity);
+        } catch (Throwable throwable) {
+            MemoryUtil.memFree(indices);
+            throw throwable;
+        }
+        if (this.bufferIndexVertex != null) {
+            indices.put(this.bufferIndexVertex.duplicate().flip());
+            counts.put(this.bufferCountVertex.duplicate().flip());
+            MemoryUtil.memFree(this.bufferIndexVertex);
+            MemoryUtil.memFree(this.bufferCountVertex);
+        }
+        this.bufferIndexVertex = indices;
+        this.bufferCountVertex = counts;
+    }
+
     public void prepareDraw() {
+        if (this.isClosed()) {
+            return;
+        }
         VboRange range;
         while ((range = this.pendingReleases.poll()) != null) {
             this.bufferData(SectionDrawData.emptyBuffer, range);
@@ -301,7 +328,13 @@ public class VboRegion {
     }
 
     public void releaseRange(VboRange range) {
-        this.pendingReleases.add(range);
+        if (!this.isClosed()) {
+            this.pendingReleases.add(range);
+        }
+    }
+
+    public boolean isClosed() {
+        return this.glBufferId < 0;
     }
 
     public void finishDraw() {
@@ -346,7 +379,9 @@ public class VboRegion {
             if (info.features().multiDrawDirectInterleaved() && drawCount > 1) {
                 int batchSize = Math.min(drawCount, info.limits().maxMultiDrawDirectInterleavedDrawCount());
                 if (this.bufferDrawParameters == null || this.bufferDrawParameters.capacity() < batchSize * 3) {
-                    this.bufferDrawParameters = Config.createDirectIntBuffer(batchSize * 3);
+                    IntBuffer parameters = MemoryUtil.memAllocInt(batchSize * 3);
+                    MemoryUtil.memFree(this.bufferDrawParameters);
+                    this.bufferDrawParameters = parameters;
                 }
 
                 for (int start = 0; start < drawCount; start += batchSize) {
@@ -382,6 +417,12 @@ public class VboRegion {
 
     public void deleteGlBuffers() {
         this.pendingReleases.clear();
+        MemoryUtil.memFree(this.bufferIndexVertex);
+        MemoryUtil.memFree(this.bufferCountVertex);
+        MemoryUtil.memFree(this.bufferDrawParameters);
+        this.bufferIndexVertex = null;
+        this.bufferCountVertex = null;
+        this.bufferDrawParameters = null;
         if (this.vulkan) {
             if (this.gpuBuffer != null) {
                 this.gpuBuffer.close();

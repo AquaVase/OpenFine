@@ -136,12 +136,6 @@ public class Mipmaps {
         return ax << 24 | rx << 16 | gx << 8 | bx;
     }
 
-    private int averageColor(int i, int j) {
-        int k = (i & 0xFF000000) >> 24 & 0xFF;
-        int l = (j & 0xFF000000) >> 24 & 0xFF;
-        return (k + l >> 1 << 24) + ((i & 16711422) + (j & 16711422) >> 1);
-    }
-
     public static IntBuffer[] makeMipmapBuffers(Dimension[] mipmapDimensions, int[][] mipmapDatas) {
         if (mipmapDimensions == null) {
             return null;

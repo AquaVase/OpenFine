@@ -811,9 +811,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Чем больше значение, те�
 of.options.SCREENSHOT_SIZE.tooltip.5=Необходима поддержка кадрового буфера ГП.
 of.options.SCREENSHOT_SIZE.tooltip.6=Несовместимо со сглаживанием.
 
-of.options.SHOW_GL_ERRORS=Показывать ошибки GL
-of.options.SHOW_GL_ERRORS.tooltip.1=Показывать ошибки OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Отправляет информацию об ошибках OpenGL в чат.
+of.options.SHOW_GL_ERRORS=Показывать ошибки графического API
+of.options.SHOW_GL_ERRORS.tooltip.1=Показывать ошибки графического API
+of.options.SHOW_GL_ERRORS.tooltip.2=Когда включено, ошибки графического API отображаются в чате.
 of.options.SHOW_GL_ERRORS.tooltip.3=Отключите, только если ошибка известна и её нельзя
 of.options.SHOW_GL_ERRORS.tooltip.4=исправить.
 of.options.SHOW_GL_ERRORS.tooltip.5=В отключённом состоянии ошибки по-прежнему будут

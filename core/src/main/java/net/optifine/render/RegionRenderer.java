@@ -54,6 +54,17 @@ public class RegionRenderer {
         this.lastRegionBuffers = null;
         this.lastVboRegion = null;
         this.lastBuffers = null;
+        var positions = this.mapPosRegionBuffers.values().iterator();
+        while (positions.hasNext()) {
+            Map<VboRegion, List<SectionMesh.SectionDraw>> regions = positions.next();
+            regions.entrySet().removeIf(entry -> entry.getKey().isClosed());
+            for (List<SectionMesh.SectionDraw> buffers : regions.values()) {
+                buffers.clear();
+            }
+            if (regions.isEmpty()) {
+                positions.remove();
+            }
+        }
     }
 
     public void finishPrepare(
@@ -69,8 +80,15 @@ public class RegionRenderer {
         for (Entry<PairInt, Map<VboRegion, List<SectionMesh.SectionDraw>>> entryPos : this.mapPosRegionBuffers.entrySet()) {
             PairInt pos = entryPos.getKey();
             if (entryPos.getValue() != null) {
-                for (VboRegion region : entryPos.getValue().keySet()) {
-                    region.prepareDraw();
+                boolean hasDraws = false;
+                for (Entry<VboRegion, List<SectionMesh.SectionDraw>> entry : entryPos.getValue().entrySet()) {
+                    if (!entry.getValue().isEmpty() && !entry.getKey().isClosed()) {
+                        entry.getKey().prepareDraw();
+                        hasDraws = true;
+                    }
+                }
+                if (!hasDraws) {
+                    continue;
                 }
 
                 DynamicUniforms.ChunkSectionInfo csi = new DynamicUniforms.ChunkSectionInfo(
@@ -99,7 +117,7 @@ public class RegionRenderer {
             for (Entry<VboRegion, List<SectionMesh.SectionDraw>> entryRegionBuffers : mapRegionBuffers.entrySet()) {
                 VboRegion region = entryRegionBuffers.getKey();
                 List<SectionMesh.SectionDraw> listBuffers = entryRegionBuffers.getValue();
-                if (!listBuffers.isEmpty()) {
+                if (!listBuffers.isEmpty() && !region.isClosed()) {
                     for (SectionMesh.SectionDraw buffers : listBuffers) {
                         buffers.drawInRegion();
                     }

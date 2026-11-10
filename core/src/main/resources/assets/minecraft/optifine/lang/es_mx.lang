@@ -526,3 +526,7 @@ of.options.AUTOSAVE_TICKS.tooltip.2=  Predeterminado - Intervalo por defecto. NO
 of.options.AUTOSAVE_TICKS.tooltip.3=Esta función causa el famoso lag de la muerte.
 
 options.anaglyph.tooltip.1=La función de anaglifo 3D requiere de lentes 3D rojo-azul.
+
+of.options.SHOW_GL_ERRORS=Mostrar errores de la API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.1=Mostrar errores de la API gráfica
+of.options.SHOW_GL_ERRORS.tooltip.2=Al activarse, los errores de la API gráfica se muestran en el chat.

@@ -33,18 +33,18 @@ public class TooltipProviderShaderOptions extends TooltipProviderOptions {
         Options settings = Config.getGameSettings();
         String id = null;
         if (!name.equals(so.getName()) && settings.advancedItemTooltips) {
-            id = "Â§8" + Lang.get("of.general.id") + ": " + so.getName();
+            id = "\u00a78" + Lang.get("of.general.id") + ": " + so.getName();
         }
 
         String source = null;
         if (so.getPaths() != null && settings.advancedItemTooltips) {
-            source = "Â§8" + Lang.get("of.general.from") + ": " + Config.arrayToString(so.getPaths());
+            source = "\u00a78" + Lang.get("of.general.from") + ": " + Config.arrayToString(so.getPaths());
         }
 
         String def = null;
         if (so.getValueDefault() != null && settings.advancedItemTooltips) {
             String defVal = so.isEnabled() ? so.getValueText(so.getValueDefault()) : Lang.get("of.general.ambiguous");
-            def = "Â§8" + Lang.getDefault() + ": " + defVal;
+            def = "\u00a78" + Lang.getDefault() + ": " + defVal;
         }
 
         List<String> list = new ArrayList<>();

@@ -3,31 +3,31 @@ package net.optifine.shaders.vulkan;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiFunction;
 import net.optifine.shaders.config.ShaderType;
 
 public class VulkanCompilationBatch implements AutoCloseable {
     private final ExecutorService executor;
-    private final BiFunction<String, Map<ShaderType, String>, VulkanShaderProgram> compiler;
+    private final Queue<VulkanShaderCompiler> compilerInstances = new ConcurrentLinkedQueue<>();
+    private final ThreadLocal<VulkanShaderCompiler> compiler = ThreadLocal.withInitial(() -> {
+        VulkanShaderCompiler compiler = new VulkanShaderCompiler();
+        this.compilerInstances.add(compiler);
+        return compiler;
+    });
     private final List<CompletableFuture<VulkanShaderProgram>> jobs = new ArrayList<>();
     private boolean closed;
 
     public VulkanCompilationBatch() {
-        this(Math.clamp(Integer.getInteger("optifine.shaderCompileThreads", Math.max(1, Runtime.getRuntime().availableProcessors() / 2)), 1, 4),
-            (name, sources) -> {
-                try (var compiler = new VulkanShaderCompiler()) {
-                    return compiler.compile(name, sources);
-                }
-            });
+        this(Math.clamp(Integer.getInteger("optifine.shaderCompileThreads", Math.max(1, Runtime.getRuntime().availableProcessors() / 2)), 1, 4));
     }
 
-    VulkanCompilationBatch(int threads, BiFunction<String, Map<ShaderType, String>, VulkanShaderProgram> compiler) {
+    VulkanCompilationBatch(int threads) {
         this.executor = Executors.newFixedThreadPool(threads, Thread.ofPlatform().daemon().name("OptiFine shader compiler-", 0).factory());
-        this.compiler = compiler;
         net.optifine.shaders.SMCLog.info("Parallel Vulkan shader compilation enabled (%d workers)", threads);
     }
 
@@ -36,13 +36,16 @@ public class VulkanCompilationBatch implements AutoCloseable {
             throw new IllegalStateException("Shader compilation batch is closed");
         }
         Map<ShaderType, String> snapshot = Map.copyOf(sources);
-        this.jobs.add(CompletableFuture.supplyAsync(() -> this.compiler.apply(name, snapshot), this.executor));
+        this.jobs.add(CompletableFuture.supplyAsync(() -> this.compiler.get().compile(name, snapshot), this.executor));
         return this.jobs.size() - 1;
     }
 
     public VulkanShaderProgram take(int index) {
+        if (this.closed) {
+            throw new IllegalStateException("Shader compilation batch is closed");
+        }
         var job = this.jobs.get(index);
-        if (this.closed || job == null) {
+        if (job == null) {
             throw new IllegalStateException("Shader compilation result is no longer owned by this batch");
         }
         VulkanShaderProgram result = await(job);
@@ -80,6 +83,9 @@ public class VulkanCompilationBatch implements AutoCloseable {
                 }
             }
             this.executor.close();
+            // Every worker has finished before its native compiler and options are released.
+            this.compilerInstances.forEach(VulkanShaderCompiler::close);
+            this.compilerInstances.clear();
             this.jobs.clear();
         }
     }

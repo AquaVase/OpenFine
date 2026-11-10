@@ -31,7 +31,6 @@ public class VulkanTransparency implements AutoCloseable {
     private static VulkanTransparency instance;
     private final VulkanFramebuffer framebuffer;
     private final int[] colorIndices;
-    private final GpuTexture[] opaqueColors;
     private final GpuTexture opaqueDepth;
     private final GpuTextureView opaqueDepthView;
     private final GpuTexture opaqueSampledDepth;
@@ -40,7 +39,8 @@ public class VulkanTransparency implements AutoCloseable {
     private final GpuTextureView lightingInputView;
     private final GpuTexture waterWaves;
     private final GpuTextureView waterWavesView;
-    private final GpuTexture[][] compositeInputs;
+    private final GpuTexture metadata;
+    private final GpuTextureView metadataView;
     private final List<GpuTexture> textures = new ArrayList<>();
     private final List<GpuTextureView> views = new ArrayList<>();
     private final GpuTexture resolvedLighting;
@@ -55,6 +55,7 @@ public class VulkanTransparency implements AutoCloseable {
     private Layer lateLayer;
     private boolean lateResolve;
     private int resolvingLayer = -1;
+    private GpuTexture compositeDepthSource;
 
     public static int layerCount() {
         return Math.clamp(Integer.getInteger("optifine.transparencyLayers",
@@ -157,6 +158,8 @@ public class VulkanTransparency implements AutoCloseable {
                 source = source.replace("texBuffer0 = vec4(0.0, 0.0, texelFetch(colortex4, texel, 0).zw);",
                     "texBuffer0 = vec4(0.0, 0.0, texelFetch(colortex4, texel, 0).zw);\n"
                         + "if (ofLayerCameraOnly != 0) { if (waterDepth < solidDepth) texBuffer0.b = gbufferData.materialID / 255.0; texBuffer5 = solidColor; return; }");
+                source = source.replace("void ofTransparencyMain()", "uniform sampler2D ofLayerMetadata;\nvoid ofTransparencyMain()")
+                    .replace("texelFetch(colortex4, texel, 0).zw", "texelFetch(ofLayerMetadata, texel, 0).zw");
             } else if (composite == 2) {
                 source = source.replace("vec4 diffuseData = texelFetch(colortex5, texel, 0);",
                     "vec4 diffuseData = texelFetch(colortex5, texel, 0);\n"
@@ -233,13 +236,9 @@ public class VulkanTransparency implements AutoCloseable {
             }
         }
         this.colorIndices = indices.stream().mapToInt(Integer::intValue).toArray();
-        this.opaqueColors = new GpuTexture[this.colorIndices.length];
         this.opaqueDepth = this.create(framebuffer.getDepthTarget().texture(), "opaque depth");
         this.opaqueDepthView = this.view(this.opaqueDepth);
         this.opaqueSampledDepth = this.create(framebuffer.getDepth(1).texture(), "opaque sampled depth");
-        for (int i = 0; i < this.colorIndices.length; i++) {
-            this.opaqueColors[i] = framebuffer.getColor(true, this.colorIndices[i]).texture();
-        }
         if (profile.first() == 2) {
             var source = framebuffer.getColor(true, profile.color()).texture();
             this.lightingInput = RenderSystem.getDevice().createTexture(() -> "OptiFine transparency GI input", 15,
@@ -252,14 +251,8 @@ public class VulkanTransparency implements AutoCloseable {
         }
         this.waterWaves = profile.first() == 2 ? this.create(framebuffer.getColor(true, 4).texture(), "filtered water normals") : null;
         this.waterWavesView = this.waterWaves == null ? null : this.view(this.waterWaves);
-        this.compositeInputs = new GpuTexture[2][framebuffer.getColorCount()];
-        for (int side = 0; side < 2; side++) {
-            for (int c = 0; c < framebuffer.getColorCount(); c++) {
-                if (profile.first() == 1 && side == 0 && c == 4) {
-                    this.compositeInputs[side][c] = this.create(framebuffer.getColor(side == 0, c).texture(), "composite input " + side + "/" + c);
-                }
-            }
-        }
+        this.metadata = profile.first() == 1 ? this.create(framebuffer.getColor(true, 4).texture(), "composite metadata") : null;
+        this.metadataView = this.metadata == null ? null : this.view(this.metadata);
         this.resolvedLighting = this.create(framebuffer.getColor(true, profile.color()).texture(), "resolved lighting");
         this.nextDepth = this.create(this.opaqueSampledDepth, "next surface depth");
         this.activeDepthView = this.view(framebuffer.getDepthTarget().texture());
@@ -268,10 +261,11 @@ public class VulkanTransparency implements AutoCloseable {
         for (int i = 0; i < count; i++) {
             GpuTexture[] colors = new GpuTexture[this.colorIndices.length];
             for (int c = 0; c < colors.length; c++) {
-                colors[c] = this.create(this.opaqueColors[c], "layer " + i + " color " + c);
+                colors[c] = this.create(framebuffer.getColor(true, this.colorIndices[c]).texture(), "layer " + i + " color " + c);
             }
             GpuTexture depth = this.create(this.opaqueDepth, "layer " + i + " depth");
-            this.layers[i] = new Layer(colors, depth, this.view(depth), i == 0 ? this.create(this.opaqueSampledDepth, "nearest sampled depth") : null);
+            this.layers[i] = new Layer(colors, depth, this.view(depth),
+                i == 0 ? this.create(this.opaqueSampledDepth, "nearest sampled depth") : null);
         }
         this.gatherProgram = this.createGatherProgram();
     }
@@ -335,9 +329,10 @@ public class VulkanTransparency implements AutoCloseable {
         bind(uniforms, "opaque", GATHER_TEXTURE_UNIT, this.opaqueDepthView);
         int unit = GATHER_TEXTURE_UNIT + 1;
         for (int i = 0; i < this.layers.length; i++) {
-            bind(uniforms, "depth" + i, unit++, this.layers[i].view());
+            Layer layer = i < this.activeLayers ? this.layers[i] : this.layers[0];
+            bind(uniforms, "depth" + i, unit++, layer.view());
             for (int c = 0; c < this.colorIndices.length; c++) {
-                bind(uniforms, "color" + i + "_" + c, unit++, this.viewFor(this.layers[i].colors()[c]));
+                bind(uniforms, "color" + i + "_" + c, unit++, this.viewFor(layer.colors()[c]));
             }
         }
         uniforms.setInt("rank", rank);
@@ -396,6 +391,7 @@ public class VulkanTransparency implements AutoCloseable {
         var uniforms = VulkanShaderRuntime.getInstance().getProgram(Shaders.ProgramWater.getId()).uniforms();
         try {
             for (int i = 0; i < this.layers.length; i++) {
+                Layer layer = this.layers[i];
                 if (i > 0) {
                     copy(this.opaqueDepth, this.framebuffer.getDepthTarget().texture());
                 }
@@ -407,7 +403,13 @@ public class VulkanTransparency implements AutoCloseable {
                 } finally {
                     this.queries.endLayer();
                 }
-                Layer layer = this.layers[i];
+                if (i + 1 == nextPoll) {
+                    this.activeLayers = this.queries.activeLayers(this.layers.length);
+                    if (this.activeLayers <= i) {
+                        break;
+                    }
+                    nextPoll = Math.min(nextPoll + 2, this.layers.length);
+                }
                 copy(this.framebuffer.getDepthTarget().texture(), layer.depth());
                 for (int c = 0; c < this.colorIndices.length; c++) {
                     copy(this.framebuffer.getColor(true, this.colorIndices[c]).texture(), layer.colors()[c]);
@@ -415,13 +417,6 @@ public class VulkanTransparency implements AutoCloseable {
                 if (i == 0) {
                     Shaders.refreshTransparencyDepth(target);
                     copy(this.framebuffer.getDepth(0).texture(), layer.sampledDepth());
-                }
-                if (i + 1 == nextPoll) {
-                    this.activeLayers = this.queries.activeLayers(this.layers.length);
-                    if (this.activeLayers <= i) {
-                        break;
-                    }
-                    nextPoll = Math.min(nextPoll + 2, this.layers.length);
                 }
             }
             this.load(0);
@@ -470,6 +465,7 @@ public class VulkanTransparency implements AutoCloseable {
             return;
         }
         VulkanTransparency current = instance;
+        current.compositeDepthSource = null;
         GpuTexture[] history = profile.first() == 1 ? new GpuTexture[]{
             current.framebuffer.getColor(true, 3).texture(), current.framebuffer.getColor(true, 7).texture()
         } : null;
@@ -479,7 +475,7 @@ public class VulkanTransparency implements AutoCloseable {
                 if (current.lateLayer == null) {
                     GpuTexture[] colors = new GpuTexture[current.colorIndices.length];
                     for (int c = 0; c < colors.length; c++) {
-                        colors[c] = current.create(current.opaqueColors[c], "late color " + c);
+                        colors[c] = current.create(current.framebuffer.getColor(true, current.colorIndices[c]).texture(), "late color " + c);
                     }
                     GpuTexture depth = current.create(current.opaqueDepth, "late depth");
                     current.lateLayer = new Layer(colors, depth, current.view(depth), current.create(current.opaqueSampledDepth, "late sampled depth"));
@@ -490,30 +486,17 @@ public class VulkanTransparency implements AutoCloseable {
                     copy(current.framebuffer.getColor(true, current.colorIndices[c]).texture(), current.lateLayer.colors()[c]);
                 }
             }
-            copy(current.opaqueSampledDepth, current.framebuffer.getDepth(1).texture());
+            current.setCompositeDepth(current.opaqueSampledDepth);
             if (current.waterWaves != null) {
                 copy(current.framebuffer.getColor(true, 4).texture(), current.waterWaves);
             }
-            // Only scratch inputs that are written need a copy. Read-only history
-            // textures retain their storage and return to their original ping-pong side.
-            for (int side = 0; side < 2; side++) {
-                for (int c = 0; c < current.compositeInputs[side].length; c++) {
-                    if (current.compositeInputs[side][c] != null) {
-                        copy(current.framebuffer.getColor(side == 0, c).texture(), current.compositeInputs[side][c]);
-                    }
-                }
+            if (current.metadata != null) {
+                copy(current.framebuffer.getColor(true, 4).texture(), current.metadata);
             }
             // Align surfaces from the back per pixel. A water surface split between ranks by foreground
             // glass must be fully shaded before the glass samples neighboring pixels for refraction.
             for (int i = current.layers.length - 1; i >= current.layers.length - current.activeLayers; i--) {
                 current.resolvingLayer = i;
-                for (int side = 0; side < 2; side++) {
-                    for (int c = 0; c < current.compositeInputs[side].length; c++) {
-                        if (current.compositeInputs[side][c] != null) {
-                            copy(current.compositeInputs[side][c], current.framebuffer.getColor(side == 0, c).texture());
-                        }
-                    }
-                }
                 current.gather(i);
                 programs.run();
                 current.restoreHistory(history);
@@ -521,13 +504,6 @@ public class VulkanTransparency implements AutoCloseable {
             if (lateHand) {
                 current.lateResolve = true;
                 current.resolvingLayer = 0;
-                for (int side = 0; side < 2; side++) {
-                    for (int c = 0; c < current.compositeInputs[side].length; c++) {
-                        if (current.compositeInputs[side][c] != null) {
-                            copy(current.compositeInputs[side][c], current.framebuffer.getColor(side == 0, c).texture());
-                        }
-                    }
-                }
                 current.load(current.lateLayer);
                 programs.run();
                 current.restoreHistory(history);
@@ -535,20 +511,12 @@ public class VulkanTransparency implements AutoCloseable {
             }
             copy(current.framebuffer.getColor(true, profile.color()).texture(), current.resolvedLighting);
             current.load(lateHand ? current.lateLayer : current.layers[0]);
-            copy(current.opaqueSampledDepth, current.framebuffer.getDepth(1).texture());
+            current.setCompositeDepth(current.opaqueSampledDepth);
             current.cameraResolve = true;
             current.resolvingLayer = 0;
             // Rebuild postprocess metadata from the same history inputs as a normal frame.
             // The last peeled layer has already replaced normals, reflection data and history sides.
             if (profile.first() == 1) {
-                for (int side = 0; side < 2; side++) {
-                    for (int c = 0; c < current.compositeInputs[side].length; c++) {
-                        if (current.compositeInputs[side][c] != null) {
-                            copy(current.compositeInputs[side][c], current.framebuffer.getColor(side == 0, c).texture());
-                        }
-                    }
-                }
-                current.load(lateHand ? current.lateLayer : current.layers[0]);
                 programs.run();
             } else {
                 camera.run();
@@ -558,7 +526,7 @@ public class VulkanTransparency implements AutoCloseable {
             current.lateResolve = false;
             current.resolvingLayer = -1;
             current.captured = false;
-            copy(current.opaqueSampledDepth, current.framebuffer.getDepth(1).texture());
+            current.setCompositeDepth(current.opaqueSampledDepth);
         }
     }
 
@@ -570,6 +538,13 @@ public class VulkanTransparency implements AutoCloseable {
                     this.framebuffer.flipColor(color);
                 }
             }
+        }
+    }
+
+    private void setCompositeDepth(GpuTexture source) {
+        if (this.compositeDepthSource != source) {
+            copy(source, this.framebuffer.getDepth(1).texture());
+            this.compositeDepthSource = source;
         }
     }
 
@@ -608,12 +583,19 @@ public class VulkanTransparency implements AutoCloseable {
         }
         if (current.cameraResolve || program == Shaders.ProgramsComposite[2] || profile.first() == 1 && program != Shaders.ProgramsComposite[1]) {
             // Reflection history still describes opaque geometry; refraction uses the next surface.
-            copy(current.opaqueSampledDepth, current.framebuffer.getDepth(1).texture());
+            current.setCompositeDepth(current.opaqueSampledDepth);
         } else {
-            copy(current.lateResolve ? current.layers[0].sampledDepth() : current.nextDepth, current.framebuffer.getDepth(1).texture());
+            // gather rewrites nextDepth for every rank, even though its texture is reused.
+            if (!current.lateResolve) {
+                current.compositeDepthSource = null;
+            }
+            current.setCompositeDepth(current.lateResolve ? current.layers[0].sampledDepth() : current.nextDepth);
         }
         if (uniforms.contains("ofLayerGi")) {
             bind(uniforms, "ofLayerGi", 64, current.lightingInputView);
+        }
+        if (uniforms.contains("ofLayerMetadata")) {
+            bind(uniforms, "ofLayerMetadata", 65, current.metadataView);
         }
         if (uniforms.contains("ofWaterWaves")) {
             bind(uniforms, "ofWaterWaves", 63, current.waterWavesView);

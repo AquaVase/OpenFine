@@ -836,9 +836,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=抓取更大的截图可能需要更多的�
 of.options.SCREENSHOT_SIZE.tooltip.5=与快速渲染和抗锯齿不兼容。
 of.options.SCREENSHOT_SIZE.tooltip.6=需要显卡帧缓冲区支持。
 
-of.options.SHOW_GL_ERRORS=显示GL错误
-of.options.SHOW_GL_ERRORS.tooltip.1=显示OpenGL错误
-of.options.SHOW_GL_ERRORS.tooltip.2=当启用此选项时，OpenGL错误会在聊天框中显示出来。
+of.options.SHOW_GL_ERRORS=显示 图形 API 错误
+of.options.SHOW_GL_ERRORS.tooltip.1=显示图形 API错误
+of.options.SHOW_GL_ERRORS.tooltip.2=当启用此选项时，图形 API错误会在聊天框中显示出来。
 of.options.SHOW_GL_ERRORS.tooltip.3=请仅当所有冲突都已知并且明确知道
 of.options.SHOW_GL_ERRORS.tooltip.4=错误无法修复时禁用此选项。
 of.options.SHOW_GL_ERRORS.tooltip.5=即使禁用了此选项，错误仍会被记录在错误日志中，

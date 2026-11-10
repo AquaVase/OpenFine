@@ -105,17 +105,14 @@ public class Utils {
     }
 
     public static byte[] readAll(InputStream is) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024];
-
-        while (true) {
-            int len = is.read(buf);
-            if (len < 0) {
-                is.close();
-                return baos.toByteArray();
+        try (InputStream input = is) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = input.read(buf)) >= 0) {
+                baos.write(buf, 0, len);
             }
-
-            baos.write(buf, 0, len);
+            return baos.toByteArray();
         }
     }
 

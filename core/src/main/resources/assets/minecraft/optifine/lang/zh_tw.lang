@@ -801,9 +801,9 @@ of.options.SCREENSHOT_SIZE.tooltip.4=擷取更大的螢幕擷取畫面可能需�
 of.options.SCREENSHOT_SIZE.tooltip.5=與反鋸齒不相容。
 of.options.SCREENSHOT_SIZE.tooltip.6=需要顯示卡影格緩衝區支援。
 
-of.options.SHOW_GL_ERRORS=顯示 GL 錯誤
-of.options.SHOW_GL_ERRORS.tooltip.1=顯示 OpenGL 錯誤
-of.options.SHOW_GL_ERRORS.tooltip.2=啟用時，OpenGL 的錯誤會顯示在聊天視窗中。
+of.options.SHOW_GL_ERRORS=顯示 圖形 API 錯誤
+of.options.SHOW_GL_ERRORS.tooltip.1=顯示 圖形 API 錯誤
+of.options.SHOW_GL_ERRORS.tooltip.2=啟用時，圖形 API 的錯誤會顯示在聊天視窗中。
 of.options.SHOW_GL_ERRORS.tooltip.3=只有在已知的衝突或錯誤無法修復時才建議停用。
 of.options.SHOW_GL_ERRORS.tooltip.4=停用時，錯誤仍然會紀錄在錯誤記錄中，且依然可能導致 FPS 明顯下降。
 of.options.SHOW_GL_ERRORS.tooltip.5=

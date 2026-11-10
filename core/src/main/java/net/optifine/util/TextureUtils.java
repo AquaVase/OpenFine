@@ -4,9 +4,6 @@ import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
 import java.io.CharArrayWriter;
 import java.io.File;
 import java.io.IOException;
@@ -15,12 +12,8 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
 import net.minecraft.client.renderer.entity.layers.MushroomCowMushroomLayer;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
@@ -28,6 +21,7 @@ import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.PngInfo;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -59,8 +53,6 @@ import net.optifine.reflect.ReflectorForge;
 import net.optifine.render.GLConst;
 import net.optifine.shaders.MultiTexID;
 import net.optifine.shaders.Shaders;
-import org.apache.commons.io.IOUtils;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
@@ -159,22 +151,6 @@ public class TextureUtils {
         }
 
         return sprite;
-    }
-
-    public static BufferedImage fixTextureDimensions(String name, BufferedImage bi) {
-        if (name.startsWith("/mob/zombie") || name.startsWith("/mob/pigzombie")) {
-            int width = bi.getWidth();
-            int height = bi.getHeight();
-            if (width == height * 2) {
-                BufferedImage scaledImage = new BufferedImage(width, height * 2, 2);
-                Graphics2D gr = scaledImage.createGraphics();
-                gr.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                gr.drawImage(bi, 0, 0, width, height, null);
-                return scaledImage;
-            }
-        }
-
-        return bi;
     }
 
     public static int ceilPowerOfTwo(int val) {
@@ -430,46 +406,34 @@ public class TextureUtils {
         return x2 == x;
     }
 
-    public static NativeImage scaleImage(NativeImage ni, int w2) {
-        BufferedImage bi = toBufferedImage(ni);
-        BufferedImage bi2 = scaleImage(bi, w2);
-        return toNativeImage(bi2);
-    }
-
-    public static BufferedImage toBufferedImage(NativeImage ni) {
-        int width = ni.getWidth();
-        int height = ni.getHeight();
-        int[] data = new int[width * height];
-        ni.getBufferRGBA().get(data);
-        BufferedImage bi = new BufferedImage(width, height, 2);
-        bi.setRGB(0, 0, width, height, data, 0, width);
-        return bi;
-    }
-
-    private static NativeImage toNativeImage(BufferedImage bi) {
-        int width = bi.getWidth();
-        int height = bi.getHeight();
-        int[] data = new int[width * height];
-        bi.getRGB(0, 0, width, height, data, 0, width);
-        NativeImage ni = new NativeImage(width, height, false);
-        ni.getBufferRGBA().put(data);
-        return ni;
-    }
-
-    public static BufferedImage scaleImage(BufferedImage bi, int w2) {
-        int w = bi.getWidth();
-        int h = bi.getHeight();
-        int h2 = h * w2 / w;
-        BufferedImage bi2 = new BufferedImage(w2, h2, 2);
-        Graphics2D g2 = bi2.createGraphics();
-        Object method = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
-        if (w2 < w || w2 % w != 0) {
-            method = RenderingHints.VALUE_INTERPOLATION_BILINEAR;
+    public static NativeImage scaleImage(NativeImage image, int width) {
+        int height = Math.toIntExact((long)image.getHeight() * width / image.getWidth());
+        if (width < image.getWidth() || width % image.getWidth() != 0) {
+            return scaleImage(image, width, height);
         }
+        NativeImage scaled = new NativeImage(width, height, false);
+        try {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    scaled.setPixelABGR(x, y, image.getPixelABGR(x * image.getWidth() / width, y * image.getHeight() / height));
+                }
+            }
+            return scaled;
+        } catch (RuntimeException | Error e) {
+            scaled.close();
+            throw e;
+        }
+    }
 
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, method);
-        g2.drawImage(bi, 0, 0, w2, h2, null);
-        return bi2;
+    public static NativeImage scaleImage(NativeImage image, int width, int height) {
+        NativeImage scaled = new NativeImage(width, height, false);
+        try {
+            image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), scaled);
+            return scaled;
+        } catch (RuntimeException | Error e) {
+            scaled.close();
+            throw e;
+        }
     }
 
     public static int scaleToGrid(int size, int sizeGrid) {
@@ -501,24 +465,15 @@ public class TextureUtils {
     }
 
     public static Dimension getImageSize(InputStream in, String suffix) {
-        Iterator iter = ImageIO.getImageReadersBySuffix(suffix);
-
-        while (iter.hasNext()) {
-            ImageReader reader = (ImageReader)iter.next();
-
-            try {
-                ImageInputStream iis = ImageIO.createImageInputStream(in);
-                reader.setInput(iis);
-                int width = reader.getWidth(reader.getMinIndex());
-                int height = reader.getHeight(reader.getMinIndex());
-                return new Dimension(width, height);
-            } catch (IOException e) {
-            } finally {
-                reader.dispose();
-            }
+        if (!"png".equalsIgnoreCase(suffix)) {
+            return null;
         }
-
-        return null;
+        try {
+            PngInfo info = PngInfo.fromStream(in);
+            return info.width() > 0 && info.height() > 0 ? new Dimension(info.width(), info.height()) : null;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public static void dbgMipmaps(TextureAtlasSprite textureatlassprite) {
@@ -555,16 +510,9 @@ public class TextureUtils {
             File filePng = new File(name + "_" + level + ".png");
             int widthLevel = width >> level;
             int heightLevel = height >> level;
-            int sizeLevel = widthLevel * heightLevel;
-            IntBuffer buf = BufferUtils.createIntBuffer(sizeLevel);
-            int[] data = new int[sizeLevel];
-            GL11.glGetTexImage(3553, level, 32993, 33639, buf);
-            buf.get(data);
-            BufferedImage image = new BufferedImage(widthLevel, heightLevel, 2);
-            image.setRGB(0, 0, widthLevel, heightLevel, data, 0, widthLevel);
-
-            try {
-                ImageIO.write(image, "png", filePng);
+            try (NativeImage image = new NativeImage(widthLevel, heightLevel, false)) {
+                GL11.glGetTexImage(3553, level, 6408, 5121, image.getPixelBytes());
+                image.writeToFile(filePng);
                 Config.dbg("Exported: " + filePng);
             } catch (Exception e) {
                 Config.warn("Error writing: " + filePng);
@@ -597,16 +545,8 @@ public class TextureUtils {
         return 0;
     }
 
-    public static BufferedImage readBufferedImage(InputStream imageStream) throws IOException {
-        if (imageStream == null) {
-            return null;
-        }
-
-        try {
-            return ImageIO.read(imageStream);
-        } finally {
-            IOUtils.closeQuietly(imageStream);
-        }
+    public static NativeImage readNativeImage(InputStream imageStream) throws IOException {
+        return imageStream == null ? null : NativeImage.read(imageStream);
     }
 
     public static int toAbgr(int argb) {

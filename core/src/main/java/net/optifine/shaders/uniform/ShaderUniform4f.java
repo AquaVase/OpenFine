@@ -17,7 +17,7 @@ public class ShaderUniform4f extends ShaderUniformBase {
     }
 
     public void setValue(float v0, float v1, float v2, float v3) {
-        int program = this.getProgram();
+        int program = this.getProgramIndex();
         float[] valueOld = this.programValues[program];
         if (valueOld[0] != v0 || valueOld[1] != v1 || valueOld[2] != v2 || valueOld[3] != v3) {
             valueOld[0] = v0;
@@ -27,7 +27,7 @@ public class ShaderUniform4f extends ShaderUniformBase {
             int location = this.getLocation();
             if (location >= 0) {
                 flushRenderBuffers();
-                if (!this.setVulkanFloat(v0, v1, v2, v3)) {
+                if (!this.setVulkanFloat(valueOld)) {
                     GL20.glUniform4f(location, v0, v1, v2, v3);
                 }
                 this.checkGLError();
@@ -36,21 +36,22 @@ public class ShaderUniform4f extends ShaderUniformBase {
     }
 
     public float[] getValue() {
-        int program = this.getProgram();
+        int program = this.getProgramIndex();
         return this.programValues[program];
     }
 
     @Override
     protected void onProgramSet(int program) {
-        if (program >= this.programValues.length) {
+        int programIndex = this.getProgramIndex();
+        if (programIndex >= this.programValues.length) {
             float[][] valuesOld = this.programValues;
-            float[][] valuesNew = new float[program + 10][];
+            float[][] valuesNew = new float[programIndex + 10][];
             System.arraycopy(valuesOld, 0, valuesNew, 0, valuesOld.length);
             this.programValues = valuesNew;
         }
 
-        if (this.programValues[program] == null) {
-            this.programValues[program] = new float[]{-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        if (this.programValues[programIndex] == null) {
+            this.programValues[programIndex] = new float[]{-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
         }
     }
 

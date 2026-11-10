@@ -54,7 +54,21 @@
              VK12.vkCmdPipelineBarrier(device.createCommandEncoder().textureInitCommandBuffer(), 1, 65536, 0, null, null, barrier);
              device.instance().debug().setObjectName(device.vkDevice(), 10, this.vkImage, label);
          }
-@@ -117,4 +131,8 @@
+@@ -90,9 +104,13 @@
+     public void close() {
+         if (!this.closed) {
+             this.closed = true;
++            try {
++                net.optifine.shaders.vulkan.VulkanShaderRuntime.releaseTexture(this);
++            } finally {
+             this.removeViews();
+         }
+     }
++    }
+ 
+     @Override
+     public boolean isClosed() {
+@@ -117,4 +135,8 @@
      public long vkImage() {
          return this.vkImage;
      }

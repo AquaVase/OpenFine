@@ -10,7 +10,7 @@ import net.optifine.util.GlUtil;
 import net.optifine.util.TextureUtils;
 import org.lwjgl.opengl.GL11;
 
-public class TextureAnimation {
+public class TextureAnimation implements AutoCloseable {
     private String srcTex = null;
     private String dstTex = null;
     Identifier dstTexLoc = null;
@@ -67,9 +67,6 @@ public class TextureAnimation {
 
         this.interpolate = Config.parseBoolean(props.getProperty("interpolate"), false);
         this.interpolateSkip = Config.parseInt(props.getProperty("skip"), 0);
-        if (this.interpolate) {
-            this.interpolateData = GlUtil.allocateMemory(frameLen);
-        }
     }
 
     public boolean nextFrame() {
@@ -124,16 +121,16 @@ public class TextureAnimation {
                 this.dstTextId = tex.getGlTextureId();
             }
 
-            if (this.imageData == null) {
-                this.imageData = GlUtil.allocateMemory(this.srcData.length);
-                this.imageData.put(this.srcData);
-                this.imageData.flip();
-                this.srcData = null;
-            }
-
             this.active = SmartAnimations.isActive() ? SmartAnimations.isTextureRendered(this.dstTextId) : true;
             if (this.nextFrame()) {
                 if (this.active) {
+                    if (this.imageData == null) {
+                        this.imageData = GlUtil.allocateMemory(this.srcData.length);
+                        this.imageData.put(this.srcData);
+                        this.imageData.flip();
+                        this.srcData = null;
+                    }
+
                     int frameLen = this.frameWidth * this.frameHeight * 4;
                     TextureAnimationFrame frame = this.getCurrentFrame();
                     if (frame != null) {
@@ -160,6 +157,9 @@ public class TextureAnimation {
         if (offset1 + frameLen <= this.imageData.limit()) {
             int offset2 = frameLen * frame2.index;
             if (offset2 + frameLen <= this.imageData.limit()) {
+                if (this.interpolateData == null) {
+                    this.interpolateData = GlUtil.allocateMemory(frameLen);
+                }
                 this.interpolateData.clear();
 
                 for (int i = 0; i < frameLen; i++) {
@@ -196,6 +196,21 @@ public class TextureAnimation {
 
     private int mix(int col1, int col2, double k) {
         return (int)(col1 * (1.0 - k) + col2 * k);
+    }
+
+    @Override
+    public void close() {
+        this.valid = false;
+        this.active = false;
+        if (this.imageData != null) {
+            GlUtil.freeMemory(this.imageData);
+            this.imageData = null;
+        }
+        if (this.interpolateData != null) {
+            GlUtil.freeMemory(this.interpolateData);
+            this.interpolateData = null;
+        }
+        this.srcData = null;
     }
 
     public String getSrcTex() {

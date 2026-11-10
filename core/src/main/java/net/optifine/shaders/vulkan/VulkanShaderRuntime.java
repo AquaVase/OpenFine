@@ -8,6 +8,7 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuFence;
 import com.mojang.blaze3d.vulkan.VulkanCommandEncoder;
 import java.nio.ByteOrder;
+import java.nio.ByteBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK12;
 import org.lwjgl.util.spvc.Spv;
@@ -32,9 +33,14 @@ import net.optifine.shaders.config.ShaderType;
 import net.minecraft.client.Minecraft;
 
 public class VulkanShaderRuntime {
+    private static final float[] DEFAULT_COLOR = {1, 1, 1, 1};
+    private static final float[] DEFAULT_NORMAL = {0, 1, 0, 1};
+    private static final float[] DEFAULT_UV2 = {240, 240, 0, 1};
+    private static final float[] DEFAULT_ATTRIBUTE = {0, 0, 0, 1};
     private static VulkanShaderRuntime instance;
     private final VulkanDevice device;
     private final VulkanShaderBuffers buffers;
+    private VulkanRayTracingScene rayTracingScene;
     private final Map<Integer, StageSource> shaders = new LinkedHashMap<>();
     private final Map<Integer, DeviceProgram> programs = new LinkedHashMap<>();
     private final Map<Integer, VulkanCompositeRenderer> composites = new LinkedHashMap<>();
@@ -54,7 +60,6 @@ public class VulkanShaderRuntime {
     private boolean shadowCull;
     private Boolean sceneCull;
     private Boolean sceneDepthWrite;
-    private long textureVersion;
     private int nextShader = 1;
     private int nextProgram = 1;
     private VulkanCompilationBatch compilationBatch;
@@ -88,6 +93,19 @@ public class VulkanShaderRuntime {
     private VulkanShaderRuntime(VulkanDevice device) {
         this.device = device;
         this.buffers = new VulkanShaderBuffers(device);
+    }
+
+    public VulkanRayTracingScene getRayTracingScene() {
+        if (this.rayTracingScene == null) {
+            throw new IllegalStateException("No active hardware RT shader program");
+        }
+        return this.rayTracingScene;
+    }
+
+    public void prepareRayTracingScene() {
+        if (this.rayTracingScene != null) {
+            this.rayTracingScene.prepare();
+        }
     }
 
     public VulkanShaderBuffers getBuffers() {
@@ -132,7 +150,8 @@ public class VulkanShaderRuntime {
     }
 
     public static RenderPassDescriptor redirectRenderPass(RenderPassDescriptor descriptor) {
-        if (isSceneActive()) {
+        // Program zero uses the game's pipeline, but still draws into the shader framebuffer.
+        if (Shaders.isRenderingWorld) {
             for (var attachment : descriptor.colorAttachments()) {
                 if (attachment != null) {
                     var target = redirectMainTarget(attachment.textureView().texture(), null);
@@ -230,6 +249,12 @@ public class VulkanShaderRuntime {
     private void installProgram(int id, VulkanShaderProgram source) {
         VulkanDeviceProgram program = null;
         try {
+            if (source.getBindings().stream().anyMatch(binding -> binding.descriptorType()
+                == org.lwjgl.vulkan.KHRAccelerationStructure.VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)) {
+                if (this.rayTracingScene == null) {
+                    this.rayTracingScene = new VulkanRayTracingScene(this.device);
+                }
+            }
             program = source.createDeviceProgram(this.device.vkDevice());
             VulkanProgramUniforms uniforms = new VulkanProgramUniforms(source, Shaders::flushRenderBuffers, this.device.getDeviceInfo().limits().minUniformOffsetAlignment());
             this.programs.put(id, new DeviceProgram(source, program, uniforms));
@@ -290,19 +315,37 @@ public class VulkanShaderRuntime {
     }
 
     public void setDefaultAttribute(String semantic, float x, float y, float z, float w) {
-        this.defaultAttributes.put(semantic, new float[]{x, y, z, w});
+        float[] value = this.defaultAttributes.get(semantic);
+        if (value == null) {
+            value = new float[4];
+            this.defaultAttributes.put(semantic, value);
+        }
+        value[0] = x;
+        value[1] = y;
+        value[2] = z;
+        value[3] = w;
     }
 
     public float[] getDefaultAttribute(String semantic) {
+        return this.getDefaultAttributeValues(semantic).clone();
+    }
+
+    public void writeDefaultAttribute(String semantic, boolean floating, ByteBuffer target) {
+        for (float value : this.getDefaultAttributeValues(semantic)) {
+            target.putInt(floating ? Float.floatToRawIntBits(value) : (int)value);
+        }
+    }
+
+    private float[] getDefaultAttributeValues(String semantic) {
         float[] value = this.defaultAttributes.get(semantic);
         if (value != null) {
-            return value.clone();
+            return value;
         }
         return switch (semantic) {
-            case "Color" -> new float[]{1, 1, 1, 1};
-            case "Normal" -> new float[]{0, 1, 0, 1};
-            case "UV2" -> new float[]{240, 240, 0, 1};
-            default -> new float[]{0, 0, 0, 1};
+            case "Color" -> DEFAULT_COLOR;
+            case "Normal" -> DEFAULT_NORMAL;
+            case "UV2" -> DEFAULT_UV2;
+            default -> DEFAULT_ATTRIBUTE;
         };
     }
 
@@ -336,6 +379,10 @@ public class VulkanShaderRuntime {
     }
 
     public void clear() {
+        if (this.rayTracingScene != null) {
+            this.rayTracingScene.close();
+            this.rayTracingScene = null;
+        }
         if (this.centerDepthFence != null) {
             this.centerDepthFence.close();
             this.centerDepthFence = null;
@@ -363,11 +410,29 @@ public class VulkanShaderRuntime {
         this.textureViews.clear();
         this.materialSamplers.values().forEach(GpuSampler::close);
         this.materialSamplers.clear();
-        this.textureVersion++;
     }
 
     private record MaterialSamplerKey(AddressMode u, AddressMode v, FilterMode minFilter, FilterMode magFilter, int anisotropy,
         OptionalDouble maxLod) {
+    }
+
+    public static void releaseTexture(GpuTexture texture) {
+        VulkanShaderRuntime runtime = instance;
+        if (runtime == null) {
+            return;
+        }
+        GpuTextureView view = runtime.textureViews.remove(texture);
+        for (int unit = 0; unit < runtime.textures2D.length; unit++) {
+            TextureBinding binding = runtime.textures2D[unit];
+            if (binding != null && binding.view().texture() == texture) {
+                runtime.textures2D[unit] = null;
+            }
+        }
+        runtime.textures.values().removeIf(binding -> binding.view().texture() == texture);
+        runtime.images.values().removeIf(image -> image.texture() == texture);
+        if (view != null) {
+            view.close();
+        }
     }
 
     public GpuTextureView getTextureView(GpuTexture texture) {
@@ -378,13 +443,6 @@ public class VulkanShaderRuntime {
         if (existing != null && !existing.isClosed()) {
             return existing;
         }
-        this.textureViews.entrySet().removeIf(entry -> {
-            if (entry.getKey().isClosed()) {
-                entry.getValue().close();
-                return true;
-            }
-            return false;
-        });
         this.textureViews.remove(texture);
         return this.textureViews.computeIfAbsent(texture, RenderSystem.getDevice()::createTextureView);
     }
@@ -405,14 +463,12 @@ public class VulkanShaderRuntime {
             TextureBinding previous = this.textures2D[unit];
             if (previous == null || previous.view() != view || previous.sampler() != sampler) {
                 this.textures2D[unit] = new TextureBinding(view, sampler);
-                this.textureVersion++;
             }
         } else {
             TextureTarget target = new TextureTarget(unit, dimension, arrayed);
             TextureBinding previous = this.textures.get(target);
             if (previous == null || previous.view() != view || previous.sampler() != sampler) {
                 this.textures.put(target, new TextureBinding(view, sampler));
-                this.textureVersion++;
             }
         }
     }
@@ -423,12 +479,9 @@ public class VulkanShaderRuntime {
 
     public void unbindTexture(int unit, int dimension, boolean arrayed) {
         if (dimension == Spv.SpvDim2D && !arrayed && unit >= 0 && unit < this.textures2D.length) {
-            if (this.textures2D[unit] != null) {
-                this.textures2D[unit] = null;
-                this.textureVersion++;
-            }
-        } else if (this.textures.remove(new TextureTarget(unit, dimension, arrayed)) != null) {
-            this.textureVersion++;
+            this.textures2D[unit] = null;
+        } else {
+            this.textures.remove(new TextureTarget(unit, dimension, arrayed));
         }
     }
 
@@ -447,9 +500,7 @@ public class VulkanShaderRuntime {
     }
 
     public void unbindImage(int unit) {
-        if (this.images.remove(unit) != null) {
-            this.textureVersion++;
-        }
+        this.images.remove(unit);
     }
 
     public float readDepthAsync(GpuTexture texture, int x, int y) {
@@ -471,22 +522,6 @@ public class VulkanShaderRuntime {
         encoder.copyTextureToBuffer(texture, this.centerDepthReadback, 0, () -> {}, 0, x, y, 1, 1);
         this.centerDepthFence = encoder.createFence();
         return this.lastCenterDepth;
-    }
-
-    public float readDepth(GpuTexture texture, int x, int y) {
-        try (GpuBuffer buffer = this.device.createBuffer(() -> "OptiFine center depth", GpuBuffer.USAGE_COPY_DST | GpuBuffer.USAGE_MAP_READ, 4)) {
-            VulkanCommandEncoder encoder = this.device.createCommandEncoder();
-            encoder.copyTextureToBuffer(texture, buffer, 0, () -> {}, 0, x, y, 1, 1);
-            try (GpuFence fence = encoder.createFence()) {
-                encoder.submit();
-                if (!fence.awaitCompletion(5000000000L)) {
-                    throw new IllegalStateException("Timed out reading shader center depth");
-                }
-            }
-            try (var mapping = buffer.map(true, false)) {
-                return mapping.data().order(ByteOrder.nativeOrder()).getFloat(0);
-            }
-        }
     }
 
     public void dispatchCompute(int id, int x, int y, int z) {
@@ -512,9 +547,7 @@ public class VulkanShaderRuntime {
         if (unit < 0 || view.isClosed() || view.texture().isClosed() || (view.texture().usage() & GpuTexture.USAGE_STORAGE_BINDING) == 0) {
             throw new IllegalArgumentException("Invalid shader image binding at unit " + unit);
         }
-        if (this.images.put(unit, view) != view) {
-            this.textureVersion++;
-        }
+        this.images.put(unit, view);
     }
 
     public GpuTextureView getImage(int unit) {
@@ -526,18 +559,15 @@ public class VulkanShaderRuntime {
         return view;
     }
 
-    public long getTextureVersion() {
-        return this.textureVersion;
-    }
-
     public void bindTexelBuffer(int unit, boolean storage, VulkanTexelBuffer view) {
         if (unit < 0 || view != null && (view.isClosed() || view.isStorage() != storage)) {
             throw new IllegalArgumentException("Invalid shader texel buffer binding at unit " + unit);
         }
         var bindings = storage ? this.texelImages : this.texelTextures;
-        var previous = view == null ? bindings.remove(unit) : bindings.put(unit, view);
-        if (previous != view) {
-            this.textureVersion++;
+        if (view == null) {
+            bindings.remove(unit);
+        } else {
+            bindings.put(unit, view);
         }
     }
 

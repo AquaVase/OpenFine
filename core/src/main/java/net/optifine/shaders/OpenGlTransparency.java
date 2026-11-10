@@ -3,6 +3,8 @@ package net.optifine.shaders;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import net.optifine.shaders.vulkan.VulkanTransparency;
 import org.lwjgl.opengl.GL43;
 
@@ -16,11 +18,11 @@ public class OpenGlTransparency implements AutoCloseable {
     private final List<Integer> textures = new ArrayList<>();
     private final int opaqueDepth;
     private final int opaqueLogical;
-    private final int[] opaqueColors;
-    private final int[][] inputs;
+    private final int metadata;
+    private final Map<Integer, Map<String, Integer>> uniformLocations = new HashMap<>();
     private final int[][] colors;
     private final int[] depths;
-    private final int[] logical;
+    private final int nearestLogical;
     private final int depthArray;
     private final int[] colorArrays;
     private final int nextDepth;
@@ -39,6 +41,7 @@ public class OpenGlTransparency implements AutoCloseable {
     private int lateLogical;
     private boolean lateResolve;
     private int rank = -1;
+    private int compositeDepthSource;
 
     private OpenGlTransparency(ShadersFramebuffer target, VulkanTransparency.Profile profile) {
         this.target = target;
@@ -56,36 +59,20 @@ public class OpenGlTransparency implements AutoCloseable {
         this.lighting = this.create(target.getColorTexture(true, profile.color()));
         this.gi = profile.first() == 2 ? this.create(target.getColorTexture(true, profile.color()), true) : 0;
         this.waves = profile.first() == 2 ? this.create(target.getColorTexture(true, 4)) : 0;
-        this.opaqueColors = new int[this.indices.length];
-        for (int c = 0; c < this.indices.length; c++) {
-            this.opaqueColors[c] = target.getColorTexture(true, this.indices[c]);
-        }
-        this.inputs = new int[2][target.getColorCount()];
-        if (profile.first() == 1) {
-            for (int side = 0; side < 2; side++) {
-                for (int c = 0; c < target.getColorCount(); c++) {
-                    if (side == 0 && c == 4) {
-                        this.inputs[side][c] = this.create(target.getColorTexture(side == 0, c));
-                    }
-                }
-            }
-        }
+        this.metadata = profile.first() == 1 ? this.create(target.getColorTexture(true, 4)) : 0;
         int count = VulkanTransparency.layerCount();
         this.queries = new int[count];
         GL43.glGenQueries(this.queries);
         this.colors = new int[count][this.indices.length];
         this.depths = new int[count];
-        this.logical = new int[count];
+        this.nearestLogical = this.create(target.getDepthTexture(0));
         this.depthArray = this.createArray(this.opaqueDepth, count + 1);
         this.colorArrays = new int[this.indices.length];
         for (int c = 0; c < this.indices.length; c++) {
-            this.colorArrays[c] = this.createArray(this.opaqueColors[c], count);
+            this.colorArrays[c] = this.createArray(target.getColorTexture(true, this.indices[c]), count);
         }
         for (int i = 0; i < count; i++) {
             this.depths[i] = this.createArrayView(this.depthArray, i);
-            if (i == 0) {
-                this.logical[i] = this.create(target.getDepthTexture(0));
-            }
             for (int c = 0; c < this.indices.length; c++) {
                 this.colors[i][c] = this.createArrayView(this.colorArrays[c], i);
             }
@@ -199,12 +186,17 @@ public class OpenGlTransparency implements AutoCloseable {
         }
     }
 
-    private static void uniform(int program, String name, int value) {
-        GL43.glProgramUniform1i(program, GL43.glGetUniformLocation(program, name), value);
+    private int uniformLocation(int program, String name) {
+        return this.uniformLocations.computeIfAbsent(program, key -> new HashMap<>())
+            .computeIfAbsent(name, key -> GL43.glGetUniformLocation(program, key));
     }
 
-    private static void bind(int program, String name, int unit, int texture) {
-        uniform(program, name, unit);
+    private void uniform(int program, String name, int value) {
+        GL43.glProgramUniform1i(program, this.uniformLocation(program, name), value);
+    }
+
+    private void bind(int program, String name, int unit, int texture) {
+        this.uniform(program, name, unit);
         GlStateManager._activeTexture(GL43.GL_TEXTURE0 + unit);
         GlStateManager._bindTexture(texture);
         GL43.glBindSampler(unit, 0);
@@ -237,16 +229,6 @@ public class OpenGlTransparency implements AutoCloseable {
                 } finally {
                     GL43.glEndQuery(GL43.GL_ANY_SAMPLES_PASSED);
                 }
-                this.copy(this.target.getDepthTexture(-1), this.depths[i]);
-                for (int c = 0; c < this.indices.length; c++) {
-                    this.copy(this.target.getColorTexture(true, this.indices[c]), this.colors[i][c]);
-                }
-                if (i == 0) {
-                    Shaders.refreshTransparencyDepth(this.target);
-                    this.copy(this.target.getDepthTexture(0), this.logical[i]);
-                }
-                GlStateManager._enableDepthTest();
-                GlStateManager._depthFunc(GL43.GL_GEQUAL);
                 if (i + 1 == nextPoll) {
                     this.activeLayers = 0;
                     for (int q = 0; q <= i; q++) {
@@ -259,6 +241,16 @@ public class OpenGlTransparency implements AutoCloseable {
                     }
                     nextPoll = Math.min(nextPoll + 2, this.depths.length);
                 }
+                this.copy(this.target.getDepthTexture(-1), this.depths[i]);
+                for (int c = 0; c < this.indices.length; c++) {
+                    this.copy(this.target.getColorTexture(true, this.indices[c]), this.colors[i][c]);
+                }
+                if (i == 0) {
+                    Shaders.refreshTransparencyDepth(this.target);
+                    this.copy(this.target.getDepthTexture(0), this.nearestLogical);
+                }
+                GlStateManager._enableDepthTest();
+                GlStateManager._depthFunc(GL43.GL_GEQUAL);
             }
             this.load(0);
             this.target.bindFramebuffer();
@@ -272,7 +264,7 @@ public class OpenGlTransparency implements AutoCloseable {
 
     private void load(int index) {
         this.copy(this.depths[index], this.target.getDepthTexture(-1));
-        this.copy(this.logical[index], this.target.getDepthTexture(0));
+        this.copy(this.nearestLogical, this.target.getDepthTexture(0));
         for (int c = 0; c < this.indices.length; c++) {
             this.copy(this.colors[index][c], this.target.getColorTexture(true, this.indices[c]));
         }
@@ -287,16 +279,6 @@ public class OpenGlTransparency implements AutoCloseable {
         this.copy(this.lateLogical, this.target.getDepthTexture(0));
         for (int c = 0; c < this.indices.length; c++) {
             this.copy(this.lateColors[c], this.target.getColorTexture(true, this.indices[c]));
-        }
-    }
-
-    private void restoreInputs() {
-        for (int side = 0; side < 2; side++) {
-            for (int c = 0; c < this.inputs[side].length; c++) {
-                if (this.inputs[side][c] != 0) {
-                    this.copy(this.inputs[side][c], this.target.getColorTexture(side == 0, c));
-                }
-            }
         }
     }
 
@@ -368,6 +350,7 @@ public class OpenGlTransparency implements AutoCloseable {
 
     public static void resolve(Runnable programs, Runnable camera) {
         var current = instance;
+        current.compositeDepthSource = 0;
         int[] history = current.profile.first() == 1 ? new int[]{
             current.target.getColorTexture(true, 3), current.target.getColorTexture(true, 7)
         } : null;
@@ -377,7 +360,7 @@ public class OpenGlTransparency implements AutoCloseable {
                 if (current.lateColors == null) {
                     current.lateColors = new int[current.indices.length];
                     for (int c = 0; c < current.indices.length; c++) {
-                        current.lateColors[c] = current.create(current.opaqueColors[c]);
+                        current.lateColors[c] = current.create(current.target.getColorTexture(true, current.indices[c]));
                     }
                     current.lateDepth = current.create(current.opaqueDepth);
                     current.lateLogical = current.create(current.opaqueLogical);
@@ -389,22 +372,11 @@ public class OpenGlTransparency implements AutoCloseable {
                 }
             }
             current.copyArray(current.opaqueDepth, current.depthArray, current.depths.length);
-            for (int side = 0; side < 2; side++) {
-                for (int c = 0; c < current.inputs[side].length; c++) {
-                    if (current.inputs[side][c] != 0) {
-                        current.copy(current.target.getColorTexture(side == 0, c), current.inputs[side][c]);
-                    }
-                }
+            if (current.metadata != 0) {
+                current.copy(current.target.getColorTexture(true, 4), current.metadata);
             }
             for (int i = current.depths.length - 1; i >= current.depths.length - current.activeLayers; i--) {
                 current.rank = i;
-                for (int side = 0; side < 2; side++) {
-                    for (int c = 0; c < current.inputs[side].length; c++) {
-                        if (current.inputs[side][c] != 0) {
-                            current.copy(current.inputs[side][c], current.target.getColorTexture(side == 0, c));
-                        }
-                    }
-                }
                 current.gather(i);
                 programs.run();
                 current.restoreHistory(history);
@@ -412,7 +384,6 @@ public class OpenGlTransparency implements AutoCloseable {
             if (lateHand) {
                 current.lateResolve = true;
                 current.rank = 0;
-                current.restoreInputs();
                 current.loadCamera(true);
                 programs.run();
                 current.restoreHistory(history);
@@ -423,14 +394,6 @@ public class OpenGlTransparency implements AutoCloseable {
             current.cameraResolve = true;
             current.rank = 0;
             if (current.profile.first() == 1) {
-                for (int side = 0; side < 2; side++) {
-                    for (int c = 0; c < current.inputs[side].length; c++) {
-                        if (current.inputs[side][c] != 0) {
-                            current.copy(current.inputs[side][c], current.target.getColorTexture(side == 0, c));
-                        }
-                    }
-                }
-                current.loadCamera(lateHand);
                 programs.run();
             } else {
                 camera.run();
@@ -440,7 +403,7 @@ public class OpenGlTransparency implements AutoCloseable {
             current.captured = false;
             current.cameraResolve = false;
             current.lateResolve = false;
-            current.copy(current.opaqueLogical, current.target.getDepthTexture(1));
+            current.setCompositeDepth(current.opaqueLogical);
         }
     }
 
@@ -455,19 +418,26 @@ public class OpenGlTransparency implements AutoCloseable {
         }
     }
 
+    private void setCompositeDepth(int source) {
+        if (this.compositeDepthSource != source) {
+            this.copy(source, this.target.getDepthTexture(1));
+            this.compositeDepthSource = source;
+        }
+    }
+
     public static void beforeComposite(Program program) {
         var current = instance;
         if (current == null) {
             return;
         }
         int id = program.getId();
-        if (GL43.glGetUniformLocation(id, "ofLayerResolve") < 0) {
+        if (current.uniformLocation(id, "ofLayerResolve") < 0) {
             return;
         }
         if (current.rank < 0) {
             if (program == Shaders.ProgramsComposite[2] && current.gi != 0) {
                 current.copy(current.target.getColorTexture(true, current.profile.color()), current.gi);
-                bind(id, "ofLayerGi", 27, current.gi);
+                current.bind(id, "ofLayerGi", 27, current.gi);
                 GlStateManager._activeTexture(GL43.GL_TEXTURE0 + 27);
                 GL43.glGenerateMipmap(GL43.GL_TEXTURE_2D);
                 GlStateManager._activeTexture(GL43.GL_TEXTURE0);
@@ -479,7 +449,12 @@ public class OpenGlTransparency implements AutoCloseable {
             if (current.cameraResolve && program == Shaders.ProgramsComposite[current.profile.last()]) {
                 current.copy(current.lighting, current.target.getColorTexture(true, current.profile.color()));
             }
-            current.copy(current.cameraResolve || program == Shaders.ProgramsComposite[2] || current.profile.first() == 1 && program != Shaders.ProgramsComposite[1] ? current.opaqueLogical : current.lateResolve ? current.logical[0] : current.nextDepth, current.target.getDepthTexture(1));
+            boolean opaqueDepth = current.cameraResolve || program == Shaders.ProgramsComposite[2]
+                || current.profile.first() == 1 && program != Shaders.ProgramsComposite[1];
+            if (!opaqueDepth && !current.lateResolve) {
+                current.compositeDepthSource = 0;
+            }
+            current.setCompositeDepth(opaqueDepth ? current.opaqueLogical : current.lateResolve ? current.nearestLogical : current.nextDepth);
             var buffers = program.getDrawBuffers();
             for (int i = 0; i < buffers.limit(); i++) {
                 int c = buffers.get(i) - GL43.GL_COLOR_ATTACHMENT0;
@@ -489,16 +464,19 @@ public class OpenGlTransparency implements AutoCloseable {
             }
         }
         if (current.waves != 0) {
-            bind(id, "ofWaterWaves", 26, current.waves);
+            current.bind(id, "ofWaterWaves", 26, current.waves);
         }
         if (current.gi != 0) {
-            bind(id, "ofLayerGi", 27, current.gi);
+            current.bind(id, "ofLayerGi", 27, current.gi);
         }
-        bind(id, "ofLayerDepth", 29, current.target.getDepthTexture(-1));
-        bind(id, "ofOpaqueDepth", 30, current.lateResolve ? current.depths[0] : current.opaqueDepth);
-        uniform(id, "ofLayerResolve", current.rank < 0 || current.cameraResolve ? 0 : 1);
-        uniform(id, "ofLayerIntermediate", current.rank < 0 || current.cameraResolve ? 0 : 1);
-        uniform(id, "ofLayerCameraOnly", current.cameraResolve ? 1 : 0);
+        if (current.metadata != 0) {
+            current.bind(id, "ofLayerMetadata", 25, current.metadata);
+        }
+        current.bind(id, "ofLayerDepth", 29, current.target.getDepthTexture(-1));
+        current.bind(id, "ofOpaqueDepth", 30, current.lateResolve ? current.depths[0] : current.opaqueDepth);
+        current.uniform(id, "ofLayerResolve", current.rank < 0 || current.cameraResolve ? 0 : 1);
+        current.uniform(id, "ofLayerIntermediate", current.rank < 0 || current.cameraResolve ? 0 : 1);
+        current.uniform(id, "ofLayerCameraOnly", current.cameraResolve ? 1 : 0);
     }
 
     public static void reset() {

@@ -758,10 +758,10 @@ of.options.SCREENSHOT_SIZE.tooltip.4=Menangkap tangkap layar lebih besar membutu
 of.options.SCREENSHOT_SIZE.tooltip.5=Tidak kompatibel dengan anti alias.
 of.options.SCREENSHOT_SIZE.tooltip.6=Memperlukan dukungan framebuffer GPU .
 
-of.options.SHOW_GL_ERRORS=Tunjukan Eror OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.1=Tunjukan Eror OpenGL
-of.options.SHOW_GL_ERRORS.tooltip.2=Saat dinyalakan eror-eror OpenGL ditunjukan di obrolan.
-of.options.SHOW_GL_ERRORS.tooltip.3=Matikan tunjukan eror OpenGL hanya jika ada konflik yang diketahui dan
+of.options.SHOW_GL_ERRORS=Tampilkan Kesalahan API Grafis
+of.options.SHOW_GL_ERRORS.tooltip.1=Tampilkan Kesalahan API Grafis
+of.options.SHOW_GL_ERRORS.tooltip.2=Saat diaktifkan, kesalahan API grafis ditampilkan di obrolan.
+of.options.SHOW_GL_ERRORS.tooltip.3=Matikan tampilan kesalahan API grafis hanya jika ada konflik yang diketahui dan
 of.options.SHOW_GL_ERRORS.tooltip.4=eror tidak bisa dibetulkan.
 of.options.SHOW_GL_ERRORS.tooltip.5=Eror-eror tetap masuk dalam error log dan mungkin masih 
 of.options.SHOW_GL_ERRORS.tooltip.6=menyebabkan BPD jatuh secara signifikan saat dimatikan eror. 
