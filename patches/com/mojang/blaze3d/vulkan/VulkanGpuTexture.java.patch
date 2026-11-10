@@ -1,0 +1,67 @@
+--- a/com/mojang/blaze3d/vulkan/VulkanGpuTexture.java
++++ b/com/mojang/blaze3d/vulkan/VulkanGpuTexture.java
+@@ -18,6 +18,7 @@
+ @OnlyIn(Dist.CLIENT)
+ public class VulkanGpuTexture extends GpuTexture implements Destroyable {
+     private final VulkanDevice device;
++    private final int imageType;
+     private final long vkImage;
+     private final long vmaAllocation;
+     private boolean closed = false;
+@@ -33,19 +34,32 @@
+         final int depthOrLayers,
+         final int mipLevels
+     ) {
++        this(device, usage, label, format, width, height, depthOrLayers, mipLevels, VK12.VK_IMAGE_TYPE_2D);
++    }
++
++    public VulkanGpuTexture(
++        VulkanDevice device, int usage, String label, GpuFormat format, int width, int height, int depthOrLayers, int mipLevels, int imageType
++    ) {
+         super(usage, label, format, width, height, depthOrLayers, mipLevels);
+         this.device = device;
++        this.imageType = imageType;
++        if (imageType != VK12.VK_IMAGE_TYPE_1D && imageType != VK12.VK_IMAGE_TYPE_2D && imageType != VK12.VK_IMAGE_TYPE_3D
++            || imageType == VK12.VK_IMAGE_TYPE_1D && (height != 1 || depthOrLayers != 1)
++            || imageType == VK12.VK_IMAGE_TYPE_3D && (usage & 16) != 0) {
++            throw new IllegalArgumentException("Invalid Vulkan texture dimensions or image type");
++        }
+ 
+         try (MemoryStack stack = MemoryStack.stackPush()) {
+             VkImageCreateInfo imageCreateInfo = VkImageCreateInfo.calloc(stack).sType$Default();
+-            imageCreateInfo.imageType(1);
+-            imageCreateInfo.extent().set(width, height, 1);
++            imageCreateInfo.imageType(imageType);
++            imageCreateInfo.extent().set(width, height, imageType == VK12.VK_IMAGE_TYPE_3D ? depthOrLayers : 1);
+             imageCreateInfo.mipLevels(mipLevels);
+-            imageCreateInfo.arrayLayers(depthOrLayers);
++            imageCreateInfo.arrayLayers(imageType == VK12.VK_IMAGE_TYPE_3D ? 1 : depthOrLayers);
+             imageCreateInfo.format(VulkanConst.toVk(format));
+             imageCreateInfo.tiling(0);
+             imageCreateInfo.initialLayout(0);
+-            imageCreateInfo.usage(VulkanConst.textureUsageToVk(usage, format));
++            imageCreateInfo.usage(VulkanConst.textureUsageToVk(usage, format)
++                | ((usage & GpuTexture.USAGE_STORAGE_BINDING) != 0 ? VK12.VK_IMAGE_USAGE_STORAGE_BIT : 0));
+             imageCreateInfo.sharingMode(0);
+             imageCreateInfo.samples(1);
+             imageCreateInfo.flags(VulkanUtils.hasAnyBit(usage, 16) ? 16 : 0);
+@@ -73,7 +87,7 @@
+             subresourceRange.baseMipLevel(0);
+             subresourceRange.levelCount(this.getMipLevels());
+             subresourceRange.baseArrayLayer(0);
+-            subresourceRange.layerCount(depthOrLayers);
++            subresourceRange.layerCount(imageType == VK12.VK_IMAGE_TYPE_3D ? 1 : depthOrLayers);
+             VK12.vkCmdPipelineBarrier(device.createCommandEncoder().textureInitCommandBuffer(), 1, 65536, 0, null, null, barrier);
+             device.instance().debug().setObjectName(device.vkDevice(), 10, this.vkImage, label);
+         }
+@@ -117,4 +131,8 @@
+     public long vkImage() {
+         return this.vkImage;
+     }
+-}
+\ No newline at end of file
++
++    public int imageType() {
++        return this.imageType;
++    }
++}

@@ -992,3 +992,6 @@ options.exclusiveFullscreen.tooltip.4=Uses direct monitor control in fullscreen 
 options.exclusiveFullscreen.tooltip.5=Usually increases FPS and decreases mouse input lag.
 options.exclusiveFullscreen.tooltip.6=Not recommended when using multiple monitors.
 options.exclusiveFullscreen.tooltip.7=Effective after a RESTART!
+
+of.options.shaders.LAYERED_TRANSPARENCY=Transparency fix
+of.options.shaders.LAYERED_TRANSPARENCY.tooltip.1=Corrects overlapping glass and water. Uses additional graphics memory and rendering time.

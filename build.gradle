@@ -35,6 +35,8 @@ configurations {
 
 dependencies {
     implementation 'net.minecraftforge:forgespi:8.0.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:6.0.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.0'
     implementation project(':core')
     coreArchive project(':core')
     runtimeOnly project(':installer')
@@ -61,6 +63,8 @@ def jointCompile = tasks.named('compileJava', JavaCompile) {
 apply from: 'gradle/joint-class-outputs.gradle'
 
 registerJointClassOutput(project)
+apply from: 'gradle/patch-config.gradle'
+apply from: 'gradle/client-runtime.gradle'
 tasks.named('compileGame') { dependsOn ':core:classes' }
 
 def modArchive = tasks.register('modArchive', Jar) {
@@ -102,3 +106,19 @@ tasks.named('restoreArchive') { enabled = false }
 
 // Maintain recovered sources directly instead of extracting vanilla sources over them.
 tasks.named('extractMapped') { enabled = false }
+
+// Keep backend tests in the root project's standard test source set.
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+    workingDir = layout.buildDirectory.get().asFile
+    def shaderSources = providers.gradleProperty('shaderTestSources').getOrElse('')
+    systemProperty 'optifine.test.shaderSources', shaderSources.isBlank() ? '' : file(shaderSources).absolutePath
+    systemProperty 'optifine.test.vulkanDevice', providers.gradleProperty('vulkanDeviceTests').getOrElse('false')
+    if (!shaderSources.isBlank()) {
+        inputs.dir(file(shaderSources)).withPropertyName('shaderTestSources').withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+    if (providers.gradleProperty('vulkanDeviceTests').getOrElse('false').toBoolean()) {
+        outputs.upToDateWhen { false }
+    }
+}

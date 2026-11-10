@@ -65,17 +65,18 @@
          RenderSystem.assertOnRenderThread();
          GpuDevice device = RenderSystem.getDevice();
          int maxTextureSize = device.getDeviceInfo().limits().maxTextureSize();
-@@ -83,7 +82,8 @@
+@@ -83,7 +82,9 @@
              this.width = width;
              this.height = height;
              if (this.useDepth) {
 -                this.depthTexture = device.createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1);
-+                this.depthTexture = device.getGlDevice()
-+                    .createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1, this.stencilEnabled);
++                this.depthTexture = device.isOpenGl()
++                    ? device.getGlDevice().createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1, this.stencilEnabled)
++                    : device.createTexture(() -> this.label + " / Depth", 15, GpuFormat.D32_FLOAT, width, height, 1, 1);
                  this.depthTextureView = device.createTextureView(this.depthTexture);
              }
  
-@@ -94,7 +94,7 @@
+@@ -94,7 +95,7 @@
          }
      }
  
@@ -84,7 +85,7 @@
          RenderSystem.assertOnRenderThread();
  
          try (RenderPass renderPass = RenderSystem.getDevice()
-@@ -107,19 +107,41 @@
+@@ -107,19 +108,41 @@
          }
      }
  

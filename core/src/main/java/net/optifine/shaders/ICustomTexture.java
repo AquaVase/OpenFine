@@ -7,6 +7,10 @@ public interface ICustomTexture {
 
     void deleteTexture();
 
+    default void bindVulkan() {
+        throw new UnsupportedOperationException("Native Vulkan texture binding is not implemented for " + this.getClass().getName());
+    }
+
     default int getTarget() {
         return 3553;
     }

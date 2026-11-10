@@ -1,0 +1,64 @@
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.Opcodes
+import java.util.regex.Pattern
+import java.util.zip.ZipFile
+
+buildscript {
+    repositories { mavenCentral() }
+    dependencies { classpath 'org.ow2.asm:asm:9.10.1' }
+}
+
+def patchSources = fileTree(patchgen.sourcePatchesDirectory) { include '**/*.java.patch' }
+def gameClasses = sourceSets.main.output.classesDirs
+def generatedResources = layout.buildDirectory.dir('generated/patch-config')
+
+def generatePatch2Config = tasks.register('generatePatch2Config') {
+    group = 'build'
+    description = 'Generate installer patch mappings from patched sources and compiled game classes.'
+    dependsOn gameClasses
+    mustRunAfter tasks.named('genSourcePatches')
+    inputs.files(patchSources).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(gameClasses).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(patchgen.srgBaseJar)
+    inputs.property('srgPrefix', patchgen.srgPrefix)
+    outputs.file(generatedResources.map { it.file('patch2.cfg') })
+
+    doLast {
+        def sources = new HashSet<String>()
+        patchSources.visit { entry ->
+            if (!entry.directory) {
+                sources.add(entry.relativePath.pathString - '.patch')
+            }
+        }
+        def mappings = new TreeMap<String, String>()
+        new ZipFile(patchgen.srgBaseJar.get().asFile).withCloseable { base ->
+            gameClasses.asFileTree.matching { include '**/*.class' }.visit { entry ->
+                if (!entry.directory) {
+                    def reader = new ClassReader(entry.file.bytes)
+                    String sourceFile = null
+                    reader.accept(new ClassVisitor(Opcodes.ASM9) {
+                        @Override
+                        void visitSource(String source, String debug) { sourceFile = source }
+                    }, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES)
+                    def sourcePath = reader.className.substring(0, reader.className.lastIndexOf('/') + 1) + sourceFile
+                    def classPath = reader.className + '.class'
+                    if (sources.contains(sourcePath) && base.getEntry(classPath) != null) {
+                        mappings.put(Pattern.quote(patchgen.srgPrefix.get() + classPath), classPath)
+                    }
+                }
+            }
+        }
+        def output = generatedResources.get().file('patch2.cfg').asFile
+        output.parentFile.mkdirs()
+        output.setText(mappings.collect { key, value -> "${key}=${value}\n" }.join(''), 'US-ASCII')
+        logger.lifecycle("Generated patch2.cfg: ${mappings.size()} original game classes")
+    }
+}
+
+project(':installer') {
+    plugins.withId('java') {
+        sourceSets.main.resources.srcDir(generatedResources)
+        tasks.named('processResources') { dependsOn generatePatch2Config }
+    }
+}

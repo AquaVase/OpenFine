@@ -8,4 +8,4 @@ run/
 .idea/
 
 # Local Minecraft sources; maintain changes as source patches.
-/src/
+/src/*

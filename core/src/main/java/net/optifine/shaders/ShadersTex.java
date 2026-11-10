@@ -5,6 +5,11 @@ import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.vulkan.VulkanGpuSampler;
+import net.optifine.shaders.vulkan.VulkanShaderRuntime;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,23 +114,34 @@ public class ShadersTex {
         return intBuffer;
     }
 
-    public static MultiTexID getMultiTexID(GlTexture tex) {
+    public static MultiTexID getMultiTexID(GpuTexture tex) {
         MultiTexID multiTex = tex.multiTex;
         if (multiTex == null) {
             int baseTex = tex.getGlTextureId();
-            multiTex = multiTexMap.get(baseTex);
+            multiTex = tex instanceof GlTexture ? multiTexMap.get(baseTex) : null;
             if (multiTex == null) {
-                GlTexture normTex = (GlTexture)RenderSystem.getGlDevice()
+                GpuTexture normTex = RenderSystem.getDevice()
                     .createTexture(
                         tex.getLabel() + ".norm", tex.usage(), tex.getFormat(), tex.getWidth(), tex.getHeight(), tex.getDepthOrLayers(), tex.getMipLevels()
                     );
-                GlTexture specTex = (GlTexture)RenderSystem.getGlDevice()
-                    .createTexture(
-                        tex.getLabel() + ".spec", tex.usage(), tex.getFormat(), tex.getWidth(), tex.getHeight(), tex.getDepthOrLayers(), tex.getMipLevels()
-                    );
-                multiTex = new MultiTexID(tex, normTex, specTex);
-                initTextureNS(multiTex, tex.getWidth(), tex.getHeight());
-                multiTexMap.put(baseTex, multiTex);
+                GpuTexture specTex = null;
+                try {
+                    specTex = RenderSystem.getDevice()
+                        .createTexture(
+                            tex.getLabel() + ".spec", tex.usage(), tex.getFormat(), tex.getWidth(), tex.getHeight(), tex.getDepthOrLayers(), tex.getMipLevels()
+                        );
+                    multiTex = new MultiTexID(tex, normTex, specTex);
+                    initTextureNS(multiTex, tex.getWidth(), tex.getHeight());
+                } catch (RuntimeException | Error e) {
+                    normTex.close();
+                    if (specTex != null) {
+                        specTex.close();
+                    }
+                    throw e;
+                }
+                if (tex instanceof GlTexture) {
+                    multiTexMap.put(baseTex, multiTex);
+                }
             }
 
             tex.multiTex = multiTex;
@@ -149,6 +165,9 @@ public class ShadersTex {
     }
 
     public static void bindNSTextures(int normTex, int specTex, boolean normalBlend, boolean specularBlend, boolean mipmaps) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("OpenGL texture handles cannot be used by the Vulkan backend");
+        }
         if (Shaders.isRenderingWorld && GlStateManager.getActiveTextureUnit() == 33984) {
             if (Shaders.configNormalMap) {
                 GlStateManager._activeTexture(33985);
@@ -175,10 +194,17 @@ public class ShadersTex {
     }
 
     public static void bindNSTextures(MultiTexID multiTex) {
+        if (Config.isVulkan()) {
+            bindVulkanTextures(multiTex, true, true, false, false);
+            return;
+        }
         bindNSTextures(multiTex.norm, multiTex.spec, true, true, false);
     }
 
     public static void bindTextures(int baseTex, int normTex, int specTex) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("OpenGL texture handles cannot be used by the Vulkan backend");
+        }
         if (Shaders.isRenderingWorld && GlStateManager.getActiveTextureUnit() == 33984) {
             GlStateManager._activeTexture(33985);
             GlStateManager._bindTexture(normTex);
@@ -191,6 +217,10 @@ public class ShadersTex {
     }
 
     public static void bindTextures(MultiTexID multiTex, boolean normalBlend, boolean specularBlend, boolean mipmaps) {
+        if (Config.isVulkan()) {
+            bindVulkanTextures(multiTex, normalBlend, specularBlend, mipmaps, true);
+            return;
+        }
         if (Shaders.isRenderingWorld && GlStateManager.getActiveTextureUnit() == 33984) {
             if (Shaders.configNormalMap) {
                 GlStateManager._activeTexture(33985);
@@ -223,6 +253,16 @@ public class ShadersTex {
     }
 
     public static void bindTexture(AbstractTexture texture) {
+        if (Config.isVulkan()) {
+            MultiTexID multiTex = texture.getMultiTexID();
+            boolean normalBlend = !(texture instanceof TextureAtlas atlas) || atlas.isNormalBlend();
+            boolean specularBlend = !(texture instanceof TextureAtlas atlas) || atlas.isSpecularBlend();
+            boolean mipmaps = texture instanceof TextureAtlas atlas && atlas.isMipmaps();
+            bindVulkanTextures(multiTex, normalBlend, specularBlend, mipmaps, true);
+            Shaders.atlasSizeX = texture instanceof TextureAtlas atlas ? atlas.atlasWidth : 0;
+            Shaders.atlasSizeY = texture instanceof TextureAtlas atlas ? atlas.atlasHeight : 0;
+            return;
+        }
         GlTexture glTexture = texture.getGlTexture();
         if (glTexture != null) {
             bindTexture(glTexture, texture);
@@ -260,6 +300,29 @@ public class ShadersTex {
         }
     }
 
+    private static void bindVulkanTextures(MultiTexID textures, boolean normalBlend, boolean specularBlend, boolean mipmaps, boolean base) {
+        VulkanShaderRuntime runtime = VulkanShaderRuntime.getInstance();
+        if (base) {
+            var sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.NEAREST, mipmaps);
+            sampler = runtime.getMaterialSampler(textures.baseTex, sampler, true, false);
+            runtime.bindTexture(0, runtime.getTextureView(textures.baseTex), ((VulkanGpuSampler)sampler).vkSampler());
+        }
+        if (Shaders.isRenderingWorld) {
+            if (Shaders.configNormalMap) {
+                FilterMode filter = normalBlend ? FilterMode.LINEAR : FilterMode.NEAREST;
+                var sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.REPEAT, filter, filter, mipmaps);
+                sampler = runtime.getMaterialSampler(textures.baseTex, sampler, normalBlend, true);
+                runtime.bindTexture(1, runtime.getTextureView(textures.normTex), ((VulkanGpuSampler)sampler).vkSampler());
+            }
+            if (Shaders.configSpecularMap) {
+                FilterMode filter = specularBlend ? FilterMode.LINEAR : FilterMode.NEAREST;
+                var sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.REPEAT, filter, filter, mipmaps);
+                sampler = runtime.getMaterialSampler(textures.baseTex, sampler, specularBlend, true);
+                runtime.bindTexture(3, runtime.getTextureView(textures.specTex), ((VulkanGpuSampler)sampler).vkSampler());
+            }
+        }
+    }
+
     public static void initDynamicTextureNS(DynamicTexture tex) {
         MultiTexID multiTex = tex.getMultiTexID();
         NativeImage nativeImage = tex.getPixels();
@@ -269,6 +332,15 @@ public class ShadersTex {
     }
 
     public static void initTextureNS(MultiTexID multiTex, int width, int height) {
+        if (Config.isVulkan()) {
+            try (NativeImage imageNormal = makeImageColor(width, height, defNormTexColor);
+                 NativeImage imageSpecular = makeImageColor(width, height, defSpecTexColor)) {
+                RenderSystem.getDevice().createCommandEncoder().writeToTexture(multiTex.normTex, imageNormal);
+                RenderSystem.getDevice().createCommandEncoder().writeToTexture(multiTex.specTex, imageSpecular);
+            }
+            return;
+        }
+
         NativeImage imageNormal = makeImageColor(width, height, -8421377);
         TextureUtils.prepareImage(multiTex.norm, width, height);
         imageNormal.uploadTextureSub(0, 0, 0, 0, 0, width, height, false, false, false, true);
@@ -279,6 +351,9 @@ public class ShadersTex {
     }
 
     public static void updateDynTexSubImage1(int[] src, int width, int height, int posX, int posY, int page) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("OpenGL texture handles cannot be used by the Vulkan backend");
+        }
         int size = width * height;
         IntBuffer intBuf = getIntBuffer(size);
         intBuf.clear();
@@ -299,7 +374,10 @@ public class ShadersTex {
     }
 
     public static void allocateTextureMapNS(int mipmapLevels, int width, int height, TextureAtlas tex) {
-        MultiTexID multiTex = getMultiTexID(tex.getGlTexture());
+        MultiTexID multiTex = getMultiTexID(tex.getTexture());
+        if (Config.isVulkan()) {
+            return;
+        }
         if (Shaders.configNormalMap) {
             SMCLog.info("Allocate texture map normal: " + width + "x" + height + ", mipmaps: " + mipmapLevels);
             TextureUtils.prepareImage(multiTex.norm, mipmapLevels, width, height);
@@ -393,6 +471,9 @@ public class ShadersTex {
     }
 
     public static void uploadTexSub1(int[][] src, int width, int height, int posX, int posY, int page) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("Implicit OpenGL texture destinations are unavailable on Vulkan; use GpuTexture");
+        }
         TextureUtils.resetDataUnpacking();
         int size = width * height;
         IntBuffer intBuf = getIntBuffer(size);
@@ -573,6 +654,9 @@ public class ShadersTex {
     }
 
     public static void updateSubTex1(int[] src, int width, int height, int posX, int posY) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("Implicit OpenGL texture destinations are unavailable on Vulkan; use GpuTexture");
+        }
         int level = 0;
         int cw = width;
         int ch = height;
@@ -588,6 +672,23 @@ public class ShadersTex {
     }
 
     public static void updateSubImage(MultiTexID multiTex, int[] src, int width, int height, int posX, int posY, boolean linear, boolean clamp) {
+        if (Config.isVulkan()) {
+            int size = width * height;
+            GpuTexture[] textures = {multiTex.baseTex, multiTex.normTex, multiTex.specTex};
+            for (int page = 0; page < textures.length; page++) {
+                int offset = src.length == size * 3 ? page * size : 0;
+                try (NativeImage image = new NativeImage(width, height, false)) {
+                    for (int y = 0; y < height; y++) {
+                        for (int x = 0; x < width; x++) {
+                            int color = src[offset + y * width + x];
+                            image.setPixelABGR(x, y, (color & 0xFF00FF00) | (color & 255) << 16 | (color >>> 16 & 255));
+                        }
+                    }
+                    RenderSystem.getDevice().createCommandEncoder().writeToTexture(textures[page], image, 0, 0, posX, posY);
+                }
+            }
+            return;
+        }
         int size = width * height;
         IntBuffer intBuf = getIntBuffer(size);
         TextureUtils.resetDataUnpacking();
@@ -689,6 +790,15 @@ public class ShadersTex {
     ) {
         int width = nativeImage.getWidth();
         int height = nativeImage.getHeight();
+        if (Config.isVulkan()) {
+            try (NativeImage imageNormal = loadNSMapImage(resourceManager, getNSMapLocation(location, "n"), width, height, defNormTexColor);
+                 NativeImage imageSpecular = loadNSMapImage(resourceManager, getNSMapLocation(location, "s"), width, height, defSpecTexColor)) {
+                RenderSystem.getDevice().createCommandEncoder().writeToTexture(multiTex.normTex, imageNormal);
+                RenderSystem.getDevice().createCommandEncoder().writeToTexture(multiTex.specTex, imageSpecular);
+            }
+            return;
+        }
+
         Identifier locNormal = getNSMapLocation(location, "n");
         NativeImage imageNormal = loadNSMapImage(resourceManager, locNormal, width, height, -8421377);
         TextureUtils.prepareImage(multiTex.norm, 0, width, height);
@@ -712,6 +822,9 @@ public class ShadersTex {
     }
 
     public static void updateTextureMinMagFilter() {
+        if (Config.isVulkan()) {
+            return;
+        }
         TextureManager texman = Minecraft.getInstance().getTextureManager();
         AbstractTexture texObj = texman.getTexture(TextureAtlas.LOCATION_BLOCKS);
         if (texObj != null) {
@@ -764,6 +877,13 @@ public class ShadersTex {
     }
 
     public static void copyTexture(int targetIndex, int width, int height) {
+        if (Config.isVulkan()) {
+            if (!(GlState.getFramebuffer() instanceof ShadersFramebuffer framebuffer)) {
+                throw new IllegalStateException("Depth copy requires an active shader framebuffer");
+            }
+            framebuffer.copyDepthTexture(targetIndex, width, height);
+            return;
+        }
         GlStateManager._activeTexture(33984 + targetIndex);
         GL13.glCopyTexSubImage2D(3553, 0, 0, 0, 0, 0, width, height);
         GlStateManager._activeTexture(33984);

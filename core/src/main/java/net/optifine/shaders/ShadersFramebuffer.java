@@ -1,6 +1,7 @@
 package net.optifine.shaders;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.Dimension;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -11,11 +12,14 @@ import java.util.Map;
 import net.optifine.util.CompoundIntKey;
 import net.optifine.util.CompoundKey;
 import net.optifine.util.DynamicDimension;
+import net.optifine.Config;
+import net.optifine.shaders.vulkan.VulkanFramebuffer;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
 public class ShadersFramebuffer implements IShadersFramebuffer {
+    private static final Map<Integer, ShadersFramebuffer> FRAMEBUFFERS = new HashMap<>();
     private String name;
     private int width;
     private int height;
@@ -32,6 +36,7 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     private int[] colorImageUnits;
     private boolean separateDepthTarget;
     private int glFramebuffer;
+    private VulkanFramebuffer vulkanFramebuffer;
     private FlipTextures colorTexturesFlip;
     private DepthTextures depthTextures;
     private final DrawBuffers drawBuffers;
@@ -39,6 +44,9 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     private int[] drawColorTextures;
     private int[] drawColorTexturesMap;
     private boolean[] dirtyColorTextures;
+    private final int[] attachedTextures;
+    private final int[] attachedTargets;
+    private final int[] attachedLevels;
     private Map<CompoundKey, FixedFramebuffer> fixedFramebuffers = new HashMap<>();
 
     public ShadersFramebuffer(
@@ -65,6 +73,10 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
         this.usedColorBuffers = usedColorBuffers;
         this.usedDepthBuffers = usedDepthBuffers;
         this.maxDrawBuffers = maxDrawBuffers;
+        this.attachedTextures = new int[maxDrawBuffers + 1];
+        this.attachedTargets = new int[maxDrawBuffers + 1];
+        this.attachedLevels = new int[maxDrawBuffers + 1];
+        this.invalidateAttachments();
         this.depthFilterNearest = depthFilterNearest;
         this.depthFilterHardware = depthFilterHardware;
         this.colorFilterNearest = colorFilterNearest;
@@ -82,6 +94,20 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
             this.delete();
         }
 
+        if (Config.isVulkan()) {
+            this.vulkanFramebuffer = new VulkanFramebuffer(
+                RenderSystem.getDevice(), this.name, this.width, this.height, this.buffersFormat, this.usedColorBuffers,
+                this.usedDepthBuffers, this.colorBufferSizes, this.separateDepthTarget, this.depthFilterNearest, this.depthFilterHardware, this.colorFilterNearest
+            );
+            for (int i = 0; i < this.drawBuffers.limit(); i++) {
+                this.drawBuffers.put(i, 36064 + i);
+            }
+            this.activeDrawBuffers = this.drawBuffers;
+            this.bindFramebuffer();
+            SMCLog.info("Vulkan framebuffer created: " + this.name);
+            return;
+        }
+
         this.colorTexturesFlip = new FlipTextures(this.name + "ColorTexturesFlip", this.usedColorBuffers);
         this.depthTextures = new DepthTextures(this.name + "DepthTextures", this.usedDepthBuffers, this.separateDepthTarget);
         this.drawColorTextures = new int[this.usedColorBuffers];
@@ -96,6 +122,7 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
         }
 
         this.glFramebuffer = GL30.glGenFramebuffers();
+        FRAMEBUFFERS.put(this.glFramebuffer, this);
         this.bindFramebuffer();
         Shaders.debugLabels.applyLabelFramebuffer(this.glFramebuffer, this.name + "");
         GL30.glDrawBuffers(0);
@@ -186,8 +213,16 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void delete() {
+        this.invalidateAttachments();
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.close();
+            this.vulkanFramebuffer = null;
+            this.drawBuffers.position(0).fill(0);
+            return;
+        }
         if (this.glFramebuffer != 0) {
-            GL30.glDeleteFramebuffers(this.glFramebuffer);
+            FRAMEBUFFERS.remove(this.glFramebuffer);
+            GlStateManager._glDeleteFramebuffers(this.glFramebuffer);
             this.glFramebuffer = 0;
         }
 
@@ -222,13 +257,29 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
         return this.height;
     }
 
+    public int getColorTexture(boolean main, int index) {
+        return this.colorTexturesFlip.get(main, index);
+    }
+
+    public int getDepthTexture(int index) {
+        return index < 0 ? this.depthTextures.getTarget() : this.depthTextures.get(index);
+    }
+
+    public int getColorCount() {
+        return this.usedColorBuffers;
+    }
+
     @Override
     public int getGlFramebuffer() {
         return this.glFramebuffer;
     }
 
     public boolean exists() {
-        return this.glFramebuffer != 0;
+        return this.vulkanFramebuffer != null || this.glFramebuffer != 0;
+    }
+
+    public VulkanFramebuffer getVulkanFramebuffer() {
+        return this.vulkanFramebuffer;
     }
 
     public void bindFramebuffer() {
@@ -236,16 +287,28 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void setColorTextures(boolean main) {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.setDrawMain(main);
+            return;
+        }
         for (int i = 0; i < this.usedColorBuffers; i++) {
             this.setFramebufferTexture2D(36160, 36064 + i, 3553, this.colorTexturesFlip.get(main, i), 0);
         }
     }
 
     public void setDepthTexture() {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.setDepthAttached(true);
+            return;
+        }
         this.setDepthTexture(this.depthTextures.getTarget());
     }
 
     public void unbindDepthTexture() {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.setDepthAttached(false);
+            return;
+        }
         this.setDepthTexture(0);
     }
 
@@ -254,10 +317,18 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void flipDepthTextures(int index, int index2) {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.flipDepth(index, index2);
+            return;
+        }
         this.depthTextures.flipTextures(index, index2);
     }
 
     public void flipDepthTarget() {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.flipDepthTarget();
+            return;
+        }
         this.depthTextures.flipTarget();
     }
 
@@ -266,6 +337,10 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void setColorBuffersFiltering(int minFilter, int magFilter) {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.setColorFiltering(minFilter, magFilter);
+            return;
+        }
         GlStateManager._activeTexture(33984);
 
         for (int i = 0; i < this.usedColorBuffers; i++) {
@@ -281,6 +356,9 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void setFramebufferTexture2D(int target, int attachment, int texTarget, int texture, int level) {
+        if (this.vulkanFramebuffer != null) {
+            throw new UnsupportedOperationException("OpenGL attachment handles are unavailable on a Vulkan framebuffer");
+        }
         int colorIndex = attachment - 36064;
         if (this.isColorBufferIndex(colorIndex)) {
             if (this.colorBufferSizes[colorIndex] != null) {
@@ -303,7 +381,34 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
         }
 
         this.bindFramebuffer();
-        GL30.glFramebufferTexture2D(target, attachment, texTarget, texture, level);
+        this.attachTexture(target, attachment, texTarget, texture, level);
+    }
+
+    public static void invalidateAttachments(int framebuffer) {
+        ShadersFramebuffer target = FRAMEBUFFERS.get(framebuffer);
+        if (target != null) {
+            target.invalidateAttachments();
+        }
+    }
+
+    public void invalidateAttachments() {
+        Arrays.fill(this.attachedTextures, -1);
+    }
+
+    private void attachTexture(int target, int attachment, int texTarget, int texture, int level) {
+        int colorIndex = attachment - 36064;
+        int index = attachment == 36096 ? this.maxDrawBuffers : colorIndex < this.maxDrawBuffers ? colorIndex : -1;
+        if (index >= 0 && index < this.attachedTextures.length) {
+            if (this.attachedTextures[index] == texture && this.attachedTargets[index] == texTarget && this.attachedLevels[index] == level) {
+                return;
+            }
+            GL30.glFramebufferTexture2D(target, attachment, texTarget, texture, level);
+            this.attachedTextures[index] = texture;
+            this.attachedTargets[index] = texTarget;
+            this.attachedLevels[index] = level;
+        } else {
+            GL30.glFramebufferTexture2D(target, attachment, texTarget, texture, level);
+        }
     }
 
     public boolean isColorBufferIndex(int index) {
@@ -324,7 +429,7 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
         for (int i = 0; i < this.maxDrawBuffers; i++) {
             if (this.dirtyColorTextures[i]) {
                 int texture = this.drawColorTextures[i];
-                GL30.glFramebufferTexture2D(36160, 36064 + i, 3553, texture, 0);
+                this.attachTexture(36160, 36064 + i, 3553, texture, 0);
                 this.dirtyColorTextures[i] = false;
             }
         }
@@ -335,7 +440,7 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
             int ai = this.drawColorTexturesMap[i];
             if (ai >= 0) {
                 int texture = this.drawColorTextures[i];
-                GL30.glFramebufferTexture2D(36160, 36064 + ai, 3553, texture, 0);
+                this.attachTexture(36160, 36064 + ai, 3553, texture, 0);
                 this.dirtyColorTextures[ai] = true;
             }
         }
@@ -345,6 +450,11 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     public void setDrawBuffers(DrawBuffers drawBuffersIn) {
         if (drawBuffersIn == null) {
             drawBuffersIn = Shaders.drawBuffersNone;
+        }
+
+        if (this.vulkanFramebuffer != null) {
+            this.activeDrawBuffers = drawBuffersIn;
+            return;
         }
 
         this.setDrawColorTexturesMap(drawBuffersIn.getAttachmentMappings());
@@ -364,6 +474,12 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void bindDepthTextures(int[] depthTextureImageUnits) {
+        if (this.vulkanFramebuffer != null) {
+            for (int i = 0; i < this.usedDepthBuffers; i++) {
+                this.vulkanFramebuffer.bindDepth(i, depthTextureImageUnits[i]);
+            }
+            return;
+        }
         for (int i = 0; i < this.usedDepthBuffers; i++) {
             GlStateManager._activeTexture(33984 + depthTextureImageUnits[i]);
             GlStateManager._bindTexture(this.depthTextures.get(i));
@@ -373,6 +489,13 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void bindColorTextures(int startColorBuffer) {
+        if (this.vulkanFramebuffer != null) {
+            for (int i = startColorBuffer; i < this.usedColorBuffers; i++) {
+                this.vulkanFramebuffer.bindColor(i, this.colorTextureUnits[i]);
+                this.bindColorImage(i, true);
+            }
+            return;
+        }
         for (int i = startColorBuffer; i < this.usedColorBuffers; i++) {
             GlStateManager._activeTexture(33984 + this.colorTextureUnits[i]);
             GlStateManager._bindTexture(this.colorTexturesFlip.getA(i));
@@ -389,6 +512,12 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void bindColorImage(int index, boolean main) {
+        if (this.vulkanFramebuffer != null) {
+            if (this.colorImageUnits != null && index >= 0 && index < this.colorImageUnits.length) {
+                this.vulkanFramebuffer.bindImage(index, main, this.colorImageUnits[index]);
+            }
+            return;
+        }
         if (this.colorImageUnits != null) {
             if (index >= 0 && index < this.colorImageUnits.length) {
                 int imageFormat = Shaders.getImageFormat(this.buffersFormat[index]);
@@ -399,7 +528,27 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
         }
     }
 
+    public void copyDepthTexture(int unit, int width, int height) {
+        for (int i = 0; i < this.usedDepthBuffers; i++) {
+            if (this.depthTextureUnits[i] == unit) {
+                RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(this.vulkanFramebuffer.getDepthTarget().texture(),
+                    this.vulkanFramebuffer.getDepth(i).texture(), 0, 0, 0, 0, 0, width, height);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Unknown shader depth texture unit: " + unit);
+    }
+
     public void generateDepthMipmaps(boolean[] depthMipmapEnabled) {
+        if (this.vulkanFramebuffer != null) {
+            for (int i = 0; i < this.usedDepthBuffers; i++) {
+                if (depthMipmapEnabled[i]) {
+                    this.vulkanFramebuffer.generateDepthMipmaps(i);
+                    this.vulkanFramebuffer.bindDepth(i, this.depthTextureUnits[i]);
+                }
+            }
+            return;
+        }
         for (int i = 0; i < this.usedDepthBuffers; i++) {
             if (depthMipmapEnabled[i]) {
                 GlStateManager._activeTexture(33984 + this.depthTextureUnits[i]);
@@ -413,6 +562,17 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void generateColorMipmaps(boolean main, boolean[] colorMipmapEnabled) {
+        if (this.vulkanFramebuffer != null) {
+            for (int i = 0; i < this.usedColorBuffers; i++) {
+                if (colorMipmapEnabled[i]) {
+                    this.vulkanFramebuffer.generateColorMipmaps(main, i, this.colorFilterNearest[i] ? 9984 : 9987);
+                    if (main) {
+                        this.vulkanFramebuffer.bindColor(i, this.colorTextureUnits[i]);
+                    }
+                }
+            }
+            return;
+        }
         for (int i = 0; i < this.usedColorBuffers; i++) {
             if (colorMipmapEnabled[i]) {
                 GlStateManager._activeTexture(33984 + this.colorTextureUnits[i]);
@@ -426,6 +586,15 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void genCompositeMipmap(int compositeMipmapSetting) {
+        if (this.vulkanFramebuffer != null) {
+            for (int i = 0; i < this.usedColorBuffers; i++) {
+                if ((compositeMipmapSetting & 1 << i) != 0) {
+                    this.vulkanFramebuffer.generateColorMipmaps(true, i, 9987);
+                    this.vulkanFramebuffer.bindColor(i, this.colorTextureUnits[i]);
+                }
+            }
+            return;
+        }
         if (Shaders.hasGlGenMipmap) {
             for (int i = 0; i < this.usedColorBuffers; i++) {
                 if ((compositeMipmapSetting & 1 << i) != 0) {
@@ -440,6 +609,14 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void flipColorTextures(boolean[] toggleColorTextures) {
+        if (this.vulkanFramebuffer != null) {
+            for (int i = 0; i < this.usedColorBuffers; i++) {
+                if (toggleColorTextures[i]) {
+                    this.flipColorTexture(i);
+                }
+            }
+            return;
+        }
         for (int i = 0; i < this.colorTexturesFlip.limit(); i++) {
             if (toggleColorTextures[i]) {
                 this.flipColorTexture(i);
@@ -448,6 +625,13 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void flipColorTexture(int index) {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.flipColor(index);
+            this.vulkanFramebuffer.bindColor(index, this.colorTextureUnits[index]);
+            this.bindColorImage(index, true);
+            this.vulkanFramebuffer.setDrawMain(false);
+            return;
+        }
         this.colorTexturesFlip.flip(index);
         GlStateManager._activeTexture(33984 + this.colorTextureUnits[index]);
         GlStateManager._bindTexture(this.colorTexturesFlip.getA(index));
@@ -457,6 +641,10 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void clearColorBuffers(boolean[] buffersClear, Vector4f[] clearColors) {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.clearColors(buffersClear, clearColors);
+            return;
+        }
         for (int i = 0; i < this.usedColorBuffers; i++) {
             if (buffersClear[i]) {
                 Vector4f col = clearColors[i];
@@ -495,6 +683,11 @@ public class ShadersFramebuffer implements IShadersFramebuffer {
     }
 
     public void clearDepthBuffer(Vector4f col) {
+        if (this.vulkanFramebuffer != null) {
+            this.vulkanFramebuffer.setDepthAttached(true);
+            this.vulkanFramebuffer.clearDepth(Shaders.isShadowPass ? 1.0 : 0.0);
+            return;
+        }
         this.setFramebufferTexture2D(36160, 36096, 3553, this.depthTextures.getTarget(), 0);
         GL30.glClearColor(col.x(), col.y(), col.z(), col.w());
         GlStateManager._depthMask(true);

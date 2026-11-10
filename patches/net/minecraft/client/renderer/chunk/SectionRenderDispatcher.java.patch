@@ -110,25 +110,57 @@
          long indexBufferOffset = 0L;
          GpuBuffer indexBuffer = null;
          if (indexSlice != null) {
-@@ -143,7 +158,7 @@
+@@ -141,9 +156,15 @@
+     }
+ 
      public void uploadTerrainBuffersToGpu() {
-         GpuDevice device = RenderSystem.getDevice();
+-        GpuDevice device = RenderSystem.getDevice();
++        this.copyLock.lock();
  
 -        try (StagingBuffer.Uploader uploader = this.stagingBuffer.startUploading(device.createCommandEncoder())) {
-+        try (Uploader uploader = this.stagingBuffer.startUploading(device.createCommandEncoder())) {
++        try {
++            if (this.closed) {
++                return;
++            }
++
++            GpuDevice device = RenderSystem.getDevice();
++            try (Uploader uploader = this.stagingBuffer.startUploading(device.createCommandEncoder())) {
              for (SectionRenderDispatcher.SectionUberBuffers buffers : this.chunkUberBuffers.values()) {
                  boolean performedBufferResize = buffers.vertexBuffer.uploadStagedAllocations(device, uploader);
                  buffers.indexBuffer.uploadStagedAllocations(device, uploader);
-@@ -154,7 +169,7 @@
+@@ -152,9 +173,12 @@
+                 }
+             }
          }
++        } finally {
++            this.copyLock.unlock();
      }
++    }
  
 -    private void schedule(final SectionRenderDispatcher.RenderSection.SectionTask task) {
 +    private void schedule(SectionRenderDispatcher.RenderSection.SectionTask task) {
          if (!this.closed) {
              this.queue.add(task);
              this.executor.execute(this::runTask);
-@@ -201,34 +216,71 @@
+@@ -170,11 +194,15 @@
+     }
+ 
+     public void dispose() {
+-        this.closed = true;
+-        this.clearCompileQueue();
+         this.copyLock.lock();
+ 
+         try {
++            if (this.closed) {
++                return;
++            }
++
++            this.closed = true;
++            this.clearCompileQueue();
+             for (SectionRenderDispatcher.SectionUberBuffers buffers : this.chunkUberBuffers.values()) {
+                 buffers.vertexBuffer.close();
+                 buffers.indexBuffer.close();
+@@ -201,34 +229,71 @@
          return this.bufferPool.getFreeBufferCount();
      }
  
@@ -208,7 +240,7 @@
              this.wasPreviouslyEmpty = wasPreviouslyEmpty;
          }
  
-@@ -241,7 +293,7 @@
+@@ -241,7 +306,7 @@
          }
  
          @Override
@@ -217,7 +249,7 @@
              this.reset();
              this.sectionNode = sectionNode;
              int x = SectionPos.sectionToBlockCoord(SectionPos.x(sectionNode));
-@@ -249,8 +301,21 @@
+@@ -249,8 +314,21 @@
              int z = SectionPos.sectionToBlockCoord(SectionPos.z(sectionNode));
              this.renderOrigin.set(x, y, z);
              this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
@@ -239,7 +271,7 @@
          public SectionMesh getSectionMesh() {
              return this.sectionMesh.get();
          }
-@@ -274,12 +339,16 @@
+@@ -274,12 +352,16 @@
              return this.renderOrigin;
          }
  
@@ -257,7 +289,7 @@
              return SectionPos.offset(this.sectionNode, direction);
          }
  
-@@ -310,24 +379,24 @@
+@@ -310,24 +392,24 @@
              }
          }
  
@@ -286,7 +318,7 @@
              SectionMesh oldMesh = this.sectionMesh.getAndSet(sectionMesh);
              SectionRenderDispatcher.this.onSectionMeshUpdate.accept(this);
              if (this.uploadedTime == 0L) {
-@@ -337,7 +406,7 @@
+@@ -337,7 +419,7 @@
              return oldMesh;
          }
  
@@ -295,7 +327,7 @@
              oldMesh.close();
  
              for (SectionRenderDispatcher.SectionUberBuffers buffers : SectionRenderDispatcher.this.chunkUberBuffers.values()) {
-@@ -346,13 +415,13 @@
+@@ -346,13 +428,13 @@
              }
          }
  
@@ -311,7 +343,7 @@
              boolean allBuffersUpdated = true;
  
              for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
-@@ -369,21 +438,19 @@
+@@ -369,37 +451,39 @@
              }
          }
  
@@ -336,7 +368,13 @@
              boolean success = true;
              SectionRenderDispatcher.this.copyLock.lock();
  
-@@ -393,13 +460,13 @@
+             try {
++                if (SectionRenderDispatcher.this.closed) {
++                    return false;
++                }
++
+                 SectionMesh.SectionDraw draw = key.getSectionDraw(layer);
+                 if (draw != null) {
                      SectionRenderDispatcher.SectionUberBuffers sectionBuffers = SectionRenderDispatcher.this.chunkUberBuffers.get(layer);
                      assert sectionBuffers != null;
                      if (vertexBuffer != null) {
@@ -352,7 +390,7 @@
                          success &= sectionBuffers.indexBuffer.addAllocation(key, callback, indexBuffer);
                      } else {
                          key.setIndexBufferUploaded(layer);
-@@ -416,17 +483,108 @@
+@@ -416,24 +500,115 @@
              return success;
          }
  
@@ -459,12 +497,21 @@
  
              @Override
 -            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(final SectionBufferBuilderPack buffers) {
+-                if (this.isCancelled.get()) {
 +            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
 +                try {
-                 if (this.isCancelled.get()) {
++                    if (this.isCancelled.get() || SectionRenderDispatcher.this.closed) {
                      return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
                  }
-@@ -441,12 +599,22 @@
+ 
+                 long sectionNode = RenderSection.this.sectionNode;
+                 SectionPos sectionPos = SectionPos.of(sectionNode);
+-                if (this.isCancelled.get()) {
++                    if (this.isCancelled.get() || SectionRenderDispatcher.this.closed) {
+                     return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
+                 }
+ 
+@@ -441,12 +616,27 @@
  
                  SectionCompiler.Results results;
                  try (Zone ignored = Profiler.get().zone("Compile Section")) {
@@ -482,6 +529,11 @@
 +                            );
                  }
  
++                    if (this.isCancelled.get() || SectionRenderDispatcher.this.closed) {
++                        results.release();
++                        return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
++                    }
++
                  TranslucencyPointOfView translucencyPointOfView = TranslucencyPointOfView.of(cameraPos, sectionNode);
 -                CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results);
 +                    CompiledSectionMesh compiledSectionMesh = new CompiledSectionMesh(translucencyPointOfView, results, RenderSection.this.vboRegions);
@@ -489,7 +541,16 @@
                  if (results.renderedLayers.isEmpty()) {
                      SectionMesh oldMesh = RenderSection.this.setSectionMesh(compiledSectionMesh);
                      SectionRenderDispatcher.this.copyLock.lock();
-@@ -490,7 +658,12 @@
+@@ -464,7 +654,7 @@
+                         boolean success = false;
+ 
+                         while (!success) {
+-                            if (this.isCancelled.get()) {
++                                if (this.isCancelled.get() || SectionRenderDispatcher.this.closed) {
+                                 results.release();
+                                 SectionRenderDispatcher.this.copyLock.lock();
+ 
+@@ -490,7 +680,12 @@
  
                      return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.SUCCESSFUL;
                  }
@@ -502,7 +563,7 @@
  
              @Override
              public void cancel() {
-@@ -498,17 +671,16 @@
+@@ -498,18 +693,17 @@
              }
          }
  
@@ -518,11 +579,22 @@
  
              @Override
 -            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(final SectionBufferBuilderPack buffers) {
+-                if (this.isCancelled.get()) {
 +            public SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult doTask(SectionBufferBuilderPack buffers) {
-                 if (this.isCancelled.get()) {
++                if (this.isCancelled.get() || SectionRenderDispatcher.this.closed) {
                      return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
                  }
-@@ -558,17 +730,16 @@
+ 
+@@ -531,7 +725,7 @@
+                     boolean success = false;
+ 
+                     while (!success) {
+-                        if (this.isCancelled.get()) {
++                        if (this.isCancelled.get() || SectionRenderDispatcher.this.closed) {
+                             indexBuffer.close();
+                             return SectionRenderDispatcher.RenderSection.SectionTask.SectionTaskResult.CANCELLED;
+                         }
+@@ -558,17 +752,16 @@
              }
          }
  
@@ -542,7 +614,7 @@
  
              public abstract void cancel();
  
-@@ -580,7 +751,6 @@
+@@ -580,7 +773,6 @@
                  return RenderSection.this.renderOrigin;
              }
  
@@ -550,7 +622,7 @@
              public enum SectionTaskResult {
                  SUCCESSFUL,
                  CANCELLED;
-@@ -588,11 +758,9 @@
+@@ -588,11 +780,9 @@
          }
      }
  

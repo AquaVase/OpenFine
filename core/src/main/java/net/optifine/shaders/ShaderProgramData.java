@@ -80,6 +80,10 @@ public class ShaderProgramData {
     public int uniform_atlasSize;
 
     public ShaderProgramData(int programID) {
+        if (net.optifine.Config.isVulkan()) {
+            throw new UnsupportedOperationException("This OpenGL resource path has not been migrated to native Vulkan: ShaderProgramData");
+        }
+
         this.programIDGL = programID;
         this.uniform_texture = GL20.glGetUniformLocation(programID, "texture");
         this.uniform_lightmap = GL20.glGetUniformLocation(programID, "lightmap");

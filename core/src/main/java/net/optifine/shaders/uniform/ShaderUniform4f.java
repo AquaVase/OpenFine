@@ -27,7 +27,9 @@ public class ShaderUniform4f extends ShaderUniformBase {
             int location = this.getLocation();
             if (location >= 0) {
                 flushRenderBuffers();
-                GL20.glUniform4f(location, v0, v1, v2, v3);
+                if (!this.setVulkanFloat(v0, v1, v2, v3)) {
+                    GL20.glUniform4f(location, v0, v1, v2, v3);
+                }
                 this.checkGLError();
             }
         }

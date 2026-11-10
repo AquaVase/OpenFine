@@ -230,7 +230,7 @@
              .build()
      );
 +    public static final RenderPipeline POSITION = register(
-+        RenderPipeline.builder(GLOBALS_SNIPPET)
++        RenderPipeline.builder(MATRICES_FOG_SNIPPET)
 +            .withLocation("pipeline/position")
 +            .withVertexShader("core/position")
 +            .withFragmentShader("core/position")

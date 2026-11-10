@@ -164,6 +164,9 @@ public class Mipmaps {
     }
 
     public static void allocateMipmapTextures(int width, int height, String name) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("Vulkan mip levels are allocated with their GpuTexture");
+        }
         Dimension[] dims = makeMipmapDimensions(width, height, name);
 
         for (int i = 0; i < dims.length; i++) {

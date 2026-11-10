@@ -47,6 +47,14 @@ def distribute = tasks.register('distributeJointClasses') {
                 assigned[owner.path].add(entry.relativePath.pathString)
             }
         }
+        owners.each { source, owner ->
+            if (!source.endsWith('package-info.java') && !source.endsWith('module-info.java')) {
+                def classFile = source.substring(0, source.length() - 5) + '.class'
+                if (!assigned[owner.path].contains(classFile)) {
+                    throw new GradleException("Missing compiled class for ${owner.path}: ${source}")
+                }
+            }
+        }
         // Validate every assignment before syncing, and remove stale module outputs.
         modules.each { module ->
             project.sync { spec ->

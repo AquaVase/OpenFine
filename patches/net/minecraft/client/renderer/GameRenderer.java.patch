@@ -155,7 +155,7 @@
          switch (cameraEntity) {
              case Creeper ignored:
                  this.setPostEffect(Identifier.withDefaultNamespace("creeper"));
-@@ -220,22 +257,33 @@
+@@ -220,22 +257,35 @@
              case null:
              default:
                  this.clearPostEffect();
@@ -178,7 +178,9 @@
  
      public void processBlurEffect() {
 +        if (Config.isMainFramebufferEnabled()) {
-+            GlStateManager._disableDepthTest();
++            if (!Config.isVulkan()) {
++                GlStateManager._disableDepthTest();
++            }
          PostChain postChain = this.minecraft.getShaderManager().getPostChain(BLUR_POST_CHAIN_ID, LevelTargetBundle.MAIN_TARGETS);
          if (postChain != null) {
              postChain.process(this.mainRenderTarget, this.resourcePool);
@@ -191,7 +193,7 @@
          GpuDevice device = RenderSystem.getDevice();
          ShaderSource shaderSource = (id, type) -> {
              Identifier location = type.idConverter().idToFile(id);
-@@ -287,17 +335,17 @@
+@@ -287,17 +337,17 @@
          }
      }
  
@@ -212,7 +214,7 @@
          if (cameraState.entityRenderState.isLiving) {
              float hurt = cameraState.entityRenderState.hurtTime;
              if (cameraState.entityRenderState.isDeadOrDying) {
-@@ -319,7 +367,7 @@
+@@ -319,7 +369,7 @@
          }
      }
  
@@ -221,7 +223,7 @@
          if (cameraState.entityRenderState.isPlayer) {
              float backwardsInterpolatedWalkDistance = cameraState.entityRenderState.backwardsInterpolatedWalkDistance;
              float bob = cameraState.entityRenderState.bob;
-@@ -333,9 +381,13 @@
+@@ -333,9 +383,13 @@
          }
      }
  
@@ -238,7 +240,7 @@
                  && !cameraState.entityRenderState.isSleeping
                  && !this.gameRenderState.guiRenderState.isHudHidden
                  && this.minecraft.gameMode.getPlayerMode() != GameType.SPECTATOR) {
-@@ -343,12 +395,23 @@
+@@ -343,12 +397,23 @@
                  poseStack.pushPose();
                  poseStack.mulPose(modelViewMatrix.invert(new Matrix4f()));
                  Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
@@ -263,7 +265,7 @@
                  this.itemInHandRenderer
                      .submitHandsWithItems(
                          deltaPartialTick,
-@@ -357,26 +420,27 @@
+@@ -357,26 +422,27 @@
                          this.minecraft.player,
                          this.minecraft.getEntityRenderDispatcher().getPackedLightCoords(this.minecraft.player, deltaPartialTick)
                      );
@@ -296,7 +298,7 @@
          boolean resourcesLoaded = this.minecraft.isGameLoadFinished();
          boolean readyForLevelRendering = resourcesLoaded && advanceGameTime && this.minecraft.level != null;
          float worldPartialTicks = deltaTracker.getGameTimeDeltaPartialTick(false);
-@@ -393,7 +457,8 @@
+@@ -393,7 +459,8 @@
          this.minecraft.getMetricsRecorder().sampleDuringExtract();
      }
  
@@ -306,7 +308,7 @@
          ProfilerFiller profiler = Profiler.get();
          profiler.push("render");
          WindowRenderState windowRenderState = this.gameRenderState.windowRenderState;
-@@ -419,6 +484,10 @@
+@@ -419,6 +486,10 @@
                  this.gameRenderState.levelRenderState.cameraRenderState.pos,
                  this.gameRenderState.optionsRenderState.textureFiltering == TextureFilteringMethod.RGSS
              );
@@ -317,7 +319,7 @@
          if (shouldRenderLevel) {
              this.lightmap.render(this.gameRenderState.lightmapRenderState);
              profiler.push("world");
-@@ -430,14 +499,18 @@
+@@ -430,14 +501,20 @@
                  if (postChain != null) {
                      postChain.process(this.mainRenderTarget, this.resourcePool);
                  }
@@ -327,8 +329,10 @@
  
              profiler.pop();
 +        } else {
-+            GlStateManager._viewport(0, 0, this.minecraft.getWindow().getWidth(), this.minecraft.getWindow().getHeight());
++            if (!Config.isVulkan()) {
++                GlStateManager._viewport(0, 0, this.minecraft.getWindow().getWidth(), this.minecraft.getWindow().getHeight());
          }
++        }
  
          this.fogRenderer.endFrame();
          RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(this.mainRenderTarget.getDepthTexture(), 0.0);
@@ -337,7 +341,7 @@
          this.useUiLightmap = true;
          profiler.push("gui");
          this.guiRenderer.render();
-@@ -447,6 +520,11 @@
+@@ -447,6 +524,11 @@
          this.renderBuffers.endFrame();
          this.resourcePool.endFrame();
          profiler.pop();
@@ -349,7 +353,7 @@
      }
  
      private void tryTakeScreenshotIfNeeded() {
-@@ -468,7 +546,7 @@
+@@ -468,7 +550,7 @@
          }
      }
  
@@ -358,7 +362,7 @@
          if (this.minecraft.levelExtractor.countRenderedSections() > 10 && this.minecraft.levelRenderer.hasRenderedAllSections()) {
              Screenshot.takeScreenshot(this.mainRenderTarget, screenshot -> Util.ioPool().execute(() -> {
                  int width = screenshot.getWidth();
-@@ -505,7 +583,7 @@
+@@ -505,7 +587,7 @@
          if (renderOutline && !((Player)cameraEntity).getAbilities().mayBuild) {
              ItemStack itemStack = ((LivingEntity)cameraEntity).getMainHandItem();
              HitResult hitResult = this.minecraft.hitResult;
@@ -367,7 +371,7 @@
                  BlockPos pos = ((BlockHitResult)hitResult).getBlockPos();
                  BlockState blockState = this.minecraft.level.getBlockState(pos);
                  if (this.minecraft.gameMode.getPlayerMode() == GameType.SPECTATOR) {
-@@ -515,14 +593,23 @@
+@@ -515,14 +597,24 @@
                      Registry<Block> blockRegistry = this.minecraft.level.registryAccess().lookupOrThrow(Registries.BLOCK);
                      renderOutline = !itemStack.isEmpty()
                          && (itemStack.canBreakBlockInAdventureMode(blockInWorld) || itemStack.canPlaceOnBlockInAdventureMode(blockInWorld));
@@ -387,12 +391,13 @@
 +        boolean isShaders = Config.isShaders();
 +        if (isShaders) {
 +            Shaders.frameInit(this.minecraft);
++            isShaders = Config.isShaders();
 +        }
 +
          float worldPartialTicks = deltaTracker.getGameTimeDeltaPartialTick(false);
          float cameraEntityPartialTicks = this.mainCamera.getCameraEntityPartialTicks(deltaTracker);
          LocalPlayer player = this.minecraft.player;
-@@ -533,12 +620,23 @@
+@@ -533,12 +625,23 @@
          Matrix4fc modelViewMatrix = cameraState.viewRotationMatrix;
          profiler.push("matrices");
          Matrix4f projectionMatrix = new Matrix4f(cameraState.projectionMatrix);
@@ -416,7 +421,7 @@
          projectionMatrix.mul(bobStack.last().pose());
          float screenEffectScale = optionsState.screenEffectScale;
          float portalIntensity = Mth.lerp(worldPartialTicks, player.oPortalEffectIntensity, player.portalEffectIntensity);
-@@ -554,11 +652,26 @@
+@@ -554,11 +657,26 @@
              projectionMatrix.rotate(-angle, axis);
          }
  
@@ -443,7 +448,7 @@
          boolean shouldCreateBossFog = this.minecraft.gui.hud.getBossOverlay().shouldCreateWorldFog();
          this.minecraft
              .levelRenderer
-@@ -567,9 +680,28 @@
+@@ -567,9 +685,28 @@
          boolean isSleeping = cameraState.entityRenderState.isSleeping;
          this.hudProjection
              .setupPerspective(0.05F, 100.0F, cameraState.hudFov, this.gameRenderState.windowRenderState.width, this.gameRenderState.windowRenderState.height);
@@ -472,7 +477,7 @@
          profiler.popPush("screenEffects");
          this.screenEffectRenderer
              .submit(
-@@ -581,6 +713,17 @@
+@@ -581,6 +718,17 @@
              );
          this.featureRenderDispatcher.renderAllFeatures(this.handAndScreenSubmitNodeStorage);
          profiler.pop();
@@ -490,7 +495,7 @@
          RenderSystem.setShaderFog(this.fogRenderer.getBuffer(FogRenderer.FogMode.NONE));
          if (this.gameRenderState.levelRenderState.render3dCrosshair
              && optionsState.cameraType.isFirstPerson()
-@@ -625,7 +768,7 @@
+@@ -625,7 +773,7 @@
          optionsState.fov = options.fov().get();
      }
  
@@ -499,7 +504,7 @@
          CameraRenderState cameraState = this.gameRenderState.levelRenderState.cameraRenderState;
          this.mainCamera.extractRenderState(cameraState, cameraEntityPartialTicks);
          cameraState.fogType = this.mainCamera.getFluidInCamera();
-@@ -646,11 +789,189 @@
+@@ -646,11 +794,189 @@
          this.hasWorldScreenshot = false;
      }
  
@@ -691,7 +696,7 @@
          return Mth.lerp(a, this.bossOverlayWorldDarkeningO, this.bossOverlayWorldDarkening);
      }
  
-@@ -675,7 +996,7 @@
+@@ -675,7 +1001,7 @@
      }
  
      @Override
@@ -700,7 +705,7 @@
          Matrix4f mvp = this.mainCamera.getViewRotationProjectionMatrix(new Matrix4f());
          Vec3 camPos = this.mainCamera.position();
          Vec3 offset = point.subtract(camPos);
-@@ -702,7 +1023,7 @@
+@@ -702,7 +1028,7 @@
          return this.lighting;
      }
  
@@ -709,7 +714,7 @@
          if (level != null) {
              this.lighting.updateLevel(level.dimensionType().cardinalLightType());
          }
-@@ -714,7 +1035,7 @@
+@@ -714,7 +1040,7 @@
          return this.panorama;
      }
  

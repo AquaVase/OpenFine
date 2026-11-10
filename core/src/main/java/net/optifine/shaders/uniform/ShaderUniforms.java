@@ -2,14 +2,19 @@ package net.optifine.shaders.uniform;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.optifine.shaders.vulkan.VulkanProgramUniforms;
 
 public class ShaderUniforms {
     private final List<ShaderUniformBase> listUniforms = new ArrayList<>();
 
     public void setProgram(int program) {
+        this.setProgram(program, null);
+    }
+
+    public void setProgram(int program, VulkanProgramUniforms vulkanUniforms) {
         for (int i = 0; i < this.listUniforms.size(); i++) {
             ShaderUniformBase su = this.listUniforms.get(i);
-            su.setProgram(program);
+            su.setProgram(program, vulkanUniforms);
         }
     }
 

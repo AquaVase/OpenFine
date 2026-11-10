@@ -18,7 +18,8 @@ public enum EnumShaderOption {
     TEX_MIN_FIL_S("of.options.shaders.TEX_MIN_FIL_S", "TexMinFilS", "0"),
     TEX_MAG_FIL_B("of.options.shaders.TEX_MAG_FIL_B", "TexMagFilB", "0"),
     TEX_MAG_FIL_N("of.options.shaders.TEX_MAG_FIL_N", "TexMagFilN", "0"),
-    TEX_MAG_FIL_S("of.options.shaders.TEX_MAG_FIL_S", "TexMagFilS", "0");
+    TEX_MAG_FIL_S("of.options.shaders.TEX_MAG_FIL_S", "TexMagFilS", "0"),
+    LAYERED_TRANSPARENCY("of.options.shaders.LAYERED_TRANSPARENCY", "layeredTransparency", "true");
 
     private String resourceKey = null;
     private String propertyKey = null;

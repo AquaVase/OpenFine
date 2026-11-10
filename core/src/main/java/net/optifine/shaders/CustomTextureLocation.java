@@ -1,10 +1,13 @@
 package net.optifine.shaders;
 
+import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.vulkan.VulkanGpuSampler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.Identifier;
+import net.optifine.shaders.vulkan.VulkanShaderRuntime;
 
 public class CustomTextureLocation implements ICustomTexture {
     private int textureUnit = -1;
@@ -37,6 +40,18 @@ public class CustomTextureLocation implements ICustomTexture {
 
     public void reloadTexture() {
         this.texture = null;
+    }
+
+    @Override
+    public void bindVulkan() {
+        AbstractTexture texture = this.getTexture();
+        VulkanShaderRuntime runtime = VulkanShaderRuntime.getInstance();
+        GpuTextureView view = texture.getTextureView();
+        if (this.variant == VARIANT_NORMAL || this.variant == VARIANT_SPECULAR) {
+            MultiTexID multiTex = texture.getMultiTexID();
+            view = runtime.getTextureView(this.variant == VARIANT_NORMAL ? multiTex.normTex : multiTex.specTex);
+        }
+        runtime.bindTexture(this.textureUnit, view, ((VulkanGpuSampler)texture.getSampler()).vkSampler());
     }
 
     @Override

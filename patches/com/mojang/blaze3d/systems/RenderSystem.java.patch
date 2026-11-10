@@ -1,16 +1,17 @@
 --- a/com/mojang/blaze3d/systems/RenderSystem.java
 +++ b/com/mojang/blaze3d/systems/RenderSystem.java
-@@ -7,6 +7,9 @@
+@@ -7,6 +7,10 @@
  import com.mojang.blaze3d.buffers.GpuBufferSlice;
  import com.mojang.blaze3d.buffers.GpuFence;
  import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 +import com.mojang.blaze3d.opengl.GlCommandEncoder;
 +import com.mojang.blaze3d.opengl.GlDevice;
++import com.mojang.blaze3d.opengl.GlDebugLabel;
 +import com.mojang.blaze3d.opengl.GlStateManager;
  import com.mojang.blaze3d.platform.GLX;
  import com.mojang.blaze3d.textures.GpuTextureView;
  import com.mojang.logging.LogUtils;
-@@ -16,28 +19,29 @@
+@@ -16,28 +20,31 @@
  import java.util.concurrent.atomic.AtomicLong;
  import java.util.function.IntConsumer;
  import net.minecraft.client.renderer.DynamicUniforms;
@@ -44,10 +45,12 @@
 -    private static @Nullable GpuDevice DEVICE;
 +    private static Thread renderThread;
 +    private static GpuDevice DEVICE;
++    private static final GlDebugLabel NO_GL_DEBUG_LABELS = new GlDebugLabel() {};
++
      private static final RenderSystem.AutoStorageIndexBuffer sharedSequential = new RenderSystem.AutoStorageIndexBuffer(1, 1, IntConsumer::accept);
      private static final RenderSystem.AutoStorageIndexBuffer sharedSequentialQuad = new RenderSystem.AutoStorageIndexBuffer(4, 6, (c, i) -> {
          c.accept(i);
-@@ -58,19 +62,21 @@
+@@ -58,19 +65,21 @@
      private static ProjectionType projectionType = ProjectionType.PERSPECTIVE;
      private static ProjectionType savedProjectionType = ProjectionType.PERSPECTIVE;
      private static final Matrix4fStack modelViewStack = new Matrix4fStack(16);
@@ -77,7 +80,7 @@
  
      public static SamplerCache getSamplerCache() {
          return samplerCache;
-@@ -109,23 +115,26 @@
+@@ -109,23 +118,26 @@
          return pollingEvents.get() && Util.getMillis() - pollEventsWaitStart.get() > 200L;
      }
  
@@ -109,7 +112,7 @@
          scissorStateForRenderTypeDraws.enable(x, y, width, height);
      }
  
-@@ -141,11 +150,11 @@
+@@ -141,11 +153,11 @@
          return String.format(Locale.ROOT, "LWJGL version %s", GLX._getLWJGLVersion());
      }
  
@@ -123,15 +126,20 @@
          if (DEVICE != null) {
              throw new IllegalStateException("RenderSystem.DEVICE already initialized");
          }
-@@ -153,6 +162,7 @@
+@@ -153,7 +165,12 @@
          DEVICE = device;
          dynamicUniforms = new DynamicUniforms();
          samplerCache.initialize();
-+        GlStateManager.init(GL.getCapabilities());
++        if (device.isOpenGl()) {
++            GlStateManager.init(GL.getCapabilities());
++        } else {
++            Config.initDisplay();
      }
++    }
  
      public static void shutdownRenderer() {
-@@ -169,7 +179,7 @@
+         sharedSequential.close();
+@@ -169,7 +186,7 @@
          }
      }
  
@@ -140,7 +148,7 @@
          GLX._setGlfwErrorCallback(onFullscreenError);
      }
  
-@@ -177,11 +187,17 @@
+@@ -177,11 +194,17 @@
          modelViewStack.clear();
      }
  
@@ -159,7 +167,7 @@
  
      public static void backupProjectionMatrix() {
          assertOnRenderThread();
-@@ -193,9 +209,15 @@
+@@ -193,9 +216,15 @@
          assertOnRenderThread();
          projectionMatrixBuffer = savedProjectionMatrixBuffer;
          projectionType = savedProjectionType;
@@ -176,7 +184,7 @@
          assertOnRenderThread();
          return projectionMatrixBuffer;
      }
-@@ -210,7 +232,7 @@
+@@ -210,7 +239,7 @@
          return modelViewStack;
      }
  
@@ -185,7 +193,7 @@
          assertOnRenderThread();
  
          return switch (primitiveTopology) {
-@@ -220,11 +242,11 @@
+@@ -220,11 +249,11 @@
          };
      }
  
@@ -199,7 +207,7 @@
          return globalSettingsUniform;
      }
  
-@@ -233,7 +255,35 @@
+@@ -233,7 +262,35 @@
          return projectionType;
      }
  
@@ -236,7 +244,7 @@
          PENDING_FENCES.addLast(new RenderSystem.GpuAsyncTask(task, getDevice().createCommandEncoder().createFence()));
      }
  
-@@ -261,7 +311,7 @@
+@@ -261,7 +318,7 @@
          }
      }
  
@@ -245,7 +253,7 @@
          return DEVICE;
      }
  
-@@ -273,7 +323,7 @@
+@@ -273,7 +330,7 @@
          }
      }
  
@@ -254,11 +262,15 @@
          GpuBufferSlice projectionMatrix = getProjectionMatrixBuffer();
          if (projectionMatrix != null) {
              renderPass.setUniform("Projection", projectionMatrix);
-@@ -295,16 +345,32 @@
+@@ -295,16 +352,36 @@
          }
      }
  
 -    @OnlyIn(Dist.CLIENT)
++    public static GlDebugLabel getDebugLabels() {
++        return DEVICE.isOpenGl() ? DEVICE.getGlDevice().debugLabels() : NO_GL_DEBUG_LABELS;
++    }
++
 +    public static GlDevice getGlDevice() {
 +        return DEVICE.getGlDevice();
 +    }
@@ -290,7 +302,7 @@
              this.vertexStride = vertexStride;
              this.indexStride = indexStride;
              this.generator = generator;
-@@ -317,16 +383,16 @@
+@@ -317,16 +394,16 @@
              }
          }
  
@@ -310,7 +322,7 @@
              if (!this.hasStorage(indexCount)) {
                  indexCount = Mth.roundToward(indexCount * 2, this.indexStride);
                  RenderSystem.LOGGER.debug("Growing IndexBuffer: Old limit {}, new limit {}.", this.indexCount, indexCount);
-@@ -349,7 +415,9 @@
+@@ -349,7 +426,9 @@
                          this.buffer.close();
                      }
  
@@ -321,7 +333,7 @@
                  } finally {
                      MemoryUtil.memFree(data);
                  }
-@@ -358,7 +426,7 @@
+@@ -358,7 +437,7 @@
              }
          }
  
@@ -330,7 +342,7 @@
              switch (this.type) {
                  case SHORT:
                      return value -> buffer.putShort((short)value);
-@@ -372,13 +440,11 @@
+@@ -372,13 +451,11 @@
              return this.type;
          }
  

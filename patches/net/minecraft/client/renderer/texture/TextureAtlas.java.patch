@@ -285,7 +285,7 @@
          if (SharedConstants.DEBUG_DUMP_TEXTURE_ATLAS) {
              Path dumpDir = TextureUtil.getDebugTexturePath();
  
-@@ -148,25 +306,27 @@
+@@ -148,25 +306,31 @@
      }
  
      private void uploadInitialContents() {
@@ -301,6 +301,10 @@
 +        List<TextureAtlasSprite> staticSprites = this.sprites;
 +        if (spriteType != null) {
 +            staticSprites = this.sprites.stream().filter(sprite2In -> sprite2In.getSubSprite(spriteType) != null).toList();
++        }
++
++        if (staticSprites.isEmpty()) {
++            return;
 +        }
 +
          List<GpuTextureView[]> scratchTextures = new ArrayList<>();
@@ -322,7 +326,7 @@
              );
              GpuTextureView[] views = new GpuTextureView[this.mipLevelCount];
  
-@@ -178,11 +338,13 @@
+@@ -178,11 +342,13 @@
              scratchTextures.add(views);
          }
  
@@ -337,7 +341,7 @@
                      RenderSystem.bindDefaultUniforms(renderPass);
                      renderPass.setPipeline(RenderPipelines.ANIMATE_SPRITE_BLIT);
  
-@@ -206,14 +368,45 @@
+@@ -206,14 +372,45 @@
          this.uploadAnimationFrames();
      }
  
@@ -385,7 +389,7 @@
          Path outputPath = dir.resolve(outputId + ".txt");
  
          try (Writer output = Files.newBufferedWriter(outputPath)) {
-@@ -221,13 +414,7 @@
+@@ -221,13 +418,7 @@
                  TextureAtlasSprite value = e.getValue();
                  output.write(
                      String.format(
@@ -400,7 +404,7 @@
                      )
                  );
              }
-@@ -247,29 +434,140 @@
+@@ -247,29 +438,140 @@
      }
  
      private void uploadAnimationFrames() {
@@ -495,7 +499,7 @@
 +        }
 +
 +        if (Config.isMultiTexture()) {
-+            RenderSystem.getGlDevice().debugLabels().pushDebugGroup(() -> "Animate single " + this.location);
++            RenderSystem.getDebugLabels().pushDebugGroup(() -> "Animate single " + this.location);
 +
 +            for (SpriteContents.AnimationState state : this.activeAnimations) {
 +                TextureAtlasSprite ts = state.getSprite();
@@ -518,7 +522,7 @@
 +                }
 +            }
 +
-+            RenderSystem.getGlDevice().debugLabels().popDebugGroup();
++            RenderSystem.getDebugLabels().popDebugGroup();
 +        }
 +
 +        if (this.terrain) {
@@ -545,7 +549,7 @@
          TextureAtlasSprite result = this.texturesByName.getOrDefault(location, this.missingSprite);
          if (result == null) {
              throw new IllegalStateException("Tried to lookup sprite, but atlas is not initialized");
-@@ -302,8 +600,16 @@
+@@ -302,8 +604,16 @@
          for (GpuTextureView view : this.mipViews) {
              view.close();
          }
@@ -562,7 +566,7 @@
      @Override
      public void close() {
          this.clearTextureData();
-@@ -318,11 +624,373 @@
+@@ -318,11 +628,373 @@
          return this.maxSupportedTextureSize;
      }
  
@@ -654,7 +658,7 @@
 +                int srcY = tas.getOriginY() + 0 >> i;
 +                int width = tas.getWidth() >> i;
 +                int height = tas.getHeight() >> i;
-+                RenderSystem.getGlDevice().getGlCommandEncoder().copyTextureToTexture(atlasTex, singleTex, i, 0, 0, srcX, srcY, width, height);
++                RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(atlasTex, singleTex, i, 0, 0, srcX, srcY, width, height);
 +            }
 +
 +            if (spriteSingle.isAnimationActive()) {

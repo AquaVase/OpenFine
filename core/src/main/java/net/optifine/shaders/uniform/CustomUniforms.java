@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import net.optifine.expr.IExpression;
 import net.optifine.expr.IExpressionCached;
+import net.optifine.shaders.vulkan.VulkanProgramUniforms;
 
 public class CustomUniforms {
     private CustomUniform[] uniforms;
@@ -25,9 +26,13 @@ public class CustomUniforms {
     }
 
     public void setProgram(int program) {
+        this.setProgram(program, null);
+    }
+
+    public void setProgram(int program, VulkanProgramUniforms vulkanUniforms) {
         for (int i = 0; i < this.uniforms.length; i++) {
             CustomUniform uniform = this.uniforms[i];
-            uniform.setProgram(program);
+            uniform.getShaderUniform().setProgram(program, vulkanUniforms);
         }
     }
 

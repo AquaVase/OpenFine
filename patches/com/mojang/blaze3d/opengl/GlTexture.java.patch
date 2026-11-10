@@ -21,11 +21,10 @@
  public class GlTexture extends GpuTexture implements FrameBufferAttachment {
      private static final int EMPTY = -1;
      protected final int id;
-@@ -15,21 +19,40 @@
+@@ -15,21 +19,39 @@
      private final List<FrameBufferCache.CacheKey> fboKeys = new ArrayList<>();
      protected boolean closed;
      private int views;
-+    public MultiTexID multiTex;
 +    private GlSampler sampler = new GlSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.NEAREST, FilterMode.LINEAR, 1, OptionalDouble.empty());
 +    private final boolean stencilEnabled;
  
@@ -71,7 +70,7 @@
      }
  
      @Override
-@@ -48,6 +71,7 @@
+@@ -48,6 +70,7 @@
          }
  
          GlStateManager._deleteTexture(this.id);
@@ -79,7 +78,7 @@
      }
  
      @Override
-@@ -66,12 +90,12 @@
+@@ -66,12 +89,12 @@
      }
  
      @Override
@@ -94,7 +93,7 @@
          this.fboKeys.remove(fboKey);
      }
  
-@@ -85,4 +109,111 @@
+@@ -85,4 +108,111 @@
              this.destroyImmediately();
          }
      }

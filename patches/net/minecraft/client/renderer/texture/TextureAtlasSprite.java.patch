@@ -262,7 +262,7 @@
          for (int level = 0; level <= maxMipLevel; level++) {
              Std140Builder.intoBuffer(MemoryUtil.memSlice(uboBuffer, startOffset + level * spriteUboSize, spriteUboSize))
                  .putMat4f(new Matrix4f().ortho2D(0.0F, atlasWidth >> level, 0.0F, atlasHeight >> level))
-@@ -124,8 +272,438 @@
+@@ -124,8 +272,442 @@
          }
      }
  
@@ -371,16 +371,20 @@
 +            int mipmapLevels = this.getMipmapLevels();
 +            this.spriteTexture = RenderSystem.getDevice()
 +                .createTexture(this.name::toString, 7, GpuFormat.RGBA8_UNORM, this.getWidth(), this.getHeight(), 1, mipmapLevels + 1);
-+            NativeImage.setMinMagFilters(false, mipmapLevels > 0);
-+            NativeImage.setClamp(true);
-+            boolean blend = this.atlasTexture.isTextureBlend(this.spriteShadersType);
-+            if (blend) {
-+                TextureUtils.applyAnisotropicLevel();
-+            } else {
-+                GlStateManager.texParameter(3553, 34046, 1.0F);
-+                int minFilter = mipmapLevels > 0 ? 9984 : 9728;
-+                GlStateManager.texParameter(3553, 10241, minFilter);
-+                GlStateManager.texParameter(3553, 10240, 9728.0F);
++            this.spriteTexture.setParentTexture(this.atlasTexture);
++            this.spriteTexture.setShaderTextureBlend(this.atlasTexture.isTextureBlend(this.spriteShadersType));
++            if (!Config.isVulkan()) {
++                NativeImage.setMinMagFilters(false, mipmapLevels > 0);
++                NativeImage.setClamp(true);
++                boolean blend = this.atlasTexture.isTextureBlend(this.spriteShadersType);
++                if (blend) {
++                    TextureUtils.applyAnisotropicLevel();
++                } else {
++                    GlStateManager.texParameter(3553, 34046, 1.0F);
++                    int minFilter = mipmapLevels > 0 ? 9984 : 9728;
++                    GlStateManager.texParameter(3553, 10241, minFilter);
++                    GlStateManager.texParameter(3553, 10240, 9728.0F);
++                }
 +            }
 +        }
 +

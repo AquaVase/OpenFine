@@ -1,0 +1,22 @@
+--- a/com/mojang/blaze3d/vulkan/VulkanGpuBuffer.java
++++ b/com/mojang/blaze3d/vulkan/VulkanGpuBuffer.java
+@@ -48,7 +48,11 @@
+             try (MemoryStack stack = MemoryStack.stackPush()) {
+                 VkBufferCreateInfo bufferCreateInfo = VkBufferCreateInfo.calloc(stack).sType$Default();
+                 bufferCreateInfo.size(size);
+-                bufferCreateInfo.usage(VulkanConst.bufferUsageToVk(usage));
++                bufferCreateInfo.usage(VulkanConst.bufferUsageToVk(usage)
++                    | ((usage & net.optifine.shaders.vulkan.VulkanShaderBuffers.USAGE_STORAGE) != 0
++                        ? org.lwjgl.vulkan.VK12.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0)
++                    | ((usage & net.optifine.shaders.vulkan.VulkanTexelBuffer.USAGE_STORAGE_TEXEL) != 0
++                        ? org.lwjgl.vulkan.VK12.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : 0));
+                 bufferCreateInfo.sharingMode(0);
+                 bufferCreateInfo.pQueueFamilyIndices(null);
+                 VmaAllocationCreateInfo allocCreateInfo = VmaAllocationCreateInfo.calloc(stack);
+@@ -168,4 +172,4 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}

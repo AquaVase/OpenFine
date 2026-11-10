@@ -959,7 +959,7 @@
                          String rawResult = this.getValue(name);
                          return rawResult == null ? current : reader.apply(rawResult);
                      }
-@@ -1748,23 +1949,37 @@
+@@ -1748,23 +1949,36 @@
              );
              options.getString("fullscreenResolution").ifPresent(fullscreenResolution -> this.fullscreenVideoModeString = fullscreenResolution);
              KeyMapping.resetMapping();
@@ -980,7 +980,6 @@
  
 +        this.loadOfOptions();
 +        this.postLoadOptions();
-+        this.preferredGraphicsBackend.set(PreferredGraphicsApi.OPENGL);
          this.preferredGraphicsBackendFromStartup = this.preferredGraphicsBackend.get();
          this.exclusiveFullscreenFromStartup = this.exclusiveFullscreen.get();
      }
@@ -1000,7 +999,7 @@
          int version = 0;
  
          try {
-@@ -1778,15 +1993,17 @@
+@@ -1778,15 +1992,17 @@
      public void save() {
          try (final PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(this.optionsFile), StandardCharsets.UTF_8))) {
              writer.println("version:" + SharedConstants.getCurrentVersion().dataVersion().version());
@@ -1020,7 +1019,7 @@
                          option.codec()
                              .encodeStart(JsonOps.INSTANCE, option.get())
                              .ifError(error -> Options.LOGGER.error("Error saving option {}: {}", option, error.message()))
-@@ -1797,35 +2014,35 @@
+@@ -1797,35 +2013,35 @@
                      }
  
                      @Override
@@ -1061,7 +1060,7 @@
                          this.writePrefix(name);
                          writer.println(converter.apply(value));
                          return value;
-@@ -1836,14 +2053,21 @@
+@@ -1836,14 +2052,21 @@
              if (fullscreenVideoModeString != null) {
                  writer.println("fullscreenResolution:" + fullscreenVideoModeString);
              }
@@ -1084,7 +1083,7 @@
          Window window = this.minecraft.getWindow();
          if (window == null) {
              return this.fullscreenVideoModeString;
-@@ -1873,12 +2097,14 @@
+@@ -1873,12 +2096,14 @@
      }
  
      public void broadcastOptions() {
@@ -1100,7 +1099,7 @@
          if (visible) {
              this.modelParts.add(part);
          } else {
-@@ -1886,7 +2112,7 @@
+@@ -1886,7 +2111,7 @@
          }
      }
  
@@ -1109,7 +1108,7 @@
          return this.modelParts.contains(part);
      }
  
-@@ -1898,7 +2124,1523 @@
+@@ -1898,7 +2123,1523 @@
          return this.useNativeTransport;
      }
  
@@ -2634,7 +2633,7 @@
          Set<String> selected = Sets.newLinkedHashSet();
          Iterator<String> iterator = this.resourcePacks.iterator();
  
-@@ -1930,11 +3672,11 @@
+@@ -1930,11 +3671,11 @@
          return this.cameraType;
      }
  
@@ -2648,7 +2647,7 @@
          List<String> result = GsonHelper.fromNullableJson(GSON, value, LIST_OF_STRINGS_TYPE);
          return result != null ? result : Lists.newArrayList();
      }
-@@ -1947,7 +3689,7 @@
+@@ -1947,7 +3688,7 @@
          final List<Pair<String, Object>> optionsForReport = new ArrayList<>();
          this.processDumpedOptions(new Options.OptionAccess() {
              @Override
@@ -2657,7 +2656,7 @@
                  optionsForReport.add(Pair.of(name, option.get()));
              }
          });
-@@ -1964,7 +3706,7 @@
+@@ -1964,7 +3705,7 @@
              .collect(Collectors.joining(System.lineSeparator()));
      }
  
@@ -2666,7 +2665,7 @@
          this.serverRenderDistance = serverRenderDistance;
      }
  
-@@ -1972,45 +3714,43 @@
+@@ -1972,45 +3713,43 @@
          return this.serverRenderDistance > 0 ? Math.min(this.renderDistance.get(), this.serverRenderDistance) : this.renderDistance.get();
      }
  

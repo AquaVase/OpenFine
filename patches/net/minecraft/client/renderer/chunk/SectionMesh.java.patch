@@ -51,7 +51,7 @@
          return null;
      }
  
-@@ -41,7 +48,111 @@
+@@ -41,7 +48,122 @@
      default void close() {
      }
  
@@ -159,6 +159,17 @@
 +        public void drawInRegion() {
 +            if (this.data.vboRegion != null) {
 +                this.data.vboRegion.drawArrays(PrimitiveTopology.QUADS, this.data.vboRange);
++            }
++        }
++
++        public void releaseVertexData() {
++            if (this.data.vertexBufferUpload != null) {
++                ALLOCATOR.free(MemoryUtil.memAddress(this.data.vertexBufferUpload));
++                this.data.vertexBufferUpload = null;
++            }
++
++            if (this.data.vboRegion != null) {
++                this.data.vboRegion.releaseRange(this.data.vboRange);
 +            }
 +        }
 +

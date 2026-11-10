@@ -407,6 +407,9 @@ public class TextureUtils {
     }
 
     public static void applyAnisotropicLevel() {
+        if (Config.isVulkan()) {
+            return;
+        }
         if (GL.getCapabilities().GL_EXT_texture_filter_anisotropic) {
             float maxLevel = GL11.glGetFloat(34047);
             float level = Config.getAnisotropicFilterLevel();
@@ -416,6 +419,9 @@ public class TextureUtils {
     }
 
     public static void bindTexture(int glTexId) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("OpenGL texture handles are unavailable on Vulkan; use GpuTexture");
+        }
         GlStateManager._bindTexture(glTexId);
     }
 
@@ -568,6 +574,9 @@ public class TextureUtils {
     }
 
     public static int getGLMaximumTextureSize() {
+        if (Config.isVulkan()) {
+            return RenderSystem.getDevice().getDeviceInfo().limits().maxTextureSize();
+        }
         if (glMaximumTextureSize < 0) {
             glMaximumTextureSize = detectGLMaximumTextureSize();
         }
@@ -609,9 +618,17 @@ public class TextureUtils {
     }
 
     public static void resetDataUnpacking() {
+        if (Config.isVulkan()) {
+            return;
+        }
         GlStateManager._pixelStore(3314, 0);
         GlStateManager._pixelStore(3316, 0);
         GlStateManager._pixelStore(3315, 0);
+        // Buffer-to-texture copies also change the slice stride used by 3D uploads.
+        GlStateManager._pixelStore(32878, 0);
+        GlStateManager._pixelStore(32877, 0);
+        GlStateManager._pixelStore(3312, 0);
+        GlStateManager._pixelStore(3313, 0);
         GlStateManager._pixelStore(3317, 4);
     }
 
@@ -661,11 +678,20 @@ public class TextureUtils {
     }
 
     public static int generateTextureId() {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("OpenGL texture handles are unavailable on Vulkan; use GpuTexture");
+        }
         RenderSystem.assertOnRenderThread();
         return GlStateManager._genTexture();
     }
 
     public static void releaseTextureId(int textureId) {
+        if (Config.isVulkan()) {
+            if (textureId > 0) {
+                throw new UnsupportedOperationException("OpenGL texture handles are unavailable on Vulkan; close GpuTexture instead");
+            }
+            return;
+        }
         RenderSystem.assertOnRenderThread();
         GlStateManager._deleteTexture(textureId);
     }
@@ -683,6 +709,9 @@ public class TextureUtils {
     }
 
     public static void prepareImage(NativeImage.Format pixelFormat, int textureId, int mipmapLevel, int width, int height) {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("OpenGL texture handles are unavailable on Vulkan; use GpuTexture");
+        }
         RenderSystem.assertOnRenderThread();
         bindTexture(textureId);
         if (mipmapLevel >= 0) {

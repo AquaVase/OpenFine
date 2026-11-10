@@ -1,0 +1,35 @@
+--- a/com/mojang/blaze3d/vulkan/VulkanBackend.java
++++ b/com/mojang/blaze3d/vulkan/VulkanBackend.java
+@@ -24,8 +24,7 @@
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Set;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.optifine.shaders.vulkan.VulkanShaderFeatures;
+ import org.jspecify.annotations.Nullable;
+ import org.lwjgl.PointerBuffer;
+ import org.lwjgl.glfw.GLFW;
+@@ -52,7 +51,6 @@
+ import org.lwjgl.vulkan.VkDeviceQueueCreateInfo.Buffer;
+ import org.slf4j.Logger;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class VulkanBackend implements GpuBackend {
+     private static final Logger LOGGER = LogUtils.getLogger();
+     public static final Set<String> REQUIRED_DEVICE_EXTENSIONS = Set.of(
+@@ -165,6 +163,7 @@
+                 enabledFeatures.add(MULTI_DRAW_FEATURE);
+             }
+ 
++            VulkanShaderFeatures.enableSupported(physicalDevice.vkPhysicalDevice(), enabledFeatures);
+             device = createDevice(deviceExtensions, physicalDevice, enabledFeatures);
+             vma = createVma(device);
+         } catch (BackendCreationException e) {
+@@ -443,4 +442,4 @@
+             return new VkDevice(pointer.get(0), physicalDevice.vkPhysicalDevice(), deviceCreateInfo);
+         }
+     }
+-}
+\ No newline at end of file
++}

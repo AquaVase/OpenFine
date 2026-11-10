@@ -49,6 +49,7 @@ import net.optifine.render.GlScissorState;
 import net.optifine.render.ICamera;
 import net.optifine.render.RenderState;
 import net.optifine.util.MathUtils;
+import net.optifine.shaders.vulkan.VulkanShaderRuntime;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -243,32 +244,45 @@ public class ShadersRender {
             PoseStack matrixStack = new PoseStack();
             Shaders.setCameraShadow(matrixStack, activeRenderInfo, partialTicks);
             Matrix4f viewMatrix = matrixStack.last().pose();
-            GlStateManager.lockScissor(new GlScissorState(false));
+            if (!Config.isVulkan()) {
+                GlStateManager.lockScissor(new GlScissorState(false));
+            }
             Shaders.checkGLError("shadow camera");
             Shaders.dispatchComputes(Shaders.dfb, Shaders.ProgramShadow.getComputePrograms());
             Shaders.useProgram(Shaders.ProgramShadow);
             Shaders.sfb.setDrawBuffers();
             Shaders.checkGLError("shadow drawbuffers");
-            GL30.glReadBuffer(0);
+            if (!Config.isVulkan()) {
+                GL30.glReadBuffer(0);
+            }
             Shaders.checkGLError("shadow readbuffer");
             Shaders.sfb.setDepthTexture();
             Shaders.sfb.setColorTextures(true);
             Shaders.checkFramebufferStatus("shadow fb");
-            GlStateManager._depthMask(true);
-            GlStateManager.clearDepth(1.0);
-            GlStateManager._clear(256);
+            if (Config.isVulkan()) {
+                Shaders.sfb.clearDepthBuffer(new Vector4f(1.0F));
+                Vector4f[] colors = new Vector4f[Shaders.usedShadowColorBuffers];
+                for (int i = 0; i < colors.length; i++) {
+                    colors[i] = Shaders.shadowBuffersClearColor[i] != null ? Shaders.shadowBuffersClearColor[i] : new Vector4f(1.0F);
+                }
+                Shaders.sfb.clearColorBuffers(Shaders.shadowBuffersClear, colors);
+            } else {
+                GlStateManager._depthMask(true);
+                GlStateManager.clearDepth(1.0);
+                GlStateManager._clear(256);
 
-            for (int i = 0; i < Shaders.usedShadowColorBuffers; i++) {
-                if (Shaders.shadowBuffersClear[i]) {
-                    Vector4f col = Shaders.shadowBuffersClearColor[i];
-                    if (col != null) {
-                        GlStateManager.clearColor(col.x(), col.y(), col.z(), col.w());
-                    } else {
-                        GlStateManager.clearColor(1.0F, 1.0F, 1.0F, 1.0F);
+                for (int i = 0; i < Shaders.usedShadowColorBuffers; i++) {
+                    if (Shaders.shadowBuffersClear[i]) {
+                        Vector4f col = Shaders.shadowBuffersClearColor[i];
+                        if (col != null) {
+                            GlStateManager.clearColor(col.x(), col.y(), col.z(), col.w());
+                        } else {
+                            GlStateManager.clearColor(1.0F, 1.0F, 1.0F, 1.0F);
+                        }
+
+                        GlState.setDrawBuffers(Shaders.drawBuffersColorAtt[i]);
+                        GlStateManager._clear(16384);
                     }
-
-                    GlState.setDrawBuffers(Shaders.drawBuffersColorAtt[i]);
-                    GlStateManager._clear(16384);
                 }
             }
 
@@ -279,10 +293,14 @@ public class ShadersRender {
             profiler.popPush("shadow culling");
             Vec3 cameraPos = activeRenderInfo.position();
             frustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
-            GlStateManager.lockDepth(new GlDepthState(true, true, 515));
-            GlStateManager._colorMask(15);
-            GlStateManager.lockCull(new GlCullState(false));
-            GlStateManager.lockBlend(new GlBlendState(false));
+            if (Config.isVulkan()) {
+                VulkanShaderRuntime.getInstance().setShadowCull(false);
+            } else {
+                GlStateManager.lockDepth(new GlDepthState(true, true, 515));
+                GlStateManager._colorMask(15);
+                GlStateManager.lockCull(new GlCullState(false));
+                GlStateManager.lockBlend(new GlBlendState(false));
+            }
             profiler.popPush("shadow prepareterrain");
             mc.getTextureManager().bindTexture(TextureAtlas.LOCATION_BLOCKS);
             profiler.popPush("shadow setupterrain");
@@ -346,20 +364,26 @@ public class ShadersRender {
             Shaders.endBlockEntities();
             Lagometer.timerTerrain.end();
             Shaders.checkGLError("shadow entities");
-            GlStateManager._depthMask(true);
-            GlStateManager._disableBlend();
-            GlStateManager.unlockCull();
-            GlStateManager._enableCull();
-            GlStateManager._blendFuncSeparate(770, 771, 1, 0);
-            GlStateManager.alphaFunc(516, 0.1F);
+            if (Config.isVulkan()) {
+                VulkanShaderRuntime.getInstance().setShadowCull(true);
+            } else {
+                GlStateManager._depthMask(true);
+                GlStateManager._disableBlend();
+                GlStateManager.unlockCull();
+                GlStateManager._enableCull();
+                GlStateManager._blendFuncSeparate(770, 771, 1, 0);
+                GlStateManager.alphaFunc(516, 0.1F);
+            }
             if (Shaders.usedShadowDepthBuffers >= 2) {
                 Shaders.debugLabels.pushDebugGroup(() -> "Copy shadowtex1");
                 ShadersTex.copyTexture(5, Shaders.shadowMapWidth, Shaders.shadowMapHeight);
                 Shaders.debugLabels.popDebugGroup();
             }
 
-            GlStateManager._disableBlend();
-            GlStateManager._depthMask(true);
+            if (!Config.isVulkan()) {
+                GlStateManager._disableBlend();
+                GlStateManager._depthMask(true);
+            }
             mc.getTextureManager().bindTexture(TextureAtlas.LOCATION_BLOCKS);
             Shaders.checkGLError("shadow pre-translucent");
             Shaders.sfb.setDrawBuffers();
@@ -373,12 +397,14 @@ public class ShadersRender {
                 Lagometer.timerTerrain.end();
             }
 
-            GlStateManager.unlockBlend();
-            GlStateManager.unlockDepth();
-            GlStateManager._depthMask(true);
-            GlStateManager._enableCull();
-            GlStateManager._disableBlend();
-            GL30.glFlush();
+            if (!Config.isVulkan()) {
+                GlStateManager.unlockBlend();
+                GlStateManager.unlockDepth();
+                GlStateManager._depthMask(true);
+                GlStateManager._enableCull();
+                GlStateManager._disableBlend();
+                GL30.glFlush();
+            }
             Shaders.checkGLError("shadow flush");
             Shaders.isShadowPass = false;
             renderGlobal.setShadowRenderInfos(false);
@@ -394,8 +420,10 @@ public class ShadersRender {
             }
 
             Shaders.dfb.bindFramebuffer();
-            GlStateManager._viewport(0, 0, Shaders.renderWidth, Shaders.renderHeight);
-            GlStateManager.unlockScissor();
+            if (!Config.isVulkan()) {
+                GlStateManager._viewport(0, 0, Shaders.renderWidth, Shaders.renderHeight);
+                GlStateManager.unlockScissor();
+            }
             GlState.setDrawBuffers(null);
             mc.getTextureManager().bindTexture(TextureAtlas.LOCATION_BLOCKS);
             Shaders.useProgram(Shaders.ProgramTerrain);
@@ -474,7 +502,11 @@ public class ShadersRender {
         }
 
         if (Shaders.isRenderBackFace(blockLayerIn)) {
-            GlStateManager._disableCull();
+            if (Config.isVulkan()) {
+                VulkanShaderRuntime.getInstance().setSceneCull(false);
+            } else {
+                GlStateManager._disableCull();
+            }
         }
 
         Shaders.setTextureMatrix(Shaders.MATRIX_IDENTITY);
@@ -482,7 +514,11 @@ public class ShadersRender {
 
     public static void postRenderChunkLayer(ChunkSectionLayer blockLayerIn) {
         if (Shaders.isRenderBackFace(blockLayerIn)) {
-            GlStateManager._enableCull();
+            if (Config.isVulkan()) {
+                VulkanShaderRuntime.getInstance().setSceneCull(null);
+            } else {
+                GlStateManager._enableCull();
+            }
         }
     }
 
@@ -531,6 +567,9 @@ public class ShadersRender {
     }
 
     public static void enableArrayPointerVbo() {
+        if (Config.isVulkan()) {
+            return;
+        }
         GL20.glEnableVertexAttribArray(Shaders.midBlockAttrib);
         GL20.glEnableVertexAttribArray(Shaders.midTexCoordAttrib);
         GL20.glEnableVertexAttribArray(Shaders.tangentAttrib);
@@ -539,6 +578,9 @@ public class ShadersRender {
     }
 
     public static void setupArrayPointersVbo(boolean enableArrayIn) {
+        if (Config.isVulkan()) {
+            return;
+        }
         int vertexSizeI = 18;
         if (enableArrayIn) {
             enableArrayPointerVbo();

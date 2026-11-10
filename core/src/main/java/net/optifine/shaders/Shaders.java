@@ -6,6 +6,8 @@ import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.opengl.GlDebugLabel;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderPassDescriptor;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -57,6 +59,7 @@ import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.feature.BlockModelFeatureRenderer;
 import net.minecraft.client.renderer.feature.FeatureRendererType;
 import net.minecraft.client.renderer.feature.GizmoFeatureRenderer;
+import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.fog.FogData;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -124,6 +127,9 @@ import net.optifine.shaders.uniform.ShaderUniformM3;
 import net.optifine.shaders.uniform.ShaderUniformM4;
 import net.optifine.shaders.uniform.ShaderUniforms;
 import net.optifine.shaders.uniform.Smoother;
+import net.optifine.shaders.vulkan.VulkanProgramUniforms;
+import net.optifine.shaders.vulkan.VulkanShaderRuntime;
+import net.optifine.shaders.vulkan.VulkanTransparency;
 import net.optifine.texture.InternalFormat;
 import net.optifine.texture.PixelFormat;
 import net.optifine.texture.PixelType;
@@ -491,6 +497,7 @@ public class Shaders {
     public static boolean configCloudShadow = false;
     public static float configHandDepthMul = 0.125F;
     public static float configRenderResMul = 1.0F;
+    public static boolean configLayeredTransparency = true;
     public static float configShadowResMul = 1.0F;
     public static int configTexMinFilB = 0;
     public static int configTexMinFilN = 0;
@@ -842,6 +849,9 @@ public class Shaders {
             case RENDER_RES_MUL:
                 configRenderResMul = Config.parseFloat(str, 1.0F);
                 break;
+            case LAYERED_TRANSPARENCY:
+                configLayeredTransparency = Config.parseBoolean(str, true);
+                break;
             case SHADOW_RES_MUL:
                 configShadowResMul = Config.parseFloat(str, 1.0F);
                 break;
@@ -923,6 +933,8 @@ public class Shaders {
                 return Boolean.toString(configSpecularMap);
             case RENDER_RES_MUL:
                 return Float.toString(configRenderResMul);
+            case LAYERED_TRANSPARENCY:
+                return Boolean.toString(configLayeredTransparency);
             case SHADOW_RES_MUL:
                 return Float.toString(configShadowResMul);
             case HAND_DEPTH_MUL:
@@ -1556,6 +1568,10 @@ public class Shaders {
         if (cts != null) {
             for (int i = 0; i < cts.length; i++) {
                 ICustomTexture ct = cts[i];
+                if (Config.isVulkan()) {
+                    ct.bindVulkan();
+                    continue;
+                }
                 GlStateManager._activeTexture(33984 + ct.getTextureUnit());
                 int texId = ct.getTextureId();
                 int target = ct.getTarget();
@@ -1566,7 +1582,9 @@ public class Shaders {
                 }
             }
 
-            GlStateManager._activeTexture(33984);
+            if (!Config.isVulkan()) {
+                GlStateManager._activeTexture(33984);
+            }
         }
     }
 
@@ -1827,6 +1845,9 @@ public class Shaders {
     }
 
     public static int checkFramebufferStatus(String location) {
+        if (Config.isVulkan()) {
+            return 36053;
+        }
         int status = GL43.glCheckFramebufferStatus(36160);
         if (status != 36053) {
             SMCLog.severe("FramebufferStatus 0x%04X at '%s'", status, location);
@@ -1944,6 +1965,16 @@ public class Shaders {
     public static void startup(Minecraft mc) {
         checkShadersModInstalled();
         Shaders.mc = mc;
+        if (Config.isVulkan()) {
+            var info = RenderSystem.getDevice().getDeviceInfo();
+            glVersionString = info.driverInfo();
+            glVendorString = info.vendorName();
+            glRendererString = info.name();
+            isZZeroOne = true;
+            hasGlGenMipmap = true;
+            loadConfig();
+            return;
+        }
         capabilities = GL.getCapabilities();
         glVersionString = GL11.glGetString(7938);
         glVendorString = GL11.glGetString(7936);
@@ -2065,9 +2096,12 @@ public class Shaders {
         return shaderPackParticlesBeforeDeferred.isTrue();
     }
 
+    private static OpenGlCompilationBatch shaderCompilation;
+
     public static void init() {
-        isZZeroOne = RenderSystem.getGlDevice().getDeviceInfo().isZZeroToOne();
+        isZZeroOne = RenderSystem.getDevice().getDeviceInfo().isZZeroToOne();
         if (!isShaderPackInitialized) {
+            VulkanTransparency.configure(shaderPack);
             checkGLError("Shaders.init pre");
             if (getShaderPackName() != null) {
             }
@@ -2130,53 +2164,83 @@ public class Shaders {
             }
 
             loadShaderPackDynamicProperties();
-            int vaoPrev = GL43.glGetInteger(34229);
-            int vaoTemp = GlStateManager._glGenVertexArrays();
-            GlStateManager._glBindVertexArray(vaoTemp);
+            int vaoPrev = 0;
+            int vaoTemp = 0;
+            if (!Config.isVulkan()) {
+                vaoPrev = GL43.glGetInteger(34229);
+                vaoTemp = GlStateManager._glGenVertexArrays();
+                GlStateManager._glBindVertexArray(vaoTemp);
+            }
 
-            for (int i = 0; i < ProgramsAll.length; i++) {
-                Program p = ProgramsAll[i];
-                p.resetId();
-                p.resetConfiguration();
+            VulkanShaderRuntime runtime = Config.isVulkan() ? VulkanShaderRuntime.getInstance() : null;
+            if (runtime != null) {
+                runtime.beginCompilation();
+            } else {
+                shaderCompilation = new OpenGlCompilationBatch();
+            }
+            long compilationStart = System.nanoTime();
+            try {
+                for (int i = 0; i < ProgramsAll.length; i++) {
+                    Program p = ProgramsAll[i];
+                    p.resetId();
+                    p.resetConfiguration();
+                    if (p.getProgramStage() != ProgramStage.NONE) {
+                        String programName = p.getName();
+                        String programPath = worldPrefix + programName;
+                        boolean enabled = true;
+                        if (shaderPackProgramConditions.containsKey(programPath)) {
+                            enabled = enabled && shaderPackProgramConditions.get(programPath).eval();
+                        }
+    
+                        if (activeProfile != null) {
+                            enabled = enabled && !activeProfile.isProgramDisabled(programPath);
+                        }
+    
+                        if (!enabled) {
+                            SMCLog.info("Program disabled: " + programPath);
+                            programName = "<disabled>";
+                            programPath = worldPrefix + programName;
+                        }
+    
+                        String programFullPath = "/shaders/" + programPath;
+                        String programFullPathVertex = programFullPath + ".vsh";
+                        String programFullPathGeometry = programFullPath + ".gsh";
+                        String programFullPathFragment = programFullPath + ".fsh";
+                        ComputeProgram[] cps = setupComputePrograms(p, "/shaders/", programPath, ".csh");
+                        p.setComputePrograms(cps);
+                        setupProgram(p, programFullPathVertex, programFullPathGeometry, programFullPathFragment);
+                        int pr = p.getId();
+                        if (pr > 0) {
+                            SMCLog.info("Program loaded: " + programPath);
+                        }
+    
+                    }
+                }
+    
+                if (runtime != null) {
+                    runtime.finishCompilation();
+                } else {
+                    shaderCompilation.finish();
+                }
+            } finally {
+                if (runtime != null) {
+                    runtime.cancelCompilation();
+                } else {
+                    shaderCompilation.close();
+                    shaderCompilation = null;
+                    GlStateManager._glBindVertexArray(vaoPrev);
+                    GlStateManager.deleteVertexArrays(vaoTemp);
+                }
+            }
+            SMCLog.info("Shader programs prepared and compiled in %.3f seconds", (System.nanoTime() - compilationStart) / 1.0E9);
+            for (Program p : ProgramsAll) {
                 if (p.getProgramStage() != ProgramStage.NONE) {
-                    String programName = p.getName();
-                    String programPath = worldPrefix + programName;
-                    boolean enabled = true;
-                    if (shaderPackProgramConditions.containsKey(programPath)) {
-                        enabled = enabled && shaderPackProgramConditions.get(programPath).eval();
-                    }
-
-                    if (activeProfile != null) {
-                        enabled = enabled && !activeProfile.isProgramDisabled(programPath);
-                    }
-
-                    if (!enabled) {
-                        SMCLog.info("Program disabled: " + programPath);
-                        programName = "<disabled>";
-                        programPath = worldPrefix + programName;
-                    }
-
-                    String programFullPath = "/shaders/" + programPath;
-                    String programFullPathVertex = programFullPath + ".vsh";
-                    String programFullPathGeometry = programFullPath + ".gsh";
-                    String programFullPathFragment = programFullPath + ".fsh";
-                    ComputeProgram[] cps = setupComputePrograms(p, "/shaders/", programPath, ".csh");
-                    p.setComputePrograms(cps);
-                    setupProgram(p, programFullPathVertex, programFullPathGeometry, programFullPathFragment);
-                    int pr = p.getId();
-                    if (pr > 0) {
-                        SMCLog.info("Program loaded: " + programPath);
-                    }
-
                     initDrawBuffers(p);
                     initBlendStatesIndexed(p);
                     updateToggleBuffers(p);
                     updateProgramSize(p);
                 }
             }
-
-            GlStateManager._glBindVertexArray(vaoPrev);
-            GlStateManager.deleteVertexArrays(vaoTemp);
             hasDeferredPrograms = ProgramUtils.hasActive(ProgramsDeferred);
             hasShadowcompPrograms = ProgramUtils.hasActive(ProgramsShadowcomp);
             hasPreparePrograms = ProgramUtils.hasActive(ProgramsPrepare);
@@ -2194,7 +2258,7 @@ public class Shaders {
             SMCLog.info("usedColorAttachs: " + usedColorAttachs);
             SMCLog.info("usedDrawBuffers: " + usedDrawBuffers);
             SMCLog.info("bindImageTextures: " + bindImageTextures);
-            int maxDrawBuffers = GL43.glGetInteger(34852);
+            int maxDrawBuffers = Config.isVulkan() ? RenderSystem.getDevice().getDeviceInfo().limits().maxColorAttachments() : GL43.glGetInteger(34852);
             if (usedDrawBuffers > maxDrawBuffers) {
                 printChatAndLogError("[Shaders] Error: Not enough draw buffers, needed: " + usedDrawBuffers + ", available: " + maxDrawBuffers);
                 usedDrawBuffers = maxDrawBuffers;
@@ -2236,10 +2300,11 @@ public class Shaders {
             }
 
             prepareCelectialRotate(RenderSystem.getModelViewMatrix(), 0.0F);
-            int maxTextureUnits = GL43.glGetInteger(34930);
-
-            for (int i = 0; i < maxTextureUnits; i++) {
-                GlStateManager.bindSampler(i, 0);
+            if (!Config.isVulkan()) {
+                int maxTextureUnits = GL43.glGetInteger(34930);
+                for (int i = 0; i < maxTextureUnits; i++) {
+                    GlStateManager.bindSampler(i, 0);
+                }
             }
 
             isShaderPackInitialized = true;
@@ -2250,7 +2315,7 @@ public class Shaders {
     }
 
     private static void initDrawBuffers(Program p) {
-        int maxDrawBuffers = GL43.glGetInteger(34852);
+        int maxDrawBuffers = Config.isVulkan() ? RenderSystem.getDevice().getDeviceInfo().limits().maxColorAttachments() : GL43.glGetInteger(34852);
         Arrays.fill(p.getToggleColorTextures(), false);
         if (p == ProgramFinal) {
             p.setDrawBuffers(null);
@@ -2403,6 +2468,31 @@ public class Shaders {
         int gShader = createGeomShader(program, gShaderPath);
         int vShader = createVertShader(program, vShaderPath, gShader != 0);
         int fShader = createFragShader(program, fShaderPath);
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime runtime = VulkanShaderRuntime.getInstance();
+            try {
+                if (vShader != 0 || gShader != 0 || fShader != 0) {
+                    int id = runtime.linkProgram(program.getName(), vShader, gShader, fShader);
+                    program.setId(id);
+                    program.setRef(id);
+                    if (gShader != 0) {
+                        hasGeometryShaders = true;
+                        if (program.getProgramStage() == ProgramStage.SHADOW) {
+                            hasShadowGeometryShaders = true;
+                        }
+                    }
+                    if (program.getProgramStage() == ProgramStage.SHADOW && program.getCountInstances() > 1) {
+                        hasShadowInstancing = true;
+                    }
+                }
+            } finally {
+                runtime.deleteShader(vShader);
+                runtime.deleteShader(gShader);
+                runtime.deleteShader(fShader);
+            }
+            return;
+        }
+
         if (vShader != 0 || gShader != 0 || fShader != 0) {
             Config.sleep(1L);
             checkGLError("create");
@@ -2488,41 +2578,53 @@ public class Shaders {
             }
 
             GL43.glLinkProgram(programid);
-            if (GL43.glGetProgrami(programid, 35714) != 1) {
-                SMCLog.severe("Error linking program: " + programid + " (" + program.getName() + ")");
-            }
-
-            printProgramLogInfo(programid, program.getName());
-            if (vShader != 0) {
-                GL43.glDetachShader(programid, vShader);
-                GL43.glDeleteShader(vShader);
-            }
-
-            if (gShader != 0) {
-                GL43.glDetachShader(programid, gShader);
-                GL43.glDeleteShader(gShader);
-            }
-
-            if (fShader != 0) {
-                GL43.glDetachShader(programid, fShader);
-                GL43.glDeleteShader(fShader);
-            }
-
             program.setId(programid);
             program.setRef(programid);
-            debugLabels.applyLabelProgram(programid, program.getName().equals("") ? "none" : program.getName());
-            useProgram(program);
-            GL43.glValidateProgram(programid);
-            useProgram(ProgramNone);
-            printProgramLogInfo(programid, program.getName());
-            int valid = GL43.glGetProgrami(programid, 35715);
-            if (valid != 1) {
-                String Q = "\"";
-                printChatAndLogError("[Shaders] Error: Invalid program " + Q + program.getName() + Q);
-                GL43.glDeleteProgram(programid);
-                int var14 = 0;
-                program.resetId();
-            }
+            completeCompilation(() -> finishProgram(program, programid, vShader, gShader, fShader));
+        }
+    }
+
+    private static void finishProgram(Program program, int programid, int vShader, int gShader, int fShader) {
+        if (GL43.glGetProgrami(programid, 35714) != 1) {
+            SMCLog.severe("Error linking program: " + programid + " (" + program.getName() + ")");
+        }
+
+        printProgramLogInfo(programid, program.getName());
+        if (vShader != 0) {
+            GL43.glDetachShader(programid, vShader);
+            deleteShader(vShader);
+        }
+
+        if (gShader != 0) {
+            GL43.glDetachShader(programid, gShader);
+            deleteShader(gShader);
+        }
+
+        if (fShader != 0) {
+            GL43.glDetachShader(programid, fShader);
+            deleteShader(fShader);
+        }
+
+        debugLabels.applyLabelProgram(programid, program.getName().equals("") ? "none" : program.getName());
+        useProgram(program);
+        GL43.glValidateProgram(programid);
+        useProgram(ProgramNone);
+        printProgramLogInfo(programid, program.getName());
+        int valid = GL43.glGetProgrami(programid, 35715);
+        if (valid != 1) {
+            String Q = "\"";
+            printChatAndLogError("[Shaders] Error: Invalid program " + Q + program.getName() + Q);
+            GL43.glDeleteProgram(programid);
+            int var14 = 0;
+            program.resetId();
+        }
+    }
+
+    private static void completeCompilation(Runnable completion) {
+        if (shaderCompilation != null) {
+            shaderCompilation.defer(completion);
+        } else {
+            completion.run();
         }
     }
 
@@ -2571,6 +2673,20 @@ public class Shaders {
         checkGLError("pre setupProgram");
         int cShader = createCompShader(program, cShaderPath);
         checkGLError("create");
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime runtime = VulkanShaderRuntime.getInstance();
+            try {
+                if (cShader != 0) {
+                    int id = runtime.linkProgram(program.getName(), cShader);
+                    program.setId(id);
+                    program.setRef(id);
+                }
+            } finally {
+                runtime.deleteShader(cShader);
+            }
+            return;
+        }
+
         if (cShader != 0) {
             int programid = GL43.glCreateProgram();
             checkGLError("create");
@@ -2580,30 +2696,34 @@ public class Shaders {
             }
 
             GL43.glLinkProgram(programid);
-            if (GL43.glGetProgrami(programid, 35714) != 1) {
-                SMCLog.severe("Error linking program: " + programid + " (" + program.getName() + ")");
-            }
-
-            printProgramLogInfo(programid, program.getName());
-            if (cShader != 0) {
-                GL43.glDetachShader(programid, cShader);
-                GL43.glDeleteShader(cShader);
-            }
-
             program.setId(programid);
             program.setRef(programid);
-            useComputeProgram(program);
-            GL43.glValidateProgram(programid);
-            GlStateManager._glUseProgram(0);
-            printProgramLogInfo(programid, program.getName());
-            int valid = GL43.glGetProgrami(programid, 35715);
-            if (valid != 1) {
-                String Q = "\"";
-                printChatAndLogError("[Shaders] Error: Invalid program " + Q + program.getName() + Q);
-                GL43.glDeleteProgram(programid);
-                int var6 = 0;
-                program.resetId();
-            }
+            completeCompilation(() -> finishComputeProgram(program, programid, cShader));
+        }
+    }
+
+    private static void finishComputeProgram(ComputeProgram program, int programid, int cShader) {
+        if (GL43.glGetProgrami(programid, 35714) != 1) {
+            SMCLog.severe("Error linking program: " + programid + " (" + program.getName() + ")");
+        }
+
+        printProgramLogInfo(programid, program.getName());
+        if (cShader != 0) {
+            GL43.glDetachShader(programid, cShader);
+            deleteShader(cShader);
+        }
+
+        useComputeProgram(program);
+        GL43.glValidateProgram(programid);
+        GlStateManager._glUseProgram(0);
+        printProgramLogInfo(programid, program.getName());
+        int valid = GL43.glGetProgrami(programid, 35715);
+        if (valid != 1) {
+            String Q = "\"";
+            printChatAndLogError("[Shaders] Error: Invalid program " + Q + program.getName() + Q);
+            GL43.glDeleteProgram(programid);
+            int var6 = 0;
+            program.resetId();
         }
     }
 
@@ -2613,12 +2733,14 @@ public class Shaders {
             return 0;
         }
 
-        int compShader = GL43.glCreateShader(37305);
+        int compShader = Config.isVulkan() ? VulkanShaderRuntime.getInstance().createShader(ShaderType.COMPUTE, filename) : GL43.glCreateShader(37305);
         if (compShader == 0) {
             return 0;
         }
 
-        debugLabels.applyLabelShader(compShader, filename);
+        if (!Config.isVulkan()) {
+            debugLabels.applyLabelShader(compShader, filename);
+        }
         ShaderOption[] activeOptions = getChangedOptions(shaderPackOptions);
         List<String> listFiles = new ArrayList<>();
         LineBuffer lines = new LineBuffer();
@@ -2686,7 +2808,7 @@ public class Shaders {
             } catch (Exception e) {
                 SMCLog.severe("Error loading " + filename + "!");
                 e.printStackTrace();
-                GL43.glDeleteShader(compShader);
+                deleteShader(compShader);
                 return 0;
             }
         }
@@ -2698,17 +2820,22 @@ public class Shaders {
 
         if (program.getLocalSize() == null) {
             SMCLog.severe("Missing local size: " + filename);
-            GL43.glDeleteShader(compShader);
+            deleteShader(compShader);
             return 0;
         }
 
         shaderSource(compShader, compCode);
-        GL43.glCompileShader(compShader);
-        if (GL43.glGetShaderi(compShader, 35713) != 1) {
-            SMCLog.severe("Error compiling compute shader: " + filename);
+        if (Config.isVulkan()) {
+            return compShader;
         }
 
-        printShaderLogInfo(compShader, filename, listFiles);
+        GL43.glCompileShader(compShader);
+        completeCompilation(() -> {
+            if (GL43.glGetShaderi(compShader, 35713) != 1) {
+                SMCLog.severe("Error compiling compute shader: " + filename);
+            }
+            printShaderLogInfo(compShader, filename, listFiles);
+        });
         return compShader;
     }
 
@@ -2722,12 +2849,14 @@ public class Shaders {
             return 0;
         }
 
-        int vertShader = GL43.glCreateShader(35633);
+        int vertShader = Config.isVulkan() ? VulkanShaderRuntime.getInstance().createShader(ShaderType.VERTEX, filename) : GL43.glCreateShader(35633);
         if (vertShader == 0) {
             return 0;
         }
 
-        debugLabels.applyLabelShader(vertShader, filename);
+        if (!Config.isVulkan()) {
+            debugLabels.applyLabelShader(vertShader, filename);
+        }
         ShaderOption[] activeOptions = getChangedOptions(shaderPackOptions);
         List<String> listFiles = new ArrayList<>();
         LineBuffer lines = new LineBuffer();
@@ -2767,23 +2896,29 @@ public class Shaders {
             } catch (Exception e) {
                 SMCLog.severe("Error loading " + filename + "!");
                 e.printStackTrace();
-                GL43.glDeleteShader(vertShader);
+                deleteShader(vertShader);
                 return 0;
             }
         }
 
         String vertexCode = lines.toString();
+        if (!Config.isVulkan()) vertexCode = VulkanTransparency.adapt(program.getName(), ShaderType.VERTEX, vertexCode);
         if (saveFinalShaders) {
             saveShader(filename, vertexCode);
         }
 
         shaderSource(vertShader, vertexCode);
-        GL43.glCompileShader(vertShader);
-        if (GL43.glGetShaderi(vertShader, 35713) != 1) {
-            SMCLog.severe("Error compiling vertex shader: " + filename);
+        if (Config.isVulkan()) {
+            return vertShader;
         }
 
-        printShaderLogInfo(vertShader, filename, listFiles);
+        GL43.glCompileShader(vertShader);
+        completeCompilation(() -> {
+            if (GL43.glGetShaderi(vertShader, 35713) != 1) {
+                SMCLog.severe("Error compiling vertex shader: " + filename);
+            }
+            printShaderLogInfo(vertShader, filename, listFiles);
+        });
         return vertShader;
     }
 
@@ -2793,12 +2928,14 @@ public class Shaders {
             return 0;
         }
 
-        int geomShader = GL43.glCreateShader(36313);
+        int geomShader = Config.isVulkan() ? VulkanShaderRuntime.getInstance().createShader(ShaderType.GEOMETRY, filename) : GL43.glCreateShader(36313);
         if (geomShader == 0) {
             return 0;
         }
 
-        debugLabels.applyLabelShader(geomShader, filename);
+        if (!Config.isVulkan()) {
+            debugLabels.applyLabelShader(geomShader, filename);
+        }
         ShaderOption[] activeOptions = getChangedOptions(shaderPackOptions);
         List<String> listFiles = new ArrayList<>();
         progArbGeometryShader4 = false;
@@ -2837,7 +2974,7 @@ public class Shaders {
             } catch (Exception e) {
                 SMCLog.severe("Error loading " + filename + "!");
                 e.printStackTrace();
-                GL43.glDeleteShader(geomShader);
+                deleteShader(geomShader);
                 return 0;
             }
         }
@@ -2848,12 +2985,17 @@ public class Shaders {
         }
 
         shaderSource(geomShader, geomCode);
-        GL43.glCompileShader(geomShader);
-        if (GL43.glGetShaderi(geomShader, 35713) != 1) {
-            SMCLog.severe("Error compiling geometry shader: " + filename);
+        if (Config.isVulkan()) {
+            return geomShader;
         }
 
-        printShaderLogInfo(geomShader, filename, listFiles);
+        GL43.glCompileShader(geomShader);
+        completeCompilation(() -> {
+            if (GL43.glGetShaderi(geomShader, 35713) != 1) {
+                SMCLog.severe("Error compiling geometry shader: " + filename);
+            }
+            printShaderLogInfo(geomShader, filename, listFiles);
+        });
         return geomShader;
     }
 
@@ -2867,12 +3009,14 @@ public class Shaders {
             return 0;
         }
 
-        int fragShader = GL43.glCreateShader(35632);
+        int fragShader = Config.isVulkan() ? VulkanShaderRuntime.getInstance().createShader(ShaderType.FRAGMENT, filename) : GL43.glCreateShader(35632);
         if (fragShader == 0) {
             return 0;
         }
 
-        debugLabels.applyLabelShader(fragShader, filename);
+        if (!Config.isVulkan()) {
+            debugLabels.applyLabelShader(fragShader, filename);
+        }
         ShaderOption[] activeOptions = getChangedOptions(shaderPackOptions);
         List<String> listFiles = new ArrayList<>();
         LineBuffer lines = new LineBuffer();
@@ -3090,27 +3234,38 @@ public class Shaders {
             } catch (Exception e) {
                 SMCLog.severe("Error loading " + filename + "!");
                 e.printStackTrace();
-                GL43.glDeleteShader(fragShader);
+                deleteShader(fragShader);
                 return 0;
             }
         }
 
         String fragCode = lines.toString();
+        if (!Config.isVulkan()) fragCode = VulkanTransparency.adapt(program.getName(), ShaderType.FRAGMENT, fragCode);
         if (saveFinalShaders) {
             saveShader(filename, fragCode);
         }
 
         shaderSource(fragShader, fragCode);
-        GL43.glCompileShader(fragShader);
-        if (GL43.glGetShaderi(fragShader, 35713) != 1) {
-            SMCLog.severe("Error compiling fragment shader: " + filename);
+        if (Config.isVulkan()) {
+            return fragShader;
         }
 
-        printShaderLogInfo(fragShader, filename, listFiles);
+        GL43.glCompileShader(fragShader);
+        completeCompilation(() -> {
+            if (GL43.glGetShaderi(fragShader, 35713) != 1) {
+                SMCLog.severe("Error compiling fragment shader: " + filename);
+            }
+            printShaderLogInfo(fragShader, filename, listFiles);
+        });
         return fragShader;
     }
 
     private static void shaderSource(int shader, String code) {
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().setShaderSource(shader, code);
+            return;
+        }
+
         MemoryStack stack = MemoryStack.stackGet();
         int stackPointer = stack.getPointer();
 
@@ -3195,7 +3350,28 @@ public class Shaders {
         return false;
     }
 
+    private static void deleteShader(int shader) {
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().deleteShader(shader);
+        } else {
+            GL43.glDeleteShader(shader);
+        }
+    }
+
+    private static void deleteProgram(int program) {
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().deleteProgram(program);
+        } else {
+            GL43.glDeleteProgram(program);
+        }
+    }
+
     public static void useProgram(Program program) {
+        if (Config.isVulkan()) {
+            useVulkanProgram(program);
+            return;
+        }
+
         checkGLError("pre-useProgram");
         if (isShadowPass) {
             program = ProgramShadow;
@@ -3242,6 +3418,32 @@ public class Shaders {
                 setImageUniforms();
                 checkGLError("end useProgram");
             }
+        }
+    }
+
+    private static void useVulkanProgram(Program program) {
+        if (isShadowPass) {
+            program = ProgramShadow;
+        }
+        if (activeProgram == program) {
+            return;
+        }
+
+        flushRenderBuffers();
+        activeProgram = program;
+        activeProgramID = program.getId();
+        VulkanProgramUniforms uniforms = activeProgramID == 0 ? null : VulkanShaderRuntime.getInstance().getProgram(activeProgramID).uniforms();
+        shaderUniforms.setProgram(activeProgramID, uniforms);
+        if (customUniforms != null) {
+            customUniforms.setProgram(activeProgramID, uniforms);
+        }
+        if (activeProgramID != 0) {
+            ShadersDebug.onUseProgram(program);
+            if (isRenderingDfb) {
+                GlState.setDrawBuffers(program.getDrawBuffers());
+            }
+            setProgramUniforms(program.getProgramStage());
+            setImageUniforms();
         }
     }
 
@@ -3673,12 +3875,13 @@ public class Shaders {
 
     public static void uninit() {
         if (isShaderPackInitialized) {
+            VulkanTransparency.reset();
             checkGLError("Shaders.uninit pre");
 
             for (int i = 0; i < ProgramsAll.length; i++) {
                 Program pi = ProgramsAll[i];
                 if (pi.getRef() != 0) {
-                    GL43.glDeleteProgram(pi.getRef());
+                    deleteProgram(pi.getRef());
                     checkGLError("del programRef");
                 }
 
@@ -3692,7 +3895,7 @@ public class Shaders {
                 for (int c = 0; c < cps.length; c++) {
                     ComputeProgram cp = cps[c];
                     if (cp.getRef() != 0) {
-                        GL43.glDeleteProgram(cp.getRef());
+                        deleteProgram(cp.getRef());
                         checkGLError("del programRef");
                     }
 
@@ -3732,7 +3935,11 @@ public class Shaders {
             }
 
             for (int i = 0; i < colorImageUnit.length; i++) {
-                GlStateManager.bindImageTexture(colorImageUnit[i], 0, 0, false, 0, 35000, 32856);
+                if (Config.isVulkan()) {
+                    VulkanShaderRuntime.getInstance().unbindImage(colorImageUnit[i]);
+                } else {
+                    GlStateManager.bindImageTexture(colorImageUnit[i], 0, 0, false, 0, 35000, 32856);
+                }
             }
 
             SMCLog.info("Uninit");
@@ -3872,19 +4079,24 @@ public class Shaders {
         ShadersDebug.onBeginRender();
         mc = minecraft;
         entityRenderer = mc.gameRenderer;
-        debugLabels = RenderSystem.getGlDevice().debugLabels();
+        debugLabels = RenderSystem.getDebugLabels();
         checkWorldChanged(mc.level);
         Profiler.get().push("init");
         if (!isShaderPackInitialized) {
             try {
                 init();
-            } catch (IllegalStateException e) {
-                if (Config.normalize(e.getMessage()).equals("Function is not supported")) {
-                    printChatAndLogError("[Shaders] Error: " + e.getMessage());
+            } catch (RuntimeException e) {
+                if (Config.isVulkan() || Config.normalize(e.getMessage()).equals("Function is not supported")) {
+                    printChatAndLogError("[Shaders] Could not load " + getShaderPackName() + "; shaders disabled. See log for details.");
                     e.printStackTrace();
+                    // Initialization can fail after earlier programs have already been allocated.
+                    isShaderPackInitialized = true;
+                    uninit();
                     setShaderPack("OFF");
+                    Profiler.get().pop();
                     return;
                 }
+                throw e;
             }
         }
 
@@ -4022,9 +4234,13 @@ public class Shaders {
         dfb.bindColorTextures(startColorBuffer);
         dfb.bindDepthTextures(depthTextureImageUnit);
         if (noiseTextureEnabled) {
-            GlStateManager._activeTexture(33984 + noiseTexture.getTextureUnit());
-            GlStateManager._bindTexture(noiseTexture.getTextureId());
-            GlStateManager._activeTexture(33984);
+            if (Config.isVulkan()) {
+                noiseTexture.bindVulkan();
+            } else {
+                GlStateManager._activeTexture(33984 + noiseTexture.getTextureUnit());
+                GlStateManager._bindTexture(noiseTexture.getTextureId());
+                GlStateManager._activeTexture(33984);
+            }
         }
 
         bindCustomTextures(customTextures);
@@ -4061,7 +4277,9 @@ public class Shaders {
     public static void beginRenderPass(float partialTicks) {
         if (!isShadowPass) {
             dfb.bindFramebuffer();
-            GL11.glViewport(0, 0, renderWidth, renderHeight);
+            if (!Config.isVulkan()) {
+                GL11.glViewport(0, 0, renderWidth, renderHeight);
+            }
             GlState.setDrawBuffers(null);
             ShadersTex.bindNSTextures(defaultTexture.getMultiTexID());
             useProgram(ProgramTextured);
@@ -4072,9 +4290,13 @@ public class Shaders {
     public static void setViewport(int vx, int vy, int vw, int vh) {
         GlStateManager._colorMask(15);
         if (isShadowPass) {
-            GL11.glViewport(0, 0, shadowMapWidth, shadowMapHeight);
+            if (!Config.isVulkan()) {
+                GL11.glViewport(0, 0, shadowMapWidth, shadowMapHeight);
+            }
         } else {
-            GL11.glViewport(0, 0, renderWidth, renderHeight);
+            if (!Config.isVulkan()) {
+                GL11.glViewport(0, 0, renderWidth, renderHeight);
+            }
             dfb.bindFramebuffer();
             isRenderingDfb = true;
             GlStateManager._enableCull();
@@ -4210,7 +4432,9 @@ public class Shaders {
         cameraPositionX = x - cameraOffsetX;
         cameraPositionY = y;
         cameraPositionZ = z - cameraOffsetZ;
-        GlStateManager._viewport(0, 0, shadowMapWidth, shadowMapHeight);
+        if (!Config.isVulkan()) {
+            GlStateManager._viewport(0, 0, shadowMapWidth, shadowMapHeight);
+        }
         if (shadowProjectionMatrixBuffer == null) {
             shadowProjectionMatrixBuffer = new ProjectionMatrixBuffer("shadow");
         }
@@ -4376,6 +4600,39 @@ public class Shaders {
     }
 
     private static void drawCompositeQuad() {
+        if (Config.isVulkan()) {
+            RenderPassDescriptor target;
+            IShadersFramebuffer framebuffer = GlState.getFramebuffer();
+            if (framebuffer instanceof ShadersFramebuffer shadersFramebuffer) {
+                var nativeFramebuffer = shadersFramebuffer.getVulkanFramebuffer();
+                if (activeProgram == ProgramInvertDepth) {
+                    target = RenderPassDescriptor.create(() -> "OptiFine depth conversion")
+                        .withDepthAttachment(nativeFramebuffer.getDepthTarget().attachment())
+                        .withRenderArea(new RenderPass.RenderArea(0, 0, shadersFramebuffer.getWidth(), shadersFramebuffer.getHeight()));
+                } else {
+                    target = nativeFramebuffer.createRenderPassDescriptor(shadersFramebuffer.getDrawBuffers());
+                    int width = target.renderArea.width();
+                    int height = target.renderArea.height();
+                    if (activeProgram.getDrawSize() != null) {
+                        Dimension size = activeProgram.getDrawSize().getDimension(shadersFramebuffer.getWidth(), shadersFramebuffer.getHeight());
+                        width = size.width;
+                        height = size.height;
+                    }
+                    RenderScale scale = activeProgram.getRenderScale();
+                    target.withRenderArea(scale == null ? new RenderPass.RenderArea(0, 0, width, height)
+                        : new RenderPass.RenderArea((int)(width * scale.getOffsetX()), (int)(height * scale.getOffsetY()),
+                            (int)(width * scale.getScale()), (int)(height * scale.getScale())));
+                }
+            } else if (framebuffer == null) {
+                var output = mc.gameRenderer.mainRenderTarget().getColorTextureView();
+                target = RenderPassDescriptor.create(() -> "OptiFine final").withColorAttachment(output)
+                    .withRenderArea(new RenderPass.RenderArea(0, 0, output.getWidth(0), output.getHeight(0)));
+            } else {
+                throw new UnsupportedOperationException("Native composite framebuffer is not implemented: " + framebuffer.getClass().getName());
+            }
+            VulkanShaderRuntime.getInstance().drawComposite(activeProgramID, target, activeProgram == ProgramInvertDepth);
+            return;
+        }
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tesselator.begin(PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferbuilder.addVertex(0.0F, 0.0F, 0.0F).setUv(0.0F, 0.0F);
@@ -4399,10 +4656,16 @@ public class Shaders {
                 dfb.setColorTextures(true);
                 DrawBuffers drawBuffersWater = ProgramWater.getDrawBuffers() != null ? ProgramWater.getDrawBuffers() : dfb.getDrawBuffers();
                 GlState.setDrawBuffers(drawBuffersWater);
-                GlStateManager._activeTexture(33986);
-                mc.getTextureManager().bindTexture(Lightmap.LIGHTMAP_LOCATION);
-                GlStateManager._activeTexture(33984);
-                mc.getTextureManager().bindTexture(TextureAtlas.LOCATION_BLOCKS);
+                if (Config.isVulkan()) {
+                    var sampler = RenderSystem.getSamplerCache().getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR);
+                    VulkanShaderRuntime.getInstance().bindTexture(2, mc.gameRenderer.lightmap(), ((com.mojang.blaze3d.vulkan.VulkanGpuSampler)sampler).vkSampler());
+                    ShadersTex.bindTexture(mc.getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS));
+                } else {
+                    GlStateManager._activeTexture(33986);
+                    mc.getTextureManager().bindTexture(Lightmap.LIGHTMAP_LOCATION);
+                    GlStateManager._activeTexture(33984);
+                    mc.getTextureManager().bindTexture(TextureAtlas.LOCATION_BLOCKS);
+                }
             }
         }
     }
@@ -4465,13 +4728,17 @@ public class Shaders {
         debugLabels.pushDebugGroup(
             () -> "Composites " + (framebuffer == sfb ? "SFB" : "DFB") + (ps == ProgramsPrepare ? " (prepare)" : (ps == ProgramsDeferred ? " (deferred)" : ""))
         );
-        GlStateManager.enableTexture();
-        GlStateManager.disableAlphaTest();
-        GlStateManager._disableBlend();
-        GlStateManager._disableDepthTest();
-        GlStateManager._depthFunc(519);
-        GlStateManager._depthMask(false);
-        GlStateManager._colorMask(15);
+        if (!Config.isVulkan()) {
+            GlStateManager.enableTexture();
+            GlStateManager.disableAlphaTest();
+            GlStateManager._disableBlend();
+            GlStateManager._disableDepthTest();
+            GlStateManager._depthFunc(519);
+            GlStateManager._depthMask(false);
+            GlStateManager._colorMask(15);
+        } else {
+            framebuffer.bindFramebuffer();
+        }
         bindTextures(0, customTextures);
         framebuffer.bindColorImages(true);
         framebuffer.setColorTextures(false);
@@ -4480,19 +4747,29 @@ public class Shaders {
         checkGLError("pre-composite");
 
         for (int i = 0; i < ps.length; i++) {
-            Program program = ps[i];
-            dispatchComputes(framebuffer, program.getComputePrograms());
-            if (program.getId() != 0) {
-                useProgram(program);
-                checkGLError(program.getName());
-                if (program.hasCompositeMipmaps()) {
-                    framebuffer.genCompositeMipmap(program.getCompositeMipmapSetting());
+            if (VulkanTransparency.shouldResolve(ps, i)) {
+                int first = i;
+                boolean opaqueResolve = VulkanTransparency.needsOpaqueResolve();
+                if (opaqueResolve) {
+                    drawCompositeProgram(framebuffer, ps[first]);
                 }
-
-                preDrawComposite(framebuffer, program);
-                drawComposite();
-                postDrawComposite(framebuffer, program);
-                framebuffer.flipColorTextures(program.getToggleColorTextures());
+                int last = VulkanTransparency.lastComposite();
+                boolean[] firstLayer = {true};
+                VulkanTransparency.resolve(() -> {
+                    // Each resolve starts at the same stage boundary. Later composites may
+                    // replace custom atlas bindings when they flip history textures.
+                    bindTextures(0, customTextures);
+                    for (int layerProgram = first; layerProgram <= last; layerProgram++) {
+                        if (firstLayer[0] && (layerProgram != first || !opaqueResolve)) {
+                            dispatchComputes(framebuffer, ps[layerProgram].getComputePrograms());
+                        }
+                        drawCompositeProgram(framebuffer, ps[layerProgram]);
+                    }
+                    firstLayer[0] = false;
+                }, () -> drawCompositeProgram(framebuffer, ps[last]));
+                i = last;
+            } else {
+                drawCompositeProgram(framebuffer, ps[i]);
             }
         }
 
@@ -4503,21 +4780,57 @@ public class Shaders {
             isCompositeRendered = true;
         }
 
-        GlStateManager.enableTexture();
-        GlStateManager.enableAlphaTest();
-        GlStateManager._enableBlend();
-        GlStateManager._depthFunc(515);
-        GlStateManager._depthMask(true);
+        if (!Config.isVulkan()) {
+            GlStateManager.enableTexture();
+            GlStateManager.enableAlphaTest();
+            GlStateManager._enableBlend();
+            GlStateManager._depthFunc(515);
+            GlStateManager._depthMask(true);
+        }
         useProgram(ProgramNone);
         debugLabels.popDebugGroup();
     }
 
+    private static void drawCompositeProgram(ShadersFramebuffer framebuffer, Program program) {
+        if (!VulkanTransparency.isResolving()) {
+            dispatchComputes(framebuffer, program.getComputePrograms());
+        }
+        if (program.getId() != 0) {
+            useProgram(program);
+            VulkanTransparency.beforeComposite(program);
+            checkGLError(program.getName());
+            if (program.hasCompositeMipmaps()) {
+                framebuffer.genCompositeMipmap(program.getCompositeMipmapSetting());
+            }
+            preDrawComposite(framebuffer, program);
+            drawComposite();
+            postDrawComposite(framebuffer, program);
+            framebuffer.flipColorTextures(program.getToggleColorTextures());
+        }
+    }
+
+    public static void renderTranslucentTerrain(Runnable geometry) {
+        VulkanTransparency.render(dfb, () -> {
+            beginWater();
+            geometry.run();
+            endWater();
+        });
+    }
+
+    public static void refreshTransparencyDepth(ShadersFramebuffer framebuffer) {
+        renderDepthComposite(framebuffer, ProgramInvertDepth, 0);
+    }
+
     private static void renderDepthComposite(ShadersFramebuffer framebuffer, Program program, int depthIndex) {
         debugLabels.pushDebugGroup(() -> "Composites " + (framebuffer == sfb ? "SFB" : "DFB") + " (depth)");
-        GlStateManager._colorMask(0);
-        GlStateManager._enableDepthTest();
-        GlStateManager._depthFunc(519);
-        GlStateManager._depthMask(true);
+        if (!Config.isVulkan()) {
+            GlStateManager._colorMask(0);
+            GlStateManager._enableDepthTest();
+            GlStateManager._depthFunc(519);
+            GlStateManager._depthMask(true);
+        } else {
+            framebuffer.bindFramebuffer();
+        }
         if (depthIndex != 0) {
             framebuffer.flipDepthTextures(0, depthIndex);
         }
@@ -4537,11 +4850,16 @@ public class Shaders {
 
         framebuffer.setDepthTexture();
         dfb.bindDepthTextures(depthTextureImageUnit);
-        GlStateManager._colorMask(15);
+        if (!Config.isVulkan()) {
+            GlStateManager._colorMask(15);
+        }
         debugLabels.popDebugGroup();
     }
 
     private static void preDrawComposite(ShadersFramebuffer framebuffer, Program program) {
+        if (Config.isVulkan()) {
+            return;
+        }
         int drawWidth = framebuffer.getWidth();
         int drawHeight = framebuffer.getHeight();
         if (program.getDrawSize() != null) {
@@ -4564,6 +4882,9 @@ public class Shaders {
     }
 
     private static void postDrawComposite(ShadersFramebuffer framebuffer, Program program) {
+        if (Config.isVulkan()) {
+            return;
+        }
         if (program.getDrawSize() != null) {
             framebuffer.bindFramebuffer();
             GL43.glViewport(0, 0, framebuffer.getWidth(), framebuffer.getHeight());
@@ -4586,6 +4907,20 @@ public class Shaders {
     }
 
     public static void useComputeProgram(ComputeProgram cp) {
+        if (Config.isVulkan()) {
+            VulkanProgramUniforms uniforms = VulkanShaderRuntime.getInstance().getProgram(cp.getId()).uniforms();
+            shaderUniforms.setProgram(cp.getId(), uniforms);
+            if (customUniforms != null) {
+                customUniforms.setProgram(cp.getId(), uniforms);
+            }
+            setProgramUniforms(cp.getProgramStage());
+            setImageUniforms();
+            if (dfb != null) {
+                dfb.bindColorImages(true);
+            }
+            return;
+        }
+
         GlStateManager._glUseProgram(cp.getId());
         if (checkGLError("useComputeProgram") != 0) {
             cp.setId(0);
@@ -4621,9 +4956,13 @@ public class Shaders {
                 workGroups = new Vec3i(groupsX, groupsY, 1);
             }
 
-            GL43.glMemoryBarrier(40);
-            GL43.glDispatchCompute(workGroups.getX(), workGroups.getY(), workGroups.getZ());
-            GL43.glMemoryBarrier(40);
+            if (Config.isVulkan()) {
+                VulkanShaderRuntime.getInstance().dispatchCompute(cp.getId(), workGroups.getX(), workGroups.getY(), workGroups.getZ());
+            } else {
+                GL43.glMemoryBarrier(40);
+                GL43.glDispatchCompute(workGroups.getX(), workGroups.getY(), workGroups.getZ());
+                GL43.glMemoryBarrier(40);
+            }
             checkGLError("compute");
         }
     }
@@ -4633,17 +4972,26 @@ public class Shaders {
         dispatchComputes(dfb, ProgramFinal.getComputePrograms());
         GlState.unbindFramebuffer();
         isRenderingDfb = false;
-        RenderSystem.getGlCommandEncoder().bindFramebuffer(mc.gameRenderer.mainRenderTarget());
-        GL43.glViewport(0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight());
-        GlStateManager._depthMask(true);
-        GL43.glClearColor(clearColor.x(), clearColor.y(), clearColor.z(), 1.0F);
-        GL43.glClear(16640);
-        GlStateManager.enableTexture();
-        GlStateManager.disableAlphaTest();
-        GlStateManager._disableBlend();
-        GlStateManager._enableDepthTest();
-        GlStateManager._depthFunc(519);
-        GlStateManager._depthMask(false);
+        if (Config.isVulkan()) {
+            var output = mc.gameRenderer.mainRenderTarget();
+            var encoder = RenderSystem.getDevice().createCommandEncoder();
+            encoder.clearColorTexture(output.getColorTexture(), new Vector4f(clearColor.x(), clearColor.y(), clearColor.z(), 1.0F));
+            if (output.getDepthTexture() != null) {
+                encoder.clearDepthTexture(output.getDepthTexture(), 0.0);
+            }
+        } else {
+            RenderSystem.getGlCommandEncoder().bindFramebuffer(mc.gameRenderer.mainRenderTarget());
+            GL43.glViewport(0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight());
+            GlStateManager._depthMask(true);
+            GL43.glClearColor(clearColor.x(), clearColor.y(), clearColor.z(), 1.0F);
+            GL43.glClear(16640);
+            GlStateManager.enableTexture();
+            GlStateManager.disableAlphaTest();
+            GlStateManager._disableBlend();
+            GlStateManager._enableDepthTest();
+            GlStateManager._depthFunc(519);
+            GlStateManager._depthMask(false);
+        }
         checkGLError("pre-final");
         useProgram(ProgramFinal);
         checkGLError("final");
@@ -4700,7 +5048,11 @@ public class Shaders {
         }
 
         Matrix4f matrix = matrixStackIn.last().pose();
-        GlStateManager._depthMask(false);
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().setSceneDepthWrite(false);
+        } else {
+            GlStateManager._depthMask(false);
+        }
         BufferBuilder tess = Tesselator.getInstance().begin(PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION);
         int dist = 512;
 
@@ -4721,7 +5073,11 @@ public class Shaders {
         }
 
         BufferUploader.draw(RenderPipelines.POSITION, tess.build(), () -> "ShadersHorizon");
-        GlStateManager._depthMask(true);
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().setSceneDepthWrite(null);
+        } else {
+            GlStateManager._depthMask(true);
+        }
     }
 
     private static void addVertex(BufferBuilder buffer, Matrix4f matrix, double x, double y, double z) {
@@ -4911,9 +5267,13 @@ public class Shaders {
 
     public static void readCenterDepth() {
         if (!isShadowPass && centerDepthSmoothEnabled) {
-            tempDirectFloatBuffer.clear();
-            GL43.glReadPixels(renderWidth / 2, renderHeight / 2, 1, 1, 6402, 5126, tempDirectFloatBuffer);
-            centerDepth = tempDirectFloatBuffer.get(0);
+            if (Config.isVulkan()) {
+                centerDepth = VulkanShaderRuntime.getInstance().readDepthAsync(dfb.getVulkanFramebuffer().getDepthTarget().texture(), renderWidth / 2, renderHeight / 2);
+            } else {
+                tempDirectFloatBuffer.clear();
+                GL43.glReadPixels(renderWidth / 2, renderHeight / 2, 1, 1, 6402, 5126, tempDirectFloatBuffer);
+                centerDepth = tempDirectFloatBuffer.get(0);
+            }
             float fadeScalar = (float)diffSystemTime * 0.01F;
             float fadeFactor = (float)Math.exp(Math.log(0.5) * fadeScalar / centerDepthSmoothHalflife);
             centerDepthSmooth = centerDepthSmooth * fadeFactor + centerDepth * (1.0F - fadeFactor);
@@ -5414,6 +5774,9 @@ public class Shaders {
     }
 
     public static boolean canRenderQuads() {
+        if (Config.isVulkan()) {
+            return false;
+        }
         return hasGeometryShaders ? capabilities.GL_NV_geometry_shader4 : true;
     }
 
@@ -5537,14 +5900,26 @@ public class Shaders {
     }
 
     public static void setDefaultAttribColor(float r, float g, float b, float a) {
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().setDefaultAttribute("Color", r, g, b, a);
+            return;
+        }
         GL30.glVertexAttrib4f(SVertexFormat.COLOR_ATTRIBUTE_INDEX, r, g, b, a);
     }
 
     private static void setDefaultAttribLightmap(short su, short sv) {
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().setDefaultAttribute("UV2", su, sv, 0, 1);
+            return;
+        }
         GL30.glVertexAttrib2s(SVertexFormat.UV2_ATTRIBUTE_INDEX, su, sv);
     }
 
     private static void setDefaultAttribNormal(float x, float y, float z) {
+        if (Config.isVulkan()) {
+            VulkanShaderRuntime.getInstance().setDefaultAttribute("Normal", x, y, z, 1);
+            return;
+        }
         GL30.glVertexAttrib3f(SVertexFormat.NORMAL_ATTRIBUTE_INDEX, x, y, z);
     }
 
@@ -5598,7 +5973,10 @@ public class Shaders {
     }
 
     public static void preExecuteGroup(FeatureRendererType featureType) {
-        if (featureType == ModelFeatureRenderer.TYPE) {
+        if (isRenderingHand) {
+            return;
+        }
+        if (featureType == ModelFeatureRenderer.TYPE || featureType == ItemFeatureRenderer.TYPE) {
             beginEntities();
         } else if (featureType == BlockModelFeatureRenderer.TYPE) {
             beginBlockEntities();
@@ -5608,7 +5986,10 @@ public class Shaders {
     }
 
     public static void postExecuteGroup(FeatureRendererType featureType) {
-        if (featureType == ModelFeatureRenderer.TYPE) {
+        if (isRenderingHand) {
+            return;
+        }
+        if (featureType == ModelFeatureRenderer.TYPE || featureType == ItemFeatureRenderer.TYPE) {
             endEntities();
         } else if (featureType == BlockModelFeatureRenderer.TYPE) {
             endBlockEntities();

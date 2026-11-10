@@ -1,13 +1,16 @@
 package net.optifine.shaders.uniform;
 
 import java.util.Arrays;
+import java.nio.FloatBuffer;
 import net.optifine.shaders.Shaders;
+import net.optifine.shaders.vulkan.VulkanProgramUniforms;
 import org.lwjgl.opengl.GL20;
 
 public abstract class ShaderUniformBase {
     private String name;
     private int program = 0;
     private int[] locations = new int[]{-1};
+    private VulkanProgramUniforms vulkanUniforms;
     private static final int LOCATION_UNDEFINED = -1;
     private static final int LOCATION_UNKNOWN = Integer.MIN_VALUE;
 
@@ -16,6 +19,11 @@ public abstract class ShaderUniformBase {
     }
 
     public void setProgram(int program) {
+        this.setProgram(program, null);
+    }
+
+    public void setProgram(int program, VulkanProgramUniforms vulkanUniforms) {
+        this.vulkanUniforms = vulkanUniforms;
         if (this.program != program) {
             this.program = program;
             this.expandLocations();
@@ -49,7 +57,8 @@ public abstract class ShaderUniformBase {
 
         int location = this.locations[this.program];
         if (location == Integer.MIN_VALUE) {
-            location = GL20.glGetUniformLocation(this.program, this.name);
+            location = this.vulkanUniforms != null ? (this.vulkanUniforms.contains(this.name) ? 0 : -1)
+                : GL20.glGetUniformLocation(this.program, this.name);
             this.locations[this.program] = location;
         }
 
@@ -67,19 +76,51 @@ public abstract class ShaderUniformBase {
     public void reset() {
         this.program = 0;
         this.locations = new int[]{-1};
+        this.vulkanUniforms = null;
         this.resetValue();
     }
 
     protected abstract void resetValue();
 
     protected void checkGLError() {
-        if (Shaders.checkGLError(this.name) != 0) {
+        if (this.vulkanUniforms == null && Shaders.checkGLError(this.name) != 0) {
             this.disable();
         }
     }
 
-    protected static final void flushRenderBuffers() {
-        Shaders.flushRenderBuffers();
+    protected final void flushRenderBuffers() {
+        if (this.vulkanUniforms != null) {
+            this.vulkanUniforms.flush();
+        } else {
+            Shaders.flushRenderBuffers();
+        }
+    }
+
+    protected boolean setVulkanFloat(float... values) {
+        if (this.vulkanUniforms == null) {
+            return false;
+        }
+
+        this.vulkanUniforms.setFloat(this.name, values);
+        return true;
+    }
+
+    protected boolean setVulkanInt(int... values) {
+        if (this.vulkanUniforms == null) {
+            return false;
+        }
+
+        this.vulkanUniforms.setInt(this.name, values);
+        return true;
+    }
+
+    protected boolean setVulkanMatrix(int size, boolean transpose, FloatBuffer matrix) {
+        if (this.vulkanUniforms == null) {
+            return false;
+        }
+
+        this.vulkanUniforms.setMatrix(this.name, size, transpose, matrix);
+        return true;
     }
 
     @Override

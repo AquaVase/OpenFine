@@ -33,6 +33,9 @@ public class DebugUtils {
     private static Pattern PATTERN_EXP = Pattern.compile("E(\\d)");
 
     public static String getGlModelView() {
+        if (Config.isVulkan()) {
+            return getMatrix4(com.mojang.blaze3d.systems.RenderSystem.getModelViewStack());
+        }
         floatBuffer16.clear();
         GL11.glGetFloatv(2982, floatBuffer16);
         floatBuffer16.get(floatArray16);
@@ -41,6 +44,9 @@ public class DebugUtils {
     }
 
     public static String getGlProjection() {
+        if (Config.isVulkan()) {
+            throw new UnsupportedOperationException("Vulkan projection matrices are held in explicit uniform buffers");
+        }
         floatBuffer16.clear();
         GL11.glGetFloatv(2983, floatBuffer16);
         floatBuffer16.get(floatArray16);

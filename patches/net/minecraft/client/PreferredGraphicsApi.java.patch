@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/PreferredGraphicsApi.java
 +++ b/net/minecraft/client/PreferredGraphicsApi.java
-@@ -6,10 +6,7 @@
+@@ -6,20 +6,17 @@
  import com.mojang.serialization.Codec;
  import net.minecraft.network.chat.Component;
  import net.minecraft.util.StringRepresentable;
@@ -11,8 +11,11 @@
  public enum PreferredGraphicsApi implements StringRepresentable {
      DEFAULT("default", "options.graphicsApi.default"),
      OPENGL("opengl", "options.graphicsApi.opengl"),
-@@ -19,7 +16,7 @@
-     private final String serializedName;
+     VULKAN("vulkan", "options.graphicsApi.vulkan");
+ 
+     public static final Codec<PreferredGraphicsApi> CODEC = StringRepresentable.fromEnum(PreferredGraphicsApi::values);
+-    private final String serializedName;
++    private String serializedName;
      private final Component key;
  
 -    PreferredGraphicsApi(final String serializedName, final String key) {
@@ -20,16 +23,10 @@
          this.serializedName = serializedName;
          this.key = Component.translatable(key);
      }
-@@ -36,6 +33,10 @@
-     public GpuBackend[] getBackendsToTry() {
-         GlBackend gl = new GlBackend();
+@@ -38,4 +35,4 @@
          VulkanBackend vulkan = new VulkanBackend();
-+        if (Boolean.TRUE) {
-+            return new GpuBackend[]{gl};
-+        } else {
          return this == VULKAN ? new GpuBackend[]{vulkan, gl} : new GpuBackend[]{gl, vulkan};
      }
 -}
 \ No newline at end of file
-+    }
 +}

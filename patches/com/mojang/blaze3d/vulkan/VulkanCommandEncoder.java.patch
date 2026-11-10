@@ -1,0 +1,188 @@
+--- a/com/mojang/blaze3d/vulkan/VulkanCommandEncoder.java
++++ b/com/mojang/blaze3d/vulkan/VulkanCommandEncoder.java
+@@ -17,8 +17,6 @@
+ import java.util.List;
+ import java.util.Optional;
+ import java.util.OptionalDouble;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+ import org.joml.Vector4fc;
+ import org.jspecify.annotations.Nullable;
+ import org.lwjgl.system.MemoryStack;
+@@ -46,8 +44,6 @@
+ import org.lwjgl.vulkan.VkSemaphoreTypeCreateInfo;
+ import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
+ import org.lwjgl.vulkan.VkMemoryBarrier2.Buffer;
+-
+-@OnlyIn(Dist.CLIENT)
+ public class VulkanCommandEncoder implements CommandEncoderBackend, Destroyable {
+     public static final int MAX_SUBMITS_IN_FLIGHT = 2;
+     private final VulkanDevice device;
+@@ -219,7 +215,9 @@
+     }
+ 
+     @Override
+-    public RenderPassBackend createRenderPass(final RenderPassDescriptor descriptor) {
++    public RenderPassBackend createRenderPass(RenderPassDescriptor descriptor) {
++        RenderPassDescriptor requestedDescriptor = descriptor;
++        descriptor = net.optifine.shaders.vulkan.VulkanShaderRuntime.redirectRenderPass(descriptor);
+         List<RenderPassDescriptor.Attachment<Optional<Vector4fc>>> colorAttachments = descriptor.colorAttachments();
+         VulkanGpuTextureView[] colorTextures = new VulkanGpuTextureView[colorAttachments.size()];
+ 
+@@ -314,7 +312,9 @@
+                 width,
+                 height,
+                 depthAttachment != null,
+-                descriptor.label()
++                descriptor.label(),
++                descriptor,
++                requestedDescriptor
+             );
+         }
+ 
+@@ -327,6 +327,7 @@
+             throw new IllegalStateException("Cannot submit a renderpass if one hasn't been started!");
+         }
+ 
++        this.currentRenderPass.endTransparencyQuery();
+         KHRDynamicRendering.vkCmdEndRenderingKHR(this.commandBuffer());
+         this.device.instance().debug().endDebugGroup(this.commandBuffer());
+         this.checkpointStorage.recordCheckpoint(this.commandBuffer(), CheckpointExtension.CheckpointType.END_RENDER_PASS, this.currentRenderPass.getLabel());
+@@ -362,7 +363,16 @@
+     @Override
+     public void clearColorTexture(final GpuTexture colorTexture, final Vector4fc clearColor) {
+         try (MemoryStack stack = MemoryStack.stackPush()) {
++            var target = net.optifine.shaders.vulkan.VulkanShaderRuntime.redirectMainTarget(colorTexture, null);
++            if (target != null) {
++                for (var attachment : target.colorAttachments()) {
++                    if (attachment != null) {
++                        this.clearColorTextureUnsynced(stack, attachment.textureView().texture(), clearColor);
++                    }
++                }
++            } else {
+             this.clearColorTextureUnsynced(stack, colorTexture, clearColor);
++            }
+             this.memoryBarrier(stack);
+         }
+     }
+@@ -370,8 +380,20 @@
+     @Override
+     public void clearColorAndDepthTextures(final GpuTexture colorTexture, final Vector4fc clearColor, final GpuTexture depthTexture, final double clearDepth) {
+         try (MemoryStack stack = MemoryStack.stackPush()) {
++            var target = net.optifine.shaders.vulkan.VulkanShaderRuntime.redirectMainTarget(colorTexture, depthTexture);
++            if (target != null) {
++                for (var attachment : target.colorAttachments()) {
++                    if (attachment != null) {
++                        this.clearColorTextureUnsynced(stack, attachment.textureView().texture(), clearColor);
++                    }
++                }
++                if (target.depthAttachment() != null) {
++                    this.clearDepthTextureUnsynced(stack, target.depthAttachment().textureView().texture(), clearDepth);
++                }
++            } else {
+             this.clearColorTextureUnsynced(stack, colorTexture, clearColor);
+             this.clearDepthTextureUnsynced(stack, depthTexture, clearDepth);
++            }
+             this.memoryBarrier(stack);
+         }
+     }
+@@ -392,31 +414,46 @@
+             GpuTextureView depthTextureView = this.device.createTextureView(depthTexture);
+             MemoryStack stack = MemoryStack.stackPush();
+         ) {
+-            this.createRenderPass(
+-                RenderPassDescriptor.create(() -> "ClearColorDepthTextures")
++            var descriptor = net.optifine.shaders.vulkan.VulkanShaderRuntime.redirectMainTarget(colorTexture, depthTexture);
++            if (descriptor == null) {
++                descriptor = RenderPassDescriptor.create(() -> "ClearColorDepthTextures")
+                     .withColorAttachment(colorTextureView)
+                     .withDepthAttachment(depthTextureView)
+-                    .withRenderArea(new RenderPass.RenderArea(0, 0, colorTexture.getWidth(0), colorTexture.getHeight(0)))
+-            );
++                    .withRenderArea(new RenderPass.RenderArea(0, 0, colorTexture.getWidth(0), colorTexture.getHeight(0)));
++            }
++            var area = descriptor.renderArea;
++            int x = Math.max(regionX, area.x());
++            int y = Math.max(regionY, area.y());
++            int width = Math.min(regionX + regionWidth, area.x() + area.width()) - x;
++            int height = Math.min(regionY + regionHeight, area.y() + area.height()) - y;
++            if (width <= 0 || height <= 0) {
++                return;
++            }
++            this.createRenderPass(descriptor);
+             assert this.currentRenderPass != null;
+             org.lwjgl.vulkan.VkClearRect.Buffer rects = VkClearRect.calloc(1, stack);
+             rects.baseArrayLayer(0);
+             rects.layerCount(1);
+-            rects.rect().offset().set(regionX, regionY);
+-            rects.rect().extent().set(regionWidth, regionHeight);
+-            org.lwjgl.vulkan.VkClearAttachment.Buffer attachments = VkClearAttachment.calloc(2, stack);
++            rects.rect().offset().set(x, y);
++            rects.rect().extent().set(width, height);
++            org.lwjgl.vulkan.VkClearAttachment.Buffer attachments = VkClearAttachment.calloc(descriptor.colorAttachments().size() + 1, stack);
+             VkClearValue colorClearValue = VkClearValue.calloc(stack);
+             VulkanUtils.putArgb(colorClearValue.color(), clearColor);
+-            attachments.aspectMask(1);
+-            attachments.clearValue(colorClearValue);
++            for (int i = 0; i < descriptor.colorAttachments().size(); i++) {
++                if (descriptor.colorAttachments().get(i) != null) {
++                    attachments.get().aspectMask(VK12.VK_IMAGE_ASPECT_COLOR_BIT).colorAttachment(i).clearValue(colorClearValue);
++                }
++            }
+             VkClearValue depthClearValue = VkClearValue.calloc(stack);
+             VkClearDepthStencilValue clearValue = depthClearValue.depthStencil();
+             clearValue.depth((float)clearDepth);
+-            attachments.position(1);
+-            attachments.aspectMask(2);
+-            attachments.clearValue(depthClearValue);
+-            attachments.position(0);
++            if (descriptor.depthAttachment() != null) {
++                attachments.get().aspectMask(VK12.VK_IMAGE_ASPECT_DEPTH_BIT).clearValue(depthClearValue);
++            }
++            attachments.flip();
++            if (attachments.hasRemaining()) {
+             VK12.vkCmdClearAttachments(this.commandBuffer(), attachments, rects);
++            }
+             this.submitRenderPass();
+         }
+     }
+@@ -424,7 +461,12 @@
+     @Override
+     public void clearDepthTexture(final GpuTexture depthTexture, final double clearDepth) {
+         try (MemoryStack stack = MemoryStack.stackPush()) {
++            var target = net.optifine.shaders.vulkan.VulkanShaderRuntime.redirectMainTarget(null, depthTexture);
++            if (target == null) {
+             this.clearDepthTextureUnsynced(stack, depthTexture, clearDepth);
++            } else if (target.depthAttachment() != null) {
++                this.clearDepthTextureUnsynced(stack, target.depthAttachment().textureView().texture(), clearDepth);
++            }
+             this.memoryBarrier(stack);
+         }
+     }
+@@ -468,6 +510,7 @@
+         final int height
+     ) {
+         GpuBufferSlice stagingBuffer = this.transientMemory.uploadStaging(source, 1L, 16);
++        boolean volume = ((VulkanGpuTexture)destination).imageType() == VK12.VK_IMAGE_TYPE_3D;
+ 
+         try (MemoryStack stack = MemoryStack.stackPush()) {
+             org.lwjgl.vulkan.VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+@@ -477,9 +520,9 @@
+             VkImageSubresourceLayers imageSubresource = region.imageSubresource();
+             imageSubresource.aspectMask(1);
+             imageSubresource.mipLevel(mipLevel);
+-            imageSubresource.baseArrayLayer(depthOrLayer);
++            imageSubresource.baseArrayLayer(volume ? 0 : depthOrLayer);
+             imageSubresource.layerCount(1);
+-            region.imageOffset().set(destX, destY, 0);
++            region.imageOffset().set(destX, destY, volume ? depthOrLayer : 0);
+             region.imageExtent().set(width, height, 1);
+             VK12.vkCmdCopyBufferToImage(
+                 this.commandBuffer(), ((VulkanGpuBuffer)stagingBuffer.buffer()).vkBuffer(), ((VulkanGpuTexture)destination).vkImage(), 1, region
+@@ -674,4 +717,4 @@
+             return timestampPtr.get(0);
+         }
+     }
+-}
+\ No newline at end of file
++}

@@ -1,6 +1,7 @@
 package net.optifine;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.ByteBuffer;
 import java.util.Properties;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -140,9 +141,7 @@ public class TextureAnimation {
                         if (offset + frameLen <= this.imageData.limit()) {
                             if (!this.interpolate || frame.counter <= 0) {
                                 this.imageData.position(offset);
-                                GlStateManager._bindTexture(this.dstTextId);
-                                TextureUtils.resetDataUnpacking();
-                                GL11.glTexSubImage2D(3553, 0, this.dstX, this.dstY, this.frameWidth, this.frameHeight, 6408, 5121, this.imageData);
+                                this.uploadFrame(this.imageData);
                             } else if (this.interpolateSkip <= 1 || frame.counter % this.interpolateSkip == 0) {
                                 TextureAnimationFrame frameNext = this.getFrame(this.currentFrameIndex + 1);
                                 double k = 1.0 * frame.counter / frame.duration;
@@ -172,11 +171,27 @@ public class TextureAnimation {
                 }
 
                 this.interpolateData.flip();
-                GlStateManager._bindTexture(this.dstTextId);
-                TextureUtils.resetDataUnpacking();
-                GL11.glTexSubImage2D(3553, 0, this.dstX, this.dstY, this.frameWidth, this.frameHeight, 6408, 5121, this.interpolateData);
+                this.uploadFrame(this.interpolateData);
             }
         }
+    }
+
+    private void uploadFrame(ByteBuffer data) {
+        if (Config.isVulkan()) {
+            AbstractTexture texture = TextureUtils.getTexture(this.dstTexLoc);
+            if (texture == null) {
+                this.valid = false;
+                return;
+            }
+            ByteBuffer pixels = data.slice();
+            pixels.limit(this.frameWidth * this.frameHeight * 4);
+            RenderSystem.getDevice().createCommandEncoder().writeToTexture(texture.getTexture(), pixels, 0, 0,
+                this.dstX, this.dstY, this.frameWidth, this.frameHeight);
+            return;
+        }
+        GlStateManager._bindTexture(this.dstTextId);
+        TextureUtils.resetDataUnpacking();
+        GL11.glTexSubImage2D(3553, 0, this.dstX, this.dstY, this.frameWidth, this.frameHeight, 6408, 5121, data);
     }
 
     private int mix(int col1, int col2, double k) {

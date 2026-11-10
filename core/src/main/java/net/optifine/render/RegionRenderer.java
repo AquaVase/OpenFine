@@ -2,6 +2,7 @@ package net.optifine.render;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderPassBackend;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -68,6 +69,10 @@ public class RegionRenderer {
         for (Entry<PairInt, Map<VboRegion, List<SectionMesh.SectionDraw>>> entryPos : this.mapPosRegionBuffers.entrySet()) {
             PairInt pos = entryPos.getKey();
             if (entryPos.getValue() != null) {
+                for (VboRegion region : entryPos.getValue().keySet()) {
+                    region.prepareDraw();
+                }
+
                 DynamicUniforms.ChunkSectionInfo csi = new DynamicUniforms.ChunkSectionInfo(
                     viewIn, pos.getLeft(), 0, pos.getRight(), 1.0F, atlasWidth, atlasHeight, xIn, yIn, zIn
                 );
@@ -85,8 +90,12 @@ public class RegionRenderer {
     }
 
     public void renderRegion(PairInt positionIn) {
+        this.renderRegion(positionIn, null);
+    }
+
+    public void renderRegion(PairInt positionIn, RenderPassBackend pass) {
         Map<VboRegion, List<SectionMesh.SectionDraw>> mapRegionBuffers = this.mapPosRegionBuffers.get(positionIn);
-        if (this.mapPosRegionBuffers != null) {
+        if (mapRegionBuffers != null) {
             for (Entry<VboRegion, List<SectionMesh.SectionDraw>> entryRegionBuffers : mapRegionBuffers.entrySet()) {
                 VboRegion region = entryRegionBuffers.getKey();
                 List<SectionMesh.SectionDraw> listBuffers = entryRegionBuffers.getValue();
@@ -95,7 +104,11 @@ public class RegionRenderer {
                         buffers.drawInRegion();
                     }
 
-                    region.finishDraw();
+                    if (pass == null) {
+                        region.finishDraw();
+                    } else {
+                        region.finishDraw(pass);
+                    }
                     listBuffers.clear();
                 }
             }

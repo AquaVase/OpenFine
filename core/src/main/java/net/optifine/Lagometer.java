@@ -112,7 +112,14 @@ public class Lagometer {
     public static void renderLines(GuiRenderer rendererIn) {
         if (renderLines) {
             long timeRenderStartNano = System.nanoTime();
-            GlStateManager._clear(256);
+            if (Config.isVulkan()) {
+                var depth = mc.gameRenderer.mainRenderTarget().getDepthTexture();
+                if (depth != null) {
+                    RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(depth, 0.0);
+                }
+            } else {
+                GlStateManager._clear(256);
+            }
             RenderSystem.backupProjectionMatrix();
             int displayWidth = mc.getWindow().getWidth();
             int displayHeight = mc.getWindow().getHeight();

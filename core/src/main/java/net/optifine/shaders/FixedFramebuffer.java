@@ -33,6 +33,10 @@ public class FixedFramebuffer implements IShadersFramebuffer {
     }
 
     public void setup() {
+        if (net.optifine.Config.isVulkan()) {
+            throw new UnsupportedOperationException("This OpenGL resource path has not been migrated to native Vulkan: FixedFramebuffer");
+        }
+
         if (this.exists()) {
             this.delete();
         }
@@ -89,6 +93,9 @@ public class FixedFramebuffer implements IShadersFramebuffer {
     }
 
     public void delete() {
+        if (net.optifine.Config.isVulkan()) {
+            return;
+        }
         if (this.glFramebuffer != 0) {
             GL30.glDeleteFramebuffers(this.glFramebuffer);
             this.glFramebuffer = 0;

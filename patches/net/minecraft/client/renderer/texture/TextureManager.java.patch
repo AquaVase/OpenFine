@@ -113,13 +113,13 @@
      }
  
      public void tick() {
-+        RenderSystem.getGlDevice().debugLabels().pushDebugGroup(() -> "Animations");
++        RenderSystem.getDebugLabels().pushDebugGroup(() -> "Animations");
 +
          for (TickableTexture tickableTexture : this.tickableTextures) {
              tickableTexture.tick();
          }
 +
-+        RenderSystem.getGlDevice().debugLabels().popDebugGroup();
++        RenderSystem.getDebugLabels().popDebugGroup();
      }
  
 -    public void release(final Identifier location) {

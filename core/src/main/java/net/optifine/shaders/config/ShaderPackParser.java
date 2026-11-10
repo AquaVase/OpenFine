@@ -595,7 +595,7 @@ public class ShaderPackParser {
     }
 
     private static LineBuffer loadFile(String filePath, IShaderPack shaderPack, int fileIndex, List<String> listFiles, int includeLevel) throws IOException {
-        if (includeLevel >= 10) {
+        if (includeLevel >= 64) {
             throw new IOException("#include depth exceeded: " + includeLevel + ", file: " + filePath);
         }
 

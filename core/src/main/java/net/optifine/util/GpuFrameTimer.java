@@ -1,11 +1,13 @@
 package net.optifine.util;
 
-import org.lwjgl.opengl.ARBTimerQuery;
+import com.mojang.blaze3d.systems.GpuQueryPool;
+import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.OptionalLong;
+import net.optifine.Config;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL32C;
 
 public class GpuFrameTimer {
-    private static boolean timerQuerySupported = GL.getCapabilities().GL_ARB_timer_query;
+    private static boolean timerQuerySupported = Config.isVulkan() || GL.getCapabilities().GL_ARB_timer_query;
     private static long lastTimeCpuNs = 0L;
     private static long frameTimeCpuNs = 0L;
     private static GpuFrameTimer.TimerQuery timerQuery;
@@ -46,43 +48,39 @@ public class GpuFrameTimer {
     }
 
     private static class TimerQuery {
-        private int[] queries = new int[2];
+        private GpuQueryPool queries = RenderSystem.getDevice().createTimestampQueryPool(2);
         private boolean[] executed = new boolean[2];
         private long result = -1L;
 
-        public TimerQuery() {
-            GL32C.glGenQueries(this.queries);
-        }
-
         public void start() {
             if (!this.executed[0]) {
-                ARBTimerQuery.glQueryCounter(this.queries[0], 36392);
+                RenderSystem.getDevice().createCommandEncoder().writeTimestamp(this.queries, 0);
                 this.executed[0] = true;
             }
         }
 
         public void finish() {
             if (!this.executed[1]) {
-                ARBTimerQuery.glQueryCounter(this.queries[1], 36392);
+                RenderSystem.getDevice().createCommandEncoder().writeTimestamp(this.queries, 1);
                 this.executed[1] = true;
             }
         }
 
         public boolean hasResult() {
-            int res = GL32C.glGetQueryObjecti(this.queries[1], 34919);
-            return res == 1;
+            return this.executed[1] && this.queries.getValue(1).isPresent();
         }
 
         public long getResult() {
-            if (this.queries[1] > 0) {
-                long timeNs0 = ARBTimerQuery.glGetQueryObjectui64(this.queries[0], 34918);
-                long timeNs1 = ARBTimerQuery.glGetQueryObjectui64(this.queries[1], 34918);
-                this.result = timeNs1 - timeNs0;
-                GL32C.glDeleteQueries(this.queries);
-                this.queries[0] = 0;
-                this.queries[1] = 0;
+            if (this.queries != null) {
+                OptionalLong[] values = this.queries.getValues(0, 2);
+                if (values[0].isEmpty() || values[1].isEmpty()) {
+                    throw new IllegalStateException("GPU frame timestamps are not ready");
+                }
+                this.result = Math.round((values[1].getAsLong() - values[0].getAsLong())
+                    * (double)RenderSystem.getDevice().getDeviceInfo().timestampPeriod());
+                this.queries.close();
+                this.queries = null;
             }
-
             return this.result;
         }
     }

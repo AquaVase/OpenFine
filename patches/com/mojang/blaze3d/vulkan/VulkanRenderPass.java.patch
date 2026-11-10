@@ -1,0 +1,484 @@
+--- a/com/mojang/blaze3d/vulkan/VulkanRenderPass.java
++++ b/com/mojang/blaze3d/vulkan/VulkanRenderPass.java
+@@ -9,6 +9,7 @@
+ import com.mojang.blaze3d.systems.GpuQueryPool;
+ import com.mojang.blaze3d.systems.RenderPass;
+ import com.mojang.blaze3d.systems.RenderPassBackend;
++import com.mojang.blaze3d.systems.RenderPassDescriptor;
+ import com.mojang.blaze3d.textures.GpuSampler;
+ import com.mojang.blaze3d.textures.GpuTextureView;
+ import com.mojang.blaze3d.vulkan.checkpoints.CheckpointExtension;
+@@ -16,17 +17,24 @@
+ import java.nio.LongBuffer;
+ import java.util.Collection;
+ import java.util.HashMap;
++import java.util.List;
++import java.util.HashSet;
++import java.util.Set;
+ import java.util.function.BiConsumer;
+ import java.util.function.Supplier;
+ import net.minecraft.SharedConstants;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
++import net.optifine.shaders.Shaders;
++import net.optifine.shaders.vulkan.VulkanDrawBindings;
++import net.optifine.shaders.vulkan.VulkanShaderRuntime;
+ import org.jspecify.annotations.Nullable;
+ import org.lwjgl.PointerBuffer;
+ import org.lwjgl.system.MemoryStack;
+ import org.lwjgl.system.MemoryUtil;
+ import org.lwjgl.vulkan.EXTMultiDraw;
+ import org.lwjgl.vulkan.KHRPushDescriptor;
++import org.lwjgl.vulkan.KHRDynamicRendering;
++import org.lwjgl.vulkan.VkRenderingAttachmentInfo;
++import org.lwjgl.vulkan.VkRenderingInfo;
+ import org.lwjgl.vulkan.KHRSynchronization2;
+ import org.lwjgl.vulkan.VK12;
+ import org.lwjgl.vulkan.VkBufferViewCreateInfo;
+@@ -41,24 +49,35 @@
+ import org.lwjgl.vulkan.VkViewport;
+ import org.lwjgl.vulkan.VkWriteDescriptorSet;
+ import org.lwjgl.vulkan.VkViewport.Buffer;
+-
+-@OnlyIn(Dist.CLIENT)
+ public class VulkanRenderPass implements RenderPassBackend {
++    private static final java.util.regex.Pattern SHADER_SAMPLER = java.util.regex.Pattern.compile("Sampler[0-9]+");
+     public static final boolean VALIDATION = SharedConstants.IS_RUNNING_IN_IDE;
+     private final VulkanDevice device;
+     private final VulkanCommandEncoder encoder;
+     private final CheckpointExtension.CheckpointStorage checkpointStorage;
+-    private final RenderPass.@Nullable RenderArea renderArea;
+-    private final int outputWidth;
+-    private final int outputHeight;
+-    private final boolean hasDepth;
++    private RenderPass.@Nullable RenderArea renderArea;
++    private int outputWidth;
++    private int outputHeight;
++    private boolean hasDepth;
+     private final Supplier<String> label;
+     protected int pushedDebugGroups = 0;
+     private final VkCommandBuffer commandBuffer;
+     protected @Nullable VulkanRenderPipeline pipeline;
++    private RenderPipeline shaderPipeline;
++    private boolean usingShaderPipeline;
++    private List<Integer> colorFormats;
++    private int depthFormat;
++    private final RenderPassDescriptor requestedDescriptor;
++    private List<GpuTextureView> colorViews;
++    private GpuTextureView depthView;
++    private RenderPass.RenderArea scissorArea;
++    private boolean scissorEnabled;
++    private final Set<Integer> unboundShaderTextureUnits = new HashSet<>();
+     private boolean anyDescriptorDirty = false;
++    private net.optifine.shaders.vulkan.VulkanTransparencyQueries.Query transparencyQuery;
+     protected final HashMap<String, GpuBufferSlice> uniforms = new HashMap<>();
+     protected final HashMap<String, VulkanRenderPass.TextureViewAndSampler> textures = new HashMap<>();
++    private net.minecraft.client.renderer.texture.TextureAtlasSprite multiTextureSprite;
+ 
+     public VulkanRenderPass(
+         final VulkanDevice device,
+@@ -69,7 +88,9 @@
+         final int outputWidth,
+         final int outputHeight,
+         final boolean hasDepth,
+-        final Supplier<String> label
++        final Supplier<String> label,
++        final RenderPassDescriptor descriptor,
++        final RenderPassDescriptor requestedDescriptor
+     ) {
+         this.device = device;
+         this.encoder = encoder;
+@@ -80,20 +101,105 @@
+         this.outputHeight = outputHeight;
+         this.hasDepth = hasDepth;
+         this.label = label;
++        this.requestedDescriptor = requestedDescriptor;
++        this.scissorArea = renderArea;
++        this.updateAttachmentFormats(descriptor);
++        this.transparencyQuery = net.optifine.shaders.vulkan.VulkanTransparencyQueries.beginPass(commandBuffer);
+ 
+         try (MemoryStack stack = MemoryStack.stackPush()) {
+-            Buffer viewport = VkViewport.calloc(1, stack);
+-            viewport.x(0.0F);
+-            viewport.y(0.0F);
+-            viewport.width(outputWidth);
+-            viewport.height(outputHeight);
+-            viewport.minDepth(0.0F);
+-            viewport.maxDepth(1.0F);
+-            VK12.vkCmdSetViewport(this.commandBuffer(), 0, viewport);
++            this.setViewport(stack);
+             setScissor(stack, this.commandBuffer(), renderArea.x(), renderArea.y(), renderArea.width(), renderArea.height());
+         }
+     }
+ 
++    public void endTransparencyQuery() {
++        net.optifine.shaders.vulkan.VulkanTransparencyQueries.endPass(this.commandBuffer, this.transparencyQuery);
++        this.transparencyQuery = null;
++    }
++
++    private void updateAttachmentFormats(RenderPassDescriptor descriptor) {
++        this.colorViews = descriptor.colorAttachments().stream().map(attachment -> attachment == null ? null : attachment.textureView()).toList();
++        this.depthView = descriptor.depthAttachment() == null ? null : descriptor.depthAttachment().textureView();
++        this.colorFormats = descriptor.colorAttachments().stream()
++            .map(attachment -> attachment == null ? VK12.VK_FORMAT_UNDEFINED : VulkanConst.toVk(attachment.textureView().texture().getFormat())).toList();
++        this.depthFormat = descriptor.depthAttachment() == null ? VK12.VK_FORMAT_UNDEFINED
++            : VulkanConst.toVk(descriptor.depthAttachment().textureView().texture().getFormat());
++
++    }
++
++    private void setViewport(MemoryStack stack) {
++        Buffer viewport = VkViewport.calloc(1, stack).x(0).y(0).width(this.outputWidth).height(this.outputHeight).minDepth(0).maxDepth(1);
++        VK12.vkCmdSetViewport(this.commandBuffer(), 0, viewport);
++    }
++
++    private void refreshShaderAttachments() {
++        RenderPassDescriptor descriptor = VulkanShaderRuntime.redirectRenderPass(this.requestedDescriptor);
++        GpuTextureView depth = descriptor.depthAttachment() == null ? null : descriptor.depthAttachment().textureView();
++        boolean unchanged = depth == this.depthView && descriptor.renderArea.equals(this.renderArea)
++            && descriptor.colorAttachments().size() == this.colorViews.size();
++        for (int i = 0; unchanged && i < this.colorViews.size(); i++) {
++            var attachment = descriptor.colorAttachments().get(i);
++            unchanged = (attachment == null ? null : attachment.textureView()) == this.colorViews.get(i);
++        }
++        if (unchanged) {
++            return;
++        }
++        List<GpuTextureView> colors = descriptor.colorAttachments().stream().map(attachment -> attachment == null ? null : attachment.textureView()).toList();
++        try (MemoryStack stack = MemoryStack.stackPush()) {
++            this.endTransparencyQuery();
++            KHRDynamicRendering.vkCmdEndRenderingKHR(this.commandBuffer());
++            VulkanCommandEncoder.memoryBarrier(this.commandBuffer(), stack);
++            var attachments = VkRenderingAttachmentInfo.calloc(colors.size(), stack);
++            for (int i = 0; i < colors.size(); i++) {
++                var attachment = attachments.get(i).sType$Default();
++                if (colors.get(i) != null) {
++                    attachment.imageView(((VulkanGpuTextureView)colors.get(i)).vkImageView()).imageLayout(VK12.VK_IMAGE_LAYOUT_GENERAL)
++                        .loadOp(VK12.VK_ATTACHMENT_LOAD_OP_LOAD).storeOp(VK12.VK_ATTACHMENT_STORE_OP_STORE);
++                } else {
++                    attachment.imageLayout(VK12.VK_IMAGE_LAYOUT_UNDEFINED).loadOp(VK12.VK_ATTACHMENT_LOAD_OP_DONT_CARE)
++                        .storeOp(VK12.VK_ATTACHMENT_STORE_OP_DONT_CARE);
++                }
++            }
++            var info = VkRenderingInfo.calloc(stack).sType$Default().layerCount(1).pColorAttachments(attachments);
++            var area = descriptor.renderArea;
++            info.renderArea().offset().set(area.x(), area.y());
++            info.renderArea().extent().set(area.width(), area.height());
++            if (depth != null) {
++                var attachment = VkRenderingAttachmentInfo.calloc(stack).sType$Default()
++                    .imageView(((VulkanGpuTextureView)depth).vkImageView()).imageLayout(VK12.VK_IMAGE_LAYOUT_GENERAL)
++                    .loadOp(VK12.VK_ATTACHMENT_LOAD_OP_LOAD).storeOp(VK12.VK_ATTACHMENT_STORE_OP_STORE);
++                info.pDepthAttachment(attachment);
++            }
++            KHRDynamicRendering.vkCmdBeginRenderingKHR(this.commandBuffer(), info);
++            this.transparencyQuery = net.optifine.shaders.vulkan.VulkanTransparencyQueries.beginPass(this.commandBuffer());
++            int width = 0;
++            int height = 0;
++            for (GpuTextureView color : colors) {
++                if (color != null) {
++                    width = color.getWidth(0);
++                    height = color.getHeight(0);
++                }
++            }
++            if (width == 0 && depth != null) {
++                width = depth.getWidth(0);
++                height = depth.getHeight(0);
++            }
++            boolean resized = width != this.outputWidth || height != this.outputHeight;
++            this.renderArea = area;
++            this.outputWidth = width;
++            this.outputHeight = height;
++            this.hasDepth = depth != null;
++            this.updateAttachmentFormats(descriptor);
++            if (resized) {
++                this.setViewport(stack);
++            }
++            if (!this.scissorEnabled) {
++                this.scissorArea = area;
++            }
++            setScissor(stack, this.commandBuffer(), this.scissorArea.x(), this.scissorArea.y(), this.scissorArea.width(), this.scissorArea.height());
++        }
++    }
++
+     private VkCommandBuffer commandBuffer() {
+         return this.commandBuffer;
+     }
+@@ -116,22 +222,28 @@
+ 
+     @Override
+     public void setPipeline(final RenderPipeline pipeline) {
+-        this.pipeline = this.device.getOrCompilePipeline(pipeline);
+-        if (!this.pipeline.isValid()) {
+-            throw new IllegalStateException("Pipeline is not valid (may contain invalid shaders?)");
+-        }
+-
++        // OptiFine can select its program after the caller selects the game pipeline.
++        this.shaderPipeline = pipeline;
++        this.pipeline = null;
+         this.anyDescriptorDirty = true;
+-        VK12.vkCmdBindPipeline(this.commandBuffer(), 0, this.hasDepth ? this.pipeline.withDepthPipeline() : this.pipeline.withoutDepthPipeline());
+     }
+ 
+     @Override
+     public void bindTexture(final String name, final @Nullable GpuTextureView textureView, final @Nullable GpuSampler sampler) {
++        int shaderUnit = SHADER_SAMPLER.matcher(name).matches() ? Integer.parseInt(name.substring(7)) : -1;
+         if (textureView != null && sampler != null) {
+-            this.textures.put(name, new VulkanRenderPass.TextureViewAndSampler((VulkanGpuTextureView)textureView, (VulkanGpuSampler)sampler));
++            GpuSampler materialSampler = VulkanShaderRuntime.getInstance().getMaterialSampler(textureView.texture(), sampler, true, false);
++            this.textures.put(name, new VulkanRenderPass.TextureViewAndSampler((VulkanGpuTextureView)textureView, (VulkanGpuSampler)materialSampler, shaderUnit));
++            if (shaderUnit >= 0) {
++                this.unboundShaderTextureUnits.remove(shaderUnit);
++            }
+             this.anyDescriptorDirty = true;
+         } else if (textureView == null && sampler == null) {
+             this.textures.remove(name);
++            this.anyDescriptorDirty = true;
++            if (shaderUnit >= 0) {
++                this.unboundShaderTextureUnits.add(shaderUnit);
++            }
+         } else {
+             throw new IllegalArgumentException();
+         }
+@@ -139,8 +251,7 @@
+ 
+     @Override
+     public void setUniform(final String name, final GpuBuffer value) {
+-        this.uniforms.put(name, value.slice());
+-        this.anyDescriptorDirty = true;
++        this.setUniform(name, value.slice());
+     }
+ 
+     @Override
+@@ -151,6 +262,8 @@
+ 
+     @Override
+     public void enableScissor(final int x, final int y, final int width, final int height) {
++        this.scissorEnabled = true;
++        this.scissorArea = new RenderPass.RenderArea(x, y, width, height);
+         try (MemoryStack stack = MemoryStack.stackPush()) {
+             setScissor(stack, this.commandBuffer(), x, y, width, height);
+         }
+@@ -165,10 +278,10 @@
+ 
+     @Override
+     public void disableScissor() {
+-        if (this.renderArea != null) {
+-            this.enableScissor(this.renderArea.x(), this.renderArea.y(), this.renderArea.width(), this.renderArea.height());
+-        } else {
+-            this.enableScissor(0, 0, this.outputWidth, this.outputHeight);
++        this.scissorEnabled = false;
++        this.scissorArea = this.renderArea != null ? this.renderArea : new RenderPass.RenderArea(0, 0, this.outputWidth, this.outputHeight);
++        try (MemoryStack stack = MemoryStack.stackPush()) {
++            setScissor(stack, this.commandBuffer(), this.scissorArea.x(), this.scissorArea.y(), this.scissorArea.width(), this.scissorArea.height());
+         }
+     }
+ 
+@@ -192,7 +305,7 @@
+ 
+     @Override
+     public void drawIndexed(final int indexCount, final int instanceCount, final int firstIndex, final int vertexOffset, final int firstInstance) {
+-        if (this.pipeline != null && this.pipeline.isValid()) {
++        if (this.shaderPipeline != null || this.pipeline != null && this.pipeline.isValid()) {
+             this.pushDescriptors();
+             VK12.vkCmdDrawIndexed(this.commandBuffer(), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+         } else {
+@@ -202,7 +315,7 @@
+ 
+     @Override
+     public void multiDrawIndexed(final IntBuffer drawParameters, final int instanceCount, final int firstInstance, final int drawCount) {
+-        if (this.pipeline != null && this.pipeline.isValid()) {
++        if (this.shaderPipeline != null || this.pipeline != null && this.pipeline.isValid()) {
+             this.pushDescriptors();
+             EXTMultiDraw.nvkCmdDrawMultiIndexedEXT(
+                 this.commandBuffer(), drawCount, MemoryUtil.memAddress(drawParameters), instanceCount, firstInstance, VkMultiDrawIndexedInfoEXT.SIZEOF, 0L
+@@ -219,7 +332,7 @@
+ 
+     @Override
+     public void drawIndexedIndirect(final GpuBufferSlice commands, final int drawCount) {
+-        if (this.pipeline != null && this.pipeline.isValid()) {
++        if (this.shaderPipeline != null || this.pipeline != null && this.pipeline.isValid()) {
+             this.pushDescriptors();
+             VK12.vkCmdDrawIndexedIndirect(
+                 this.commandBuffer(), ((VulkanGpuBuffer)commands.buffer()).vkBuffer(), commands.offset(), drawCount, VkDrawIndexedIndirectCommand.SIZEOF
+@@ -243,19 +356,63 @@
+                 uniformUploaderConsumer.accept(uniformArgument, this::setUniform);
+             }
+ 
++            if (draw.regionRenderData() != null) {
++                var region = draw.regionRenderData();
++                region.getRenderer().renderRegion(region.getPosition(), this);
++                continue;
++            }
++
+             assert draw.indexBuffer() != null || defaultIndexBuffer != null;
+             assert draw.indexType() != null || defaultIndexType != null;
+             this.setIndexBuffer(
+                 draw.indexBuffer() == null ? defaultIndexBuffer : draw.indexBuffer(), draw.indexType() == null ? defaultIndexType : draw.indexType()
+             );
+             this.setVertexBuffer(draw.slot(), draw.vertexBuffer().slice());
++            if (draw.multiTextureData() != null) {
++                this.drawMultiTexture(draw);
++            } else {
+             this.drawIndexed(draw.indexCount(), 1, draw.firstIndex(), draw.baseVertex(), 0);
+         }
+     }
++    }
+ 
++    private void drawMultiTexture(RenderPass.Draw<?> draw) {
++        var previousBase = this.textures.get("Sampler0");
++        var previousSprite = this.multiTextureSprite;
++        try {
++            var runtime = VulkanShaderRuntime.getInstance();
++            for (var data : draw.multiTextureData().getSpriteRenderDatas()) {
++                var sprite = data.getSprite();
++                var texture = sprite.getSpriteTexture();
++                var sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache().getClampToEdge(
++                    com.mojang.blaze3d.textures.FilterMode.NEAREST, texture.getMipLevels() > 1);
++                this.bindTexture("Sampler0", runtime.getTextureView(texture), sampler);
++                this.multiTextureSprite = sprite;
++                if (VulkanShaderRuntime.isSceneActive(this.requestedDescriptor)) {
++                    var uniforms = runtime.getProgram(Shaders.activeProgramID).uniforms();
++                    if (uniforms.contains("spriteBounds")) {
++                        uniforms.setFloat("spriteBounds", sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1());
++                    }
++                }
++                for (int i = 0; i < data.getPositions().length; i++) {
++                    this.drawIndexed(this.shaderPipeline.getPrimitiveTopology().indexCount(data.getCounts()[i]), 1,
++                        draw.firstIndex() + this.shaderPipeline.getPrimitiveTopology().indexCount(data.getPositions()[i]), draw.baseVertex(), 0);
++                }
++            }
++        } finally {
++            this.multiTextureSprite = previousSprite;
++            if (previousBase == null) {
++                this.textures.remove("Sampler0");
++            } else {
++                this.textures.put("Sampler0", previousBase);
++            }
++            this.anyDescriptorDirty = true;
++        }
++    }
++
+     @Override
+     public void draw(final int vertexCount, final int instanceCount, final int firstVertex, final int firstInstance) {
+-        if (this.pipeline != null && this.pipeline.isValid()) {
++        if (this.shaderPipeline != null || this.pipeline != null && this.pipeline.isValid()) {
+             this.pushDescriptors();
+             VK12.vkCmdDraw(this.commandBuffer(), vertexCount, instanceCount, firstVertex, firstInstance);
+         }
+@@ -263,7 +420,7 @@
+ 
+     @Override
+     public void multiDraw(final IntBuffer drawParameters, final int instanceCount, final int firstInstance, final int drawCount) {
+-        if (this.pipeline != null && this.pipeline.isValid()) {
++        if (this.shaderPipeline != null || this.pipeline != null && this.pipeline.isValid()) {
+             this.pushDescriptors();
+             EXTMultiDraw.nvkCmdDrawMultiEXT(
+                 this.commandBuffer(), drawCount, MemoryUtil.memAddress(drawParameters), instanceCount, firstInstance, VkMultiDrawInfoEXT.SIZEOF
+@@ -280,7 +437,7 @@
+ 
+     @Override
+     public void drawIndirect(final GpuBufferSlice commands, final int drawCount) {
+-        if (this.pipeline != null && this.pipeline.isValid()) {
++        if (this.shaderPipeline != null || this.pipeline != null && this.pipeline.isValid()) {
+             this.pushDescriptors();
+             VK12.vkCmdDrawIndirect(
+                 this.commandBuffer(), ((VulkanGpuBuffer)commands.buffer()).vkBuffer(), commands.offset(), drawCount, VkDrawIndirectCommand.SIZEOF
+@@ -291,6 +448,42 @@
+     }
+ 
+     private void pushDescriptors() {
++        if (VulkanShaderRuntime.isSceneActive(this.requestedDescriptor)) {
++            this.refreshShaderAttachments();
++            this.usingShaderPipeline = true;
++            VulkanShaderRuntime runtime = VulkanShaderRuntime.getInstance();
++            var program = runtime.getProgram(Shaders.activeProgramID);
++            this.bindShaderTextures(runtime);
++            Shaders.uniform_atlasSize.setValue(Shaders.atlasSizeX, Shaders.atlasSizeY);
++            for (GpuBufferSlice uniform : this.uniforms.values()) {
++                Shaders.setDynamicTransforms(uniform);
++                Shaders.setChunkSectionInfo(uniform);
++            }
++            runtime.getScenePipeline(Shaders.activeProgramID, this.shaderPipeline, this.colorFormats, this.depthFormat).bind(this.commandBuffer(), runtime);
++            HashMap<Integer, GpuBufferSlice> buffers = new HashMap<>();
++            for (var binding : program.source().getBindings()) {
++                GpuBufferSlice buffer = this.uniforms.get(binding.name());
++                if (buffer != null) {
++                    buffers.put(binding.binding(), buffer);
++                }
++            }
++            try (VulkanDrawBindings bindings = new VulkanDrawBindings(this.device, program, runtime, buffers)) {
++                bindings.bind(this.commandBuffer(), VK12.VK_PIPELINE_BIND_POINT_GRAPHICS);
++            }
++            return;
++        }
++        if (this.usingShaderPipeline) {
++            this.refreshShaderAttachments();
++        }
++        if (this.pipeline == null || this.usingShaderPipeline) {
++            this.pipeline = this.device.getOrCompilePipeline(this.shaderPipeline);
++            if (!this.pipeline.isValid()) {
++                throw new IllegalStateException("Pipeline is not valid (may contain invalid shaders?)");
++            }
++            VK12.vkCmdBindPipeline(this.commandBuffer(), 0, this.hasDepth ? this.pipeline.withDepthPipeline() : this.pipeline.withoutDepthPipeline());
++            this.usingShaderPipeline = false;
++            this.anyDescriptorDirty = true;
++        }
+         if (this.anyDescriptorDirty) {
+             if (VALIDATION) {
+                 for (BindGroupLayout.UniformDescription uniform : BindGroupLayout.flattenUniforms(this.pipeline.info().getBindGroupLayouts())) {
+@@ -397,6 +590,44 @@
+         }
+     }
+ 
++    private void bindShaderTextures(VulkanShaderRuntime runtime) {
++        for (int unit : this.unboundShaderTextureUnits) {
++            runtime.unbindTexture(unit);
++        }
++        for (TextureViewAndSampler texture : this.textures.values()) {
++            if (texture.shaderUnit() >= 0) {
++                runtime.bindTexture(texture.shaderUnit(), texture.view(), texture.sampler().vkSampler());
++            }
++        }
++        var base = this.textures.get("Sampler0");
++        if (base != null && base.view().texture().multiTex != null) {
++            var multiTex = base.view().texture().multiTex;
++            var atlas = base.view().texture().getParentTexture() instanceof net.minecraft.client.renderer.texture.TextureAtlas value ? value : null;
++            if (Shaders.configNormalMap) {
++                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), atlas == null || atlas.isNormalBlend(), true);
++                runtime.bindTexture(1, runtime.getTextureView(multiTex.normTex), ((VulkanGpuSampler)sampler).vkSampler());
++            }
++            if (Shaders.configSpecularMap) {
++                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), atlas == null || atlas.isSpecularBlend(), true);
++                runtime.bindTexture(3, runtime.getTextureView(multiTex.specTex), ((VulkanGpuSampler)sampler).vkSampler());
++            }
++        }
++        if (base != null && this.multiTextureSprite != null) {
++            var sprite = this.multiTextureSprite;
++            var atlas = sprite.getTextureAtlas();
++            if (Shaders.configNormalMap) {
++                var texture = sprite.spriteNormal != null ? sprite.spriteNormal.getSpriteTexture() : Shaders.defaultTexture.getMultiTexID().normTex;
++                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), atlas.isNormalBlend(), true);
++                runtime.bindTexture(1, runtime.getTextureView(texture), ((VulkanGpuSampler)sampler).vkSampler());
++            }
++            if (Shaders.configSpecularMap) {
++                var texture = sprite.spriteSpecular != null ? sprite.spriteSpecular.getSpriteTexture() : Shaders.defaultTexture.getMultiTexID().specTex;
++                var sampler = runtime.getMaterialSampler(base.view().texture(), base.sampler(), atlas.isSpecularBlend(), true);
++                runtime.bindTexture(3, runtime.getTextureView(texture), ((VulkanGpuSampler)sampler).vkSampler());
++            }
++        }
++    }
++
+     @Override
+     public void writeTimestamp(final GpuQueryPool pool, final int index) {
+         long queryPool = ((VulkanQueryPool)pool).vkQueryPool();
+@@ -407,8 +638,6 @@
+     public Supplier<String> getLabel() {
+         return this.label;
+     }
+-
+-    @OnlyIn(Dist.CLIENT)
+-    protected record TextureViewAndSampler(VulkanGpuTextureView view, VulkanGpuSampler sampler) {
++    protected record TextureViewAndSampler(VulkanGpuTextureView view, VulkanGpuSampler sampler, int shaderUnit) {
+     }
+-}
+\ No newline at end of file
++}

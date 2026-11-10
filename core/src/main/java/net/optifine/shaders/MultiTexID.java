@@ -1,16 +1,16 @@
 package net.optifine.shaders;
 
-import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.textures.GpuTexture;
 
 public class MultiTexID {
-    public GlTexture baseTex;
-    public GlTexture normTex;
-    public GlTexture specTex;
+    public GpuTexture baseTex;
+    public GpuTexture normTex;
+    public GpuTexture specTex;
     public int base;
     public int norm;
     public int spec;
 
-    public MultiTexID(GlTexture baseTex, GlTexture normTex, GlTexture specTex) {
+    public MultiTexID(GpuTexture baseTex, GpuTexture normTex, GpuTexture specTex) {
         this.baseTex = baseTex;
         this.normTex = normTex;
         this.specTex = specTex;

@@ -1,0 +1,56 @@
+--- a/com/mojang/blaze3d/vulkan/VulkanGpuTextureView.java
++++ b/com/mojang/blaze3d/vulkan/VulkanGpuTextureView.java
+@@ -2,20 +2,23 @@
+ 
+ import com.mojang.blaze3d.textures.GpuTextureView;
+ import java.nio.LongBuffer;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+ import org.lwjgl.system.MemoryStack;
+ import org.lwjgl.vulkan.VK12;
+ import org.lwjgl.vulkan.VkImageSubresourceRange;
+ import org.lwjgl.vulkan.VkImageViewCreateInfo;
+ 
+-@OnlyIn(Dist.CLIENT)
+ public class VulkanGpuTextureView extends GpuTextureView implements Destroyable {
+     private final VulkanDevice device;
+     private final long vkImageView;
+     private boolean closed;
+ 
+     protected VulkanGpuTextureView(final VulkanDevice device, final VulkanGpuTexture texture, final int baseMipLevel, final int mipLevels) {
++        this(device, texture, baseMipLevel, mipLevels, false, false);
++    }
++
++    public VulkanGpuTextureView(
++        VulkanDevice device, VulkanGpuTexture texture, int baseMipLevel, int mipLevels, boolean forceOpaque, boolean depthSwizzle
++    ) {
+         super(texture, baseMipLevel, mipLevels);
+         this.device = device;
+ 
+@@ -23,8 +26,18 @@
+             boolean isCubemap = (texture.usage() & 16) != 0;
+             VkImageViewCreateInfo imageViewCreateInfo = VkImageViewCreateInfo.calloc(stack).sType$Default();
+             imageViewCreateInfo.image(texture.vkImage());
+-            imageViewCreateInfo.viewType(isCubemap ? 3 : 1);
++            imageViewCreateInfo.viewType(isCubemap ? VK12.VK_IMAGE_VIEW_TYPE_CUBE : switch (texture.imageType()) {
++                case VK12.VK_IMAGE_TYPE_1D -> VK12.VK_IMAGE_VIEW_TYPE_1D;
++                case VK12.VK_IMAGE_TYPE_3D -> VK12.VK_IMAGE_VIEW_TYPE_3D;
++                default -> VK12.VK_IMAGE_VIEW_TYPE_2D;
++            });
+             imageViewCreateInfo.format(VulkanConst.toVk(texture.getFormat()));
++            if (forceOpaque || depthSwizzle) {
++                imageViewCreateInfo.components().a(VK12.VK_COMPONENT_SWIZZLE_ONE);
++            }
++            if (depthSwizzle) {
++                imageViewCreateInfo.components().r(VK12.VK_COMPONENT_SWIZZLE_R).g(VK12.VK_COMPONENT_SWIZZLE_R).b(VK12.VK_COMPONENT_SWIZZLE_R);
++            }
+             VkImageSubresourceRange subresourceRange = imageViewCreateInfo.subresourceRange();
+             subresourceRange.aspectMask(texture.getFormat().hasColorAspect() ? 1 : 2);
+             subresourceRange.baseMipLevel(baseMipLevel);
+@@ -66,4 +79,4 @@
+     public long vkImageView() {
+         return this.vkImageView;
+     }
+-}
+\ No newline at end of file
++}

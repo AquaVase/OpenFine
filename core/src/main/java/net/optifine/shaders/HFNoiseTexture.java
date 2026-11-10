@@ -2,17 +2,51 @@ package net.optifine.shaders;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.vulkan.VulkanGpuSampler;
 import java.nio.ByteBuffer;
+import net.optifine.Config;
+import net.optifine.shaders.vulkan.VulkanShaderRuntime;
 import net.optifine.util.TextureUtils;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 public class HFNoiseTexture implements ICustomTexture {
-    private int texID = GL11.glGenTextures();
+    private int texID;
     private int textureUnit = 15;
+    private GpuTexture texture;
+    private GpuTextureView textureView;
 
     public HFNoiseTexture(int width, int height) {
         byte[] image = this.genHFNoiseImage(width, height);
+        if (Config.isVulkan()) {
+            this.texture = RenderSystem.getDevice().createTexture("HFNoise", 5, GpuFormat.RGBA8_UNORM, width, height, 1, 1);
+            try {
+                this.textureView = RenderSystem.getDevice().createTextureView(this.texture);
+                try (NativeImage pixels = new NativeImage(width, height, false)) {
+                    int index = 0;
+                    for (int y = 0; y < height; y++) {
+                        for (int x = 0; x < width; x++) {
+                            int red = image[index++] & 255;
+                            int green = image[index++] & 255;
+                            int blue = image[index++] & 255;
+                            pixels.setPixelABGR(x, y, 0xFF000000 | blue << 16 | green << 8 | red);
+                        }
+                    }
+                    RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, pixels);
+                }
+            } catch (RuntimeException | Error e) {
+                this.deleteTexture();
+                throw e;
+            }
+            return;
+        }
+        this.texID = GL11.glGenTextures();
         ByteBuffer data = BufferUtils.createByteBuffer(image.length);
         data.put(image);
         data.flip();
@@ -33,6 +67,17 @@ public class HFNoiseTexture implements ICustomTexture {
 
     @Override
     public void deleteTexture() {
+        if (this.textureView != null) {
+            this.textureView.close();
+            this.textureView = null;
+        }
+        if (this.texture != null) {
+            this.texture.close();
+            this.texture = null;
+        }
+        if (Config.isVulkan()) {
+            return;
+        }
         GlStateManager._deleteTexture(this.texID);
         this.texID = 0;
     }
@@ -41,6 +86,13 @@ public class HFNoiseTexture implements ICustomTexture {
         seed ^= seed << 13;
         seed ^= seed >> 17;
         return seed ^ seed << 5;
+    }
+
+    @Override
+    public void bindVulkan() {
+        VulkanGpuSampler sampler = (VulkanGpuSampler)RenderSystem.getSamplerCache()
+            .getSampler(AddressMode.REPEAT, AddressMode.REPEAT, FilterMode.LINEAR, FilterMode.LINEAR, false);
+        VulkanShaderRuntime.getInstance().bindTexture(this.textureUnit, this.textureView, sampler.vkSampler());
     }
 
     private byte random(int x, int y, int z) {

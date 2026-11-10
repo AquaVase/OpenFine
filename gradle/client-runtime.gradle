@@ -1,0 +1,27 @@
+// Keep a running client independent of later builds replacing project JARs and class directories.
+tasks.named('runClient', JavaExec) {
+    doFirst {
+        def snapshot = file(".gradle/client-runtime/${UUID.randomUUID()}")
+        def projectRoot = projectDir.toPath().toAbsolutePath().normalize()
+        def runtimeFiles = classpath.files.withIndex().collect { entry, index ->
+            def path = entry.toPath().toAbsolutePath().normalize()
+            if (!path.startsWith(projectRoot) || !entry.exists()) {
+                return entry
+            }
+            def destination = new File(snapshot, index.toString())
+            copy {
+                from entry
+                into destination
+            }
+            entry.directory ? destination : new File(destination, entry.name)
+        }
+        classpath = files(runtimeFiles)
+        extensions.extraProperties.set('clientRuntimeSnapshot', snapshot)
+        logger.lifecycle("Client runtime snapshot: ${snapshot}")
+    }
+    doLast {
+        if (extensions.extraProperties.has('clientRuntimeSnapshot')) {
+            delete extensions.extraProperties.get('clientRuntimeSnapshot')
+        }
+    }
+}

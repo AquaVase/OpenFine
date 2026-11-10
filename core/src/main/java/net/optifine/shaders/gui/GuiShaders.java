@@ -3,6 +3,8 @@ package net.optifine.shaders.gui;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -78,6 +80,7 @@ public class GuiShaders extends GuiScreenOF {
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.HAND_DEPTH_MUL, btnX, 5 * stepY + baseY, btnWidth, btnHeight));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.OLD_HAND_LIGHT, btnX, 6 * stepY + baseY, btnWidth, btnHeight));
         this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.OLD_LIGHTING, btnX, 7 * stepY + baseY, btnWidth, btnHeight));
+        this.addButton(new GuiButtonEnumShaderOption(EnumShaderOption.LAYERED_TRANSPARENCY, btnX, 8 * stepY + baseY, btnWidth, btnHeight));
         int btnFolderWidth = Math.min(150, (shaderListWidth - 10) / 2);
         int xFolder = shaderListLeft + (shaderListWidth - 10) / 4 - btnFolderWidth / 2;
         int yFolder = this.height - 25;
@@ -119,6 +122,14 @@ public class GuiShaders extends GuiScreenOF {
             if (guiElement instanceof GuiButtonEnumShaderOption gbeso) {
                 EnumShaderOption eso = gbeso.getEnumShaderOption();
                 switch (eso) {
+                    case LAYERED_TRANSPARENCY:
+                        Shaders.configLayeredTransparency = !Shaders.configLayeredTransparency;
+                        if (hasShiftDown()) {
+                            Shaders.configLayeredTransparency = true;
+                        }
+                        Shaders.uninit();
+                        Shaders.loadShaderPack();
+                        break;
                     case ANTIALIASING:
                         Shaders.nextAntialiasingLevel(!rightClick);
                         if (hasShiftDown()) {
@@ -298,7 +309,7 @@ public class GuiShaders extends GuiScreenOF {
         }
 
         drawCenteredString(graphicsIn, this.fontRenderer, this.title, this.width / 2, 15, -1);
-        String info = "OpenGL: " + Shaders.glVersionString + ", " + Shaders.glVendorString + ", " + Shaders.glRendererString;
+        String info = RenderSystem.getDevice().getBackend().getDeviceInfo().backendName() + ": " + Shaders.glVersionString + ", " + Shaders.glVendorString + ", " + Shaders.glRendererString;
         int infoWidth = this.fontRenderer.width(info);
         if (infoWidth < this.width - 20) {
             drawCenteredString(graphicsIn, this.fontRenderer, info, this.width / 2, this.height - 40, -6250336);

@@ -1,6 +1,5 @@
 package net.optifine.shaders.gui;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -37,9 +36,6 @@ public class GuiSliderShaderOption extends GuiButtonShaderOption {
                 this.setMessage(GuiShaderOptions.getButtonText(this.shaderOption, this.width));
             }
 
-            Minecraft mc = Minecraft.getInstance();
-            GlStateManager._enableBlend();
-            GlStateManager._enableDepthTest();
             graphicsIn.blitSprite(RenderPipelines.GUI_TEXTURED, this.getSprite(), this.getX(), this.getY(), this.getWidth(), this.getHeight());
             graphicsIn.blitSprite(
                 RenderPipelines.GUI_TEXTURED, this.getHandleSprite(), this.getX() + (int)(this.sliderValue * (this.width - 8)), this.getY(), 8, this.getHeight()

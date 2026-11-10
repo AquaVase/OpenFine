@@ -1006,3 +1006,6 @@ options.renderCloudsDistance.tooltip.1=云层渲染距离
 options.renderCloudsDistance.tooltip.2=  32区块 - 较快
 options.renderCloudsDistance.tooltip.3=  64区块 - 较慢
 options.renderCloudsDistance.tooltip.4=  128区块 - 最慢
+
+of.options.shaders.LAYERED_TRANSPARENCY=多层透明修复
+of.options.shaders.LAYERED_TRANSPARENCY.tooltip.1=修复玻璃与水等透明表面的重叠。会增加显存占用和渲染开销。

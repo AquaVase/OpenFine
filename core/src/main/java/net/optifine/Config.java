@@ -1,6 +1,8 @@
 package net.optifine;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -171,6 +173,11 @@ public class Config {
         }
     }
 
+    public static boolean isVulkan() {
+        GpuDevice device = RenderSystem.tryGetDevice();
+        return device != null && device.getDeviceInfo().backendName().equals("Vulkan");
+    }
+
     public static void initDisplay() {
         checkInitialized();
         minecraftThread = Thread.currentThread();
@@ -194,6 +201,15 @@ public class Config {
         log("Java: " + System.getProperty("java.version") + ", " + System.getProperty("java.vendor"));
         log("VM: " + System.getProperty("java.vm.name") + " (" + System.getProperty("java.vm.info") + "), " + System.getProperty("java.vm.vendor"));
         log("LWJGL: " + GLFW.glfwGetVersionString());
+        if (isVulkan()) {
+            var info = RenderSystem.getDevice().getDeviceInfo();
+            openGlVersion = info.driverInfo();
+            openGlRenderer = info.name();
+            openGlVendor = info.vendorName();
+            log("Vulkan: " + info.name() + ", " + info.driverInfo() + ", " + info.vendorName());
+            dbg("Maximum texture size: " + info.limits().maxTextureSize());
+            return;
+        }
         openGlVersion = GL11.glGetString(7938);
         openGlRenderer = GL11.glGetString(7937);
         openGlVendor = GL11.glGetString(7936);
@@ -296,6 +312,9 @@ public class Config {
     }
 
     public static GlVersion getGlVersion() {
+        if (isVulkan()) {
+            return new GlVersion(4, 5);
+        }
         if (glVersion == null) {
             String verStr = GL11.glGetString(7938);
             glVersion = parseGlVersion(verStr, null);
@@ -312,6 +331,9 @@ public class Config {
     }
 
     public static GlVersion getGlslVersion() {
+        if (isVulkan()) {
+            return new GlVersion(4, 50);
+        }
         if (glslVersion == null) {
             String verStr = GL11.glGetString(35724);
             glslVersion = parseGlVersion(verStr, null);
@@ -347,6 +369,9 @@ public class Config {
     }
 
     public static String[] getOpenGlExtensions() {
+        if (isVulkan()) {
+            return net.optifine.shaders.vulkan.VulkanShaderFeatures.getDeviceLanguageExtensions();
+        }
         if (openGlExtensions == null) {
             openGlExtensions = detectOpenGlExtensions();
         }
@@ -1147,6 +1172,9 @@ public class Config {
     }
 
     public static void checkGlError(String loc) {
+        if (isVulkan()) {
+            return;
+        }
         int errorCode = GlStateManager._getError();
         if (errorCode != 0 && GlErrors.isEnabled(errorCode)) {
             String errorText = getGlErrorString(errorCode);
@@ -1711,7 +1739,7 @@ public class Config {
     }
 
     public static boolean isRenderRegions() {
-        return isMultiTexture() ? false : gameSettings.ofRenderRegions && GlStateManager.vboRegions;
+        return isMultiTexture() ? false : gameSettings.ofRenderRegions && (isVulkan() || GlStateManager.vboRegions);
     }
 
     public static boolean isMainFramebufferEnabled() {

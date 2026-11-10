@@ -1,6 +1,7 @@
 package net.optifine.shaders;
 
 import java.nio.ByteBuffer;
+import net.optifine.shaders.vulkan.VulkanRawTexture;
 import net.optifine.texture.InternalFormat;
 import net.optifine.texture.PixelFormat;
 import net.optifine.texture.PixelType;
@@ -13,6 +14,7 @@ public class CustomTextureRaw implements ICustomTexture {
     private TextureType type;
     private int textureUnit;
     private int textureId;
+    private VulkanRawTexture vulkanTexture;
 
     public CustomTextureRaw(
         TextureType type,
@@ -29,6 +31,10 @@ public class CustomTextureRaw implements ICustomTexture {
     ) {
         this.type = type;
         this.textureUnit = textureUnit;
+        if (net.optifine.Config.isVulkan()) {
+            this.vulkanTexture = new VulkanRawTexture(type, internalFormat, width, height, depth, pixelFormat, pixelType, data, blur, clamp);
+            return;
+        }
         this.textureId = GL11.glGenTextures();
         GL11.glBindTexture(this.getTarget(), this.textureId);
         TextureUtils.resetDataUnpacking();
@@ -83,7 +89,18 @@ public class CustomTextureRaw implements ICustomTexture {
     }
 
     @Override
+    public void bindVulkan() {
+        this.vulkanTexture.bind(this.textureUnit);
+    }
+
+    @Override
     public void deleteTexture() {
+        if (this.vulkanTexture != null) {
+            this.vulkanTexture.close();
+        }
+        if (net.optifine.Config.isVulkan()) {
+            return;
+        }
         if (this.textureId > 0) {
             GL11.glDeleteTextures(this.textureId);
             this.textureId = 0;

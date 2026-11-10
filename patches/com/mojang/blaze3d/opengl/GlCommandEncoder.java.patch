@@ -547,7 +547,26 @@
      ) {
          if (indexType != null) {
              GlStateManager._glBindBuffer(34963, ((GlBuffer)renderPass.indexBuffer).handle());
-@@ -656,7 +705,7 @@
+@@ -637,6 +686,11 @@
+                     baseVertex,
+                     firstInstance
+                 );
++            } else if (instanceCount == 1) {
++                GL33C.glDrawElementsBaseVertex(
++                    GlConst.toGl(pipeline.info().getPrimitiveTopology()), drawCount, GlConst.toGl(indexType),
++                    (long)firstIndex * indexType.bytes, baseVertex
++                );
+             } else {
+                 GL33C.glDrawElementsInstancedBaseVertex(
+                     GlConst.toGl(pipeline.info().getPrimitiveTopology()),
+@@ -651,12 +705,14 @@
+             ARBBaseInstance.glDrawArraysInstancedBaseInstance(
+                 GlConst.toGl(pipeline.info().getPrimitiveTopology()), baseVertex, drawCount, instanceCount, firstInstance
+             );
++        } else if (instanceCount == 1) {
++            GL33C.glDrawArrays(GlConst.toGl(pipeline.info().getPrimitiveTopology()), baseVertex, drawCount);
+         } else {
+             GL33C.glDrawArraysInstanced(GlConst.toGl(pipeline.info().getPrimitiveTopology()), baseVertex, drawCount, instanceCount);
          }
      }
  
@@ -556,7 +575,7 @@
          if (GlRenderPass.VALIDATION) {
              if (renderPass.pipeline == null) {
                  throw new IllegalStateException("Can't draw without a render pipeline");
-@@ -666,7 +715,7 @@
+@@ -666,7 +722,7 @@
                  throw new IllegalStateException("Pipeline contains invalid shader program");
              }
  
@@ -565,7 +584,7 @@
                  GpuBufferSlice value = renderPass.uniforms.get(uniform.name());
                  if (!dynamicUniforms.contains(uniform.name())) {
                      if (value == null) {
-@@ -701,7 +750,7 @@
+@@ -701,7 +757,7 @@
              }
  
              for (Entry<String, Uniform> entry : renderPass.pipeline.program().getUniforms().entrySet()) {
@@ -574,7 +593,7 @@
                      String name = entry.getKey();
                      GlRenderPass.TextureViewAndSampler viewAndSampler = renderPass.samplers.get(name);
                      if (viewAndSampler == null) {
-@@ -733,8 +782,16 @@
+@@ -733,8 +789,16 @@
          RenderPipeline pipeline = renderPass.pipeline.info();
          GlProgram glProgram = renderPass.pipeline.program();
          this.applyPipelineState(pipeline);
@@ -591,7 +610,7 @@
              GlStateManager._glUseProgram(glProgram.getProgramId());
              this.lastProgram = glProgram;
          }
-@@ -743,13 +800,13 @@
+@@ -743,13 +807,13 @@
              String name = entry.getKey();
              boolean isDirty = renderPass.dirtyUniforms.contains(name);
              switch ((Uniform)entry.getValue()) {
@@ -607,7 +626,7 @@
                      if (differentProgram || isDirty) {
                          GlStateManager._glUniform1i(location, samplerIndex);
                      }
-@@ -761,18 +818,20 @@
+@@ -761,18 +825,20 @@
                          GL33C.glTexBuffer(35882, GlConst.toGlInternalId(format), ((GlBuffer)bufferView.buffer()).handle());
                      }
                      break;
@@ -631,7 +650,7 @@
                      GlTexture texture = textureView.texture();
                      int target;
                      if ((texture.usage() & 16) != 0) {
-@@ -780,10 +839,25 @@
+@@ -780,10 +846,25 @@
                          GL33C.glBindTexture(34067, texture.id);
                      } else {
                          target = 3553;
@@ -658,7 +677,7 @@
                      GlStateManager._texParameter(target, 33084, textureView.baseMipLevel());
                      GlStateManager._texParameter(target, 33085, textureView.baseMipLevel() + textureView.mipLevels() - 1);
                      break;
-@@ -799,7 +873,10 @@
+@@ -799,7 +880,10 @@
              drawBuffers[i] = 36064 + i;
          }
  
@@ -669,7 +688,7 @@
          if (renderPass.isScissorEnabled()) {
              GlStateManager._enableScissorTest();
              GlStateManager._scissorBox(renderPass.getScissorX(), renderPass.getScissorY(), renderPass.getScissorWidth(), renderPass.getScissorHeight());
-@@ -807,10 +884,24 @@
+@@ -807,10 +891,24 @@
              GlStateManager._disableScissorTest();
          }
  
@@ -695,7 +714,7 @@
          if (this.lastPipeline != pipeline) {
              this.lastPipeline = pipeline;
              DepthStencilState depthStencilState = pipeline.getDepthStencilState();
-@@ -870,12 +961,68 @@
+@@ -870,12 +968,68 @@
  
      @Override
      public void submitRenderPass() {

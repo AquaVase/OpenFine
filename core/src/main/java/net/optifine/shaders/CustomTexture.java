@@ -1,6 +1,9 @@
 package net.optifine.shaders;
 
+import com.mojang.blaze3d.vulkan.VulkanGpuSampler;
 import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.optifine.Config;
+import net.optifine.shaders.vulkan.VulkanShaderRuntime;
 import net.optifine.util.TextureUtils;
 
 public class CustomTexture implements ICustomTexture {
@@ -28,13 +31,24 @@ public class CustomTexture implements ICustomTexture {
     }
 
     @Override
+    public void bindVulkan() {
+        VulkanShaderRuntime.getInstance().bindTexture(
+            this.textureUnit, this.texture.getTextureView(), ((VulkanGpuSampler)this.texture.getSampler()).vkSampler()
+        );
+    }
+
+    @Override
     public int getTextureId() {
         return this.texture.getGlTextureId();
     }
 
     @Override
     public void deleteTexture() {
-        TextureUtils.releaseTextureId(this.texture.getGlTextureId());
+        if (Config.isVulkan()) {
+            this.texture.close();
+        } else {
+            TextureUtils.releaseTextureId(this.texture.getGlTextureId());
+        }
     }
 
     @Override

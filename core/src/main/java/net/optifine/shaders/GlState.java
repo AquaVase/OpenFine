@@ -1,18 +1,23 @@
 package net.optifine.shaders;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
+import net.optifine.Config;
 
 public class GlState {
     private static IShadersFramebuffer activeFramebuffer;
 
     public static void bindFramebuffer(IShadersFramebuffer framebufferIn) {
         activeFramebuffer = framebufferIn;
-        GlStateManager._glBindFramebuffer(36160, activeFramebuffer.getGlFramebuffer());
+        if (!Config.isVulkan()) {
+            GlStateManager._glBindFramebuffer(36160, activeFramebuffer.getGlFramebuffer());
+        }
     }
 
     public static void unbindFramebuffer() {
         activeFramebuffer = null;
-        GlStateManager._glBindFramebuffer(36160, 0);
+        if (!Config.isVulkan()) {
+            GlStateManager._glBindFramebuffer(36160, 0);
+        }
     }
 
     public static IShadersFramebuffer getFramebuffer() {

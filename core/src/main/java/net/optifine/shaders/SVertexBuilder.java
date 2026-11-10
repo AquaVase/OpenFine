@@ -308,6 +308,9 @@ public class SVertexBuilder {
     }
 
     public static boolean preDrawArrays(VertexFormat vf) {
+        if (net.optifine.Config.isVulkan()) {
+            return false;
+        }
         int vertexSizeByte = vf.getVertexSize();
         if (vertexSizeByte != 72) {
             return false;
@@ -325,6 +328,9 @@ public class SVertexBuilder {
     }
 
     public static void postDrawArrays() {
+        if (net.optifine.Config.isVulkan()) {
+            return;
+        }
         GL20.glDisableVertexAttribArray(Shaders.midTexCoordAttrib);
         GL20.glDisableVertexAttribArray(Shaders.tangentAttrib);
         GL20.glDisableVertexAttribArray(Shaders.entityAttrib);

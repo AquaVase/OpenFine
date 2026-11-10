@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,20 +28,22 @@ public class SimpleShaderTexture extends AbstractTexture {
     }
 
     public void loadTexture(ResourceManager resourceManager) throws IOException {
-        this.deleteGlTexture();
+        this.releaseTextures();
         InputStream inputStream = Shaders.getShaderPackResourceStream(this.texturePath);
         if (inputStream == null) {
             throw new FileNotFoundException("Shader texture not found: " + this.texturePath);
         }
 
-        try {
-            NativeImage nativeImage = NativeImage.read(inputStream);
+        try (NativeImage nativeImage = NativeImage.read(inputStream)) {
             this.size = nativeImage.getSize();
             TextureMetadataSection tms = loadTextureMetadataSection(this.texturePath, new TextureMetadataSection(false, false, MipmapStrategy.AUTO, 0.0F));
             this.texture = RenderSystem.getDevice()
                 .createTexture(this.texturePath, 5, GpuFormat.RGBA8_UNORM, nativeImage.getWidth(), nativeImage.getHeight(), 1, 1);
             this.textureView = RenderSystem.getDevice().createTextureView(this.texture);
-            nativeImage.uploadTextureSub(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), tms.blur(), tms.clamp(), false, true);
+            AddressMode addressMode = tms.clamp() ? AddressMode.CLAMP_TO_EDGE : AddressMode.REPEAT;
+            FilterMode filter = tms.blur() ? FilterMode.LINEAR : FilterMode.NEAREST;
+            this.sampler = RenderSystem.getSamplerCache().getSampler(addressMode, addressMode, filter, filter, false);
+            RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, nativeImage);
             this.texture.setParentTexture(this);
         } finally {
             IOUtils.closeQuietly(inputStream);

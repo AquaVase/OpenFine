@@ -8,9 +8,11 @@ import com.mojang.blaze3d.opengl.GlConst;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.opengl.VertexArrayCache;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.RenderPassBackend;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.world.level.ChunkPos;
 import net.optifine.Config;
@@ -23,19 +25,30 @@ public class VboRegion {
     private ChunkSectionLayer layer;
     private int glArrayObjectId;
     private int glBufferId;
+    private GpuBuffer gpuBuffer;
+    private final boolean vulkan = Config.isVulkan();
     private int capacity = 4096;
     private int positionTop = 0;
     private int sizeUsed;
     private LinkedList<VboRange> rangeList = new LinkedList<>();
     private VboRange compactRangeLast;
+    private final ConcurrentLinkedQueue<VboRange> pendingReleases = new ConcurrentLinkedQueue<>();
     private PointerBuffer bufferIndexVertex = Config.createDirectPointerBuffer(this.capacity);
     private IntBuffer bufferCountVertex = Config.createDirectIntBuffer(this.capacity);
+    private IntBuffer bufferDrawParameters;
     private final int vertexBytes = DefaultVertexFormat.BLOCK.getVertexSize();
     private PrimitiveTopology drawMode = PrimitiveTopology.QUADS;
 
     public VboRegion(ChunkPos chunkPos, ChunkSectionLayer layer) {
         this.chunkPos = chunkPos;
         this.layer = layer;
+        if (this.vulkan) {
+            this.gpuBuffer = this.createBuffer(this.capacity);
+            GpuMemory.bufferAllocated(this.toBytes(this.capacity));
+            RenderSystem.getSequentialBuffer(this.drawMode).ensureStorage(this.drawMode.indexCount(this.capacity));
+            return;
+        }
+
         this.glArrayObjectId = GlStateManager._glGenVertexArrays();
         this.bindVertexArray();
         RenderSystem.getGlDevice().debugLabels().applyLabelVertexArray(this.glArrayObjectId, "VboRegion " + this.toString());
@@ -60,6 +73,10 @@ public class VboRegion {
                     range.setSize(0);
                     this.rangeList.remove(range.getNode());
                     this.sizeUsed -= sizeOld;
+                    if (this.rangeList.isEmpty()) {
+                        this.positionTop = 0;
+                        this.compactRangeLast = null;
+                    }
                 }
             } else {
                 if (sizeNew > sizeOld) {
@@ -77,11 +94,15 @@ public class VboRegion {
                 this.sizeUsed += sizeNew - sizeOld;
                 this.checkVboSize(range.getPositionNext());
                 long positionBytes = this.toBytes(range.getPosition());
-                this.bindVertexArray();
-                this.bindBuffer();
-                GlStateManager._glBufferSubData(GlStateManager.GL_ARRAY_BUFFER, positionBytes, data);
-                this.unbindBuffer();
-                unbindVertexArray();
+                if (this.vulkan) {
+                    RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.gpuBuffer.slice(positionBytes, data.remaining()), data);
+                } else {
+                    this.bindVertexArray();
+                    this.bindBuffer();
+                    GlStateManager._glBufferSubData(GlStateManager.GL_ARRAY_BUFFER, positionBytes, data);
+                    this.unbindBuffer();
+                    unbindVertexArray();
+                }
                 if (this.positionTop > this.sizeUsed * 11 / 10) {
                     this.compactRanges(1);
                 }
@@ -180,6 +201,13 @@ public class VboRegion {
         long posFromBytes = this.toBytes(posFrom);
         long posToBytes = this.toBytes(posTo);
         long sizeBytes = this.toBytes(size);
+        if (this.vulkan) {
+            RenderSystem.getDevice().createCommandEncoder().copyToBuffer(
+                this.gpuBuffer.slice(posFromBytes, sizeBytes), this.gpuBuffer.slice(posToBytes, sizeBytes)
+            );
+            return;
+        }
+
         GlStateManager._glBindBuffer(GlStateManager.GL_COPY_READ_BUFFER, this.glBufferId);
         GlStateManager._glBindBuffer(GlStateManager.GL_COPY_WRITE_BUFFER, this.glBufferId);
         GlStateManager.copyBufferSubData(GlStateManager.GL_COPY_READ_BUFFER, GlStateManager.GL_COPY_WRITE_BUFFER, posFromBytes, posToBytes, sizeBytes);
@@ -197,6 +225,20 @@ public class VboRegion {
 
         long capacityBytes = this.toBytes(this.capacity);
         long capacityNewBytes = this.toBytes(capacityNew);
+        if (this.vulkan) {
+            GpuBuffer bufferNew = this.createBuffer(capacityNew);
+            RenderSystem.getDevice().createCommandEncoder().copyToBuffer(this.gpuBuffer.slice(), bufferNew.slice(0L, capacityBytes));
+            this.gpuBuffer.close();
+            this.gpuBuffer = bufferNew;
+            GpuMemory.bufferAllocated(capacityNewBytes);
+            GpuMemory.bufferFreed(capacityBytes);
+            this.bufferIndexVertex = Config.createDirectPointerBuffer(capacityNew);
+            this.bufferCountVertex = Config.createDirectIntBuffer(capacityNew);
+            this.capacity = capacityNew;
+            RenderSystem.getSequentialBuffer(this.drawMode).ensureStorage(this.drawMode.indexCount(this.capacity));
+            return;
+        }
+
         int glBufferIdNew = GlStateManager._glGenBuffers();
         GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, glBufferIdNew);
         GlStateManager._glBufferData(GlStateManager.GL_ARRAY_BUFFER, capacityNewBytes, GlStateManager.GL_STATIC_DRAW);
@@ -222,6 +264,11 @@ public class VboRegion {
         GlStateManager._glBindVertexArray(this.glArrayObjectId);
     }
 
+    private GpuBuffer createBuffer(int capacity) {
+        return RenderSystem.getDevice().createBuffer(() -> "VboRegion " + this + ", " + capacity,
+            GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_COPY_SRC | GpuBuffer.USAGE_COPY_DST, this.toBytes(capacity));
+    }
+
     public void bindBuffer() {
         GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, this.glBufferId);
     }
@@ -240,6 +287,21 @@ public class VboRegion {
         this.bufferIndexVertex.put(pos);
         int count = drawMode.indexCount(range.getSize());
         this.bufferCountVertex.put(count);
+    }
+
+    public void prepareDraw() {
+        VboRange range;
+        while ((range = this.pendingReleases.poll()) != null) {
+            this.bufferData(SectionDrawData.emptyBuffer, range);
+        }
+
+        if (this.vulkan && this.positionTop > this.sizeUsed * 11 / 10) {
+            this.compactRanges(1);
+        }
+    }
+
+    public void releaseRange(VboRange range) {
+        this.pendingReleases.add(range);
     }
 
     public void finishDraw() {
@@ -262,6 +324,54 @@ public class VboRegion {
         }
     }
 
+    public void finishDraw(RenderPassBackend pass) {
+        if (!this.vulkan) {
+            this.finishDraw();
+            return;
+        }
+
+        RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(this.drawMode);
+        int indexCount = this.drawMode.indexCount(this.positionTop);
+        if (!indices.hasStorage(indexCount)) {
+            throw new IllegalStateException("Region indices must be uploaded before the render pass");
+        }
+
+        pass.setVertexBuffer(0, this.gpuBuffer.slice());
+        pass.setIndexBuffer(indices.getBuffer(indexCount), indices.type());
+        this.bufferIndexVertex.flip();
+        this.bufferCountVertex.flip();
+        try {
+            var info = RenderSystem.getDevice().getDeviceInfo();
+            int drawCount = this.bufferCountVertex.limit();
+            if (info.features().multiDrawDirectInterleaved() && drawCount > 1) {
+                int batchSize = Math.min(drawCount, info.limits().maxMultiDrawDirectInterleavedDrawCount());
+                if (this.bufferDrawParameters == null || this.bufferDrawParameters.capacity() < batchSize * 3) {
+                    this.bufferDrawParameters = Config.createDirectIntBuffer(batchSize * 3);
+                }
+
+                for (int start = 0; start < drawCount; start += batchSize) {
+                    this.bufferDrawParameters.clear();
+                    int end = Math.min(start + batchSize, drawCount);
+                    for (int i = start; i < end; i++) {
+                        this.bufferDrawParameters.put((int)(this.bufferIndexVertex.get(i) / 4L));
+                        this.bufferDrawParameters.put(this.bufferCountVertex.get(i));
+                        this.bufferDrawParameters.put(0);
+                    }
+
+                    this.bufferDrawParameters.flip();
+                    pass.multiDrawIndexed(this.bufferDrawParameters, 1, 0, end - start);
+                }
+            } else {
+                for (int i = 0; i < drawCount; i++) {
+                    pass.drawIndexed(this.bufferCountVertex.get(i), 1, (int)(this.bufferIndexVertex.get(i) / 4L), 0, 0);
+                }
+            }
+        } finally {
+            this.bufferIndexVertex.clear();
+            this.bufferCountVertex.clear();
+        }
+    }
+
     public void unbindBuffer() {
         GlStateManager._glBindBuffer(GlStateManager.GL_ARRAY_BUFFER, 0);
     }
@@ -271,6 +381,18 @@ public class VboRegion {
     }
 
     public void deleteGlBuffers() {
+        this.pendingReleases.clear();
+        if (this.vulkan) {
+            if (this.gpuBuffer != null) {
+                this.gpuBuffer.close();
+                this.gpuBuffer = null;
+                GpuMemory.bufferFreed(this.toBytes(this.capacity));
+            }
+
+            this.glBufferId = -1;
+            return;
+        }
+
         if (this.glArrayObjectId >= 0) {
             GlStateManager.deleteVertexArrays(this.glArrayObjectId);
             this.glArrayObjectId = -1;

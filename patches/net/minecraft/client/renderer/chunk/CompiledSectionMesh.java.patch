@@ -104,7 +104,7 @@
          return !this.draws.containsKey(layer);
      }
  
-@@ -71,37 +95,45 @@
+@@ -71,44 +95,86 @@
      }
  
      @Override
@@ -157,7 +157,13 @@
          return this.transparencyState;
      }
  
-@@ -111,4 +143,34 @@
+     @Override
+     public void close() {
++        for (SectionMesh.SectionDraw draw : this.draws.values()) {
++            draw.releaseVertexData();
++        }
++
+         this.draws.clear();
          this.vertexBufferUploaded.clear();
          this.indexBufferUploaded.clear();
      }

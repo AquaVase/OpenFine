@@ -1,6 +1,6 @@
 --- a/com/mojang/blaze3d/textures/GpuTexture.java
 +++ b/com/mojang/blaze3d/textures/GpuTexture.java
-@@ -1,15 +1,16 @@
+@@ -1,37 +1,35 @@
  package com.mojang.blaze3d.textures;
  
  import com.mojang.blaze3d.GpuFormat;
@@ -14,6 +14,7 @@
 +import net.minecraft.client.renderer.texture.AbstractTexture;
 +import net.minecraftforge.client.extensions.IForgeGpuTexture;
 +import net.optifine.shaders.MultiTexID;
++import net.optifine.shaders.ShadersTex;
  
 -@OnlyIn(Dist.CLIENT)
 -public abstract class GpuTexture implements AutoCloseable {
@@ -21,7 +22,11 @@
      public static final int USAGE_COPY_DST = 1;
      public static final int USAGE_COPY_SRC = 2;
      public static final int USAGE_TEXTURE_BINDING = 4;
-@@ -20,18 +21,11 @@
+     public static final int USAGE_RENDER_ATTACHMENT = 8;
+     public static final int USAGE_CUBEMAP_COMPATIBLE = 16;
++    public static final int USAGE_STORAGE_BINDING = 32;
+     private final GpuFormat format;
+     private final int width;
      private final int height;
      private final int depthOrLayers;
      private final int mipLevels;
@@ -29,6 +34,8 @@
 +    private @GpuTexture.Usage int usage;
      private final String label;
 +    private AbstractTexture parentTexture;
++    private boolean shaderTextureBlend = true;
++    public MultiTexID multiTex;
  
 -    public GpuTexture(
 -        final @GpuTexture.Usage int usage,
@@ -43,21 +50,24 @@
          this.usage = usage;
          this.label = label;
          this.format = format;
-@@ -41,11 +35,11 @@
+@@ -41,12 +39,12 @@
          this.mipLevels = mipLevels;
      }
  
 -    public int getWidth(final int mipLevel) {
+-        return this.width >> mipLevel;
 +    public int getWidth(int mipLevel) {
-         return this.width >> mipLevel;
++        return Math.max(1, this.width >> mipLevel);
      }
  
 -    public int getHeight(final int mipLevel) {
+-        return this.height >> mipLevel;
 +    public int getHeight(int mipLevel) {
-         return this.height >> mipLevel;
++        return Math.max(1, this.height >> mipLevel);
      }
  
-@@ -74,9 +68,49 @@
+     public int getDepthOrLayers() {
+@@ -74,9 +72,66 @@
  
      public abstract boolean isClosed();
  
@@ -70,7 +80,16 @@
 +    }
 +
 +    public MultiTexID getMultiTexID() {
-+        return null;
++        return ShadersTex.getMultiTexID(this);
++    }
++
++    public void releaseShaderTextures() {
++        MultiTexID multiTex = this.multiTex;
++        if (multiTex != null) {
++            this.multiTex = null;
++            multiTex.normTex.close();
++            multiTex.specTex.close();
++        }
 +    }
 +
 +    public int getGlTextureId() {
@@ -92,6 +111,14 @@
 +
 +    public AbstractTexture getParentTexture() {
 +        return this.parentTexture;
++    }
++
++    public boolean isShaderTextureBlend() {
++        return this.shaderTextureBlend;
++    }
++
++    public void setShaderTextureBlend(boolean blend) {
++        this.shaderTextureBlend = blend;
 +    }
 +
 +    public void setUsage(int usage) {

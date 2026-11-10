@@ -980,11 +980,7 @@ public class CustomItemProperties {
         if (this.textureWidth <= 0) {
             if (this.textureLocation != null) {
                 AbstractTexture tex = textureManager.getTexture(this.textureLocation);
-                int texId = tex.getGlTextureId();
-                int prevTexId = GlStateManager.getBoundTexture();
-                GlStateManager._bindTexture(texId);
-                this.textureWidth = GL11.glGetTexLevelParameteri(3553, 0, 4096);
-                GlStateManager._bindTexture(prevTexId);
+                this.textureWidth = tex.getTexture().getWidth();
             }
 
             if (this.textureWidth <= 0) {
@@ -999,11 +995,7 @@ public class CustomItemProperties {
         if (this.textureHeight <= 0) {
             if (this.textureLocation != null) {
                 AbstractTexture tex = textureManager.getTexture(this.textureLocation);
-                int texId = tex.getGlTextureId();
-                int prevTexId = GlStateManager.getBoundTexture();
-                GlStateManager._bindTexture(texId);
-                this.textureHeight = GL11.glGetTexLevelParameteri(3553, 0, 4097);
-                GlStateManager._bindTexture(prevTexId);
+                this.textureHeight = tex.getTexture().getHeight();
             }
 
             if (this.textureHeight <= 0) {

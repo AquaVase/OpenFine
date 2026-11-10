@@ -50,7 +50,7 @@
  public class GlStateManager {
      private static final Plot PLOT_TEXTURES = TracyClient.createPlot("GPU Textures");
      private static int numTextures = 0;
-@@ -32,77 +52,225 @@
+@@ -32,77 +52,235 @@
      private static final GlStateManager.ScissorState SCISSOR = new GlStateManager.ScissorState();
      private static int activeTexture;
      private static final int TEXTURE_COUNT = 12;
@@ -153,8 +153,10 @@
 +        if (scissorLock.isLocked()) {
 +            scissorLockState.setBox(x, y, width, height);
 +        } else {
++            if (!Config.isVulkan()) {
          GL33C.glScissor(x, y, width, height);
      }
++        }
 +    }
  
      public static void _disableDepthTest() {
@@ -183,9 +185,11 @@
 +        } else {
          if (func != DEPTH.func) {
              DEPTH.func = func;
++                if (!Config.isVulkan()) {
              GL33C.glDepthFunc(func);
          }
      }
++        }
 +    }
  
 -    public static void _depthMask(final boolean mask) {
@@ -196,9 +200,11 @@
 +        } else {
          if (mask != DEPTH.mask) {
              DEPTH.mask = mask;
++                if (!Config.isVulkan()) {
              GL33C.glDepthMask(mask);
          }
      }
++        }
 +    }
  
      public static void _disableBlend(int index) {
@@ -255,7 +261,11 @@
 +                    Shaders.uniform_blendFunc.setValue(srcFactor, dstFactor, srcFactor, dstFactor);
 +                }
 +
-+                GL11.glBlendFunc(srcFactor, dstFactor);
++                if (!Config.isVulkan()) {
++
++                    GL11.glBlendFunc(srcFactor, dstFactor);
++
++                }
 +            }
 +        }
 +    }
@@ -285,7 +295,7 @@
          RenderSystem.assertOnRenderThread();
          GlStateManager.BlendState firstBlend = BLEND[0];
          if (modeRgb != firstBlend.modeRgb || modeAlpha != firstBlend.modeAlpha) {
-@@ -112,27 +280,52 @@
+@@ -112,27 +290,52 @@
          }
      }
  
@@ -343,7 +353,7 @@
          RenderSystem.assertOnRenderThread();
          byte[] encoded = source.getBytes(StandardCharsets.UTF_8);
          ByteBuffer buffer = MemoryUtil.memAlloc(encoded.length + 1);
-@@ -149,47 +342,50 @@
+@@ -149,47 +352,50 @@
          }
      }
  
@@ -402,7 +412,7 @@
          RenderSystem.assertOnRenderThread();
          GL33C.glBindAttribLocation(program, location, name);
      }
-@@ -210,49 +406,58 @@
+@@ -210,61 +416,79 @@
          return GL33C.glGenVertexArrays();
      }
  
@@ -457,6 +467,7 @@
      }
  
 -    public static void _glBindFramebuffer(final int target, final int framebuffer) {
+-        if ((target == 36008 || target == 36160) && readFbo != framebuffer) {
 +    public static void deleteVertexArrays(int array) {
 +        RenderSystem.assertOnRenderThread();
 +        GL30.glDeleteVertexArrays(array);
@@ -467,10 +478,24 @@
 +            framebuffer = GlState.getFramebuffer().getGlFramebuffer();
 +        }
 +
-         if ((target == 36008 || target == 36160) && readFbo != framebuffer) {
++        if (target == 36160) {
++            if (readFbo != framebuffer || writeFbo != framebuffer) {
++                GL33C.glBindFramebuffer(36160, framebuffer);
++                readFbo = framebuffer;
++                writeFbo = framebuffer;
++            }
++            return;
++        }
++
++        if (target == 36008 && readFbo != framebuffer) {
              GL33C.glBindFramebuffer(36008, framebuffer);
              readFbo = framebuffer;
-@@ -264,7 +469,7 @@
+         }
+ 
+-        if ((target == 36009 || target == 36160) && writeFbo != framebuffer) {
++        if (target == 36009 && writeFbo != framebuffer) {
+             GL33C.glBindFramebuffer(36009, framebuffer);
+             writeFbo = framebuffer;
          }
      }
  
@@ -479,7 +504,7 @@
          if (target == 36008) {
              return readFbo;
          } else {
-@@ -272,23 +477,12 @@
+@@ -272,23 +496,12 @@
          }
      }
  
@@ -505,27 +530,32 @@
          RenderSystem.assertOnRenderThread();
          GL33C.glDeleteFramebuffers(framebuffer);
          if (readFbo == framebuffer) {
-@@ -305,42 +499,50 @@
+@@ -305,45 +518,60 @@
          return GL33C.glGenFramebuffers();
      }
  
 -    public static void _glFramebufferTexture2D(final int target, final int attachment, final int textarget, final int texture, final int level) {
 +    public static void _glFramebufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
          RenderSystem.assertOnRenderThread();
++        net.optifine.shaders.ShadersFramebuffer.invalidateAttachments(target == 36008 ? readFbo : writeFbo);
          GL33C.glFramebufferTexture2D(target, attachment, textarget, texture, level);
      }
  
 -    public static void glBlendFuncSeparate(final int srcColor, final int dstColor, final int srcAlpha, final int dstAlpha) {
 +    public static void glBlendFuncSeparate(int srcColor, int dstColor, int srcAlpha, int dstAlpha) {
          RenderSystem.assertOnRenderThread();
++        if (!Config.isVulkan()) {
          GL33C.glBlendFuncSeparate(srcColor, dstColor, srcAlpha, dstAlpha);
      }
++    }
  
 -    public static void glBlendEquationSeparate(final int modeRgb, final int modeAlpha) {
 +    public static void glBlendEquationSeparate(int modeRgb, int modeAlpha) {
          RenderSystem.assertOnRenderThread();
++        if (!Config.isVulkan()) {
          GL33C.glBlendEquationSeparate(modeRgb, modeAlpha);
      }
++    }
  
 -    public static String glGetShaderInfoLog(final int shader, final int maxLength) {
 +    public static String glGetShaderInfoLog(int shader, int maxLength) {
@@ -560,9 +590,14 @@
 -    public static void _polygonMode(final int face, final int mode) {
 +    public static void _polygonMode(int face, int mode) {
          RenderSystem.assertOnRenderThread();
++        if (!Config.isVulkan()) {
          GL33C.glPolygonMode(face, mode);
      }
-@@ -355,7 +557,7 @@
++    }
+ 
+     public static void _enablePolygonOffset() {
+         RenderSystem.assertOnRenderThread();
+@@ -355,14 +583,16 @@
          POLY_OFFSET.fill.disable();
      }
  
@@ -571,7 +606,16 @@
          RenderSystem.assertOnRenderThread();
          if (factor != POLY_OFFSET.factor || units != POLY_OFFSET.units) {
              POLY_OFFSET.factor = factor;
-@@ -374,7 +576,7 @@
+             POLY_OFFSET.units = units;
++            if (!Config.isVulkan()) {
+             GL33C.glPolygonOffset(factor, units);
+         }
+     }
++    }
+ 
+     public static void _enableColorLogicOp() {
+         RenderSystem.assertOnRenderThread();
+@@ -374,28 +604,47 @@
          COLOR_LOGIC.enable.disable();
      }
  
@@ -580,18 +624,22 @@
          RenderSystem.assertOnRenderThread();
          if (op != COLOR_LOGIC.op) {
              COLOR_LOGIC.op = op;
-@@ -382,7 +584,7 @@
++            if (!Config.isVulkan()) {
+             GL33C.glLogicOp(op);
          }
      }
++    }
  
 -    public static void _activeTexture(final int texture) {
 +    public static void _activeTexture(int texture) {
          RenderSystem.assertOnRenderThread();
          if (activeTexture != texture - 33984) {
              activeTexture = texture - 33984;
-@@ -390,12 +592,27 @@
++            if (!Config.isVulkan()) {
+             GL33C.glActiveTexture(texture);
          }
      }
++    }
  
 -    public static void _texParameter(final int target, final int name, final int value) {
 +    public static void enableTexture() {
@@ -619,7 +667,7 @@
          return GL33C.glGetTexLevelParameteri(target, level, name);
      }
  
-@@ -406,78 +623,59 @@
+@@ -406,97 +655,84 @@
          return GL33C.glGenTextures();
      }
  
@@ -709,33 +757,42 @@
  
 -    public static void _viewport(final int x, final int y, final int width, final int height) {
 +    public static void _viewport(int x, int y, int width, int height) {
++        if (!Config.isVulkan()) {
          GL33C.glViewport(x, y, width, height);
      }
++    }
  
 -    public static void _colorMask(final @ColorTargetState.WriteMask int writeMask) {
 +    public static void _colorMask(@WriteMask int writeMask) {
          RenderSystem.assertOnRenderThread();
  
          for (int i = 0; i < COLOR_MASK.length; i++) {
-@@ -488,7 +686,7 @@
+             if (writeMask != COLOR_MASK[i]) {
+                 COLOR_MASK[i] = writeMask;
++                if (!Config.isVulkan()) {
+                 GL33C.glColorMaski(i, (writeMask & 1) != 0, (writeMask & 2) != 0, (writeMask & 4) != 0, (writeMask & 8) != 0);
+             }
          }
      }
++    }
  
 -    public static void _colorMask(final int index, final @ColorTargetState.WriteMask int writeMask) {
 +    public static void _colorMask(int index, @WriteMask int writeMask) {
          RenderSystem.assertOnRenderThread();
          if (writeMask != COLOR_MASK[index]) {
              COLOR_MASK[index] = writeMask;
-@@ -496,7 +694,7 @@
++            if (!Config.isVulkan()) {
+             GL33C.glColorMaski(index, (writeMask & 1) != 0, (writeMask & 2) != 0, (writeMask & 4) != 0, (writeMask & 8) != 0);
          }
      }
++    }
  
 -    public static void _clear(final int mask) {
 +    public static void _clear(int mask) {
          RenderSystem.assertOnRenderThread();
          GL33C.glClear(mask);
          if (MacosUtil.IS_MACOS) {
-@@ -504,7 +702,7 @@
+@@ -504,7 +740,7 @@
          }
      }
  
@@ -744,7 +801,7 @@
          RenderSystem.assertOnRenderThread();
          GL33C.glClearBufferfv(6144, index, new float[]{clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w()});
          if (MacosUtil.IS_MACOS) {
-@@ -512,7 +710,7 @@
+@@ -512,7 +748,7 @@
          }
      }
  
@@ -753,7 +810,7 @@
          RenderSystem.assertOnRenderThread();
          GL33C.glClearBufferfv(6145, 0, new float[]{(float)clearDepth});
          if (MacosUtil.IS_MACOS) {
-@@ -520,37 +718,69 @@
+@@ -520,84 +756,453 @@
          }
      }
  
@@ -830,7 +887,20 @@
          RenderSystem.assertOnRenderThread();
          GL33C.glReadPixels(x, y, width, height, format, type, pixels);
      }
-@@ -567,37 +797,363 @@
+ 
+     public static int _getError() {
+         RenderSystem.assertOnRenderThread();
+-        return GL33C.glGetError();
++        return Config.isVulkan() ? 0 : GL33C.glGetError();
+     }
+ 
+     public static void clearGlErrors() {
+         RenderSystem.assertOnRenderThread();
++        if (Config.isVulkan()) {
++            return;
++        }
+ 
+         while (GL33C.glGetError() != 0) {
          }
      }
  
@@ -881,7 +951,7 @@
 +    }
 +
 +    public static void checkBoundTexture() {
-+        if (Config.isMinecraftThread()) {
++        if (!Config.isVulkan() && Config.isMinecraftThread()) {
 +            int glAct = GL11.glGetInteger(34016);
 +            int glTex = GL11.glGetInteger(32873);
 +            int act = getActiveTextureUnit();
@@ -1075,7 +1145,9 @@
 +        } else {
 +            SCISSOR.mode.setEnabled(state.isEnabled());
 +            if (state.isBoxSet()) {
-+                GL33C.glScissor(state.getX(), state.getY(), state.getWidth(), state.getHeight());
++                if (!Config.isVulkan()) {
++                    GL33C.glScissor(state.getX(), state.getY(), state.getWidth(), state.getHeight());
++                }
 +            }
 +        }
 +    }
@@ -1136,6 +1208,9 @@
 +    }
 +
 +    public static void applyCurrentBlend() {
++        if (Config.isVulkan()) {
++            return;
++        }
 +        if (BLEND[0].mode.enabled) {
 +            GL11.glEnable(3042);
 +        } else {
@@ -1146,6 +1221,9 @@
 +    }
 +
 +    public static void setBlendsIndexed(GlBlendState[] blends) {
++        if (Config.isVulkan()) {
++            return;
++        }
 +        if (blends != null) {
 +            for (int i = 0; i < blends.length; i++) {
 +                GlBlendState bs = blends[i];
@@ -1200,7 +1278,7 @@
      private static class BlendState {
          public final GlStateManager.BooleanState mode = new GlStateManager.BooleanState(3042);
          public int srcRgb = 1;
-@@ -608,12 +1164,11 @@
+@@ -608,12 +1213,11 @@
          public int modeAlpha = 32774;
      }
  
@@ -1214,7 +1292,7 @@
              this.state = state;
          }
  
-@@ -625,7 +1180,7 @@
+@@ -625,10 +1229,11 @@
              this.setEnabled(true);
          }
  
@@ -1223,9 +1301,15 @@
              RenderSystem.assertOnRenderThread();
              if (enabled != this.enabled) {
                  this.enabled = enabled;
-@@ -638,38 +1193,34 @@
++                if (!Config.isVulkan()) {
+                 if (enabled) {
+                     GL33C.glEnable(this.state);
+                 } else {
+@@ -637,39 +1242,36 @@
+             }
          }
      }
++    }
  
 -    @OnlyIn(Dist.CLIENT)
      private static class ColorLogicState {

@@ -27,6 +27,8 @@ public class GuiButtonEnumShaderOption extends GuiButtonOF {
                 return nameText + GuiShaders.toStringOnOff(Shaders.configNormalMap, eso.getDefaultBool());
             case SPECULAR_MAP:
                 return nameText + GuiShaders.toStringOnOff(Shaders.configSpecularMap, eso.getDefaultBool());
+            case LAYERED_TRANSPARENCY:
+                return nameText + GuiShaders.toStringOnOff(Shaders.configLayeredTransparency, eso.getDefaultBool());
             case RENDER_RES_MUL:
                 return nameText + GuiShaders.toStringQuality(Shaders.configRenderResMul, eso.getDefaultFloat());
             case SHADOW_RES_MUL:
